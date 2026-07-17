@@ -1,0 +1,80 @@
+"use client";
+
+import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Mail } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { FormError } from "@/components/auth/form-error";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ApiError } from "@/lib/api";
+import { forgotPassword } from "@/lib/auth";
+
+const schema = z.object({
+  email: z.string().email("Enter a valid email address."),
+});
+
+type ForgotPasswordValues = z.infer<typeof schema>;
+
+export function ForgotPasswordForm() {
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  async function onSubmit(values: ForgotPasswordValues) {
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await forgotPassword(values);
+      setSuccess(response.message);
+    } catch (unknownError) {
+      if (unknownError instanceof ApiError) {
+        setError(unknownError.errors?.email?.[0] ?? unknownError.message);
+        return;
+      }
+
+      setError("Unable to send a reset link. Try again.");
+    }
+  }
+
+  return (
+    <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <FormError message={error} />
+      {success ? (
+        <Alert className="border-success/30 text-foreground">{success}</Alert>
+      ) : null}
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          autoComplete="email"
+          id="email"
+          placeholder="owner@business.com"
+          type="email"
+          {...register("email")}
+        />
+        {errors.email ? (
+          <p className="text-xs text-red-600">{errors.email.message}</p>
+        ) : null}
+      </div>
+      <Button className="w-full" disabled={isSubmitting} type="submit">
+        {isSubmitting ? "Sending..." : "Send reset link"}
+        <Mail className="size-4" />
+      </Button>
+    </form>
+  );
+}

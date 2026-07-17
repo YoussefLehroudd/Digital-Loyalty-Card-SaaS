@@ -1,0 +1,94 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { FormError } from "@/components/auth/form-error";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ApiError } from "@/lib/api";
+import { login, storeToken } from "@/lib/auth";
+
+const schema = z.object({
+  email: z.string().email("Enter a valid email address."),
+  password: z.string().min(1, "Enter your password."),
+});
+
+type LoginValues = z.infer<typeof schema>;
+
+export function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
+  const next = searchParams.get("next") || "/dashboard";
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  async function onSubmit(values: LoginValues) {
+    setError(null);
+
+    try {
+      const response = await login({ ...values, device_name: "web" });
+      storeToken(response.token);
+      router.replace(next);
+      router.refresh();
+    } catch (unknownError) {
+      if (unknownError instanceof ApiError) {
+        setError(unknownError.errors?.email?.[0] ?? unknownError.message);
+        return;
+      }
+
+      setError("Unable to sign in. Try again.");
+    }
+  }
+
+  return (
+    <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <FormError message={error} />
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          autoComplete="email"
+          id="email"
+          placeholder="owner@business.com"
+          {...register("email")}
+        />
+        {errors.email ? (
+          <p className="text-xs text-red-600">{errors.email.message}</p>
+        ) : null}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
+          autoComplete="current-password"
+          id="password"
+          placeholder="Password"
+          type="password"
+          {...register("password")}
+        />
+        {errors.password ? (
+          <p className="text-xs text-red-600">{errors.password.message}</p>
+        ) : null}
+      </div>
+      <Button className="w-full" disabled={isSubmitting} type="submit">
+        {isSubmitting ? "Signing in..." : "Sign in"}
+        <ArrowRight className="size-4" />
+      </Button>
+    </form>
+  );
+}

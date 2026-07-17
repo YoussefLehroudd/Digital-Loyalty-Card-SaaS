@@ -1,0 +1,31 @@
+composer.phar
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+.next/
+out/
+build/
+public/build/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Logs and caches
+*.log
+.logs/
+.phpunit.cache/
+.phpunit.result.cache
+*.tsbuildinfo
+
+# Editors and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+composer.phar
