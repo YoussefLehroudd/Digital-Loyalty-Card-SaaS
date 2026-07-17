@@ -6,6 +6,7 @@ use Database\Factories\BusinessFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Business extends Model
 {
@@ -15,6 +16,7 @@ class Business extends Model
     protected $fillable = [
         'name',
         'logo_url',
+        'slug',
         'logo_public_id',
         'primary_color',
         'email',
@@ -40,5 +42,10 @@ class Business extends Model
     public function rewardRedemptions(): HasMany
     {
         return $this->hasMany(RewardRedemption::class);
+    }
+
+    public function loyaltyCard(): HasOne
+    {
+        return $this->hasOne(LoyaltyCard::class);
     }
 }
