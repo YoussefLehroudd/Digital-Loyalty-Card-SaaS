@@ -9,6 +9,7 @@ export type Business = {
   name: string;
   email: string;
   logo_url: string | null;
+  logo_public_id?: string | null;
   primary_color: string;
   phone: string | null;
   address: string | null;
@@ -37,9 +38,36 @@ export type DashboardMetrics = {
 };
 
 export type DashboardOverview = {
-  business: Pick<Business, "id" | "name" | "email" | "logo_url" | "primary_color">;
+  business: Pick<
+    Business,
+    "id" | "name" | "email" | "logo_url" | "logo_public_id" | "primary_color"
+  >;
   metrics: DashboardMetrics;
   generated_at: string;
+};
+
+export type LoyaltyCard = {
+  id: string;
+  business_id: string;
+  reward_name: string;
+  required_stamps: number;
+  reward_description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LoyaltyCardPayload = {
+  reward_name: string;
+  required_stamps: number;
+  reward_description?: string | null;
+};
+
+export type BusinessProfilePayload = {
+  name: string;
+  email: string;
+  phone?: string | null;
+  address?: string | null;
+  primary_color: string;
 };
 
 export type RegisterBusinessOwnerPayload = {
@@ -147,4 +175,71 @@ export function getDashboardOverview(token: string) {
   return apiFetch<DashboardOverview>("/dashboard", {
     token,
   });
+}
+
+export function getBusinessProfile(token: string) {
+  return apiFetch<{ business: Business }>("/business/profile", {
+    token,
+  });
+}
+
+export function updateBusinessProfile(
+  token: string,
+  payload: BusinessProfilePayload,
+) {
+  return apiFetch<{ message: string; business: Business }>("/business/profile", {
+    method: "PATCH",
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export function uploadBusinessLogo(token: string, file: File) {
+  const body = new FormData();
+  body.append("logo", file);
+
+  return apiFetch<{ message: string; business: Business }>(
+    "/business/profile/logo",
+    {
+      method: "POST",
+      token,
+      body,
+    },
+  );
+}
+
+export function getLoyaltyCard(token: string) {
+  return apiFetch<{ loyalty_card: LoyaltyCard }>("/loyalty-card", {
+    token,
+  });
+}
+
+export function createLoyaltyCard(token: string, payload: LoyaltyCardPayload) {
+  return apiFetch<{ message: string; loyalty_card: LoyaltyCard }>(
+    "/loyalty-card",
+    {
+      method: "POST",
+      token,
+      body: JSON.stringify({
+        reward_name: payload.reward_name,
+        required_stamps: payload.required_stamps,
+        reward_description: payload.reward_description ?? null,
+      }),
+    },
+  );
+}
+
+export function updateLoyaltyCard(token: string, payload: LoyaltyCardPayload) {
+  return apiFetch<{ message: string; loyalty_card: LoyaltyCard }>(
+    "/loyalty-card",
+    {
+      method: "PUT",
+      token,
+      body: JSON.stringify({
+        reward_name: payload.reward_name,
+        required_stamps: payload.required_stamps,
+        reward_description: payload.reward_description ?? null,
+      }),
+    },
+  );
 }

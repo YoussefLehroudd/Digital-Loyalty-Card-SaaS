@@ -30,6 +30,7 @@ class DashboardController extends Controller
                 'name' => $business->name,
                 'email' => $business->email,
                 'logo_url' => $business->logo_url,
+                'logo_public_id' => $business->logo_public_id,
                 'primary_color' => $business->primary_color,
             ],
             'metrics' => [

@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LoyaltyCardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +33,22 @@ Route::middleware(['auth:sanctum', 'role:business_owner'])->get('/dashboard', [
     DashboardController::class,
     'show',
 ]);
+
+Route::middleware(['auth:sanctum', 'role:business_owner'])
+    ->prefix('business/profile')
+    ->group(function (): void {
+        Route::get('/', [BusinessProfileController::class, 'show']);
+        Route::patch('/', [BusinessProfileController::class, 'update']);
+        Route::post('/logo', [BusinessProfileController::class, 'uploadLogo']);
+    });
+
+Route::middleware(['auth:sanctum', 'role:business_owner'])
+    ->prefix('loyalty-card')
+    ->group(function (): void {
+        Route::get('/', [LoyaltyCardController::class, 'show']);
+        Route::post('/', [LoyaltyCardController::class, 'store']);
+        Route::put('/', [LoyaltyCardController::class, 'update']);
+    });
 
 Route::get('/user', function (Request $request) {
     return $request->user();

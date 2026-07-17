@@ -160,6 +160,7 @@ class AuthController extends Controller
                 'name' => $user->business->name,
                 'email' => $user->business->email,
                 'logo_url' => $user->business->logo_url,
+                'logo_public_id' => $user->business->logo_public_id,
                 'primary_color' => $user->business->primary_color,
                 'phone' => $user->business->phone,
                 'address' => $user->business->address,

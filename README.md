@@ -109,3 +109,31 @@ Dashboard metric tables added:
 - `reward_redemptions`
 
 All dashboard metric queries are scoped to the authenticated user's `business_id`.
+
+## Phase 4
+
+Business profile and branding settings are implemented for authenticated business owners.
+
+API routes:
+
+- `GET /api/business/profile`
+- `PATCH /api/business/profile`
+- `POST /api/business/profile/logo`
+
+Profile fields:
+
+- business name
+- logo URL and Cloudinary public ID
+- primary color
+- address
+- phone
+- email
+
+Cloudinary environment:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `CLOUDINARY_FOLDER`
+
+All profile routes are protected by `auth:sanctum` and `role:business_owner`, and the backend resolves the business from the authenticated user's tenant.

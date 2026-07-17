@@ -1,23 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  Bell,
-  ChartNoAxesColumnIncreasing,
-  CreditCard,
-  Gift,
-  Home,
-  LogOut,
-  Menu,
-  RefreshCw,
-  ScanLine,
-  Search,
-  Settings,
-  Users,
-} from "lucide-react";
+import { ChartNoAxesColumnIncreasing, Gift, RefreshCw, ScanLine, Users } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-guard";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,18 +23,10 @@ import {
 } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-const sidebarItems = [
-  { label: "Overview", icon: Home, active: true },
-  { label: "Customers", icon: Users, active: false },
-  { label: "Loyalty card", icon: CreditCard, active: false },
-  { label: "Scanner", icon: ScanLine, active: false },
-  { label: "Rewards", icon: Gift, active: false },
-];
-
 const formatter = new Intl.NumberFormat("en");
 
 export function BusinessDashboard() {
-  const { token, user, signOut } = useAuth();
+  const { token, user } = useAuth();
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,67 +55,8 @@ export function BusinessDashboard() {
   const businessName = overview?.business.name ?? user.business?.name ?? "Business";
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="lg:grid lg:grid-cols-[264px_1fr]">
-        <aside className="hidden min-h-screen border-r bg-card lg:block">
-          <div className="sticky top-0 flex h-screen flex-col">
-            <div className="flex h-16 items-center gap-3 border-b px-5">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <CreditCard className="size-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">Digital Loyalty</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {businessName}
-                </p>
-              </div>
-            </div>
-
-            <nav className="flex-1 space-y-1 px-3 py-4">
-              {sidebarItems.map((item) => (
-                <Button
-                  className={cn(
-                    "w-full justify-start",
-                    !item.active && "text-muted-foreground",
-                  )}
-                  key={item.label}
-                  variant={item.active ? "secondary" : "ghost"}
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </Button>
-              ))}
-            </nav>
-
-            <div className="border-t p-3">
-              <Button className="w-full justify-start" variant="ghost">
-                <Settings className="size-4" />
-                Settings
-              </Button>
-            </div>
-          </div>
-        </aside>
-
-        <section className="min-w-0">
-          <TopNav businessName={businessName} onSignOut={signOut} />
-
-          <div className="border-b px-4 py-2 lg:hidden">
-            <div className="flex gap-2 overflow-x-auto">
-              {sidebarItems.map((item) => (
-                <Button
-                  className="shrink-0"
-                  key={item.label}
-                  size="sm"
-                  variant={item.active ? "secondary" : "ghost"}
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <DashboardShell activeItem="overview">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="space-y-3">
                 <Badge className="w-fit border-success/30 bg-secondary text-secondary-foreground">
@@ -172,50 +92,8 @@ export function BusinessDashboard() {
                 {isEmpty ? <EmptyDashboardState /> : <DashboardSummary metrics={overview.metrics} />}
               </>
             ) : null}
-          </div>
-        </section>
       </div>
-    </main>
-  );
-}
-
-function TopNav({
-  businessName,
-  onSignOut,
-}: {
-  businessName: string;
-  onSignOut: () => Promise<void>;
-}) {
-  return (
-    <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-      <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button aria-label="Open menu" className="lg:hidden" size="icon" variant="ghost">
-            <Menu className="size-5" />
-          </Button>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{businessName}</p>
-            <p className="hidden text-xs text-muted-foreground sm:block">
-              Protected business dashboard
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button aria-label="Search" size="icon" variant="ghost">
-            <Search className="size-4" />
-          </Button>
-          <Button aria-label="Notifications" size="icon" variant="ghost">
-            <Bell className="size-4" />
-          </Button>
-          <ThemeToggle />
-          <Button onClick={onSignOut} variant="outline">
-            <LogOut className="size-4" />
-            <span className="hidden sm:inline">Log out</span>
-          </Button>
-        </div>
-      </div>
-    </header>
+    </DashboardShell>
   );
 }
 

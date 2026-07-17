@@ -15,6 +15,7 @@ class Business extends Model
     protected $fillable = [
         'name',
         'logo_url',
+        'logo_public_id',
         'primary_color',
         'email',
         'phone',
