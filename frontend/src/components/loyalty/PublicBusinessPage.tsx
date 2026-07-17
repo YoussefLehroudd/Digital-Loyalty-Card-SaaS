@@ -1,0 +1,204 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Building2, Gift, Loader2 } from "lucide-react";
+
+import { PublicCustomerRegisterForm } from "@/components/loyalty/PublicCustomerRegisterForm";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ApiError } from "@/lib/api";
+import { getPublicBusinessBySlug, type PublicBusinessLookupResponse } from "@/lib/public";
+
+export function PublicBusinessPage({ businessSlug }: { businessSlug: string }) {
+  const [data, setData] = useState<PublicBusinessLookupResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      setIsLoading(true);
+      setError(null);
+      setNotFound(false);
+
+      try {
+        const response = await getPublicBusinessBySlug(businessSlug);
+
+        if (!mounted) return;
+        setData(response);
+      } catch (unknownError) {
+        if (!mounted) return;
+
+        if (unknownError instanceof ApiError && unknownError.status === 404) {
+          setNotFound(true);
+          setData(null);
+          return;
+        }
+
+        setError("Unable to load this loyalty page right now.");
+        setData(null);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
+  }, [businessSlug]);
+
+  if (isLoading) {
+    return <PublicBusinessPageSkeleton />;
+  }
+
+  if (notFound) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl">
+          <Card>
+            <CardHeader>
+              <CardTitle>Business not found</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                This loyalty page does not exist or is no longer available.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl space-y-4">
+          <Alert className="border-red-500/30 text-red-600">
+            {error ?? "Unexpected error while loading this page."}
+          </Alert>
+        </div>
+      </main>
+    );
+  }
+
+  const { business, loyalty_card } = data;
+
+  return (
+    <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <Card className="overflow-hidden">
+          <CardContent className="space-y-5 p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex size-12 items-center justify-center overflow-hidden rounded-lg bg-muted">
+                {business.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt={`${business.name} logo`}
+                    className="size-full object-cover"
+                    src={business.logo_url}
+                  />
+                ) : (
+                  <Building2 className="size-6 text-muted-foreground" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <h1 className="truncate text-2xl font-semibold">{business.name}</h1>
+                <p className="truncate text-sm text-muted-foreground">{business.email}</p>
+              </div>
+            </div>
+
+            <div
+              className="rounded-lg border p-4 text-white"
+              style={{ backgroundColor: business.primary_color || "#171717" }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium">Digital loyalty card</p>
+                <Badge className="bg-white/15 text-white">
+                  <Gift className="size-4" />
+                  Reward
+                </Badge>
+              </div>
+
+              {loyalty_card ? (
+                <div className="mt-4 space-y-2">
+                  <p className="text-lg font-semibold">{loyalty_card.reward_name}</p>
+                  <p className="text-sm opacity-90">
+                    {loyalty_card.required_stamps} stamps required
+                  </p>
+                  <p className="text-sm opacity-80">
+                    {loyalty_card.reward_description ?? "No description provided."}
+                  </p>
+                  <div className="mt-3 grid grid-cols-5 gap-2">
+                    {Array.from({ length: Math.min(loyalty_card.required_stamps, 10) }).map(
+                      (_, idx) => (
+                        <div
+                          key={idx}
+                          className="aspect-square rounded-md border border-white/20 bg-white/10"
+                        />
+                      ),
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm opacity-90">
+                  Loyalty card details will be available soon.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Join loyalty program</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PublicCustomerRegisterForm businessSlug={businessSlug} />
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  );
+}
+
+function PublicBusinessPageSkeleton() {
+  return (
+    <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <Card>
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-12 rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-52" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            </div>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Loading registration form...
+            </div>
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  );
+}

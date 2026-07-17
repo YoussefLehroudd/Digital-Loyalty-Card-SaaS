@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BusinessCustomerController;
 use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoyaltyCardController;
+use App\Http\Controllers\PublicCustomerController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +51,20 @@ Route::middleware(['auth:sanctum', 'role:business_owner'])
         Route::post('/', [LoyaltyCardController::class, 'store']);
         Route::put('/', [LoyaltyCardController::class, 'update']);
     });
+
+Route::middleware(['auth:sanctum', 'role:business_owner'])
+    ->prefix('business/customers')
+    ->group(function (): void {
+        Route::get('/', [BusinessCustomerController::class, 'index']);
+        Route::get('/search', [BusinessCustomerController::class, 'search']);
+        Route::get('/{customer}', [BusinessCustomerController::class, 'show']);
+        Route::post('/', [BusinessCustomerController::class, 'store']);
+        Route::delete('/{customer}', [BusinessCustomerController::class, 'destroy']);
+    });
+
+Route::get('/public/businesses/{slug}', [PublicCustomerController::class, 'showBusiness']);
+Route::post('/public/businesses/{slug}/customers/register', [PublicCustomerController::class, 'register']);
+Route::get('/public/customers/wallet/{qrCode}', [PublicCustomerController::class, 'wallet']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
