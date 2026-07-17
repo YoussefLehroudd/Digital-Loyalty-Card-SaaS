@@ -7,11 +7,37 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Business extends Model
 {
     /** @use HasFactory<BusinessFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::creating(function (Business $business): void {
+            if (! $business->slug) {
+                $business->slug = static::generateUniqueSlug($business->name);
+            }
+        });
+    }
+
+    protected static function generateUniqueSlug(?string $name): string
+    {
+        $base = Str::slug($name ?: 'business');
+        $base = $base !== '' ? $base : 'business';
+
+        $slug = $base;
+        $suffix = 1;
+
+        while (static::query()->where('slug', $slug)->exists()) {
+            $suffix++;
+            $slug = $base.'-'.$suffix;
+        }
+
+        return $slug;
+    }
 
     protected $fillable = [
         'name',

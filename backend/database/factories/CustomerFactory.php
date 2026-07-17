@@ -17,9 +17,15 @@ class CustomerFactory extends Factory
      */
     public function definition(): array
     {
+        $fullName = fake()->name();
+        $parts = preg_split('/\s+/', trim($fullName)) ?: [];
+        $firstName = $parts[0] ?? 'Customer';
+        $lastName = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : '-';
+
         return [
             'business_id' => Business::factory(),
-            'name' => fake()->name(),
+            'first_name' => $firstName,
+            'last_name' => $lastName,
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->optional()->phoneNumber(),
             'qr_code' => 'cus_'.Str::uuid(),
