@@ -20,32 +20,10 @@ return new class extends Migration
             $table->index(['business_id', 'created_at']);
         });
 
-        Schema::create('visits', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
-            $table->timestamp('date');
-            $table->timestamps();
-
-            $table->index(['business_id', 'date']);
-            $table->index(['customer_id', 'date']);
-        });
-
-        Schema::create('reward_redemptions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
-            $table->timestamp('date');
-            $table->timestamps();
-
-            $table->index(['business_id', 'date']);
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('reward_redemptions');
-        Schema::dropIfExists('visits');
         Schema::dropIfExists('customers');
     }
 };

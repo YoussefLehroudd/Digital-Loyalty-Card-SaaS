@@ -6,6 +6,7 @@ use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoyaltyCardController;
 use App\Http\Controllers\PublicCustomerController;
+use App\Http\Controllers\StampController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,11 @@ Route::middleware(['auth:sanctum', 'role:business_owner'])
         Route::post('/', [LoyaltyCardController::class, 'store']);
         Route::put('/', [LoyaltyCardController::class, 'update']);
     });
+
+Route::middleware(['auth:sanctum', 'role:business_owner'])->post('/stamp', [
+    StampController::class,
+    'store',
+]);
 
 Route::middleware(['auth:sanctum', 'role:business_owner'])
     ->prefix('business/customers')

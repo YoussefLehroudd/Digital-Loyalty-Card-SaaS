@@ -1,8 +1,9 @@
-# TODO
-
-- [x] Create route-scoped middleware to force Sanctum stateless handling for public API endpoints. (replaced with approved CSRF exception approach)
-- [x] Register middleware alias in `backend/bootstrap/app.php`. (not needed after approved approach)
-- [x] Apply middleware to public routes in `backend/routes/api.php`. (not needed after approved approach)
-- [x] Run backend tests: `cd backend && php artisan test`.
-- [ ] Browser-verify public registration flow on `http://localhost:3000/fahey-group` with valid payload.
-- [ ] Summarize files changed, Sanctum preservation rationale, test results, and browser outcome.
+## TODO - Phase 7: Staff QR Scanner + Add Stamp (Frontend)
+- [x] Step 1: Add QR scanning dependency to frontend/package.json and install it
+- [ ] Step 2: Create scanner page `frontend/src/app/dashboard/scanner/page.tsx`
+- [ ] Step 3: Create scanner components
+  - [ ] `frontend/src/components/scanner/StaffQrScanner.tsx`
+  - [ ] `frontend/src/components/scanner/StampResult.tsx`
+- [ ] Step 4: Integrate POST `/api/stamp` using existing token + `apiFetch` pattern
+- [ ] Step 5: Update `frontend/src/components/dashboard/dashboard-shell.tsx` so activeItem includes `"scanner"`
+- [ ] Step 6: Run frontend checks/build (npm run lint + npm run build)

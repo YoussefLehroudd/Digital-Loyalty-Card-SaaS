@@ -20,7 +20,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type DashboardShellProps = {
-  activeItem: "overview" | "settings" | "loyalty";
+  activeItem:
+    | "overview"
+    | "settings"
+    | "loyalty"
+    | "customers"
+    | "scanner"
+    | "rewards";
   children: React.ReactNode;
 };
 
@@ -28,7 +34,7 @@ const sidebarItems = [
   { key: "overview", label: "Overview", icon: Home, href: "/dashboard" },
   { key: "customers", label: "Customers", icon: Users },
   { key: "loyalty", label: "Loyalty card", icon: CreditCard },
-  { key: "scanner", label: "Scanner", icon: ScanLine },
+  { key: "scanner", label: "Scanner", icon: ScanLine, href: "/dashboard/scanner" },
   { key: "rewards", label: "Rewards", icon: Gift },
   {
     key: "settings",
