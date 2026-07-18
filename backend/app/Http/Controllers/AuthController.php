@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -46,6 +47,20 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
+        $start = microtime(true);
+
+        DB::listen(function ($query) use ($start) {
+            if (! isset($query->time) || $query->time < 100) return;
+
+            Log::warning('Slow SQL (>100ms)', [
+                'route' => 'POST /login',
+                'sql' => $query->sql,
+                'time_ms' => $query->time,
+                'bindings' => $query->bindings,
+                'request_duration_ms' => (int) ((microtime(true) - $start) * 1000),
+            ]);
+        });
+
         $validated = $request->validated();
         $user = User::query()
             ->with('business')
@@ -58,9 +73,14 @@ class AuthController extends Controller
             ]);
         }
 
-        return response()->json(
-            $this->authPayload($user, $this->createToken($user, $request))
-        );
+        $response = $this->authPayload($user, $this->createToken($user, $request));
+
+        Log::warning('Request timing', [
+            'route' => 'POST /login',
+            'request_duration_ms' => (int) ((microtime(true) - $start) * 1000),
+        ]);
+
+        return response()->json($response);
     }
 
     public function logout(Request $request): JsonResponse
@@ -74,8 +94,29 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
+        $start = microtime(true);
+
+        DB::listen(function ($query) use ($start) {
+            if (! isset($query->time) || $query->time < 100) return;
+
+            Log::warning('Slow SQL (>100ms)', [
+                'route' => 'GET /me',
+                'sql' => $query->sql,
+                'time_ms' => $query->time,
+                'bindings' => $query->bindings,
+                'request_duration_ms' => (int) ((microtime(true) - $start) * 1000),
+            ]);
+        });
+
+        $user = $request->user()->load('business');
+
+        Log::warning('Request timing', [
+            'route' => 'GET /me',
+            'request_duration_ms' => (int) ((microtime(true) - $start) * 1000),
+        ]);
+
         return response()->json([
-            'user' => $this->serializeUser($request->user()->load('business')),
+            'user' => $this->serializeUser($user),
         ]);
     }
 

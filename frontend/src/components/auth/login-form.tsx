@@ -45,6 +45,22 @@ export function LoginForm() {
     try {
       const response = await login({ ...values, device_name: "web" });
       storeToken(response.token);
+
+      // Temporary user cache to speed up the immediate post-login redirect flow
+      // (avoids an extra /auth/me roundtrip on the first AuthGuard mount).
+      try {
+        window.sessionStorage.setItem(
+          "digital_loyalty_cached_user",
+          JSON.stringify(response.user),
+        );
+        window.sessionStorage.setItem(
+          "digital_loyalty_cached_user_ts",
+          String(Date.now()),
+        );
+      } catch {
+        // ignore
+      }
+
       router.replace(next);
       router.refresh();
     } catch (unknownError) {

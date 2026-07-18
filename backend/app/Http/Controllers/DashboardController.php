@@ -7,12 +7,28 @@ use App\Models\RewardRedemption;
 use App\Models\Visit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class DashboardController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
+        $start = microtime(true);
+
+        DB::listen(function ($query) use ($start) {
+            if (! isset($query->time) || $query->time < 100) return;
+
+            Log::warning('Slow SQL (>100ms)', [
+                'route' => 'GET /dashboard',
+                'sql' => $query->sql,
+                'time_ms' => $query->time,
+                'bindings' => $query->bindings,
+                'request_duration_ms' => (int) ((microtime(true) - $start) * 1000),
+            ]);
+        });
+
         $user = $request->user()->load('business');
         $business = $user->business;
 
@@ -24,7 +40,7 @@ class DashboardController extends Controller
         $activeSince = now()->subDays(30);
         $monthStart = now()->startOfMonth();
 
-        return response()->json([
+        $response = response()->json([
             'business' => [
                 'id' => (string) $business->id,
                 'name' => $business->name,
@@ -37,12 +53,12 @@ class DashboardController extends Controller
                 'total_customers' => Customer::query()
                     ->where('business_id', $businessId)
                     ->count(),
-                'active_customers' => Customer::query()
+                // Avoid whereHas() + correlated subquery; count distinct customers with qualifying visits.
+                'active_customers' => Visit::query()
                     ->where('business_id', $businessId)
-                    ->whereHas('visits', fn ($query) => $query
-                        ->where('business_id', $businessId)
-                        ->where('date', '>=', $activeSince))
-                    ->count(),
+                    ->where('date', '>=', $activeSince)
+                    ->distinct('customer_id')
+                    ->count('customer_id'),
                 'visits_this_month' => Visit::query()
                     ->where('business_id', $businessId)
                     ->where('date', '>=', $monthStart)
@@ -53,5 +69,12 @@ class DashboardController extends Controller
             ],
             'generated_at' => now()->toISOString(),
         ]);
+
+        Log::warning('Request timing', [
+            'route' => 'GET /dashboard',
+            'request_duration_ms' => (int) ((microtime(true) - $start) * 1000),
+        ]);
+
+        return $response;
     }
 }

@@ -51,14 +51,67 @@ const schema = z.object({
 
 type ProfileValues = z.infer<typeof schema>;
 
+type BrandingImageState = {
+  dataUrl: string;
+  zoom: number; // 1..3
+  offsetXPercent: number; // -50..50
+};
+
+const BRANDING_IMAGE_STORAGE_KEY =
+  "digital_loyalty_branding_hero_image_v1";
+
 export function BusinessProfileSettings() {
   const { token } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [business, setBusiness] = useState<Business | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [brandingImage, setBrandingImage] = useState<BrandingImageState | null>(
+    null,
+  );
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(BRANDING_IMAGE_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as BrandingImageState;
+      if (!parsed?.dataUrl) return;
+
+      setBrandingImage({
+        dataUrl: parsed.dataUrl,
+        zoom: typeof parsed.zoom === "number" ? clamp(parsed.zoom, 1, 3) : 1,
+        offsetXPercent:
+          typeof parsed.offsetXPercent === "number"
+            ? clamp(parsed.offsetXPercent, -50, 50)
+            : 0,
+      });
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function persistBrandingImage(next: BrandingImageState | null) {
+    setBrandingImage(next);
+    try {
+      if (!next) {
+        window.localStorage.removeItem(BRANDING_IMAGE_STORAGE_KEY);
+        return;
+      }
+      window.localStorage.setItem(
+        BRANDING_IMAGE_STORAGE_KEY,
+        JSON.stringify(next),
+      );
+    } catch {
+      // ignore
+    }
+  }
+
 
   const {
     register,
@@ -87,10 +140,7 @@ export function BusinessProfileSettings() {
 
       try {
         const response = await getBusinessProfile(token);
-
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
         setBusiness(response.business);
         reset({
@@ -103,9 +153,7 @@ export function BusinessProfileSettings() {
       } catch {
         setError("Business profile could not be loaded.");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     }
 
@@ -157,15 +205,12 @@ export function BusinessProfileSettings() {
         );
         return;
       }
-
       setError("Business profile could not be updated.");
     }
   }
 
   async function onLogoSelected(file?: File) {
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     setSuccess(null);
     setError(null);
@@ -180,13 +225,10 @@ export function BusinessProfileSettings() {
         setError(unknownError.errors?.logo?.[0] ?? unknownError.message);
         return;
       }
-
       setError("Logo upload failed.");
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -211,7 +253,9 @@ export function BusinessProfileSettings() {
         {success ? (
           <Alert className="border-success/30 text-foreground">{success}</Alert>
         ) : null}
-        {error ? <Alert className="border-red-500/30 text-red-600">{error}</Alert> : null}
+        {error ? (
+          <Alert className="border-red-500/30 text-red-600">{error}</Alert>
+        ) : null}
 
         {isLoading ? (
           <SettingsSkeleton />
@@ -224,13 +268,32 @@ export function BusinessProfileSettings() {
                   Keep contact details and brand color accurate for this tenant.
                 </CardDescription>
               </CardHeader>
+
               <CardContent>
-                <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+                <form
+                  className="space-y-6"
+                  onSubmit={handleSubmit(onSubmit)}
+                >
                   <LogoUploader
                     business={business}
                     fileInputRef={fileInputRef}
                     isUploading={isUploading}
                     onLogoSelected={onLogoSelected}
+                  />
+
+                  <HeroImageUploader
+                    heroImage={brandingImage}
+                    onLiveUpdate={(next) => setBrandingImage(next)}
+                    onSave={(next) => {
+                      console.log("SAVING HERO:", next);
+                      persistBrandingImage(next);
+                    }}
+                    onClear={() => {
+                      console.log("CLEAR HERO");
+                      persistBrandingImage(null);
+                    }}
+                    onSuccess={setSuccess}
+                    onError={setError}
                   />
 
                   <div className="grid gap-4 md:grid-cols-2">
@@ -299,8 +362,8 @@ export function BusinessProfileSettings() {
                 </form>
               </CardContent>
             </Card>
-
-            <BrandingPreview business={previewBusiness} />
+            
+            <BrandingPreview business={previewBusiness} heroImage={brandingImage} />
           </div>
         )}
       </div>
@@ -370,6 +433,136 @@ function LogoUploader({
   );
 }
 
+function HeroImageUploader({
+  heroImage,
+  onLiveUpdate,
+  onSave,
+  onClear,
+  onSuccess,
+  onError,
+}: {
+  heroImage: BrandingImageState | null;
+  onLiveUpdate: (next: BrandingImageState) => void;
+  onSave: (next: BrandingImageState | null) => void;
+  onClear: () => void;
+  onSuccess: (msg: string) => void;
+  onError: (msg: string) => void;
+}) {
+  const [draft, setDraft] = useState<BrandingImageState | null>(heroImage);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setDraft(heroImage);
+  }, [heroImage]);
+
+  const canSave =
+    Boolean(draft) &&
+    (
+      !heroImage ||
+      draft?.dataUrl !== heroImage?.dataUrl ||
+      draft?.zoom !== heroImage?.zoom ||
+      draft?.offsetXPercent !== heroImage?.offsetXPercent
+    );
+
+  async function handleHeroFile(file?: File) {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      onError("Please select an image file.");
+      return;
+    }
+
+    const maxBytes = 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      onError("Image is too large (max 5MB).");
+      return;
+    }
+
+    try {
+      onError("");
+      const dataUrl = await readFileAsDataURL(file);
+      const next: BrandingImageState = {
+        dataUrl,
+        zoom: 1.2,
+        offsetXPercent: 0,
+      };
+      setDraft(next);
+      onLiveUpdate(next);
+    } catch {
+      onError("Failed to read image file.");
+    }
+  }
+
+  function applyDraft() {
+    if (!draft) return;
+
+    console.log("APPLY HERO:", draft);
+
+    onSave(draft);
+    onSuccess("Branding hero image updated.");
+  }
+
+  function clearDraft() {
+    setDraft(null);
+    onClear();
+    onSuccess("Branding hero image cleared.");
+  }
+
+  return (
+    <div className="flex flex-col gap-4 rounded-lg border bg-background p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm font-medium">Card background image</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Upload an image, adjust zoom + horizontal position, then save to
+            preview on the right.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(event) => handleHeroFile(event.target.files?.[0])}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImageUp className="size-4" />
+            Upload image
+          </Button>
+
+          {draft ? (
+            <Button type="button" variant="outline" onClick={clearDraft}>
+              Clear
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Controls */}
+      {draft ? (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+            <Button type="button" disabled={!canSave} onClick={applyDraft}>
+              <Save className="size-4" />
+              Save changes
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="text-xs text-muted-foreground">
+          Upload an image to enable zoom + position controls.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProfileField({
   children,
   error,
@@ -395,9 +588,16 @@ function ProfileField({
   );
 }
 
-function BrandingPreview({ business }: { business: Business | null }) {
+function BrandingPreview({
+  business,
+  heroImage,
+}: {
+  business: Business | null;
+  heroImage: BrandingImageState | null;
+}) {
   const brandColor = business?.primary_color ?? "#171717";
   const businessName = business?.name ?? "Business";
+  const showHero = Boolean(heroImage?.dataUrl);
 
   return (
     <Card className="h-fit overflow-hidden">
@@ -407,58 +607,99 @@ function BrandingPreview({ business }: { business: Business | null }) {
           A lightweight preview of the customer-facing brand style.
         </CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-5">
         <div
-          className="rounded-lg border p-4 text-white"
-          style={{ backgroundColor: brandColor }}
+          className="relative min-h-[260px] overflow-hidden rounded-lg border p-4 text-white"
+          style={{ backgroundColor: showHero ? "transparent" : brandColor }}
         >
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/15">
-                {business?.logo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt={`${business.name} logo`}
-                    className="size-full object-cover"
-                    src={business.logo_url}
-                  />
-                ) : (
-                  <span className="text-sm font-semibold">
-                    {getInitials(businessName)}
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{businessName}</p>
-                <p className="text-xs opacity-75">Member experience</p>
-              </div>
-            </div>
-            <BadgeCheck className="size-5 shrink-0" />
-          </div>
+          {showHero ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroImage!.dataUrl}
+              alt="Branding background preview"
+              className="absolute inset-0 h-full w-full select-none"
+              style={{
+                objectFit: "cover",
+                transform: `scale(${heroImage!.zoom})`,
+                transformOrigin: "center",
+                objectPosition: `${heroImage!.offsetXPercent + 50}% 50%`,
+                zIndex: 0,
+              }}
+            />
+          ) : null}
 
-          <div className="mt-6 grid grid-cols-5 gap-2">
-            {Array.from({ length: 10 }).map((_, index) => (
-              <div
-                className={cn(
-                  "aspect-square rounded-md border border-white/20",
-                  index < 4 ? "bg-white/90" : "bg-white/10",
-                )}
-                key={index}
-              />
-            ))}
+          {/* overlay above hero image */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: showHero
+                ? "linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25))"
+                : "transparent",
+              zIndex: 1,
+            }}
+          />
+
+          {/* card content above overlay */}
+          <div className="relative" style={{ zIndex: 2 }}>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/15">
+                  {business?.logo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt={`${business.name} logo`}
+                      className="size-full object-cover"
+                      src={business.logo_url}
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold">
+                      {getInitials(businessName)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {businessName}
+                  </p>
+                  <p className="text-xs opacity-75">
+                    Member experience
+                  </p>
+                </div>
+              </div>
+
+              <BadgeCheck className="size-5 shrink-0" />
+            </div>
+
+            <div className="mt-6 grid grid-cols-5 gap-2">
+              {Array.from({ length: 10 }).map((_, index) => (
+                <div
+                  className={cn(
+                    "aspect-square rounded-md border border-white/20",
+                    index < 4 ? "bg-white/90" : "bg-white/10",
+                  )}
+                  key={index}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="space-y-3 rounded-lg border bg-background p-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Primary color</span>
-            <span className="font-medium">{brandColor.toUpperCase()}</span>
+            <span className="font-medium">
+              {brandColor.toUpperCase()}
+            </span>
           </div>
+
           <div className="flex items-center gap-2">
             <span
               className="size-8 rounded-lg border"
               style={{ backgroundColor: brandColor }}
             />
+
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full w-2/3 rounded-full"
@@ -505,4 +746,17 @@ function getInitials(value: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
+}
+
+function readFileAsDataURL(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.onload = () => resolve(String(reader.result));
+    reader.readAsDataURL(file);
+  });
 }

@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiError, API_BASE_URL } from "@/lib/api";
 
 export const AUTH_TOKEN_STORAGE_KEY = "digital_loyalty_token";
 
@@ -138,11 +138,65 @@ export function login(payload: LoginPayload) {
   });
 }
 
-export function logout(token: string) {
-  return apiFetch<{ message: string }>("/auth/logout", {
-    method: "POST",
-    token,
+function getCookie(name: string) {
+  if (typeof window === "undefined") return null;
+
+  const cookieStr = window.document.cookie ?? "";
+  const parts = cookieStr.split(";").map((p) => p.trim());
+  for (const part of parts) {
+    if (part.startsWith(`${name}=`)) {
+      return decodeURIComponent(part.slice(name.length + 1));
+    }
+  }
+  return null;
+}
+
+function getSanctumCsrfCookieUrl() {
+  // DevTools indicates backend route is:
+  //   http://localhost:8000/sanctum/csrf-cookie
+  // while API_BASE_URL typically includes `/api` already:
+  //   http://localhost:8000/api
+  // So strip trailing `/api` from API_BASE_URL.
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}/sanctum/csrf-cookie`;
+}
+
+export async function logout(token: string) {
+  // Prime Sanctum CSRF cookie (required for POST/DELETE when CSRF middleware is active)
+  const csrfResponse = await fetch(getSanctumCsrfCookieUrl(), {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
   });
+
+  if (!csrfResponse.ok) {
+    throw new ApiError(
+      `CSRF cookie request failed with status ${csrfResponse.status}`,
+      csrfResponse.status,
+    );
+  }
+
+  const xsrfToken = getCookie("XSRF-TOKEN");
+
+  const res = await fetch(`${API_BASE_URL}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(xsrfToken ? { "X-XSRF-TOKEN": xsrfToken } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null);
+    throw new ApiError(
+      payload?.message ?? `API request failed with status ${res.status}`,
+      res.status,
+      payload?.errors,
+    );
+  }
+
+  return (await res.json()) as { message: string };
 }
 
 export function getCurrentUser(token: string) {
@@ -183,29 +237,93 @@ export function getBusinessProfile(token: string) {
   });
 }
 
-export function updateBusinessProfile(
+export async function updateBusinessProfile(
   token: string,
   payload: BusinessProfilePayload,
 ) {
+  // Prime Sanctum CSRF cookie (required for PATCH when CSRF middleware is active)
+  await fetch(getSanctumCsrfCookieUrl(), {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  }).catch(() => null);
+
+  // Read XSRF token and send it via X-XSRF-TOKEN header
+  const xsrfToken = getCookie("XSRF-TOKEN");
+  const hasXsrfToken = Boolean(xsrfToken);
+
   return apiFetch<{ message: string; business: Business }>("/business/profile", {
     method: "PATCH",
     token,
+    credentials: "include",
+    headers: {
+      ...(hasXsrfToken ? { "X-XSRF-TOKEN": xsrfToken as string } : {}),
+    },
     body: JSON.stringify(payload),
   });
 }
 
-export function uploadBusinessLogo(token: string, file: File) {
+export async function uploadBusinessLogo(token: string, file: File) {
   const body = new FormData();
   body.append("logo", file);
 
-  return apiFetch<{ message: string; business: Business }>(
-    "/business/profile/logo",
-    {
-      method: "POST",
-      token,
-      body,
+  // 1) Prime Sanctum CSRF cookie (correct endpoint: /sanctum/csrf-cookie)
+  const csrfResponse = await fetch(getSanctumCsrfCookieUrl(), {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!csrfResponse.ok) {
+    throw new ApiError(
+      `CSRF cookie request failed with status ${csrfResponse.status}`,
+      csrfResponse.status,
+    );
+  }
+
+  // 2) Read XSRF token and send it via X-XSRF-TOKEN header
+  const xsrfToken = getCookie("XSRF-TOKEN");
+  const hasXsrfToken = Boolean(xsrfToken);
+
+  // TEMPORARY console logs (verification only; remove after success)
+  console.log("[uploadBusinessLogo] XSRF-TOKEN cookie found:", hasXsrfToken);
+
+  const uploadResponse = await fetch(`${API_BASE_URL}/business/profile/logo`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(hasXsrfToken ? { "X-XSRF-TOKEN": xsrfToken as string } : {}),
     },
-  );
+    body,
+  });
+
+  console.log("[uploadBusinessLogo] request headers:", {
+    Accept: "application/json",
+    Authorization: "Bearer <present>",
+    "X-XSRF-TOKEN": hasXsrfToken ? "<present>" : "<missing>",
+  });
+  console.log("[uploadBusinessLogo] response status:", uploadResponse.status);
+
+  if (!uploadResponse.ok) {
+    const payload = await uploadResponse.json().catch(() => null);
+    throw new ApiError(
+      payload?.message ??
+        `API request failed with status ${uploadResponse.status}`,
+      uploadResponse.status,
+      payload?.errors,
+    );
+  }
+
+  const data = (await uploadResponse.json()) as {
+    message: string;
+    business: Business;
+  };
+
+  // TEMPORARY logs must be removed after confirming successful upload.
+
+  return data;
 }
 
 export function getLoyaltyCard(token: string) {

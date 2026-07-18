@@ -46,10 +46,52 @@ export function AuthGuard({
     let isMounted = true;
     const storedToken = getStoredToken();
 
+    const cachedUserCacheKey = "digital_loyalty_cached_user";
+    const cachedUserTsCacheKey = "digital_loyalty_cached_user_ts";
+    const cachedUserTtlMs = 2 * 60 * 1000; // 2 minutes
+
     async function verifySession() {
       if (!storedToken) {
         router.replace(`/login?next=${encodeURIComponent(pathname)}`);
         return;
+      }
+
+      // Immediate post-login hydration optimization:
+      // if the login page just cached the user, use it once to avoid an extra /auth/me call.
+      try {
+        const raw = window.sessionStorage.getItem(cachedUserCacheKey);
+        const tsRaw = window.sessionStorage.getItem(cachedUserTsCacheKey);
+
+        const ts = tsRaw ? Number(tsRaw) : NaN;
+        const isExpired = !Number.isFinite(ts) || Date.now() - ts > cachedUserTtlMs;
+
+        if (raw && !isExpired) {
+          const parsed = JSON.parse(raw) as AuthUser;
+
+          if (!requiredRole || parsed.role === requiredRole) {
+            window.sessionStorage.removeItem(cachedUserCacheKey);
+            window.sessionStorage.removeItem(cachedUserTsCacheKey);
+
+            if (isMounted) {
+              setToken(storedToken);
+              setUser(parsed);
+              setIsLoading(false);
+            }
+            return;
+          }
+
+          // Role mismatch: clear cached user and fall back to real verification below.
+          window.sessionStorage.removeItem(cachedUserCacheKey);
+          window.sessionStorage.removeItem(cachedUserTsCacheKey);
+        }
+      } catch {
+        // Ignore cache errors and fall back to real verification below.
+        try {
+          window.sessionStorage.removeItem(cachedUserCacheKey);
+          window.sessionStorage.removeItem(cachedUserTsCacheKey);
+        } catch {
+          // ignore
+        }
       }
 
       try {
