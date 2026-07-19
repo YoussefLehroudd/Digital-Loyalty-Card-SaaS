@@ -171,42 +171,10 @@ function getSanctumCsrfCookieUrl() {
 }
 
 export async function logout(token: string) {
-  // Prime Sanctum CSRF cookie (required for POST/DELETE when CSRF middleware is active)
-  const csrfResponse = await fetch(getSanctumCsrfCookieUrl(), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-
-  if (!csrfResponse.ok) {
-    throw new ApiError(
-      `CSRF cookie request failed with status ${csrfResponse.status}`,
-      csrfResponse.status,
-    );
-  }
-
-  const xsrfToken = getCookie("XSRF-TOKEN");
-
-  const res = await fetch(`${API_BASE_URL}/auth/logout`, {
+  return apiFetch<{ message: string }>("/auth/logout", {
     method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(xsrfToken ? { "X-XSRF-TOKEN": xsrfToken } : {}),
-    },
+    token,
   });
-
-  if (!res.ok) {
-    const payload = await res.json().catch(() => null);
-    throw new ApiError(
-      payload?.message ?? `API request failed with status ${res.status}`,
-      res.status,
-      payload?.errors,
-    );
-  }
-
-  return (await res.json()) as { message: string };
 }
 
 export function getCurrentUser(token: string) {
@@ -251,24 +219,9 @@ export async function updateBusinessProfile(
   token: string,
   payload: BusinessProfilePayload,
 ) {
-  // Prime Sanctum CSRF cookie (required for PATCH when CSRF middleware is active)
-  await fetch(getSanctumCsrfCookieUrl(), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  }).catch(() => null);
-
-  // Read XSRF token and send it via X-XSRF-TOKEN header
-  const xsrfToken = getCookie("XSRF-TOKEN");
-  const hasXsrfToken = Boolean(xsrfToken);
-
   return apiFetch<{ message: string; business: Business }>("/business/profile", {
     method: "PATCH",
     token,
-    credentials: "include",
-    headers: {
-      ...(hasXsrfToken ? { "X-XSRF-TOKEN": xsrfToken as string } : {}),
-    },
     body: JSON.stringify(payload),
   });
 }
@@ -281,51 +234,16 @@ async function uploadBusinessImage(
   const body = new FormData();
   body.append("logo", file);
 
-  const csrfResponse = await fetch(getSanctumCsrfCookieUrl(), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-
-  if (!csrfResponse.ok) {
-    throw new ApiError(
-      `CSRF cookie request failed with status ${csrfResponse.status}`,
-      csrfResponse.status,
-    );
-  }
-
-  const xsrfToken = getCookie("XSRF-TOKEN");
-  const hasXsrfToken = Boolean(xsrfToken);
-
-  const uploadResponse = await fetch(
-    `${API_BASE_URL}/business/profile/${endpoint}`,
-    {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-        ...(hasXsrfToken ? { "X-XSRF-TOKEN": xsrfToken as string } : {}),
-      },
-      body,
-    },
-  );
-
-  if (!uploadResponse.ok) {
-    const payload = await uploadResponse.json().catch(() => null);
-    throw new ApiError(
-      payload?.message ?? `API request failed with status ${uploadResponse.status}`,
-      uploadResponse.status,
-      payload?.errors,
-    );
-  }
-
-  return (await uploadResponse.json()) as {
+  return apiFetch<{
     message: string;
     secure_url: string;
     public_id: string;
     business: Business;
-  };
+  }>(`/business/profile/${endpoint}`, {
+    method: "POST",
+    token,
+    body,
+  });
 }
 
 export function uploadBusinessLogo(token: string, file: File) {
@@ -347,22 +265,9 @@ async function mutateLoyaltyCard(
   method: "POST" | "PUT",
   payload: LoyaltyCardPayload,
 ) {
-  await fetch(getSanctumCsrfCookieUrl(), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  }).catch(() => null);
-
-  const xsrfToken = getCookie("XSRF-TOKEN");
-  const hasXsrfToken = Boolean(xsrfToken);
-
   return apiFetch<{ message: string; loyalty_card: LoyaltyCard }>("/loyalty-card", {
     method,
     token,
-    credentials: "include",
-    headers: {
-      ...(hasXsrfToken ? { "X-XSRF-TOKEN": xsrfToken as string } : {}),
-    },
     body: JSON.stringify({
       reward_name: payload.reward_name,
       required_stamps: payload.required_stamps,

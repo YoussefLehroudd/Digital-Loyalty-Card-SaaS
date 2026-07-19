@@ -101,6 +101,15 @@ export async function apiFetch<T>(
     }
   }
 
+  // Temporary CSRF verification (remove later if needed)
+  if (stateChanging) {
+    console.log({
+      xsrf: !!getCookie("XSRF-TOKEN"),
+      method,
+      url: `${API_BASE_URL}${path}`,
+    });
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     // Important for Sanctum CSRF/stateful auth in production
     credentials: options.credentials ?? "include",
