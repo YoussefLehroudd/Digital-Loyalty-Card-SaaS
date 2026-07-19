@@ -89,24 +89,24 @@ export async function apiFetch<T>(
   // For Sanctum CSRF protection, ensure X-XSRF-TOKEN header matches XSRF-TOKEN cookie.
   // This fixes production 419 when cookies are sent but header is missing.
   if (stateChanging) {
-    const existingXsrf = finalHeaders["X-XSRF-TOKEN"];
+    await primeSanctumCsrf();
+    const cookieStr = typeof window !== "undefined" ? window.document.cookie : "";
+    const xsrfToken = getCookie("XSRF-TOKEN");
+    const hasXsrf = Boolean(xsrfToken);
 
-    // Only prime/set when caller hasn't already set the header.
-    if (!existingXsrf) {
-      await primeSanctumCsrf();
-      const xsrfToken = getCookie("XSRF-TOKEN");
-      if (xsrfToken) {
-        finalHeaders["X-XSRF-TOKEN"] = xsrfToken;
-      }
+    // Ensure we set it AFTER headers merge.
+    if (hasXsrf) {
+      finalHeaders["X-XSRF-TOKEN"] = xsrfToken as string;
     }
-  }
 
-  // Temporary CSRF verification (remove later if needed)
-  if (stateChanging) {
+    // Temporary CSRF verification (remove later if needed)
     console.log({
-      xsrf: !!getCookie("XSRF-TOKEN"),
-      method,
       url: `${API_BASE_URL}${path}`,
+      method,
+      xsrfExists: hasXsrf,
+      cookieContainsXsrfToken: cookieStr.includes("XSRF-TOKEN="),
+      cookieStr,
+      finalHeaders,
     });
   }
 
