@@ -35,6 +35,8 @@ export async function apiFetch<T>(
     typeof FormData !== "undefined" && options.body instanceof FormData;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    // Important for Sanctum CSRF/stateful auth in production
+    credentials: options.credentials ?? "include",
     ...options,
     headers: {
       Accept: "application/json",
