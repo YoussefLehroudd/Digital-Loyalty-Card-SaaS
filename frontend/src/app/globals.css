@@ -68,3 +68,67 @@ body {
 ::selection {
   background: color-mix(in srgb, var(--ring) 24%, transparent);
 }
+
+/* Hero background positioning sliders (visual-only styling) */
+#hero-position-x,
+#hero-position-y {
+  /* ensure track/thumb styling works consistently */
+  -webkit-appearance: none;
+  appearance: none;
+  height: 24px; /* provides room for thumb */
+  background: transparent;
+}
+
+#hero-position-x:focus,
+#hero-position-y:focus {
+  outline: none;
+}
+
+/* Track */
+#hero-position-x::-webkit-slider-runnable-track,
+#hero-position-y::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(222, 222, 216, 0.8);
+}
+
+.dark #hero-position-x::-webkit-slider-runnable-track,
+.dark #hero-position-y::-webkit-slider-runnable-track {
+  background: rgba(49, 49, 45, 0.9);
+}
+
+/* Thumb */
+#hero-position-x::-webkit-slider-thumb,
+#hero-position-y::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--ring);
+  border: 2px solid var(--foreground);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
+  margin-top: -6px; /* centers thumb on 6px track */
+}
+
+#hero-position-x::-moz-range-track,
+#hero-position-y::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(222, 222, 216, 0.8);
+}
+
+.dark #hero-position-x::-moz-range-track,
+.dark #hero-position-y::-moz-range-track {
+  background: rgba(49, 49, 45, 0.9);
+}
+
+#hero-position-x::-moz-range-thumb,
+#hero-position-y::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--ring);
+  border: 2px solid var(--foreground);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
+}

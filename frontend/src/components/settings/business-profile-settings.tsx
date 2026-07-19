@@ -516,57 +516,100 @@ function HeroImageUploader({
       {heroImage ? (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="hero-zoom">Zoom</Label>
-            <Input
-              id="hero-zoom"
-              type="range"
-              min={1}
-              max={3}
-              step={0.1}
-              value={heroImage.zoom}
-              onChange={(event) =>
-                onLiveUpdate({
-                  ...heroImage,
-                  zoom: clamp(Number(event.target.value), 1, 3),
-                })
-              }
-            />
+            <div className="rounded-2xl border bg-card/70 backdrop-blur-sm p-4">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="hero-zoom">Zoom</Label>
+                <span className="rounded-full px-3 py-1 text-xs font-semibold">
+                  {Math.round(heroImage.zoom * 100)}%
+                </span>
+              </div>
+
+              <Input
+                id="hero-zoom"
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={heroImage.zoom}
+                onChange={(event) =>
+                  onLiveUpdate({
+                    ...heroImage,
+                    zoom: clamp(Number(event.target.value), 1, 3),
+                  })
+                }
+              />
+
+              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>100%</span>
+                <span>300%</span>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="hero-position-x">Horizontal position</Label>
-            <Input
-              id="hero-position-x"
-              type="range"
-              min={-50}
-              max={50}
-              step={1}
-              value={heroImage.offsetXPercent}
-              onChange={(event) =>
-                onLiveUpdate({
-                  ...heroImage,
-                  offsetXPercent: clamp(Number(event.target.value), -50, 50),
-                })
-              }
-            />
+            <div className="rounded-2xl border bg-card/70 backdrop-blur-sm p-4">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="hero-position-x">Horizontal position</Label>
+                <span className="rounded-full px-3 py-1 text-xs font-semibold">
+                  {heroImage.offsetXPercent >= 0
+                    ? `+${heroImage.offsetXPercent}px`
+                    : `${heroImage.offsetXPercent}px`}
+                </span>
+              </div>
+
+              <Input
+                id="hero-position-x"
+                type="range"
+                min={-50}
+                max={50}
+                step={1}
+                value={heroImage.offsetXPercent}
+                onChange={(event) =>
+                  onLiveUpdate({
+                    ...heroImage,
+                    offsetXPercent: clamp(Number(event.target.value), -50, 50),
+                  })
+                }
+              />
+
+              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>Left</span>
+                <span>Right</span>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="hero-position-y">Vertical position</Label>
-            <Input
-              id="hero-position-y"
-              type="range"
-              min={-50}
-              max={50}
-              step={1}
-              value={heroImage.offsetYPercent}
-              onChange={(event) =>
-                onLiveUpdate({
-                  ...heroImage,
-                  offsetYPercent: clamp(Number(event.target.value), -50, 50),
-                })
-              }
-            />
+            <div className="rounded-2xl border bg-card/70 backdrop-blur-sm p-4">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="hero-position-y">Vertical position</Label>
+                <span className="rounded-full px-3 py-1 text-xs font-semibold">
+                  {heroImage.offsetYPercent >= 0
+                    ? `+${heroImage.offsetYPercent}px`
+                    : `${heroImage.offsetYPercent}px`}
+                </span>
+              </div>
+
+              <Input
+                id="hero-position-y"
+                type="range"
+                min={-50}
+                max={50}
+                step={1}
+                value={heroImage.offsetYPercent}
+                onChange={(event) =>
+                  onLiveUpdate({
+                    ...heroImage,
+                    offsetYPercent: clamp(Number(event.target.value), -50, 50),
+                  })
+                }
+              />
+
+              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>Top</span>
+                <span>Bottom</span>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
