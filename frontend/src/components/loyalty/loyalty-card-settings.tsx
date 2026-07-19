@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BadgeCheck, CreditCard, Gift, Loader2, Save } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -24,17 +24,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 import {
   createLoyaltyCard,
+  getBusinessProfile,
   getLoyaltyCard,
   updateLoyaltyCard,
+  type Business,
   type LoyaltyCard,
 } from "@/lib/auth";
+import { useAutoDismiss } from "@/lib/use-auto-dismiss";
 
 const schema = z.object({
   reward_name: z.string().min(2, "Enter a reward name.").max(255),
   required_stamps: z
     .number()
     .int("Required stamps must be an integer.")
-    .min(1, "Minimum is 1."),
+    .min(1, "Minimum is 1.")
+    .max(10, "Maximum is 10."),
   reward_description: z
     .string()
     .max(5000, "Description is too long.")
@@ -54,11 +58,18 @@ export function LoyaltyCardSettings() {
   const { token, user } = useAuth();
 
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
+  const [businessProfile, setBusinessProfile] = useState<Business | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const clearSuccess = useCallback(() => {
+    setSuccess(null);
+  }, []);
+
+  useAutoDismiss(success, clearSuccess);
 
   const defaultValues: FormValues = useMemo(
     () => ({
@@ -74,7 +85,6 @@ export function LoyaltyCardSettings() {
     handleSubmit,
     reset,
     watch,
-    setValue,
     formState: { errors, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -90,14 +100,18 @@ export function LoyaltyCardSettings() {
       setSuccess(null);
 
       try {
-        const response = await getLoyaltyCard(token);
+        const [loyaltyResponse, businessResponse] = await Promise.all([
+          getLoyaltyCard(token),
+          getBusinessProfile(token),
+        ]);
         if (!isMounted) return;
 
-        setLoyaltyCard(response.loyalty_card);
+        setLoyaltyCard(loyaltyResponse.loyalty_card);
+        setBusinessProfile(businessResponse.business);
         reset({
-          reward_name: response.loyalty_card.reward_name ?? "",
-          required_stamps: response.loyalty_card.required_stamps,
-          reward_description: response.loyalty_card.reward_description ?? "",
+          reward_name: loyaltyResponse.loyalty_card.reward_name ?? "",
+          required_stamps: loyaltyResponse.loyalty_card.required_stamps,
+          reward_description: loyaltyResponse.loyalty_card.reward_description ?? "",
         });
       } catch (unknownError) {
         if (!isMounted) return;
@@ -123,6 +137,24 @@ export function LoyaltyCardSettings() {
   }, [defaultValues, reset, token]);
 
   const watched = watch();
+
+  useEffect(() => {
+    const current = watched.required_stamps;
+    if (typeof current !== "number" || Number.isNaN(current)) return;
+    if (current > 10) {
+      reset(
+        {
+          ...watched,
+          required_stamps: 10,
+        },
+        {
+          keepDirty: true,
+          keepTouched: true,
+          keepErrors: true,
+        },
+      );
+    }
+  }, [reset, watched]);
 
   const preview = useMemo(() => {
     const requiredStamps = watched.required_stamps || 1;
@@ -177,7 +209,7 @@ export function LoyaltyCardSettings() {
     }
   }
 
-  const business = user.business;
+  const business = businessProfile ?? user.business;
 
   return (
     <DashboardShell activeItem="loyalty">
@@ -242,6 +274,7 @@ export function LoyaltyCardSettings() {
                       <Input
                         type="number"
                         min={1}
+                        max={10}
                         step={1}
                         {...register("required_stamps", {
                           valueAsNumber: true,
@@ -320,11 +353,24 @@ function PremiumLoyaltyCardPreview({
   business,
   preview,
 }: {
-  business: { name: string; logo_url: string | null; primary_color: string } | null;
+  business: {
+    name: string;
+    logo_url: string | null;
+    primary_color: string;
+    hero_image_url?: string | null;
+    hero_image_zoom?: number | null;
+    hero_image_position_x?: number | null;
+    hero_image_position_y?: number | null;
+  } | null;
   preview: { reward_name: string; required_stamps: number; reward_description: string };
 }) {
   const brandColor = business?.primary_color ?? "#171717";
   const businessName = business?.name ?? "Business";
+  const heroImageUrl = business?.hero_image_url ?? null;
+  const heroZoom = clamp(Number(business?.hero_image_zoom ?? 1.2), 1, 3);
+  const heroPositionX = clamp(Number(business?.hero_image_position_x ?? 0), -50, 50);
+  const heroPositionY = clamp(Number(business?.hero_image_position_y ?? 0), -50, 50);
+  const showHero = Boolean(heroImageUrl);
 
   const stampGoal = Math.max(1, Math.floor(preview.required_stamps || 1));
   const maxSlots = 10;
@@ -341,9 +387,35 @@ function PremiumLoyaltyCardPreview({
 
       <CardContent className="space-y-5">
         <div
-          className="rounded-lg border p-4 text-white"
-          style={{ backgroundColor: brandColor }}
+          className="relative rounded-lg border p-4 text-white overflow-hidden"
+          style={{ backgroundColor: showHero ? "transparent" : brandColor }}
         >
+          {showHero ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroImageUrl!}
+              alt="Loyalty card background preview"
+              className="absolute inset-0 h-full w-full select-none"
+              style={{
+                objectFit: "cover",
+                transform: `scale(${heroZoom})`,
+                transformOrigin: "center",
+                objectPosition: `${heroPositionX + 50}% ${heroPositionY + 50}%`,
+                zIndex: 0,
+              }}
+            />
+          ) : null}
+
+          <div
+            className="absolute inset-0"
+            style={{
+              background: showHero
+                ? "linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25))"
+                : "transparent",
+              zIndex: 1,
+            }}
+          />
+          <div className="relative" style={{ zIndex: 2 }}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/15">
@@ -421,6 +493,7 @@ function PremiumLoyaltyCardPreview({
               </div>
             </div>
           </div>
+          </div>
         </div>
 
         <div className="space-y-2 rounded-lg border bg-background p-4">
@@ -443,6 +516,10 @@ function PremiumLoyaltyCardPreview({
       </CardContent>
     </Card>
   );
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
 }
 
 function getInitials(value: string) {

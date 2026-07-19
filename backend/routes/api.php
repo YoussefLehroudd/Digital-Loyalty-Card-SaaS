@@ -43,6 +43,7 @@ Route::middleware(['auth:sanctum', 'role:business_owner'])
         Route::get('/', [BusinessProfileController::class, 'show']);
         Route::patch('/', [BusinessProfileController::class, 'update']);
         Route::post('/logo', [BusinessProfileController::class, 'uploadLogo']);
+        Route::post('/hero-image', [BusinessProfileController::class, 'uploadHeroImage']);
     });
 
 Route::middleware(['auth:sanctum', 'role:business_owner'])

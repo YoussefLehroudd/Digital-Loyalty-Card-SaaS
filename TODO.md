@@ -1,9 +1,25 @@
-## TODO - Phase 7: Staff QR Scanner + Add Stamp (Frontend)
-- [x] Step 1: Add QR scanning dependency to frontend/package.json and install it
-- [ ] Step 2: Create scanner page `frontend/src/app/dashboard/scanner/page.tsx`
-- [ ] Step 3: Create scanner components
-  - [ ] `frontend/src/components/scanner/StaffQrScanner.tsx`
-  - [ ] `frontend/src/components/scanner/StampResult.tsx`
-- [ ] Step 4: Integrate POST `/api/stamp` using existing token + `apiFetch` pattern
-- [ ] Step 5: Update `frontend/src/components/dashboard/dashboard-shell.tsx` so activeItem includes `"scanner"`
-- [ ] Step 6: Run frontend checks/build (npm run lint + npm run build)
+# TODO - Customer Wallet Flow
+
+- [x] Audit existing frontend/backend files for customer wallet flow
+  - [x] `frontend/src/components/loyalty/PublicCustomerRegisterForm.tsx`
+  - [x] `frontend/src/components/loyalty/PublicBusinessPage.tsx`
+  - [x] `frontend/src/app/[business_slug]/page.tsx`
+  - [x] `frontend/src/lib/public.ts`
+  - [x] `backend/app/Http/Controllers/PublicCustomerController.php`
+- [x] Implement frontend wallet API support
+  - [x] Add wallet response types in `frontend/src/lib/public.ts`
+  - [x] Add `getPublicCustomerWallet(qrCode)` function
+- [x] Implement wallet page UI
+  - [x] Create `frontend/src/components/loyalty/PublicCustomerWalletPage.tsx`
+  - [x] Create `frontend/src/app/wallet/[qrCode]/page.tsx`
+  - [x] Include loading/error/invalid-QR/missing-loyalty states
+  - [x] Mobile-first layout with branding, progress, QR, customer data
+- [x] Connect registration redirect to wallet
+  - [x] Update `frontend/src/components/loyalty/PublicCustomerRegisterForm.tsx`
+- [ ] Build and test
+  - [ ] `cd frontend && npm run build`
+  - [ ] `cd backend && php artisan test`
+- [ ] Final report
+  - [ ] Files changed
+  - [ ] Test results
+  - [ ] Remaining MVP gaps

@@ -16,22 +16,17 @@ class UpdateLoyaltyCardRequest extends FormRequest
     {
         return [
             'reward_name' => ['required', 'string', 'min:2', 'max:255'],
-            'required_stamps' => ['required', 'integer', 'min:1'],
+            'required_stamps' => ['required', 'integer', 'min:1', 'max:10'],
             'reward_description' => ['nullable', 'string', 'max:5000'],
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function validated(): array
+    protected function prepareForValidation(): void
     {
-        $validated = parent::validated();
-
-        if (array_key_exists('reward_description', $validated) && $validated['reward_description'] === '') {
-            $validated['reward_description'] = null;
+        if ($this->has('reward_description') && $this->input('reward_description') === '') {
+            $this->merge([
+                'reward_description' => null,
+            ]);
         }
-
-        return $validated;
     }
 }

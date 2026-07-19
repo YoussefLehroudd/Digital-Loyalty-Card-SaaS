@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useForm, type UseFormRegisterReturn } from "react-hook-form";
@@ -34,6 +35,7 @@ export function PublicCustomerRegisterForm({
 }: {
   businessSlug: string;
 }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [walletUrl, setWalletUrl] = useState<string | null>(null);
@@ -67,7 +69,8 @@ export function PublicCustomerRegisterForm({
       });
 
       setSuccess(response.message);
-      setWalletUrl(response.wallet_url ?? `/customer/${response.customer.qr_code}`);
+      const nextWalletUrl = response.wallet_url ?? `/wallet/${response.customer.qr_code}`;
+      setWalletUrl(nextWalletUrl);
 
       reset({
         first_name: "",
@@ -75,6 +78,8 @@ export function PublicCustomerRegisterForm({
         phone: "",
         email: "",
       });
+
+      router.push(nextWalletUrl);
     } catch (unknownError) {
       if (unknownError instanceof ApiError) {
         setError(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BadgeCheck,
@@ -34,9 +34,11 @@ import { ApiError } from "@/lib/api";
 import {
   getBusinessProfile,
   updateBusinessProfile,
+  uploadBusinessHeroImage,
   uploadBusinessLogo,
   type Business,
 } from "@/lib/auth";
+import { useAutoDismiss } from "@/lib/use-auto-dismiss";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
@@ -55,10 +57,9 @@ type BrandingImageState = {
   dataUrl: string;
   zoom: number; // 1..3
   offsetXPercent: number; // -50..50
+  offsetYPercent: number; // -50..50
+  publicId: string | null;
 };
-
-const BRANDING_IMAGE_STORAGE_KEY =
-  "digital_loyalty_branding_hero_image_v1";
 
 export function BusinessProfileSettings() {
   const { token } = useAuth();
@@ -71,47 +72,16 @@ export function BusinessProfileSettings() {
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [brandingImage, setBrandingImage] = useState<BrandingImageState | null>(
-    null,
-  );
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(BRANDING_IMAGE_STORAGE_KEY);
-      if (!raw) return;
-
-      const parsed = JSON.parse(raw) as BrandingImageState;
-      if (!parsed?.dataUrl) return;
-
-      setBrandingImage({
-        dataUrl: parsed.dataUrl,
-        zoom: typeof parsed.zoom === "number" ? clamp(parsed.zoom, 1, 3) : 1,
-        offsetXPercent:
-          typeof parsed.offsetXPercent === "number"
-            ? clamp(parsed.offsetXPercent, -50, 50)
-            : 0,
-      });
-    } catch {
-      // ignore
-    }
+  const clearSuccess = useCallback(() => {
+    setSuccess(null);
   }, []);
 
-  function persistBrandingImage(next: BrandingImageState | null) {
-    setBrandingImage(next);
-    try {
-      if (!next) {
-        window.localStorage.removeItem(BRANDING_IMAGE_STORAGE_KEY);
-        return;
-      }
-      window.localStorage.setItem(
-        BRANDING_IMAGE_STORAGE_KEY,
-        JSON.stringify(next),
-      );
-    } catch {
-      // ignore
-    }
-  }
+  useAutoDismiss(success, clearSuccess);
 
+  const [brandingImage, setBrandingImage] = useState<BrandingImageState | null>(null);
+  const [savedBrandingImage, setSavedBrandingImage] = useState<BrandingImageState | null>(
+    null,
+  );
 
   const {
     register,
@@ -150,6 +120,10 @@ export function BusinessProfileSettings() {
           address: response.business.address ?? "",
           primary_color: response.business.primary_color,
         });
+
+        const persistedHero = toBrandingState(response.business);
+        setBrandingImage(persistedHero);
+        setSavedBrandingImage(persistedHero);
       } catch {
         setError("Business profile could not be loaded.");
       } finally {
@@ -157,7 +131,7 @@ export function BusinessProfileSettings() {
       }
     }
 
-    loadProfile();
+    void loadProfile();
 
     return () => {
       isMounted = false;
@@ -165,6 +139,11 @@ export function BusinessProfileSettings() {
   }, [reset, token]);
 
   const watchedValues = watch();
+
+  const hasHeroChanges = useMemo(() => {
+    return !isSameBrandingImage(brandingImage, savedBrandingImage);
+  }, [brandingImage, savedBrandingImage]);
+
   const previewBusiness: Business | null = business
     ? {
         ...business,
@@ -180,11 +159,18 @@ export function BusinessProfileSettings() {
     setSuccess(null);
     setError(null);
 
+    if (!business) return;
+
     try {
       const response = await updateBusinessProfile(token, {
         ...values,
         phone: values.phone || null,
         address: values.address || null,
+        hero_image_url: brandingImage?.dataUrl ?? null,
+        hero_image_public_id: brandingImage?.publicId ?? null,
+        hero_image_zoom: brandingImage?.zoom ?? null,
+        hero_image_position_x: brandingImage?.offsetXPercent ?? null,
+        hero_image_position_y: brandingImage?.offsetYPercent ?? null,
       });
 
       setBusiness(response.business);
@@ -195,6 +181,11 @@ export function BusinessProfileSettings() {
         address: response.business.address ?? "",
         primary_color: response.business.primary_color,
       });
+
+      const persistedHero = toBrandingState(response.business);
+      setBrandingImage(persistedHero);
+      setSavedBrandingImage(persistedHero);
+
       setSuccess(response.message);
     } catch (unknownError) {
       if (unknownError instanceof ApiError) {
@@ -270,10 +261,7 @@ export function BusinessProfileSettings() {
               </CardHeader>
 
               <CardContent>
-                <form
-                  className="space-y-6"
-                  onSubmit={handleSubmit(onSubmit)}
-                >
+                <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                   <LogoUploader
                     business={business}
                     fileInputRef={fileInputRef}
@@ -283,16 +271,13 @@ export function BusinessProfileSettings() {
 
                   <HeroImageUploader
                     heroImage={brandingImage}
-                    onLiveUpdate={(next) => setBrandingImage(next)}
-                    onSave={(next) => {
-                      console.log("SAVING HERO:", next);
-                      persistBrandingImage(next);
+                    token={token}
+                    onLiveUpdate={(next) => {
+                      setBrandingImage(next);
                     }}
                     onClear={() => {
-                      console.log("CLEAR HERO");
-                      persistBrandingImage(null);
+                      setBrandingImage(null);
                     }}
-                    onSuccess={setSuccess}
                     onError={setError}
                   />
 
@@ -346,11 +331,17 @@ export function BusinessProfileSettings() {
                     icon={MapPin}
                     label="Address"
                   >
-                    <Input placeholder="Street, city, country" {...register("address")} />
+                    <Input
+                      placeholder="Street, city, country"
+                      {...register("address")}
+                    />
                   </ProfileField>
 
                   <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                    <Button disabled={!isDirty || isSubmitting} type="submit">
+                    <Button
+                      disabled={(!isDirty && !hasHeroChanges) || isSubmitting}
+                      type="submit"
+                    >
                       {isSubmitting ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : (
@@ -362,7 +353,7 @@ export function BusinessProfileSettings() {
                 </form>
               </CardContent>
             </Card>
-            
+
             <BrandingPreview business={previewBusiness} heroImage={brandingImage} />
           </div>
         )}
@@ -435,34 +426,18 @@ function LogoUploader({
 
 function HeroImageUploader({
   heroImage,
+  token,
   onLiveUpdate,
-  onSave,
   onClear,
-  onSuccess,
   onError,
 }: {
   heroImage: BrandingImageState | null;
+  token: string;
   onLiveUpdate: (next: BrandingImageState) => void;
-  onSave: (next: BrandingImageState | null) => void;
   onClear: () => void;
-  onSuccess: (msg: string) => void;
-  onError: (msg: string) => void;
+  onError: (msg: string | null) => void;
 }) {
-  const [draft, setDraft] = useState<BrandingImageState | null>(heroImage);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    setDraft(heroImage);
-  }, [heroImage]);
-
-  const canSave =
-    Boolean(draft) &&
-    (
-      !heroImage ||
-      draft?.dataUrl !== heroImage?.dataUrl ||
-      draft?.zoom !== heroImage?.zoom ||
-      draft?.offsetXPercent !== heroImage?.offsetXPercent
-    );
 
   async function handleHeroFile(file?: File) {
     if (!file) return;
@@ -479,33 +454,27 @@ function HeroImageUploader({
     }
 
     try {
-      onError("");
-      const dataUrl = await readFileAsDataURL(file);
-      const next: BrandingImageState = {
-        dataUrl,
-        zoom: 1.2,
-        offsetXPercent: 0,
-      };
-      setDraft(next);
-      onLiveUpdate(next);
-    } catch {
-      onError("Failed to read image file.");
+      onError(null);
+      const upload = await uploadBusinessHeroImage(token, file);
+
+      onLiveUpdate({
+        dataUrl: upload.secure_url,
+        zoom: heroImage?.zoom ?? 1.2,
+        offsetXPercent: heroImage?.offsetXPercent ?? 0,
+        offsetYPercent: heroImage?.offsetYPercent ?? 0,
+        publicId: upload.public_id,
+      });
+    } catch (unknownError) {
+      if (unknownError instanceof ApiError) {
+        onError(unknownError.message);
+        return;
+      }
+      onError("Failed to upload image.");
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
-  }
-
-  function applyDraft() {
-    if (!draft) return;
-
-    console.log("APPLY HERO:", draft);
-
-    onSave(draft);
-    onSuccess("Branding hero image updated.");
-  }
-
-  function clearDraft() {
-    setDraft(null);
-    onClear();
-    onSuccess("Branding hero image cleared.");
   }
 
   return (
@@ -514,8 +483,8 @@ function HeroImageUploader({
         <div>
           <p className="text-sm font-medium">Card background image</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Upload an image, adjust zoom + horizontal position, then save to
-            preview on the right.
+            Upload an image, adjust zoom + horizontal position, then save from
+            the main button below.
           </p>
         </div>
 
@@ -536,22 +505,68 @@ function HeroImageUploader({
             Upload image
           </Button>
 
-          {draft ? (
-            <Button type="button" variant="outline" onClick={clearDraft}>
+          {heroImage ? (
+            <Button type="button" variant="outline" onClick={onClear}>
               Clear
             </Button>
           ) : null}
         </div>
       </div>
 
-      {/* Controls */}
-      {draft ? (
+      {heroImage ? (
         <div className="space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-            <Button type="button" disabled={!canSave} onClick={applyDraft}>
-              <Save className="size-4" />
-              Save changes
-            </Button>
+          <div className="space-y-2">
+            <Label htmlFor="hero-zoom">Zoom</Label>
+            <Input
+              id="hero-zoom"
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={heroImage.zoom}
+              onChange={(event) =>
+                onLiveUpdate({
+                  ...heroImage,
+                  zoom: clamp(Number(event.target.value), 1, 3),
+                })
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hero-position-x">Horizontal position</Label>
+            <Input
+              id="hero-position-x"
+              type="range"
+              min={-50}
+              max={50}
+              step={1}
+              value={heroImage.offsetXPercent}
+              onChange={(event) =>
+                onLiveUpdate({
+                  ...heroImage,
+                  offsetXPercent: clamp(Number(event.target.value), -50, 50),
+                })
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hero-position-y">Vertical position</Label>
+            <Input
+              id="hero-position-y"
+              type="range"
+              min={-50}
+              max={50}
+              step={1}
+              value={heroImage.offsetYPercent}
+              onChange={(event) =>
+                onLiveUpdate({
+                  ...heroImage,
+                  offsetYPercent: clamp(Number(event.target.value), -50, 50),
+                })
+              }
+            />
           </div>
         </div>
       ) : (
@@ -623,13 +638,12 @@ function BrandingPreview({
                 objectFit: "cover",
                 transform: `scale(${heroImage!.zoom})`,
                 transformOrigin: "center",
-                objectPosition: `${heroImage!.offsetXPercent + 50}% 50%`,
+                objectPosition: `${heroImage!.offsetXPercent + 50}% ${heroImage!.offsetYPercent + 50}%`,
                 zIndex: 0,
               }}
             />
           ) : null}
 
-          {/* overlay above hero image */}
           <div
             className="absolute inset-0"
             style={{
@@ -640,7 +654,6 @@ function BrandingPreview({
             }}
           />
 
-          {/* card content above overlay */}
           <div className="relative" style={{ zIndex: 2 }}>
             <div className="flex items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
@@ -663,9 +676,7 @@ function BrandingPreview({
                   <p className="truncate text-sm font-semibold">
                     {businessName}
                   </p>
-                  <p className="text-xs opacity-75">
-                    Member experience
-                  </p>
+                  <p className="text-xs opacity-75">Member experience</p>
                 </div>
               </div>
 
@@ -689,9 +700,7 @@ function BrandingPreview({
         <div className="space-y-3 rounded-lg border bg-background p-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Primary color</span>
-            <span className="font-medium">
-              {brandColor.toUpperCase()}
-            </span>
+            <span className="font-medium">{brandColor.toUpperCase()}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -759,4 +768,32 @@ function readFileAsDataURL(file: File) {
     reader.onload = () => resolve(String(reader.result));
     reader.readAsDataURL(file);
   });
+}
+
+function toBrandingState(business: Business): BrandingImageState | null {
+  if (!business.hero_image_url) return null;
+
+  return {
+    dataUrl: business.hero_image_url,
+    zoom: clamp(Number(business.hero_image_zoom ?? 1.2), 1, 3),
+    offsetXPercent: clamp(Number(business.hero_image_position_x ?? 0), -50, 50),
+    offsetYPercent: clamp(Number(business.hero_image_position_y ?? 0), -50, 50),
+    publicId: business.hero_image_public_id ?? null,
+  };
+}
+
+function isSameBrandingImage(
+  a: BrandingImageState | null,
+  b: BrandingImageState | null,
+) {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+
+  return (
+    a.dataUrl === b.dataUrl &&
+    a.zoom === b.zoom &&
+    a.offsetXPercent === b.offsetXPercent &&
+    a.offsetYPercent === b.offsetYPercent &&
+    a.publicId === b.publicId
+  );
 }

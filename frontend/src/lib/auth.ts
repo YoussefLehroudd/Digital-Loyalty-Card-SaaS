@@ -10,6 +10,11 @@ export type Business = {
   email: string;
   logo_url: string | null;
   logo_public_id?: string | null;
+  hero_image_url?: string | null;
+  hero_image_public_id?: string | null;
+  hero_image_zoom?: number | null;
+  hero_image_position_x?: number | null;
+  hero_image_position_y?: number | null;
   primary_color: string;
   phone: string | null;
   address: string | null;
@@ -68,6 +73,11 @@ export type BusinessProfilePayload = {
   phone?: string | null;
   address?: string | null;
   primary_color: string;
+  hero_image_url?: string | null;
+  hero_image_public_id?: string | null;
+  hero_image_zoom?: number | null;
+  hero_image_position_x?: number | null;
+  hero_image_position_y?: number | null;
 };
 
 export type RegisterBusinessOwnerPayload = {
@@ -263,11 +273,14 @@ export async function updateBusinessProfile(
   });
 }
 
-export async function uploadBusinessLogo(token: string, file: File) {
+async function uploadBusinessImage(
+  token: string,
+  file: File,
+  endpoint: "logo" | "hero-image",
+) {
   const body = new FormData();
   body.append("logo", file);
 
-  // 1) Prime Sanctum CSRF cookie (correct endpoint: /sanctum/csrf-cookie)
   const csrfResponse = await fetch(getSanctumCsrfCookieUrl(), {
     method: "GET",
     credentials: "include",
@@ -281,49 +294,46 @@ export async function uploadBusinessLogo(token: string, file: File) {
     );
   }
 
-  // 2) Read XSRF token and send it via X-XSRF-TOKEN header
   const xsrfToken = getCookie("XSRF-TOKEN");
   const hasXsrfToken = Boolean(xsrfToken);
 
-  // TEMPORARY console logs (verification only; remove after success)
-  console.log("[uploadBusinessLogo] XSRF-TOKEN cookie found:", hasXsrfToken);
-
-  const uploadResponse = await fetch(`${API_BASE_URL}/business/profile/logo`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(hasXsrfToken ? { "X-XSRF-TOKEN": xsrfToken as string } : {}),
+  const uploadResponse = await fetch(
+    `${API_BASE_URL}/business/profile/${endpoint}`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        ...(hasXsrfToken ? { "X-XSRF-TOKEN": xsrfToken as string } : {}),
+      },
+      body,
     },
-    body,
-  });
-
-  console.log("[uploadBusinessLogo] request headers:", {
-    Accept: "application/json",
-    Authorization: "Bearer <present>",
-    "X-XSRF-TOKEN": hasXsrfToken ? "<present>" : "<missing>",
-  });
-  console.log("[uploadBusinessLogo] response status:", uploadResponse.status);
+  );
 
   if (!uploadResponse.ok) {
     const payload = await uploadResponse.json().catch(() => null);
     throw new ApiError(
-      payload?.message ??
-        `API request failed with status ${uploadResponse.status}`,
+      payload?.message ?? `API request failed with status ${uploadResponse.status}`,
       uploadResponse.status,
       payload?.errors,
     );
   }
 
-  const data = (await uploadResponse.json()) as {
+  return (await uploadResponse.json()) as {
     message: string;
+    secure_url: string;
+    public_id: string;
     business: Business;
   };
+}
 
-  // TEMPORARY logs must be removed after confirming successful upload.
+export function uploadBusinessLogo(token: string, file: File) {
+  return uploadBusinessImage(token, file, "logo");
+}
 
-  return data;
+export function uploadBusinessHeroImage(token: string, file: File) {
+  return uploadBusinessImage(token, file, "hero-image");
 }
 
 export function getLoyaltyCard(token: string) {
@@ -332,32 +342,39 @@ export function getLoyaltyCard(token: string) {
   });
 }
 
-export function createLoyaltyCard(token: string, payload: LoyaltyCardPayload) {
-  return apiFetch<{ message: string; loyalty_card: LoyaltyCard }>(
-    "/loyalty-card",
-    {
-      method: "POST",
-      token,
-      body: JSON.stringify({
-        reward_name: payload.reward_name,
-        required_stamps: payload.required_stamps,
-        reward_description: payload.reward_description ?? null,
-      }),
+async function mutateLoyaltyCard(
+  token: string,
+  method: "POST" | "PUT",
+  payload: LoyaltyCardPayload,
+) {
+  await fetch(getSanctumCsrfCookieUrl(), {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  }).catch(() => null);
+
+  const xsrfToken = getCookie("XSRF-TOKEN");
+  const hasXsrfToken = Boolean(xsrfToken);
+
+  return apiFetch<{ message: string; loyalty_card: LoyaltyCard }>("/loyalty-card", {
+    method,
+    token,
+    credentials: "include",
+    headers: {
+      ...(hasXsrfToken ? { "X-XSRF-TOKEN": xsrfToken as string } : {}),
     },
-  );
+    body: JSON.stringify({
+      reward_name: payload.reward_name,
+      required_stamps: payload.required_stamps,
+      reward_description: payload.reward_description ?? null,
+    }),
+  });
+}
+
+export function createLoyaltyCard(token: string, payload: LoyaltyCardPayload) {
+  return mutateLoyaltyCard(token, "POST", payload);
 }
 
 export function updateLoyaltyCard(token: string, payload: LoyaltyCardPayload) {
-  return apiFetch<{ message: string; loyalty_card: LoyaltyCard }>(
-    "/loyalty-card",
-    {
-      method: "PUT",
-      token,
-      body: JSON.stringify({
-        reward_name: payload.reward_name,
-        required_stamps: payload.required_stamps,
-        reward_description: payload.reward_description ?? null,
-      }),
-    },
-  );
+  return mutateLoyaltyCard(token, "PUT", payload);
 }

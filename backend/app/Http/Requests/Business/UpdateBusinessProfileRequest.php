@@ -30,6 +30,11 @@ class UpdateBusinessProfileRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:40'],
             'address' => ['nullable', 'string', 'max:1000'],
             'primary_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'hero_image_url' => ['nullable', 'string', 'max:2048'],
+            'hero_image_public_id' => ['nullable', 'string', 'max:255'],
+            'hero_image_zoom' => ['nullable', 'numeric', 'min:1', 'max:3'],
+            'hero_image_position_x' => ['nullable', 'numeric', 'min:-50', 'max:50'],
+            'hero_image_position_y' => ['nullable', 'numeric', 'min:-50', 'max:50'],
         ];
     }
 }

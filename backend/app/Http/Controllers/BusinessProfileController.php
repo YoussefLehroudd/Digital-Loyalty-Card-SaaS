@@ -36,6 +36,21 @@ class BusinessProfileController extends Controller
         UploadBusinessLogoRequest $request,
         CloudinaryService $cloudinary,
     ): JsonResponse {
+        return $this->uploadImage($request, $cloudinary, 'logo');
+    }
+
+    public function uploadHeroImage(
+        UploadBusinessLogoRequest $request,
+        CloudinaryService $cloudinary,
+    ): JsonResponse {
+        return $this->uploadImage($request, $cloudinary, 'hero');
+    }
+
+    private function uploadImage(
+        UploadBusinessLogoRequest $request,
+        CloudinaryService $cloudinary,
+        string $type,
+    ): JsonResponse {
         $business = $this->currentBusiness($request);
 
         try {
@@ -54,6 +69,20 @@ class BusinessProfileController extends Controller
             ], Response::HTTP_BAD_GATEWAY);
         }
 
+        if ($type === 'hero') {
+            $business->update([
+                'hero_image_url' => $upload['secure_url'],
+                'hero_image_public_id' => $upload['public_id'],
+            ]);
+
+            return response()->json([
+                'message' => 'Business hero image uploaded successfully.',
+                'secure_url' => $upload['secure_url'],
+                'public_id' => $upload['public_id'],
+                'business' => $this->serializeBusiness($business->refresh()),
+            ]);
+        }
+
         $business->update([
             'logo_url' => $upload['secure_url'],
             'logo_public_id' => $upload['public_id'],
@@ -61,6 +90,8 @@ class BusinessProfileController extends Controller
 
         return response()->json([
             'message' => 'Business logo uploaded successfully.',
+            'secure_url' => $upload['secure_url'],
+            'public_id' => $upload['public_id'],
             'business' => $this->serializeBusiness($business->refresh()),
         ]);
     }
@@ -90,6 +121,11 @@ class BusinessProfileController extends Controller
             'primary_color' => $business->primary_color,
             'phone' => $business->phone,
             'address' => $business->address,
+            'hero_image_url' => $business->hero_image_url,
+            'hero_image_public_id' => $business->hero_image_public_id,
+            'hero_image_zoom' => $business->hero_image_zoom,
+            'hero_image_position_x' => $business->hero_image_position_x,
+            'hero_image_position_y' => $business->hero_image_position_y,
         ];
     }
 }

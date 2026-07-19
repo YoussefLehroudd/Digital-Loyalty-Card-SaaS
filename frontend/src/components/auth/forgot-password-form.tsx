@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { forgotPassword } from "@/lib/auth";
+import { useAutoDismiss } from "@/lib/use-auto-dismiss";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -23,6 +24,12 @@ type ForgotPasswordValues = z.infer<typeof schema>;
 export function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const clearSuccess = useCallback(() => {
+    setSuccess(null);
+  }, []);
+
+  useAutoDismiss(success, clearSuccess);
 
   const {
     register,

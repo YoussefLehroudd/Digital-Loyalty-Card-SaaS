@@ -1,5 +1,17 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+function normalizeApiBaseUrl() {
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+  if (!raw) {
+    return "http://127.0.0.1:8000/api";
+  }
+
+  const withoutTrailingSlash = raw.replace(/\/+$/, "");
+  return /\/api$/i.test(withoutTrailingSlash)
+    ? withoutTrailingSlash
+    : `${withoutTrailingSlash}/api`;
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl();
 
 type ApiFetchOptions = RequestInit & {
   token?: string;

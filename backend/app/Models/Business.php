@@ -44,10 +44,21 @@ class Business extends Model
         'logo_url',
         'slug',
         'logo_public_id',
+        'hero_image_url',
+        'hero_image_public_id',
+        'hero_image_zoom',
+        'hero_image_position_x',
+        'hero_image_position_y',
         'primary_color',
         'email',
         'phone',
         'address',
+    ];
+
+    protected $casts = [
+        'hero_image_zoom' => 'float',
+        'hero_image_position_x' => 'float',
+        'hero_image_position_y' => 'float',
     ];
 
     public function users(): HasMany
