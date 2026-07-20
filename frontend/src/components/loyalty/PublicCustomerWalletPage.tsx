@@ -138,16 +138,18 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
 
   const { business, customer, loyalty_card, loyalty } = data;
 
-  const currentStamps = loyalty?.current_stamps ?? 0;
+  const currentStampsRaw = loyalty?.current_stamps ?? 0;
   const requiredStamps = loyalty_card?.required_stamps ?? 0;
+  const currentStamps = requiredStamps
+    ? Math.min(currentStampsRaw, requiredStamps)
+    : currentStampsRaw;
+
   const progressPercent = !requiredStamps
     ? 0
     : Math.min(100, Math.round((currentStamps / requiredStamps) * 100));
+
   const stampCount = Math.max(1, Math.min(requiredStamps || 8, 16));
-  const stampSlots = Array.from(
-    { length: stampCount },
-    (_, index) => index < currentStamps,
-  );
+  const stampSlots = Array.from({ length: stampCount }, (_, index) => index < currentStamps);
 
   return (
     <main className="min-h-screen bg-background px-4 py-4 text-foreground sm:px-6">

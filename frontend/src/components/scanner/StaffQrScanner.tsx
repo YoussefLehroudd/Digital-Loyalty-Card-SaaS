@@ -117,46 +117,39 @@ export function StaffQrScanner({
       const reader = new BrowserMultiFormatReader();
       scannerRef.current = reader;
 
-      // Continuously decode from the video element.
-      // @zxing/library typings require a continuously callback function.
-      reader.decodeFromVideoElementContinuously(video, (result: ZXingResult | null) => {
-        // Requirement: never call getText() unless result exists.
-        if (!result) return;
+      // Single decode attempt (professional one-scan mode).
+      // decodeFromVideoElement resolves once with the first decoded result.
+      void (async () => {
+        try {
+          const result = await reader.decodeFromVideoElement(video);
+          // If we already finished or this isn't the active session, ignore.
+          if (sessionId !== scanSessionRef.current) return;
+          if (acceptedRef.current) return;
 
-        // Ignore callbacks from previous sessions (stale ZXing events).
-        if (sessionId !== scanSessionRef.current) return;
+          const raw = result.getText();
+          const qr = raw?.trim();
+          if (!qr) return;
 
-        const raw = result.getText();
-        if (!raw) return;
+          // Accept ONLY the first successful scan for this session.
+          acceptedRef.current = true;
+          scanningRef.current = true;
 
-        const qr = raw.trim();
-        if (!qr) return;
+          setIsDecoding(true);
+          setHasScanned(true);
 
-        // One-scan mode: accept ONLY the first detection per session.
-        if (acceptedRef.current) return;
+          // Stop camera stream immediately.
+          await stopDecoding();
 
-        // Also respect current UI lock (prevents API re-entry).
-        if (!canScan) return;
-        if (scanningRef.current) return;
+          // Call onQrScanned exactly once.
+          await Promise.resolve(onQrScanned(qr));
 
-        acceptedRef.current = true;
-        scanningRef.current = true;
-
-        setIsDecoding(true);
-        setHasScanned(true);
-
-        // Immediately stop decoding + camera stream to prevent duplicate detections.
-        void stopDecoding();
-
-        void Promise.resolve(onQrScanned(qr)).then(
-          () => {
-            setIsDecoding(false);
-          },
-          () => {
-            setIsDecoding(false);
-          },
-        );
-      });
+          setIsDecoding(false);
+        } catch {
+          // If decoding fails, keep the camera on until user clicks "Scan another".
+          // ZXing rejects frequently when no QR is found; we intentionally do not loop.
+          setIsDecoding(false);
+        }
+      })();
 
       setCameraStatus({ state: "idle" });
     } catch (err: unknown) {
