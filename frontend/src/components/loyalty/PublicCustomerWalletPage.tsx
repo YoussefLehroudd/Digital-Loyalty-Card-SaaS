@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Building2,
@@ -22,6 +22,8 @@ import {
   type PublicCustomerWalletResponse,
 } from "@/lib/public";
 
+const POLL_MS = 5000;
+
 export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
   const [data, setData] = useState<PublicCustomerWalletResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +31,59 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
   const [error, setError] = useState<string | null>(null);
 
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  // Animation / UX state
+  const [stampAddedPulse, setStampAddedPulse] = useState(0); // key to retrigger
+  const [showPlusOne, setShowPlusOne] = useState(false);
+  const [rewardUnlockedPulse, setRewardUnlockedPulse] = useState(0);
+  const [showRewardUnlocked, setShowRewardUnlocked] = useState(false);
+
+  // Track previous values to avoid replaying animations on refresh / no-change polling.
+  const prevStampsRef = useRef<number | null>(null);
+  const prevRewardUnlockedRef = useRef<boolean | null>(null);
+  const didInitRef = useRef(false);
+
+  async function loadWallet(qrCodeToLoad: string) {
+    let cancelled = false;
+
+    setIsLoading(true);
+    setError(null);
+    setNotFound(false);
+
+    try {
+      const response = await getPublicCustomerWallet(qrCodeToLoad);
+      if (cancelled) return;
+
+      setData(response);
+    } catch (unknownError) {
+      if (cancelled) return;
+
+      if (unknownError instanceof ApiError && unknownError.status === 404) {
+        setNotFound(true);
+        setData(null);
+        return;
+      }
+
+      setError("Unable to load wallet right now. Please try again.");
+      setData(null);
+    } finally {
+      if (!cancelled) setIsLoading(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }
+
+  async function fetchWalletForPolling(qrCodeToLoad: string) {
+    // Keep this polling silent: don't flip isLoading for every poll.
+    try {
+      const response = await getPublicCustomerWallet(qrCodeToLoad);
+      return response;
+    } catch {
+      return null;
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -64,9 +119,14 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
   }, [qrCode]);
 
   useEffect(() => {
+    didInitRef.current = false;
+    prevStampsRef.current = null;
+    prevRewardUnlockedRef.current = null;
+
+    let intervalId: number | null = null;
     let mounted = true;
 
-    async function load() {
+    async function init() {
       setIsLoading(true);
       setError(null);
       setNotFound(false);
@@ -88,15 +148,109 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
         setData(null);
       } finally {
         if (mounted) setIsLoading(false);
+        // First load should not trigger animations.
+        didInitRef.current = true;
       }
     }
 
-    load();
+    void init();
+
+    intervalId = window.setInterval(async () => {
+      if (!mounted) return;
+
+      const response = await fetchWalletForPolling(qrCode);
+      if (!mounted) return;
+      if (!response) return;
+
+      setData(response);
+
+      // Compare and trigger animations only when loyalty values change.
+      const nextLoyalty = response.loyalty;
+      const nextCard = response.loyalty_card;
+
+      const required = nextCard?.required_stamps ?? 0;
+      const raw = nextLoyalty?.current_stamps ?? 0;
+      const nextStamps = required ? Math.min(raw, required) : raw;
+
+      const nextRewardUnlocked =
+        !!nextCard && required > 0 ? nextStamps >= required : false;
+
+      const prevStamps = prevStampsRef.current;
+      const prevRewardUnlocked = prevRewardUnlockedRef.current;
+
+      // Avoid animating on first poll right after init (and on refresh).
+      if (!didInitRef.current) {
+        prevStampsRef.current = nextStamps;
+        prevRewardUnlockedRef.current = nextRewardUnlocked;
+        return;
+      }
+
+      if (prevStamps === null) {
+        prevStampsRef.current = nextStamps;
+      } else if (nextStamps > prevStamps) {
+        setStampAddedPulse((x) => x + 1);
+        setShowPlusOne(true);
+        setTimeout(() => setShowPlusOne(false), 1600);
+        prevStampsRef.current = nextStamps;
+      } else {
+        prevStampsRef.current = nextStamps;
+      }
+
+      if (prevRewardUnlocked === null) {
+        prevRewardUnlockedRef.current = nextRewardUnlocked;
+      } else if (!prevRewardUnlocked && nextRewardUnlocked) {
+        setRewardUnlockedPulse((x) => x + 1);
+        setShowRewardUnlocked(true);
+        setTimeout(() => setShowRewardUnlocked(false), 2200);
+        prevRewardUnlockedRef.current = nextRewardUnlocked;
+      } else {
+        prevRewardUnlockedRef.current = nextRewardUnlocked;
+      }
+    }, POLL_MS);
 
     return () => {
       mounted = false;
+      if (intervalId) window.clearInterval(intervalId);
     };
   }, [qrCode]);
+
+  const computed = useMemo(() => {
+    const loyalty = data?.loyalty ?? null;
+    const loyaltyCard = data?.loyalty_card ?? null;
+
+    const currentStampsRaw = loyalty?.current_stamps ?? 0;
+    const requiredStamps = loyaltyCard?.required_stamps ?? 0;
+    const currentStamps = requiredStamps
+      ? Math.min(currentStampsRaw, requiredStamps)
+      : currentStampsRaw;
+
+    const progressPercent = !requiredStamps
+      ? 0
+      : Math.min(100, Math.round((currentStamps / requiredStamps) * 100));
+
+    const stampCount = Math.max(1, Math.min(requiredStamps || 8, 16));
+    const stampSlots = Array.from(
+      { length: stampCount },
+      (_, index) => index < currentStamps,
+    );
+
+    const rewardUnlocked =
+      !!loyaltyCard && requiredStamps > 0 ? currentStamps >= requiredStamps : false;
+
+    return {
+      business: data?.business ?? null,
+      customer: data?.customer ?? null,
+      loyalty_card: loyaltyCard,
+      loyalty,
+      currentStampsRaw,
+      requiredStamps,
+      currentStamps,
+      progressPercent,
+      stampCount,
+      stampSlots,
+      rewardUnlocked,
+    };
+  }, [data]);
 
   if (isLoading) {
     return <WalletSkeleton />;
@@ -124,7 +278,7 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
     );
   }
 
-  if (error || !data) {
+  if (error || !data || !computed.business || !computed.customer) {
     return (
       <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6">
         <div className="mx-auto w-full max-w-md">
@@ -136,20 +290,8 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
     );
   }
 
-  const { business, customer, loyalty_card, loyalty } = data;
-
-  const currentStampsRaw = loyalty?.current_stamps ?? 0;
-  const requiredStamps = loyalty_card?.required_stamps ?? 0;
-  const currentStamps = requiredStamps
-    ? Math.min(currentStampsRaw, requiredStamps)
-    : currentStampsRaw;
-
-  const progressPercent = !requiredStamps
-    ? 0
-    : Math.min(100, Math.round((currentStamps / requiredStamps) * 100));
-
-  const stampCount = Math.max(1, Math.min(requiredStamps || 8, 16));
-  const stampSlots = Array.from({ length: stampCount }, (_, index) => index < currentStamps);
+  const { business, customer, loyalty_card, loyalty, progressPercent } = computed;
+  const { stampSlots, currentStamps, requiredStamps } = computed;
 
   return (
     <main className="min-h-screen bg-background px-4 py-4 text-foreground sm:px-6">
@@ -184,7 +326,9 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium opacity-90">Digital loyalty card</p>
+                  <p className="text-sm font-medium opacity-90">
+                    Digital loyalty card
+                  </p>
                   <p className="mt-1 text-lg font-semibold">
                     {loyalty_card?.reward_name ?? "Loyalty reward"}
                   </p>
@@ -208,12 +352,28 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
                       </span>
                       <span>{progressPercent}%</span>
                     </div>
+
+                    {/* progress bar (animate width change) */}
                     <div className="h-2 overflow-hidden rounded-full bg-white/25">
                       <div
-                        className="h-full rounded-full bg-white"
+                        key={stampAddedPulse}
+                        className="h-full rounded-full bg-white transition-[width] duration-500 ease-out"
                         style={{ width: `${progressPercent}%` }}
                       />
                     </div>
+
+                    {/* temporary notifications */}
+                    {showPlusOne ? (
+                      <div className="pt-1 text-xs font-semibold text-white/95">
+                        +1 Stamp added 🎉
+                      </div>
+                    ) : null}
+
+                    {showRewardUnlocked ? (
+                      <div className="pt-1 text-xs font-semibold text-white/95 animate-pulse">
+                        Reward unlocked ✨
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="mt-4 grid grid-cols-4 gap-2">
@@ -266,7 +426,7 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
               </div>
 
               <div className="rounded-lg border bg-muted/20 p-3 font-mono text-xs">
-                {customer.qr_code}
+                {computed.customer.qr_code}
               </div>
             </div>
           </CardContent>
