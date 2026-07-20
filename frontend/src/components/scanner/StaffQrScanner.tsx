@@ -43,16 +43,17 @@ export function StaffQrScanner({
   const canScan = useMemo(() => !hasScanned && !isDecoding, [hasScanned, isDecoding]);
 
   const stopDecoding = useCallback(async () => {
+    // Destroy/reset ZXing reader instance (do not keep it alive).
     try {
       if (scannerRef.current?.reset) {
-        scannerRef.current.reset();
+        await scannerRef.current.reset();
       }
     } catch {
       // ignore
     }
     scannerRef.current = null;
 
-    // Also stop the camera stream so we don't keep decoding frames.
+    // Stop every MediaStream track (camera off).
     try {
       const currentVideo = videoRef.current;
       const stream =
@@ -106,7 +107,6 @@ export function StaffQrScanner({
         video.addEventListener("loadedmetadata", onLoaded);
       });
 
-      // Avoid repeatedly calling play() when already playing.
       if (video.paused) {
         await video.play();
       }
@@ -114,15 +114,22 @@ export function StaffQrScanner({
       // Dynamically import to avoid SSR issues.
       const { BrowserMultiFormatReader } = await import("@zxing/library");
 
+      // Create a fresh reader instance per session.
       const reader = new BrowserMultiFormatReader();
       scannerRef.current = reader;
 
-      // Single decode attempt (professional one-scan mode).
-      // decodeFromVideoElement resolves once with the first decoded result.
-      void (async () => {
+      // Keep a single outstanding decode attempt at a time.
+      const decodeOnce = async (): Promise<void> => {
+        // If user started a new session, stop.
+        if (sessionId !== scanSessionRef.current) return;
+        // If already accepted, stop.
+        if (acceptedRef.current) return;
+
         try {
+          // Decode a single frame (single decode).
           const result = await reader.decodeFromVideoElement(video);
-          // If we already finished or this isn't the active session, ignore.
+
+          // Ignore any stale results.
           if (sessionId !== scanSessionRef.current) return;
           if (acceptedRef.current) return;
 
@@ -130,14 +137,13 @@ export function StaffQrScanner({
           const qr = raw?.trim();
           if (!qr) return;
 
-          // Accept ONLY the first successful scan for this session.
+          // Mark scan completed immediately and lock the session.
           acceptedRef.current = true;
           scanningRef.current = true;
-
           setIsDecoding(true);
           setHasScanned(true);
 
-          // Stop camera stream immediately.
+          // Destroy/reset ZXing reader instance and stop camera.
           await stopDecoding();
 
           // Call onQrScanned exactly once.
@@ -145,11 +151,19 @@ export function StaffQrScanner({
 
           setIsDecoding(false);
         } catch {
-          // If decoding fails, keep the camera on until user clicks "Scan another".
-          // ZXing rejects frequently when no QR is found; we intentionally do not loop.
-          setIsDecoding(false);
+          // No QR found in this single attempt; schedule another attempt
+          // until success or until the user clicks "Scan another".
+          if (sessionId !== scanSessionRef.current) return;
+          if (acceptedRef.current) return;
+
+          window.setTimeout(() => {
+            void decodeOnce();
+          }, 150);
         }
-      })();
+      };
+
+      // Begin decoding attempts.
+      void decodeOnce();
 
       setCameraStatus({ state: "idle" });
     } catch (err: unknown) {
@@ -160,7 +174,7 @@ export function StaffQrScanner({
         typeof (err as { message?: unknown }).message === "string"
           ? (err as { message: string }).message
           : "Camera error.";
-      // Heuristic for permission denied
+
       if (
         msg.toLowerCase().includes("denied") ||
         msg.toLowerCase().includes("permission")
