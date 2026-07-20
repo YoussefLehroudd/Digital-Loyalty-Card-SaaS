@@ -27,7 +27,9 @@ export function StaffQrScanner({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerRef = useRef<BrowserCodeReader | null>(null);
 
-  // Prevent duplicate scans while an API call is running.
+  // Prevent duplicate scans.
+  // In one-scan mode we set this to true after the first successful scan
+  // and we do NOT release it until the user clicks "Scan another".
   const scanningRef = useRef(false);
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>({
@@ -68,6 +70,7 @@ export function StaffQrScanner({
 
     setHasScanned(false);
     setIsDecoding(false);
+    scanningRef.current = false;
 
     try {
       setCameraStatus({ state: "loading", message: "Starting camera…" });
@@ -110,43 +113,36 @@ export function StaffQrScanner({
 
       // Continuously decode from the video element.
       // @zxing/library typings require a continuously callback function.
-      reader.decodeFromVideoElementContinuously(
-        video,
-        (result: ZXingResult | null) => {
-          // Requirement: never call getText() unless result exists.
-          if (!result) return;
+      reader.decodeFromVideoElementContinuously(video, (result: ZXingResult | null) => {
+        // Requirement: never call getText() unless result exists.
+        if (!result) return;
 
-          const raw = result.getText();
-          if (!raw) return;
-          const qr = raw.trim();
+        const raw = result.getText();
+        if (!raw) return;
 
-          if (!canScan) return;
+        const qr = raw.trim();
+        if (!qr) return;
 
-          // Scan lock: ignore new detections while the API request is in-flight.
-          if (scanningRef.current) return;
-          scanningRef.current = true;
+        // One-scan mode: once scanned, never process again until user clicks "Scan another".
+        if (!canScan) return;
+        if (scanningRef.current) return;
 
-          setIsDecoding(true);
-          setHasScanned(true);
+        scanningRef.current = true;
+        setIsDecoding(true);
+        setHasScanned(true);
 
-          // One-scan mode: stop decoding immediately after first successful scan.
-          void stopDecoding();
+        // Immediately stop decoding + camera stream to prevent duplicate detections.
+        void stopDecoding();
 
-          const release = () => {
-            scanningRef.current = false;
+        void Promise.resolve(onQrScanned(qr)).then(
+          () => {
             setIsDecoding(false);
-          };
-
-          void Promise.resolve(onQrScanned(qr)).then(
-            () => {
-              release();
-            },
-            () => {
-              release();
-            },
-          );
-        },
-      );
+          },
+          () => {
+            setIsDecoding(false);
+          },
+        );
+      });
 
       setCameraStatus({ state: "idle" });
     } catch (err: unknown) {
@@ -197,6 +193,7 @@ export function StaffQrScanner({
   const reset = useCallback(() => {
     setHasScanned(false);
     setIsDecoding(false);
+    scanningRef.current = false;
     void stopDecoding();
     void start();
   }, [start, stopDecoding]);
