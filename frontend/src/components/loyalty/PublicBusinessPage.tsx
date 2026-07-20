@@ -109,49 +109,91 @@ export function PublicBusinessPage({ businessSlug }: { businessSlug: string }) {
                 )}
               </div>
               <div className="min-w-0">
-                <h1 className="truncate text-2xl font-semibold">{business.name}</h1>
-                <p className="truncate text-sm text-muted-foreground">{business.email}</p>
+                <h1 className="truncate text-2xl font-semibold">
+                  {business.name}
+                </h1>
+                <p className="truncate text-sm text-muted-foreground">
+                  {business.email}
+                </p>
               </div>
             </div>
 
             <div
-              className="rounded-lg border p-4 text-white"
+              className="relative overflow-hidden rounded-lg border p-4 text-white"
               style={{ backgroundColor: business.primary_color || "#171717" }}
             >
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium">Digital loyalty card</p>
-                <Badge className="bg-white/15 text-white">
-                  <Gift className="size-4" />
-                  Reward
-                </Badge>
-              </div>
-
-              {loyalty_card ? (
-                <div className="mt-4 space-y-2">
-                  <p className="text-lg font-semibold">{loyalty_card.reward_name}</p>
-                  <p className="text-sm opacity-90">
-                    {loyalty_card.required_stamps} stamps required
-                  </p>
-                  <p className="text-sm opacity-80">
-                    {loyalty_card.reward_description ?? "No description provided."}
-                  </p>
-                  <div className="mt-3 grid grid-cols-5 gap-2">
-                    {Array.from({ length: Math.min(loyalty_card.required_stamps, 10) }).map(
-                      (_, idx) => (
-                        <div
-                          key={idx}
-                          className="aspect-square rounded-md border border-white/20 bg-white/10"
-                        />
-                      ),
-                    )}
+              {business.hero_image_url ? (
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    overflow: "hidden",
+                  }}
+                >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={business.hero_image_url}
+                      alt={`${business.name} hero background`}
+                      className="absolute inset-0 h-full w-full select-none"
+                      style={{
+                        objectFit: "cover",
+                        transform: `scale(${business.hero_image_zoom ?? 1})`,
+                        transformOrigin: "center",
+                        objectPosition: `${(business.hero_image_position_x ?? 0) + 50}% ${(business.hero_image_position_y ?? 0) + 50}%`,
+                        zIndex: 0,
+                      }}
+                    />
                   </div>
+                ) : null}
+
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: business.hero_image_url
+                      ? "linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25))"
+                      : "transparent",
+                    zIndex: 1,
+                  }}
+                />
+
+                <div className="relative z-[2]">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium">Digital loyalty card</p>
+                    <Badge className="bg-white/15 text-white">
+                      <Gift className="size-4" />
+                      Reward
+                    </Badge>
+                  </div>
+
+                  {loyalty_card ? (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-lg font-semibold">
+                        {loyalty_card.reward_name}
+                      </p>
+                      <p className="text-sm opacity-90">
+                        {loyalty_card.required_stamps} stamps required
+                      </p>
+                      <p className="text-sm opacity-80">
+                        {loyalty_card.reward_description ??
+                          "No description provided."}
+                      </p>
+                      <div className="mt-3 grid grid-cols-5 gap-2">
+                        {Array.from({
+                          length: Math.min(loyalty_card.required_stamps, 10),
+                        }).map((_, idx) => (
+                          <div
+                            key={idx}
+                            className="aspect-square rounded-md border border-white/20 bg-white/10"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-sm opacity-90">
+                      Loyalty card details will be available soon.
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <p className="mt-4 text-sm opacity-90">
-                  Loyalty card details will be available soon.
-                </p>
-              )}
-            </div>
+              </div>
           </CardContent>
         </Card>
 

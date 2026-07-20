@@ -740,26 +740,6 @@ function BrandingPreview({
           </div>
         </div>
 
-        <div className="space-y-3 rounded-lg border bg-background p-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Primary color</span>
-            <span className="font-medium">{brandColor.toUpperCase()}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span
-              className="size-8 rounded-lg border"
-              style={{ backgroundColor: brandColor }}
-            />
-
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full w-2/3 rounded-full"
-                style={{ backgroundColor: brandColor }}
-              />
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

@@ -7,6 +7,11 @@ export type PublicBusiness = {
   email?: string;
   logo_url: string | null;
   primary_color: string;
+
+  hero_image_url: string | null;
+  hero_image_zoom: number | null;
+  hero_image_position_x: number | null;
+  hero_image_position_y: number | null;
 };
 
 export type PublicLoyaltyCard = {

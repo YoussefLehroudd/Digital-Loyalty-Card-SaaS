@@ -70,6 +70,7 @@ body {
 }
 
 /* Hero background positioning sliders (visual-only styling) */
+#hero-zoom,
 #hero-position-x,
 #hero-position-y {
   /* ensure track/thumb styling works consistently */
@@ -79,12 +80,14 @@ body {
   background: transparent;
 }
 
+#hero-zoom:focus,
 #hero-position-x:focus,
 #hero-position-y:focus {
   outline: none;
 }
 
 /* Track */
+#hero-zoom::-webkit-slider-runnable-track,
 #hero-position-x::-webkit-slider-runnable-track,
 #hero-position-y::-webkit-slider-runnable-track {
   height: 6px;
@@ -92,12 +95,14 @@ body {
   background: rgba(222, 222, 216, 0.8);
 }
 
+.dark #hero-zoom::-webkit-slider-runnable-track,
 .dark #hero-position-x::-webkit-slider-runnable-track,
 .dark #hero-position-y::-webkit-slider-runnable-track {
   background: rgba(49, 49, 45, 0.9);
 }
 
 /* Thumb */
+#hero-zoom::-webkit-slider-thumb,
 #hero-position-x::-webkit-slider-thumb,
 #hero-position-y::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -111,6 +116,7 @@ body {
   margin-top: -6px; /* centers thumb on 6px track */
 }
 
+#hero-zoom::-moz-range-track,
 #hero-position-x::-moz-range-track,
 #hero-position-y::-moz-range-track {
   height: 6px;
@@ -118,11 +124,13 @@ body {
   background: rgba(222, 222, 216, 0.8);
 }
 
+.dark #hero-zoom::-moz-range-track,
 .dark #hero-position-x::-moz-range-track,
 .dark #hero-position-y::-moz-range-track {
   background: rgba(49, 49, 45, 0.9);
 }
 
+#hero-zoom::-moz-range-thumb,
 #hero-position-x::-moz-range-thumb,
 #hero-position-y::-moz-range-thumb {
   width: 18px;

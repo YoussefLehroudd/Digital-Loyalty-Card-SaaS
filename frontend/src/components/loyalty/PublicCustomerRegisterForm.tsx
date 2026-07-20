@@ -147,7 +147,7 @@ export function PublicCustomerRegisterForm({
           </>
         ) : (
           <>
-            Join loyalty program
+            Join Loyalty Program
             <ArrowRight className="size-4" />
           </>
         )}

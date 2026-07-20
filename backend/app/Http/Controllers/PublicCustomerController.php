@@ -36,6 +36,11 @@ class PublicCustomerController extends Controller
                 'slug' => $business->slug,
                 'logo_url' => $business->logo_url,
                 'primary_color' => $business->primary_color,
+
+                'hero_image_url' => $business->hero_image_url,
+                'hero_image_zoom' => $business->hero_image_zoom,
+                'hero_image_position_x' => $business->hero_image_position_x,
+                'hero_image_position_y' => $business->hero_image_position_y,
             ],
             'loyalty_card' => $loyaltyCard ? $this->serializeLoyaltyCard($loyaltyCard) : null,
         ]);
