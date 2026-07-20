@@ -47,6 +47,20 @@ export function StaffQrScanner({
       // ignore
     }
     scannerRef.current = null;
+
+    // Also stop the camera stream so we don't keep decoding frames.
+    try {
+      const currentVideo = videoRef.current;
+      const stream =
+        currentVideo?.srcObject && currentVideo.srcObject instanceof MediaStream
+          ? currentVideo.srcObject
+          : null;
+
+      stream?.getTracks().forEach((t) => t.stop());
+      if (currentVideo) currentVideo.srcObject = null;
+    } catch {
+      // ignore
+    }
   }, []);
 
   const start = useCallback(async () => {
@@ -73,6 +87,16 @@ export function StaffQrScanner({
       const video = videoRef.current;
       video.srcObject = stream;
 
+      // Ensure we have dimensions/metadata before starting ZXing.
+      await new Promise<void>((resolve) => {
+        if (video.readyState >= 2) return resolve();
+        const onLoaded = () => {
+          video.removeEventListener("loadedmetadata", onLoaded);
+          resolve();
+        };
+        video.addEventListener("loadedmetadata", onLoaded);
+      });
+
       // Avoid repeatedly calling play() when already playing.
       if (video.paused) {
         await video.play();
@@ -87,13 +111,15 @@ export function StaffQrScanner({
       // Continuously decode from the video element.
       // @zxing/library typings require a continuously callback function.
       reader.decodeFromVideoElementContinuously(
-        videoRef.current,
+        video,
         (result: ZXingResult | null) => {
           // Requirement: never call getText() unless result exists.
           if (!result) return;
 
-          const qr = result.getText();
-          if (!qr) return;
+          const raw = result.getText();
+          if (!raw) return;
+          const qr = raw.trim();
+
           if (!canScan) return;
 
           // Scan lock: ignore new detections while the API request is in-flight.
@@ -103,6 +129,9 @@ export function StaffQrScanner({
           setIsDecoding(true);
           setHasScanned(true);
 
+          // One-scan mode: stop decoding immediately after first successful scan.
+          void stopDecoding();
+
           const release = () => {
             scanningRef.current = false;
             setIsDecoding(false);
@@ -110,34 +139,33 @@ export function StaffQrScanner({
 
           void Promise.resolve(onQrScanned(qr)).then(
             () => {
-              // release after API finishes
               release();
             },
             () => {
-              // release even if API fails
               release();
             },
           );
-
-          // Requirement: Release lock after API finishes (or after ~1 second).
-          // This prevents a stuck lock if something goes wrong.
-          window.setTimeout(() => {
-            release();
-          }, 1000);
         },
       );
 
       setCameraStatus({ state: "idle" });
     } catch (err: unknown) {
       const msg =
-        typeof err === "object" && err !== null && "message" in err && typeof (err as { message?: unknown }).message === "string"
+        typeof err === "object" &&
+        err !== null &&
+        "message" in err &&
+        typeof (err as { message?: unknown }).message === "string"
           ? (err as { message: string }).message
           : "Camera error.";
       // Heuristic for permission denied
-      if (msg.toLowerCase().includes("denied") || msg.toLowerCase().includes("permission")) {
+      if (
+        msg.toLowerCase().includes("denied") ||
+        msg.toLowerCase().includes("permission")
+      ) {
         setCameraStatus({
           state: "permission_denied",
-          message: "Camera permission denied. Please allow camera access and reload.",
+          message:
+            "Camera permission denied. Please allow camera access and reload.",
         });
       } else {
         setCameraStatus({ state: "error", message: msg });
