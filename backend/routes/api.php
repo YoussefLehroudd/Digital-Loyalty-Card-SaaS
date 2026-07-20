@@ -59,6 +59,11 @@ Route::middleware(['auth:sanctum', 'role:business_owner'])->post('/stamp', [
     'store',
 ]);
 
+Route::middleware(['auth:sanctum', 'role:business_owner'])->post('/redeem-reward', [
+    StampController::class,
+    'redeemReward',
+]);
+
 Route::middleware(['auth:sanctum', 'role:business_owner'])
     ->prefix('business/customers')
     ->group(function (): void {

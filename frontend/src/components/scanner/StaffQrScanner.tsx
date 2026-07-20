@@ -11,6 +11,11 @@ import type { BrowserCodeReader } from "@zxing/library";
 export type StaffQrScannerProps = {
   onQrScanned: (qrCode: string) => Promise<void> | void;
   className?: string;
+  /**
+   * Optional escape hatch for parent UI:
+   * lets the parent trigger the existing "Scan another" reset without changing scan lifecycle.
+   */
+  onResetReady?: (reset: () => void) => void;
 };
 
 type CameraStatus =
@@ -22,6 +27,7 @@ type CameraStatus =
 export function StaffQrScanner({
   onQrScanned,
   className,
+  onResetReady,
 }: StaffQrScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerRef = useRef<BrowserCodeReader | null>(null);
@@ -212,6 +218,18 @@ export function StaffQrScanner({
       void start();
     })();
   }, [start, stopDecoding]);
+
+  const resetRef = useRef(reset);
+  useEffect(() => {
+    resetRef.current = reset;
+  }, [reset]);
+
+  // Expose reset trigger once to avoid parent/state feedback loops.
+  useEffect(() => {
+    if (!onResetReady) return;
+    onResetReady(() => resetRef.current());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onResetReady]);
 
   return (
     <Card className={className}>

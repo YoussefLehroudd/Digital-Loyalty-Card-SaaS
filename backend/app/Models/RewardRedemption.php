@@ -16,12 +16,18 @@ class RewardRedemption extends Model
         'customer_id',
         'business_id',
         'date',
+        'status',
+        'earned_at',
+        'redeemed_at',
+        'idempotency_key',
     ];
 
     protected function casts(): array
     {
         return [
             'date' => 'datetime',
+            'earned_at' => 'datetime',
+            'redeemed_at' => 'datetime',
         ];
     }
 
