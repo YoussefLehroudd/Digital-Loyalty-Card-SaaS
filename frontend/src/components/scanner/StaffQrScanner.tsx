@@ -27,6 +27,9 @@ export function StaffQrScanner({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerRef = useRef<BrowserCodeReader | null>(null);
 
+  // Prevent duplicate scans while an API call is running.
+  const scanningRef = useRef(false);
+
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>({
     state: "idle",
   });
@@ -67,8 +70,13 @@ export function StaffQrScanner({
         video: { facingMode: "environment" },
       });
 
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
+      const video = videoRef.current;
+      video.srcObject = stream;
+
+      // Avoid repeatedly calling play() when already playing.
+      if (video.paused) {
+        await video.play();
+      }
 
       // Dynamically import to avoid SSR issues.
       const { BrowserMultiFormatReader } = await import("@zxing/library");
@@ -80,24 +88,42 @@ export function StaffQrScanner({
       // @zxing/library typings require a continuously callback function.
       reader.decodeFromVideoElementContinuously(
         videoRef.current,
-        (result: ZXingResult) => {
-          const text = result.getText();
-          if (!text) return;
+        (result: ZXingResult | null) => {
+          // Requirement: never call getText() unless result exists.
+          if (!result) return;
+
+          const qr = result.getText();
+          if (!qr) return;
           if (!canScan) return;
+
+          // Scan lock: ignore new detections while the API request is in-flight.
+          if (scanningRef.current) return;
+          scanningRef.current = true;
 
           setIsDecoding(true);
           setHasScanned(true);
 
-          void Promise.resolve(onQrScanned(text)).finally(() => {
+          const release = () => {
+            scanningRef.current = false;
             setIsDecoding(false);
-          });
+          };
 
-          // Avoid multiple calls before reset: stop scanning loop.
-          try {
-            reader.reset();
-          } catch {
-            // ignore
-          }
+          void Promise.resolve(onQrScanned(qr)).then(
+            () => {
+              // release after API finishes
+              release();
+            },
+            () => {
+              // release even if API fails
+              release();
+            },
+          );
+
+          // Requirement: Release lock after API finishes (or after ~1 second).
+          // This prevents a stuck lock if something goes wrong.
+          window.setTimeout(() => {
+            release();
+          }, 1000);
         },
       );
 

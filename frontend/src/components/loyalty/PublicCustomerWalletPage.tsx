@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Building2,
@@ -10,6 +10,7 @@ import {
   QrCode,
   Star,
 } from "lucide-react";
+import QRCode from "qrcode";
 
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,41 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function generate() {
+      if (!qrCode) {
+        setQrDataUrl(null);
+        return;
+      }
+
+      try {
+        const dataUrl = await QRCode.toDataURL(qrCode, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 320,
+          color: {
+            dark: "#111110",
+            light: "#ffffff",
+          },
+        });
+
+        if (!cancelled) setQrDataUrl(dataUrl);
+      } catch {
+        if (!cancelled) setQrDataUrl(null);
+      }
+    }
+
+    void generate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [qrCode]);
 
   useEffect(() => {
     let mounted = true;
@@ -101,6 +137,7 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
   }
 
   const { business, customer, loyalty_card, loyalty } = data;
+
   const currentStamps = loyalty?.current_stamps ?? 0;
   const requiredStamps = loyalty_card?.required_stamps ?? 0;
   const progressPercent = !requiredStamps
@@ -210,8 +247,25 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
               <QrCode className="size-4" />
               Present this code to receive stamps
             </div>
-            <div className="rounded-lg border bg-muted/20 p-3 font-mono text-xs">
-              {customer.qr_code}
+            <div className="space-y-3">
+              <div className="flex items-center justify-center rounded-lg bg-white/90 p-2">
+                {qrDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={qrDataUrl}
+                    alt="Customer QR code"
+                    className="h-auto w-[320px]"
+                  />
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Generating QR…
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-lg border bg-muted/20 p-3 font-mono text-xs">
+                {customer.qr_code}
+              </div>
             </div>
           </CardContent>
         </Card>
