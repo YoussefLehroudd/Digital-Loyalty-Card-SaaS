@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Loader2, ScanLine } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Result as ZXingResult } from "@zxing/library";
 import type { BrowserCodeReader } from "@zxing/library";
 
 export type StaffQrScannerProps = {
@@ -27,12 +26,10 @@ export function StaffQrScanner({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerRef = useRef<BrowserCodeReader | null>(null);
 
-  // Prevent duplicate scans.
-  // Use an immutable session id so any in-flight ZXing callbacks are ignored
-  // after we stop the stream and wait for the user to click "Scan another".
-  const scanningRef = useRef(false);
+  const startingRef = useRef(false);
   const scanSessionRef = useRef(0);
   const acceptedRef = useRef(false);
+  const hasScannedRef = useRef(false);
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>({
     state: "idle",
@@ -43,17 +40,17 @@ export function StaffQrScanner({
   const canScan = useMemo(() => !hasScanned && !isDecoding, [hasScanned, isDecoding]);
 
   const stopDecoding = useCallback(async () => {
-    // Destroy/reset ZXing reader instance (do not keep it alive).
+    // Destroy/reset ZXing reader instance and stop camera tracks.
     try {
       if (scannerRef.current?.reset) {
         await scannerRef.current.reset();
       }
     } catch {
       // ignore
+    } finally {
+      scannerRef.current = null;
     }
-    scannerRef.current = null;
 
-    // Stop every MediaStream track (camera off).
     try {
       const currentVideo = videoRef.current;
       const stream =
@@ -69,18 +66,25 @@ export function StaffQrScanner({
   }, []);
 
   const start = useCallback(async () => {
-    if (!videoRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
+    if (startingRef.current) return;
 
-    setHasScanned(false);
-    setIsDecoding(false);
-    scanningRef.current = false;
+    startingRef.current = true;
 
+    // New session: invalidate prior attempts.
     scanSessionRef.current += 1;
     const sessionId = scanSessionRef.current;
     acceptedRef.current = false;
+    hasScannedRef.current = false;
 
+    setHasScanned(false);
+    setIsDecoding(false);
     try {
       setCameraStatus({ state: "loading", message: "Starting camera…" });
+
+      // Stop any previous stream/reader before starting a new one.
+      await stopDecoding();
 
       if (!navigator.mediaDevices?.getUserMedia) {
         setCameraStatus({
@@ -94,10 +98,10 @@ export function StaffQrScanner({
         video: { facingMode: "environment" },
       });
 
-      const video = videoRef.current;
       video.srcObject = stream;
 
-      // Ensure we have dimensions/metadata before starting ZXing.
+      // Ensure video metadata is fully loaded before ZXing decode.
+      // ZXing will handle playback internally after metadata readiness.
       await new Promise<void>((resolve) => {
         if (video.readyState >= 2) return resolve();
         const onLoaded = () => {
@@ -107,63 +111,59 @@ export function StaffQrScanner({
         video.addEventListener("loadedmetadata", onLoaded);
       });
 
-      if (video.paused) {
-        await video.play();
-      }
-
-      // Dynamically import to avoid SSR issues.
       const { BrowserMultiFormatReader } = await import("@zxing/library");
-
-      // Create a fresh reader instance per session.
       const reader = new BrowserMultiFormatReader();
       scannerRef.current = reader;
 
-      // Keep a single outstanding decode attempt at a time.
-      const decodeOnce = async (): Promise<void> => {
-        // If user started a new session, stop.
+      const decodeUntilSuccessOrReset = async (): Promise<void> => {
+        // If session changed or already accepted, do nothing.
         if (sessionId !== scanSessionRef.current) return;
-        // If already accepted, stop.
         if (acceptedRef.current) return;
 
         try {
-          // Decode a single frame (single decode).
           const result = await reader.decodeFromVideoElement(video);
 
-          // Ignore any stale results.
           if (sessionId !== scanSessionRef.current) return;
           if (acceptedRef.current) return;
 
-          const raw = result.getText();
+          const raw = result?.getText?.();
           const qr = raw?.trim();
-          if (!qr) return;
+          if (!qr) {
+            // No usable QR: try again after a short delay.
+            window.setTimeout(() => {
+              void decodeUntilSuccessOrReset();
+            }, 150);
+            return;
+          }
 
-          // Mark scan completed immediately and lock the session.
+          // First successful QR for this session.
           acceptedRef.current = true;
-          scanningRef.current = true;
+          hasScannedRef.current = true;
           setIsDecoding(true);
           setHasScanned(true);
 
-          // Destroy/reset ZXing reader instance and stop camera.
+          // Destroy reader + stop camera.
           await stopDecoding();
 
-          // Call onQrScanned exactly once.
+          // Ensure callback fires exactly once.
           await Promise.resolve(onQrScanned(qr));
 
-          setIsDecoding(false);
+          if (sessionId === scanSessionRef.current) {
+            setIsDecoding(false);
+          }
         } catch {
-          // No QR found in this single attempt; schedule another attempt
-          // until success or until the user clicks "Scan another".
+          // No QR detected in this attempt: schedule another single decode attempt.
           if (sessionId !== scanSessionRef.current) return;
           if (acceptedRef.current) return;
 
           window.setTimeout(() => {
-            void decodeOnce();
+            void decodeUntilSuccessOrReset();
           }, 150);
         }
       };
 
-      // Begin decoding attempts.
-      void decodeOnce();
+      // Kick off decode attempts.
+      void decodeUntilSuccessOrReset();
 
       setCameraStatus({ state: "idle" });
     } catch (err: unknown) {
@@ -181,43 +181,36 @@ export function StaffQrScanner({
       ) {
         setCameraStatus({
           state: "permission_denied",
-          message:
-            "Camera permission denied. Please allow camera access and reload.",
+          message: "Camera permission denied. Please allow camera access and reload.",
         });
       } else {
         setCameraStatus({ state: "error", message: msg });
       }
+    } finally {
+      startingRef.current = false;
     }
-  }, [canScan, onQrScanned]);
+  }, [canScan, onQrScanned, stopDecoding]);
 
   useEffect(() => {
-    // Start only on client mount.
+    // Auto-start on mount.
     void start();
-
-    const currentVideo = videoRef.current;
-    const currentStream =
-      currentVideo?.srcObject && currentVideo.srcObject instanceof MediaStream
-        ? currentVideo.srcObject
-        : null;
 
     return () => {
+      // Cleanup: stop camera + reader.
       void stopDecoding();
-      try {
-        currentStream?.getTracks().forEach((t) => t.stop());
-      } catch {
-        // ignore
-      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [start, stopDecoding]);
+  }, []);
 
   const reset = useCallback(() => {
-    setHasScanned(false);
-    setIsDecoding(false);
-    scanningRef.current = false;
-    acceptedRef.current = false;
-    void stopDecoding();
-    void start();
+    // Disable until stop completes, then start a fresh session.
+    void (async () => {
+      acceptedRef.current = true; // block in-flight decode promises
+      await stopDecoding();
+      // allow a brand new session
+      acceptedRef.current = false;
+      void start();
+    })();
   }, [start, stopDecoding]);
 
   return (
@@ -237,9 +230,7 @@ export function StaffQrScanner({
         ) : null}
 
         {cameraStatus.state === "error" ? (
-          <Alert className="border-red-500/30 text-red-600">
-            {cameraStatus.message}
-          </Alert>
+          <Alert className="border-red-500/30 text-red-600">{cameraStatus.message}</Alert>
         ) : null}
 
         {cameraStatus.state === "loading" ? (
@@ -268,12 +259,7 @@ export function StaffQrScanner({
           </div>
 
           <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={reset}
-              disabled={isDecoding}
-            >
+            <Button type="button" variant="outline" onClick={reset} disabled={isDecoding}>
               Scan another
             </Button>
           </div>
