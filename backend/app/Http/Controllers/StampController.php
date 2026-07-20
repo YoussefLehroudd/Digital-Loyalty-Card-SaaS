@@ -80,13 +80,19 @@ class StampController extends Controller
                 'date' => now(),
             ]);
 
-            $customerLoyalty->increment('current_stamps', 1);
-
             $customerLoyalty->refresh();
+            $required = (int) $loyaltyCard->required_stamps;
+            $current = (int) $customerLoyalty->current_stamps;
 
-            if (
-                (int) $customerLoyalty->current_stamps >= (int) $loyaltyCard->required_stamps
-            ) {
+            // Cap stamps so current_stamps is never allowed to exceed required_stamps.
+            if ($current < $required) {
+                $customerLoyalty->increment('current_stamps', 1);
+                $customerLoyalty->refresh();
+            }
+
+            $current = (int) $customerLoyalty->current_stamps;
+
+            if ($current >= $required) {
                 $alreadyHasRedemption = RewardRedemption::query()
                     ->where('business_id', $business->id)
                     ->where('customer_id', $customer->id)

@@ -28,9 +28,11 @@ export function StaffQrScanner({
   const scannerRef = useRef<BrowserCodeReader | null>(null);
 
   // Prevent duplicate scans.
-  // In one-scan mode we set this to true after the first successful scan
-  // and we do NOT release it until the user clicks "Scan another".
+  // Use an immutable session id so any in-flight ZXing callbacks are ignored
+  // after we stop the stream and wait for the user to click "Scan another".
   const scanningRef = useRef(false);
+  const scanSessionRef = useRef(0);
+  const acceptedRef = useRef(false);
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>({
     state: "idle",
@@ -71,6 +73,10 @@ export function StaffQrScanner({
     setHasScanned(false);
     setIsDecoding(false);
     scanningRef.current = false;
+
+    scanSessionRef.current += 1;
+    const sessionId = scanSessionRef.current;
+    acceptedRef.current = false;
 
     try {
       setCameraStatus({ state: "loading", message: "Starting camera…" });
@@ -117,17 +123,25 @@ export function StaffQrScanner({
         // Requirement: never call getText() unless result exists.
         if (!result) return;
 
+        // Ignore callbacks from previous sessions (stale ZXing events).
+        if (sessionId !== scanSessionRef.current) return;
+
         const raw = result.getText();
         if (!raw) return;
 
         const qr = raw.trim();
         if (!qr) return;
 
-        // One-scan mode: once scanned, never process again until user clicks "Scan another".
+        // One-scan mode: accept ONLY the first detection per session.
+        if (acceptedRef.current) return;
+
+        // Also respect current UI lock (prevents API re-entry).
         if (!canScan) return;
         if (scanningRef.current) return;
 
+        acceptedRef.current = true;
         scanningRef.current = true;
+
         setIsDecoding(true);
         setHasScanned(true);
 
@@ -194,6 +208,7 @@ export function StaffQrScanner({
     setHasScanned(false);
     setIsDecoding(false);
     scanningRef.current = false;
+    acceptedRef.current = false;
     void stopDecoding();
     void start();
   }, [start, stopDecoding]);
