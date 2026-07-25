@@ -1,10 +1,7 @@
-- [ ] Refactor shared customer-business membership creation logic into reusable backend service/action
-- [ ] Reuse shared logic in existing public register endpoint (guest + authenticated customer compatibility)
-- [ ] Add new protected endpoint POST /api/user/join-by-qr
-- [ ] Add backend tests for join-by-qr (valid, duplicate, invalid QR)
-- [ ] Update frontend customer API client with join-by-qr function
-- [ ] Update /user/cards empty state UI + Scan QR Code action
-- [ ] Implement customer QR scanner flow for join
-- [ ] Run backend tests: cd backend && php artisan test
-- [ ] Run frontend lint: cd frontend && npm run lint
-- [ ] Run frontend build: cd frontend && npm run build
+# TODO
+
+- [ ] Add Customer Join QR section to loyalty card settings UI (QR image, join URL, copy, download)
+- [ ] Add join-intent persistence utility (save/read/clear pending join QR)
+- [ ] Update customer login/register to complete pending join after auth
+- [ ] Run frontend lint
+- [ ] Run frontend build

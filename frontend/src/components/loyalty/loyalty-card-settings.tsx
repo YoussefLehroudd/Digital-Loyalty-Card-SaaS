@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BadgeCheck, CreditCard, Gift, Loader2, Save } from "lucide-react";
+import { BadgeCheck, Copy, CreditCard, Download, Gift, Loader2, Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -210,6 +211,61 @@ export function LoyaltyCardSettings() {
   }
 
   const business = businessProfile ?? user.business;
+  const joinUrl = useMemo(() => {
+    const slug = business?.slug?.trim();
+    if (!slug) return "";
+    return `${window.location.origin}/user/login?join=${encodeURIComponent(slug)}`;
+  }, [business?.slug]);
+
+  const [joinQrDataUrl, setJoinQrDataUrl] = useState<string>("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function generateQr() {
+      if (!joinUrl) {
+        if (active) setJoinQrDataUrl("");
+        return;
+      }
+
+      try {
+        const dataUrl = await QRCode.toDataURL(joinUrl, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 280,
+        });
+        if (active) setJoinQrDataUrl(dataUrl);
+      } catch {
+        if (active) setJoinQrDataUrl("");
+      }
+    }
+
+    generateQr();
+
+    return () => {
+      active = false;
+    };
+  }, [joinUrl]);
+
+  const copyJoinUrl = useCallback(async () => {
+    if (!joinUrl) return;
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setSuccess("Join URL copied.");
+    } catch {
+      setError("Could not copy join URL.");
+    }
+  }, [joinUrl]);
+
+  const downloadJoinQr = useCallback(() => {
+    if (!joinQrDataUrl) return;
+    const a = document.createElement("a");
+    a.href = joinQrDataUrl;
+    a.download = `${business?.slug ?? "business"}-join-qr.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }, [business?.slug, joinQrDataUrl]);
 
   return (
     <DashboardShell activeItem="loyalty">

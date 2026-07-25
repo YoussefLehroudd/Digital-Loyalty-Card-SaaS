@@ -6,6 +6,7 @@ export type UserRole = "platform_admin" | "business_owner" | "customer";
 
 export type Business = {
   id: string;
+  slug?: string;
   name: string;
   email: string;
   logo_url: string | null;
