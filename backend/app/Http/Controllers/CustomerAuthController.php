@@ -171,6 +171,13 @@ class CustomerAuthController extends Controller
         }
 
         $qrValue = (string) $request->validated('qr');
+
+        // Log request shape (keys only) to confirm frontend is sending the expected payload field(s).
+        Log::info('[joinByQr] payload keys', [
+            'customer_user_id' => $user?->id,
+            'payload_keys' => array_keys($request->all() ?? []),
+        ]);
+
         Log::info('[joinByQr] received qr', [
             'customer_user_id' => $user?->id,
             'qr' => $qrValue,
@@ -347,6 +354,12 @@ class CustomerAuthController extends Controller
                 ]);
 
                 if ($matches) {
+                    Log::info('[extractBusinessSlugFromQr] final slug source', [
+                        'source' => 'path_businesses_pattern',
+                        'raw' => $rawTrimmed,
+                        'slug' => strtolower($decodedCandidate),
+                    ]);
+
                     return strtolower($decodedCandidate);
                 }
             }
@@ -373,6 +386,12 @@ class CustomerAuthController extends Controller
             }
 
             if ($lastSlug !== null) {
+                Log::info('[extractBusinessSlugFromQr] final slug source', [
+                    'source' => 'path_last_slug_segment',
+                    'raw' => $rawTrimmed,
+                    'slug' => $lastSlug,
+                ]);
+
                 return $lastSlug;
             }
         }
