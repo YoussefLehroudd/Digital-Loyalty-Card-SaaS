@@ -35,7 +35,8 @@ class CustomerMembershipService
                 ...$payload,
                 'user_id' => $authenticatedCustomerUser?->id,
                 'business_id' => $business->id,
-                'qr_code' => $this->qrCodeService->generateUniqueCustomerQrCode(),
+                // This QR must be scannable by joinByQr() using join_business_id.
+                'qr_code' => $this->qrCodeService->generateBusinessJoinQrCode($business->id),
             ]);
         } elseif ($authenticatedCustomerUser && ! $customer->user_id) {
             $customer->user_id = $authenticatedCustomerUser->id;

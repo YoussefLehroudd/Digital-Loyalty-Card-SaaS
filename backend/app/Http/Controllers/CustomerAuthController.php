@@ -272,12 +272,22 @@ class CustomerAuthController extends Controller
         $raw = urldecode($raw);
         $rawTrimmed = trim($raw);
 
-        if (! filter_var($rawTrimmed, FILTER_VALIDATE_URL)) {
-            return null;
+        // Accept either full URLs or relative paths like `/user/login?join_business_id=1`.
+        $query = null;
+
+        if (filter_var($rawTrimmed, FILTER_VALIDATE_URL)) {
+            $parts = parse_url($rawTrimmed);
+            $query = $parts['query'] ?? null;
+        } else {
+            // Attempt to treat input as a path/query string.
+            $pos = strpos($rawTrimmed, '?');
+            if ($pos === false) {
+                return null;
+            }
+
+            $query = substr($rawTrimmed, $pos + 1);
         }
 
-        $parts = parse_url($rawTrimmed);
-        $query = $parts['query'] ?? null;
         if (! is_string($query) || $query === '') {
             return null;
         }
