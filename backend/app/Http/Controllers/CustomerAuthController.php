@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\NewAccessToken;
 
@@ -169,7 +170,17 @@ class CustomerAuthController extends Controller
             ], 403);
         }
 
-        $slug = $this->extractBusinessSlugFromQr((string) $request->validated('qr'));
+        $qrValue = (string) $request->validated('qr');
+        Log::info('[joinByQr] received qr', [
+            'customer_user_id' => $user?->id,
+            'qr' => $qrValue,
+        ]);
+
+        $slug = $this->extractBusinessSlugFromQr($qrValue);
+        Log::info('[joinByQr] extracted slug', [
+            'customer_user_id' => $user?->id,
+            'slug' => $slug,
+        ]);
 
         if (! $slug) {
             throw ValidationException::withMessages([
@@ -180,6 +191,13 @@ class CustomerAuthController extends Controller
         $business = Business::query()
             ->where('slug', $slug)
             ->first();
+
+        Log::info('[joinByQr] business lookup', [
+            'customer_user_id' => $user?->id,
+            'slug' => $slug,
+            'business_found' => (bool) $business,
+            'business_id' => $business?->id,
+        ]);
 
         if (! $business) {
             return response()->json([
@@ -232,29 +250,130 @@ class CustomerAuthController extends Controller
             return null;
         }
 
-        if (preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/i', $raw) === 1) {
-            return strtolower($raw);
+        // QR values can be URL-encoded; decode once to normalize formats like ".../star-coffee%20"
+        $raw = urldecode($raw);
+        $rawTrimmed = trim($raw);
+
+        $slugRegex = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/i';
+
+        // Raw slug format.
+        if (preg_match($slugRegex, $rawTrimmed) === 1) {
+            return strtolower($rawTrimmed);
         }
 
-        if (filter_var($raw, FILTER_VALIDATE_URL)) {
-            $parts = parse_url($raw);
+        if (! filter_var($rawTrimmed, FILTER_VALIDATE_URL)) {
+            return null;
+        }
 
-            if (! empty($parts['query'])) {
-                parse_str($parts['query'], $query);
-                $slug = isset($query['slug']) ? trim((string) $query['slug']) : '';
-                if ($slug !== '' && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/i', $slug) === 1) {
-                    return strtolower($slug);
+        $parts = parse_url($rawTrimmed);
+
+        Log::info('[extractBusinessSlugFromQr] parse_url result', [
+            'raw' => $rawTrimmed,
+            'path' => $parts['path'] ?? null,
+            'query' => $parts['query'] ?? null,
+        ]);
+
+        // Query param formats:
+        // - ?slug=my-business
+        // - ?business_slug=my-business
+        if (! empty($parts['query'])) {
+            parse_str((string) $parts['query'], $query);
+
+            $candidateKeys = ['slug', 'business_slug'];
+            foreach ($candidateKeys as $key) {
+                $candidate = isset($query[$key]) ? trim((string) $query[$key]) : '';
+                if ($candidate !== '' && preg_match($slugRegex, $candidate) === 1) {
+                    return strtolower($candidate);
+                }
+            }
+        }
+
+        // Path formats where slug can appear anywhere in the path (not only the last segment).
+        $path = $parts['path'] ?? null;
+
+        // Some environments/inputs can yield an empty/null path from parse_url(). Fall back to regex extraction.
+        $fallbackPath = null;
+        if (! is_string($path) || $path === '') {
+            if (preg_match('~https?://[^/]+(/.*)$~i', $rawTrimmed, $m) === 1) {
+                $path = $m[1] ?? '';
+                $fallbackPath = $path;
+            } else {
+                $path = '';
+                $fallbackPath = '';
+            }
+        }
+
+        Log::info('[extractBusinessSlugFromQr] path extraction', [
+            'raw' => $rawTrimmed,
+            'path' => $path,
+            'fallback_path' => $fallbackPath,
+        ]);
+
+        if ($path !== '') {
+            $segments = array_values(array_filter(explode('/', (string) $path)));
+
+            Log::info('[extractBusinessSlugFromQr] path segments', [
+                'raw' => $rawTrimmed,
+                'segments' => $segments,
+            ]);
+
+            // Most reliable form used by app pages:
+            //   .../businesses/{slug}/...
+            // Prefer this over picking "any slug-like segment" (which breaks on "/businesses/{slug}/join").
+            for ($i = 0; $i < count($segments) - 1; $i++) {
+                $seg = $segments[$i];
+                if (! is_string($seg)) {
+                    continue;
+                }
+
+                if (strtolower(trim(urldecode($seg))) !== 'businesses') {
+                    continue;
+                }
+
+                $candidate = $segments[$i + 1] ?? '';
+                if (! is_string($candidate)) {
+                    continue;
+                }
+
+                $decodedCandidate = trim(urldecode($candidate));
+                $matches = $decodedCandidate !== '' && preg_match($slugRegex, $decodedCandidate) === 1;
+
+                Log::info('[extractBusinessSlugFromQr] businesses/{slug} pattern', [
+                    'raw' => $rawTrimmed,
+                    'businesses_index' => $i,
+                    'candidate' => $candidate,
+                    'decoded_candidate' => $decodedCandidate,
+                    'matches_slug_regex' => $matches,
+                ]);
+
+                if ($matches) {
+                    return strtolower($decodedCandidate);
                 }
             }
 
-            if (! empty($parts['path'])) {
-                $segments = array_values(array_filter(explode('/', (string) $parts['path'])));
-                if (count($segments) >= 1) {
-                    $candidate = end($segments);
-                    if (is_string($candidate) && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/i', $candidate) === 1) {
-                        return strtolower($candidate);
-                    }
+            // Generic fallback: choose the last slug-like segment in the path.
+            $lastSlug = null;
+
+            foreach ($segments as $segment) {
+                if (! is_string($segment)) {
+                    continue;
                 }
+
+                $decodedSegment = trim(urldecode($segment));
+                Log::info('[extractBusinessSlugFromQr] segment candidate', [
+                    'raw' => $rawTrimmed,
+                    'segment' => $segment,
+                    'decoded_segment' => $decodedSegment,
+                    'matches_slug_regex' => $decodedSegment !== '' && preg_match($slugRegex, $decodedSegment) === 1,
+                ]);
+
+                if ($decodedSegment !== '' && preg_match($slugRegex, $decodedSegment) === 1) {
+                    $lastSlug = strtolower($decodedSegment);
+                }
+            }
+
+            if ($lastSlug !== null) {
+                return $lastSlug;
             }
         }
 
