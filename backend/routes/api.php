@@ -48,6 +48,7 @@ Route::prefix('user')->group(function (): void {
         Route::get('/activity', [\App\Http\Controllers\CustomerDashboardController::class, 'activity']);
         Route::get('/notifications', [\App\Http\Controllers\CustomerDashboardController::class, 'notifications']);
         Route::get('/businesses', [\App\Http\Controllers\CustomerDashboardController::class, 'businesses']);
+        Route::post('/join-by-qr', [CustomerAuthController::class, 'joinByQr']);
     });
 });
 

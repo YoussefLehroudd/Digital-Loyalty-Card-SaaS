@@ -1,55 +1,10 @@
-# Customer App Production Completion TODO
-
-## In Progress Plan (Approved)
-
-- [x] Backend customer route architecture fixed (`/api/user/*`)
-- [x] Backend customer API feature tests added
-- [x] Backend test suite passing
-
-## Frontend core already done
-
-- [x] `/user/login`
-- [x] `/user/register`
-- [x] `/user/dashboard`
-- [x] `/user/cards`
-- [x] `/user/rewards`
-- [x] `/user/activity`
-- [x] customer auth provider + guard
-- [x] customer layout with bottom navigation
-- [x] loyalty card carousel base version
-
-## Remaining implementation
-
-- [ ] Implement `/user/profile`
-- [ ] Implement `/user/settings`
-- [ ] Implement `/user/notifications`
-- [ ] Add editable profile fields (name/email/phone/avatar)
-- [ ] Add change password flow
-- [ ] Add notification preferences persistence (customer profile preferences)
-- [ ] Add dark mode toggle in customer UX
-- [ ] Add logout confirmation interaction
-- [ ] Add multi-business switcher behavior
-- [ ] Improve loyalty card animation polish
-- [ ] Add pull-to-refresh utility and integrate on user pages
-- [ ] Add reusable skeleton states
-- [ ] Add reusable empty/error states
-- [ ] Ensure QR card quick access from layout
-- [ ] Keep Google Wallet placeholder ready for future integration
-- [ ] Improve accessibility (labels/aria/focus keyboard flows)
-
-## Final validation
-
-- [ ] Run backend tests: `cd backend && php artisan test`
-- [ ] Run frontend lint: `cd frontend && npm run lint`
-- [ ] Run frontend build: `cd frontend && npm run build`
-- [ ] Verify full flow:
-  - [ ] Register
-  - [ ] Login
-  - [ ] Dashboard
-  - [ ] Cards
-  - [ ] Rewards
-  - [ ] Activity
-  - [ ] Profile
-  - [ ] Settings
-  - [ ] Notifications
-  - [ ] Logout
+- [ ] Refactor shared customer-business membership creation logic into reusable backend service/action
+- [ ] Reuse shared logic in existing public register endpoint (guest + authenticated customer compatibility)
+- [ ] Add new protected endpoint POST /api/user/join-by-qr
+- [ ] Add backend tests for join-by-qr (valid, duplicate, invalid QR)
+- [ ] Update frontend customer API client with join-by-qr function
+- [ ] Update /user/cards empty state UI + Scan QR Code action
+- [ ] Implement customer QR scanner flow for join
+- [ ] Run backend tests: cd backend && php artisan test
+- [ ] Run frontend lint: cd frontend && npm run lint
+- [ ] Run frontend build: cd frontend && npm run build

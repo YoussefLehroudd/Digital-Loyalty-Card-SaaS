@@ -8,6 +8,7 @@ use App\Models\Business;
 use App\Models\Customer;
 use App\Models\CustomerLoyalty;
 use App\Models\LoyaltyCard;
+use App\Services\CustomerMembershipService;
 use App\Services\QrCodeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -51,7 +52,7 @@ class PublicCustomerController extends Controller
     public function register(
         string $slug,
         PublicRegisterCustomerRequest $request,
-        QrCodeService $qrCodeService
+        CustomerMembershipService $customerMembershipService
     ): JsonResponse
     {
         $business = Business::query()
@@ -72,38 +73,15 @@ class PublicCustomerController extends Controller
         if ($authenticatedUser && $authenticatedUser->role === UserRole::Customer) {
             $validated = $request->validated();
 
-            $customer = Customer::query()
-                ->where('user_id', $authenticatedUser->id)
-                ->where('business_id', $business->id)
-                ->first();
+            $result = $customerMembershipService->registerForBusiness(
+                $business,
+                $validated,
+                $authenticatedUser
+            );
 
-            if (! $customer) {
-                $customer = Customer::query()->create([
-                    // preserve backward compatibility fields
-                    ...$validated,
-                    'user_id' => $authenticatedUser->id,
-                    'business_id' => $business->id,
-                    'qr_code' => $qrCodeService->generateUniqueCustomerQrCode(),
-                ]);
-            }
-
-            $loyaltyCard = LoyaltyCard::query()
-                ->where('business_id', $business->id)
-                ->first();
-
-            $customerLoyalty = null;
-            if ($loyaltyCard) {
-                $customerLoyalty = CustomerLoyalty::query()
-                    ->firstOrCreate(
-                        [
-                            'customer_id' => $customer->id,
-                            'loyalty_card_id' => $loyaltyCard->id,
-                        ],
-                        [
-                            'current_stamps' => 0,
-                        ]
-                    );
-            }
+            $customer = $result['customer'];
+            $loyaltyCard = $result['loyalty_card'];
+            $customerLoyalty = $result['loyalty'];
 
             return response()->json([
                 'message' => 'Customer registered successfully.',
@@ -128,27 +106,15 @@ class PublicCustomerController extends Controller
         }
 
         // Case 2: guest flow (unchanged behavior).
-        $customer = Customer::query()->create([
-            ...$request->validated(),
-            'business_id' => $business->id,
-            'qr_code' => $qrCodeService->generateUniqueCustomerQrCode(),
-        ]);
-
-        $loyaltyCard = LoyaltyCard::query()
-            ->where('business_id', $business->id)
-            ->first();
-
-        if ($loyaltyCard) {
-            CustomerLoyalty::query()->create([
-                'customer_id' => $customer->id,
-                'loyalty_card_id' => $loyaltyCard->id,
-                'current_stamps' => 0,
-            ]);
-        }
+        $result = $customerMembershipService->registerForBusiness(
+            $business,
+            $request->validated(),
+            null
+        );
 
         return response()->json([
             'message' => 'Customer registered successfully.',
-            'customer' => $this->serializeCustomer($customer),
+            'customer' => $this->serializeCustomer($result['customer']),
         ], Response::HTTP_CREATED);
     }
 

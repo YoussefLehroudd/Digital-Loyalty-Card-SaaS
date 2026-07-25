@@ -219,6 +219,25 @@ export function customerNotifications(token: string) {
   return apiFetch<{ data: unknown[] }>("/user/notifications", { token });
 }
 
+export function customerJoinByQr(token: string, qr: string) {
+  return apiFetch<{
+    message: string;
+    business: { id: string; slug: string; name: string };
+    customer: { id: string; qr_code: string | null };
+    loyalty_card: { id: string; business_id: string } | null;
+    loyalty: {
+      id: string;
+      customer_id: string;
+      loyalty_card_id: string;
+      current_stamps: number;
+    } | null;
+  }>("/user/join-by-qr", {
+    method: "POST",
+    token,
+    body: JSON.stringify({ qr }),
+  });
+}
+
 export function customerBusinesses(token: string) {
   return apiFetch<{
     data: Array<{

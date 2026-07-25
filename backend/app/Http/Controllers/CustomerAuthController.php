@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Http\Requests\Auth\CustomerJoinByQrRequest;
 use App\Http\Requests\Auth\CustomerLoginRequest;
 use App\Http\Requests\Auth\CustomerPasswordRequest;
 use App\Http\Requests\Auth\CustomerProfileRequest;
 use App\Http\Requests\Auth\CustomerRegisterRequest;
+use App\Models\Business;
 use App\Models\CustomerProfile;
 use App\Models\User;
+use App\Services\CustomerMembershipService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -152,6 +155,110 @@ class CustomerAuthController extends Controller
         return response()->json([
             'message' => 'Password updated successfully.',
         ]);
+    }
+
+    public function joinByQr(
+        CustomerJoinByQrRequest $request,
+        CustomerMembershipService $customerMembershipService
+    ): JsonResponse {
+        $user = $request->user();
+
+        if (! $user || $user->role !== UserRole::Customer) {
+            return response()->json([
+                'message' => 'Forbidden.',
+            ], 403);
+        }
+
+        $slug = $this->extractBusinessSlugFromQr((string) $request->validated('qr'));
+
+        if (! $slug) {
+            throw ValidationException::withMessages([
+                'qr' => ['Invalid business QR code.'],
+            ]);
+        }
+
+        $business = Business::query()
+            ->where('slug', $slug)
+            ->first();
+
+        if (! $business) {
+            return response()->json([
+                'message' => 'Business not found.',
+            ], 404);
+        }
+
+        $profile = $user->customerProfile;
+        $fallbackNames = preg_split('/\s+/', trim((string) $user->name)) ?: [];
+
+        $result = $customerMembershipService->registerForBusiness(
+            $business,
+            [
+                'first_name' => $profile?->first_name ?? ($fallbackNames[0] ?? 'Customer'),
+                'last_name' => $profile?->last_name ?? trim(implode(' ', array_slice($fallbackNames, 1))),
+                'email' => $profile?->email ?? $user->email,
+                'phone' => $profile?->phone,
+            ],
+            $user
+        );
+
+        return response()->json([
+            'message' => 'Joined business successfully.',
+            'business' => [
+                'id' => (string) $business->id,
+                'slug' => $business->slug,
+                'name' => $business->name,
+            ],
+            'customer' => [
+                'id' => (string) $result['customer']->id,
+                'qr_code' => $result['customer']->qr_code,
+            ],
+            'loyalty_card' => $result['loyalty_card'] ? [
+                'id' => (string) $result['loyalty_card']->id,
+                'business_id' => (string) $result['loyalty_card']->business_id,
+            ] : null,
+            'loyalty' => $result['loyalty'] ? [
+                'id' => (string) $result['loyalty']->id,
+                'customer_id' => (string) $result['loyalty']->customer_id,
+                'loyalty_card_id' => (string) $result['loyalty']->loyalty_card_id,
+                'current_stamps' => $result['loyalty']->current_stamps,
+            ] : null,
+        ]);
+    }
+
+    private function extractBusinessSlugFromQr(string $qr): ?string
+    {
+        $raw = trim($qr);
+        if ($raw === '') {
+            return null;
+        }
+
+        if (preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/i', $raw) === 1) {
+            return strtolower($raw);
+        }
+
+        if (filter_var($raw, FILTER_VALIDATE_URL)) {
+            $parts = parse_url($raw);
+
+            if (! empty($parts['query'])) {
+                parse_str($parts['query'], $query);
+                $slug = isset($query['slug']) ? trim((string) $query['slug']) : '';
+                if ($slug !== '' && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/i', $slug) === 1) {
+                    return strtolower($slug);
+                }
+            }
+
+            if (! empty($parts['path'])) {
+                $segments = array_values(array_filter(explode('/', (string) $parts['path'])));
+                if (count($segments) >= 1) {
+                    $candidate = end($segments);
+                    if (is_string($candidate) && preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/i', $candidate) === 1) {
+                        return strtolower($candidate);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private function createToken(User $user, Request $request): string
