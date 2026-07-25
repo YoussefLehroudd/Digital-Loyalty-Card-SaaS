@@ -28,11 +28,26 @@ class QrCodeService
     }
 
     /**
-     * QR that the frontend/customer can scan to join/unlock a specific business.
-     * Kept as a relative path so we don't hardcode the frontend domain.
+     * QR shown on the loyalty card (used by business scanning/redeeming).
+     * Must be unique per customer but also bound to the business they belong to.
+     *
+     * Format: b{businessId}:{uuid}
      */
-    public function generateBusinessJoinQrCode(int $businessId): string
+    public function generateBusinessBoundCustomerQrCode(int $businessId, int $maxAttempts = 5): string
     {
-        return '/user/login?join_business_id=' . $businessId;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $uuid = (string) str()->uuid();
+            $value = 'b' . $businessId . ':' . $uuid;
+
+            $exists = Customer::query()
+                ->where('qr_code', $value)
+                ->exists();
+
+            if (! $exists) {
+                return $value;
+            }
+        }
+
+        throw new RuntimeException('Unable to generate a unique business-bound QR code value.');
     }
 }
