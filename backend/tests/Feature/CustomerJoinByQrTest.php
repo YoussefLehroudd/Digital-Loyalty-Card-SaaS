@@ -195,6 +195,42 @@ class CustomerJoinByQrTest extends TestCase
         ]);
     }
 
+    public function test_joinbyqr_supports_url_with_business_id_query_param(): void
+    {
+        $business = Business::factory()->create([
+            'slug' => 'star-coffee',
+            'name' => 'Star Coffee',
+        ]);
+
+        LoyaltyCard::query()->create([
+            'business_id' => $business->id,
+            'reward_name' => 'Free Latte',
+            'required_stamps' => 8,
+            'reward_description' => 'After 8 stamps',
+        ]);
+
+        $user = User::factory()->create([
+            'role' => UserRole::Customer,
+            'name' => 'Ana Gomez',
+            'email' => 'ana@example.test',
+        ]);
+
+        $token = $user->createToken('test')->plainTextToken;
+
+        // Matches the frontend QR format:
+        // /user/login?join_business_id=1 (path irrelevant; query param drives selection)
+        $this->postJson('/api/user/join-by-qr', [
+            'qr' => 'https://digitalloyaltycard.example/user/login?join_business_id='.$business->id,
+        ], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('customers', [
+            'user_id' => $user->id,
+            'business_id' => $business->id,
+        ]);
+    }
+
     public function test_joinbyqr_supports_slug_anywhere_in_path(): void
     {
         $business = Business::factory()->create([

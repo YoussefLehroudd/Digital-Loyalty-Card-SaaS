@@ -183,28 +183,39 @@ class CustomerAuthController extends Controller
             'qr' => $qrValue,
         ]);
 
-        $slug = $this->extractBusinessSlugFromQr($qrValue);
-        Log::info('[joinByQr] extracted slug', [
-            'customer_user_id' => $user?->id,
-            'slug' => $slug,
-        ]);
+        $businessId = $this->extractBusinessIdFromQr($qrValue);
+        if ($businessId) {
+            $business = Business::query()->find($businessId);
 
-        if (! $slug) {
-            throw ValidationException::withMessages([
-                'qr' => ['Invalid business QR code.'],
+            Log::info('[joinByQr] extracted business id (join_business_id)', [
+                'customer_user_id' => $user?->id,
+                'business_id' => $businessId,
+                'business_found' => (bool) $business,
+            ]);
+        } else {
+            $slug = $this->extractBusinessSlugFromQr($qrValue);
+            Log::info('[joinByQr] extracted slug', [
+                'customer_user_id' => $user?->id,
+                'slug' => $slug,
+            ]);
+
+            if (! $slug) {
+                throw ValidationException::withMessages([
+                    'qr' => ['Invalid business QR code.'],
+                ]);
+            }
+
+            $business = Business::query()
+                ->where('slug', $slug)
+                ->first();
+
+            Log::info('[joinByQr] business lookup', [
+                'customer_user_id' => $user?->id,
+                'slug' => $slug,
+                'business_found' => (bool) $business,
+                'business_id' => $business?->id,
             ]);
         }
-
-        $business = Business::query()
-            ->where('slug', $slug)
-            ->first();
-
-        Log::info('[joinByQr] business lookup', [
-            'customer_user_id' => $user?->id,
-            'slug' => $slug,
-            'business_found' => (bool) $business,
-            'business_id' => $business?->id,
-        ]);
 
         if (! $business) {
             return response()->json([
@@ -248,6 +259,43 @@ class CustomerAuthController extends Controller
                 'current_stamps' => $result['loyalty']->current_stamps,
             ] : null,
         ]);
+    }
+
+    private function extractBusinessIdFromQr(string $qr): ?int
+    {
+        $raw = trim($qr);
+        if ($raw === '') {
+            return null;
+        }
+
+        // normalize encoded URLs like "...?join_business_id=1"
+        $raw = urldecode($raw);
+        $rawTrimmed = trim($raw);
+
+        if (! filter_var($rawTrimmed, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+
+        $parts = parse_url($rawTrimmed);
+        $query = $parts['query'] ?? null;
+        if (! is_string($query) || $query === '') {
+            return null;
+        }
+
+        parse_str($query, $parsed);
+        $rawBusinessId = $parsed['join_business_id'] ?? null;
+
+        if ($rawBusinessId === null || $rawBusinessId === '') {
+            return null;
+        }
+
+        // Accept numeric strings only.
+        if (! is_numeric($rawBusinessId)) {
+            return null;
+        }
+
+        $id = (int) $rawBusinessId;
+        return $id > 0 ? $id : null;
     }
 
     private function extractBusinessSlugFromQr(string $qr): ?string
