@@ -81,11 +81,44 @@ class CustomerDashboardController extends Controller
     {
         $userId = (int) auth()->user()->id;
 
+        // Current implementation of `cards()` uses:
+        // - `data.id` = customer_id (membership/customer record id)
+        // But frontend appears to call `/api/user/cards/{id}` with `loyalty_card.id`.
+        // To be backward-compatible, accept both:
+        // 1) {id} as customer id
+        // 2) {id} as loyalty_card id (via customer_loyalties.loyalty_card_id)
         $customer = Customer::query()
             ->where('user_id', $userId)
             ->whereKey($id)
             ->with('business')
             ->first();
+
+        if (! $customer) {
+            $loyaltyCard = LoyaltyCard::query()
+                ->whereKey($id)
+                ->first();
+
+            if (! $loyaltyCard) {
+                return response()->json(['message' => 'Card not found.'], Response::HTTP_NOT_FOUND);
+            }
+
+            $customerId = CustomerLoyalty::query()
+                ->where('loyalty_card_id', $loyaltyCard->id)
+                ->whereHas('customer', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->value('customer_id');
+
+            if (! $customerId) {
+                return response()->json(['message' => 'Card not found.'], Response::HTTP_NOT_FOUND);
+            }
+
+            $customer = Customer::query()
+                ->where('user_id', $userId)
+                ->whereKey($customerId)
+                ->with('business')
+                ->first();
+        }
 
         if (! $customer) {
             return response()->json(['message' => 'Card not found.'], Response::HTTP_NOT_FOUND);
@@ -95,6 +128,7 @@ class CustomerDashboardController extends Controller
         $cards = $this->cards()->getData(true)['data'] ?? [];
 
         foreach ($cards as $card) {
+            // cards() returns `id` as customer_id
             if (($card['id'] ?? null) === (string) $customer->id) {
                 return response()->json([
                     'data' => $card,
