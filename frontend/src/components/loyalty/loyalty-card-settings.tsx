@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BadgeCheck, Copy, CreditCard, Download, Gift, Loader2, QrCode, Save, X } from "lucide-react";
+import { BadgeCheck, CreditCard, Download, Gift, Loader2, QrCode, Save } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Modal } from "@/components/ui/modal";
 import { ApiError } from "@/lib/api";
 import {
   createLoyaltyCard,
@@ -256,15 +257,6 @@ export function LoyaltyCardSettings() {
     };
   }, [joinUrl]);
 
-  const copyJoinUrl = useCallback(async () => {
-    if (!joinUrl) return;
-    try {
-      await navigator.clipboard.writeText(joinUrl);
-      setSuccess("Join URL copied.");
-    } catch {
-      setError("Could not copy join URL.");
-    }
-  }, [joinUrl]);
 
   const downloadJoinQr = useCallback(() => {
     if (!joinQrDataUrl) return;
@@ -275,21 +267,6 @@ export function LoyaltyCardSettings() {
     a.click();
     a.remove();
   }, [business?.slug, joinQrDataUrl]);
-
-  useEffect(() => {
-    if (!isJoinQrOpen) return;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsJoinQrOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isJoinQrOpen]);
 
   return (
     <DashboardShell activeItem="loyalty">
@@ -390,89 +367,49 @@ export function LoyaltyCardSettings() {
             <PremiumLoyaltyCardPreview
               business={business}
               preview={preview}
-              joinUrl={joinUrl}
-              joinQrDataUrl={joinQrDataUrl}
-              copyJoinUrl={copyJoinUrl}
-              downloadJoinQr={downloadJoinQr}
               onOpenJoinQr={() => setIsJoinQrOpen(true)}
             />
           </div>
         )}
       </div>
 
-      {isJoinQrOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onClick={() => setIsJoinQrOpen(false)}
-          role="presentation"
-        >
-          <Card
-            className="w-full max-w-md border-border bg-background"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <QrCode className="size-4" />
-                  Customer Join QR
-                </CardTitle>
-                <CardDescription>
-                  Display this in store so customers can scan and join instantly.
-                </CardDescription>
-              </div>
+      <Modal
+        isOpen={isJoinQrOpen}
+        onClose={() => setIsJoinQrOpen(false)}
+        title="Customer Join QR"
+        description="Display this in store so customers can scan and join instantly."
+      >
+        <div className="space-y-3">
+          {joinQrDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={joinQrDataUrl}
+              alt="Customer join QR code"
+              className="mx-auto h-56 w-56 rounded-md border bg-white p-2"
+            />
+          ) : (
+            <div className="rounded-md border p-3 text-xs text-muted-foreground">
+              QR could not be generated because business identity is missing.
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsJoinQrOpen(false)}
-                aria-label="Close QR modal"
+                variant="outline"
+                onClick={downloadJoinQr}
+                disabled={!joinQrDataUrl}
               >
-                <X className="size-4" />
+                <Download className="size-4" />
+                Download QR
               </Button>
-            </CardHeader>
+            </div>
 
-            <CardContent className="space-y-3">
-              {joinQrDataUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={joinQrDataUrl}
-                  alt="Customer join QR code"
-                  className="mx-auto h-56 w-56 rounded-md border bg-white p-2"
-                />
-              ) : (
-                <div className="rounded-md border p-3 text-xs text-muted-foreground">
-                  QR could not be generated because business identity is missing.
-                </div>
-              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="join-url-modal">Join URL</Label>
-                <Input id="join-url-modal" readOnly value={joinUrl} />
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={copyJoinUrl}
-                    disabled={!joinUrl}
-                  >
-                    <Copy className="size-4" />
-                    Copy
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={downloadJoinQr}
-                    disabled={!joinQrDataUrl}
-                  >
-                    <Download className="size-4" />
-                    Download QR
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
-      ) : null}
+      </Modal>
     </DashboardShell>
   );
 }
@@ -514,10 +451,6 @@ function Field({
 function PremiumLoyaltyCardPreview({
   business,
   preview,
-  joinUrl,
-  joinQrDataUrl,
-  copyJoinUrl,
-  downloadJoinQr,
   onOpenJoinQr,
 }: {
   business: {
@@ -530,10 +463,6 @@ function PremiumLoyaltyCardPreview({
     hero_image_position_y?: number | null;
   } | null;
   preview: { reward_name: string; required_stamps: number; reward_description: string };
-  joinUrl: string;
-  joinQrDataUrl: string;
-  copyJoinUrl: () => void | Promise<void>;
-  downloadJoinQr: () => void;
   onOpenJoinQr: () => void;
 }) {
   const brandColor = business?.primary_color ?? "#171717";
