@@ -77,6 +77,8 @@ export async function apiFetch<T>(
   const method = options.method ?? "GET";
   const stateChanging = isStateChangingMethod(method);
 
+  const url = `${API_BASE_URL}${path}`;
+
   // Build headers first (we may add X-XSRF-TOKEN below)
   // We intentionally keep this as a string map to avoid `any` + satisfy eslint.
   const finalHeaders: Record<string, string> = {
@@ -90,32 +92,47 @@ export async function apiFetch<T>(
   // This fixes production 419 when cookies are sent but header is missing.
   if (stateChanging) {
     await primeSanctumCsrf();
-    const cookieStr = typeof window !== "undefined" ? window.document.cookie : "";
     const xsrfToken = getCookie("XSRF-TOKEN");
     const hasXsrf = Boolean(xsrfToken);
 
-    // Ensure we set it AFTER headers merge.
     if (hasXsrf) {
       finalHeaders["X-XSRF-TOKEN"] = xsrfToken as string;
     }
+  }
 
-    // Temporary CSRF verification (remove later if needed)
-    console.log({
-      url: `${API_BASE_URL}${path}`,
+  // Safe debug logs (no token/cookie contents)
+  if (typeof window !== "undefined") {
+    console.log("[apiFetch]", {
+      API_BASE_URL,
+      path,
+      url,
       method,
-      xsrfExists: hasXsrf,
-      cookieContainsXsrfToken: cookieStr.includes("XSRF-TOKEN="),
-      cookieStr,
-      finalHeaders,
+      tokenProvided: Boolean(token),
+      stateChanging,
+      authHeaderPresent: Boolean(token),
+      hasXSRFHeader: Boolean(finalHeaders["X-XSRF-TOKEN"] || finalHeaders["XSRF-TOKEN"]),
     });
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    // Important for Sanctum CSRF/stateful auth in production
-    credentials: options.credentials ?? "include",
-    ...options,
-    headers: finalHeaders,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      // Important for Sanctum CSRF/stateful auth in production
+      credentials: options.credentials ?? "include",
+      ...options,
+      headers: finalHeaders,
+    });
+  } catch (err) {
+    // This is the exact "Failed to fetch" case (network/CORS/mixed-content/host mismatch)
+    console.log("[apiFetch:fetch_error]", {
+      url,
+      method,
+      tokenProvided: Boolean(token),
+      errorName: err instanceof Error ? err.name : typeof err,
+      errorMessage: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);

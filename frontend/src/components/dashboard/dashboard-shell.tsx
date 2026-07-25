@@ -32,7 +32,7 @@ type DashboardShellProps = {
 
 const sidebarItems = [
   { key: "overview", label: "Overview", icon: Home, href: "/dashboard" },
-  { key: "customers", label: "Customers", icon: Users },
+  { key: "customers", label: "Customers", icon: Users, href: "/dashboard/customers" },
   {
     key: "loyalty",
     label: "Loyalty card",
@@ -40,7 +40,7 @@ const sidebarItems = [
     href: "/dashboard/loyalty-card",
   },
   { key: "scanner", label: "Scanner", icon: ScanLine, href: "/dashboard/scanner" },
-  { key: "rewards", label: "Rewards", icon: Gift },
+  { key: "rewards", label: "Rewards", icon: Gift, href: "/dashboard/rewards" },
   {
     key: "settings",
     label: "Settings",

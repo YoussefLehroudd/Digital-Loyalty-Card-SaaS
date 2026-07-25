@@ -78,6 +78,10 @@ body {
   appearance: none;
   height: 24px; /* provides room for thumb */
   background: transparent;
+
+  /* Makes the default "filled" portion match the design token in browsers
+     that use accent-color (Chrome/WebKit) for the active range portion. */
+  accent-color: var(--ring);
 }
 
 #hero-zoom:focus,
@@ -128,6 +132,15 @@ body {
 .dark #hero-position-x::-moz-range-track,
 .dark #hero-position-y::-moz-range-track {
   background: rgba(49, 49, 45, 0.9);
+}
+
+/* Firefox filled/active portion */
+#hero-zoom::-moz-range-progress,
+#hero-position-x::-moz-range-progress,
+#hero-position-y::-moz-range-progress {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--ring);
 }
 
 #hero-zoom::-moz-range-thumb,

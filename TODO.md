@@ -1,25 +1,55 @@
-# TODO - Customer Wallet Flow
+# Customer App Production Completion TODO
 
-- [x] Audit existing frontend/backend files for customer wallet flow
-  - [x] `frontend/src/components/loyalty/PublicCustomerRegisterForm.tsx`
-  - [x] `frontend/src/components/loyalty/PublicBusinessPage.tsx`
-  - [x] `frontend/src/app/[business_slug]/page.tsx`
-  - [x] `frontend/src/lib/public.ts`
-  - [x] `backend/app/Http/Controllers/PublicCustomerController.php`
-- [x] Implement frontend wallet API support
-  - [x] Add wallet response types in `frontend/src/lib/public.ts`
-  - [x] Add `getPublicCustomerWallet(qrCode)` function
-- [x] Implement wallet page UI
-  - [x] Create `frontend/src/components/loyalty/PublicCustomerWalletPage.tsx`
-  - [x] Create `frontend/src/app/wallet/[qrCode]/page.tsx`
-  - [x] Include loading/error/invalid-QR/missing-loyalty states
-  - [x] Mobile-first layout with branding, progress, QR, customer data
-- [x] Connect registration redirect to wallet
-  - [x] Update `frontend/src/components/loyalty/PublicCustomerRegisterForm.tsx`
-- [ ] Build and test
-  - [ ] `cd frontend && npm run build`
-  - [ ] `cd backend && php artisan test`
-- [ ] Final report
-  - [ ] Files changed
-  - [ ] Test results
-  - [ ] Remaining MVP gaps
+## In Progress Plan (Approved)
+
+- [x] Backend customer route architecture fixed (`/api/user/*`)
+- [x] Backend customer API feature tests added
+- [x] Backend test suite passing
+
+## Frontend core already done
+
+- [x] `/user/login`
+- [x] `/user/register`
+- [x] `/user/dashboard`
+- [x] `/user/cards`
+- [x] `/user/rewards`
+- [x] `/user/activity`
+- [x] customer auth provider + guard
+- [x] customer layout with bottom navigation
+- [x] loyalty card carousel base version
+
+## Remaining implementation
+
+- [ ] Implement `/user/profile`
+- [ ] Implement `/user/settings`
+- [ ] Implement `/user/notifications`
+- [ ] Add editable profile fields (name/email/phone/avatar)
+- [ ] Add change password flow
+- [ ] Add notification preferences persistence (customer profile preferences)
+- [ ] Add dark mode toggle in customer UX
+- [ ] Add logout confirmation interaction
+- [ ] Add multi-business switcher behavior
+- [ ] Improve loyalty card animation polish
+- [ ] Add pull-to-refresh utility and integrate on user pages
+- [ ] Add reusable skeleton states
+- [ ] Add reusable empty/error states
+- [ ] Ensure QR card quick access from layout
+- [ ] Keep Google Wallet placeholder ready for future integration
+- [ ] Improve accessibility (labels/aria/focus keyboard flows)
+
+## Final validation
+
+- [ ] Run backend tests: `cd backend && php artisan test`
+- [ ] Run frontend lint: `cd frontend && npm run lint`
+- [ ] Run frontend build: `cd frontend && npm run build`
+- [ ] Verify full flow:
+  - [ ] Register
+  - [ ] Login
+  - [ ] Dashboard
+  - [ ] Cards
+  - [ ] Rewards
+  - [ ] Activity
+  - [ ] Profile
+  - [ ] Settings
+  - [ ] Notifications
+  - [ ] Logout

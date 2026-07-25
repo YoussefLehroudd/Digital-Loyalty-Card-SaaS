@@ -1,3 +1,8 @@
-- [ ] Create CSS rules in frontend/src/app/globals.css for #hero-position-x and #hero-position-y to show visible track and modern thumb.
-- [ ] Update only styling/className on the two range inputs in BusinessProfileSettings to use those rules.
-- [ ] Verify visually by running the frontend and checking the settings page.
+- [ ] Implement API auth JSON handling fix:
+  - [ ] Create middleware `ForceJsonForApi` to set `Accept: application/json` for `/api/*`
+  - [ ] Register middleware alias in `backend/bootstrap/app.php`
+  - [ ] Apply middleware to `backend/routes/api.php` groups that use `auth:sanctum` (including `/business/customers`)
+  - [ ] Re-test:
+    - [ ] GET /api/business/customers without token -> 401 JSON {"message":"Unauthenticated."}
+    - [ ] GET /api/business/customers with valid Sanctum token -> 200 JSON with data/meta/summary
+- [ ] No frontend/UI changes until API fix verified.

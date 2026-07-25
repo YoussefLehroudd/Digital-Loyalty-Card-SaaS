@@ -10,6 +10,7 @@ import { z } from "zod";
 import { FormError } from "@/components/auth/form-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { resetPassword } from "@/lib/auth";
@@ -102,10 +103,9 @@ export function ResetPasswordForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="password">New password</Label>
-          <Input
+          <PasswordInput
             autoComplete="new-password"
             id="password"
-            type="password"
             {...register("password")}
           />
           {errors.password ? (
@@ -114,10 +114,9 @@ export function ResetPasswordForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="passwordConfirmation">Confirm password</Label>
-          <Input
+          <PasswordInput
             autoComplete="new-password"
             id="passwordConfirmation"
-            type="password"
             {...register("passwordConfirmation")}
           />
           {errors.passwordConfirmation ? (

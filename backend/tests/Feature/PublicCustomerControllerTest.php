@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\CustomerLoyalty;
 use App\Models\LoyaltyCard;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -156,5 +158,197 @@ class PublicCustomerControllerTest extends TestCase
             ->getJson('/api/public/customers/wallet/unknown-qr')
             ->assertNotFound()
             ->assertJsonPath('message', 'Customer wallet not found.');
+    }
+
+    public function test_authenticated_customer_registers_with_business_creates_membership_loyalty_and_qr(): void
+    {
+        $business = Business::factory()->create([
+            'slug' => 'star-coffee',
+        ]);
+
+        $loyaltyCard = LoyaltyCard::query()->create([
+            'business_id' => $business->id,
+            'reward_name' => 'Free Drink',
+            'required_stamps' => 10,
+            'reward_description' => 'Reward description',
+        ]);
+
+        $customerUser = User::factory()->create([
+            'role' => UserRole::Customer,
+        ]);
+
+        $token = $customerUser->createToken('test')->plainTextToken;
+
+        $response = $this
+            ->postJson('/api/public/businesses/star-coffee/customers/register', [
+                'first_name' => 'Ana',
+                'last_name' => 'Gomez',
+                'email' => 'ana@example.test',
+                'phone' => '+1 555 0001',
+            ], [
+                'Authorization' => 'Bearer '.$token,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('message', 'Customer registered successfully.')
+            ->assertJsonPath('customer.user_id', (string) $customerUser->id)
+            ->assertJsonPath('customer.business_id', (string) $business->id)
+            ->assertJsonPath('loyalty_card.id', (string) $loyaltyCard->id);
+
+        $customerId = (int) $response->json('customer.id');
+
+        $this->assertDatabaseHas('customers', [
+            'id' => $customerId,
+            'user_id' => $customerUser->id,
+            'business_id' => $business->id,
+            'first_name' => 'Ana',
+            'last_name' => 'Gomez',
+            'email' => 'ana@example.test',
+        ]);
+
+        $this->assertDatabaseHas('customer_loyalties', [
+            'customer_id' => $customerId,
+            'loyalty_card_id' => $loyaltyCard->id,
+            'current_stamps' => 0,
+        ]);
+
+        $this->assertDatabaseCount('customers', 1);
+    }
+
+    public function test_authenticated_customer_registers_twice_does_not_duplicate_membership(): void
+    {
+        $business = Business::factory()->create([
+            'slug' => 'star-coffee',
+        ]);
+
+        LoyaltyCard::query()->create([
+            'business_id' => $business->id,
+            'reward_name' => 'Free Drink',
+            'required_stamps' => 10,
+            'reward_description' => 'Reward description',
+        ]);
+
+        $customerUser = User::factory()->create([
+            'role' => UserRole::Customer,
+        ]);
+
+        $token = $customerUser->createToken('test')->plainTextToken;
+
+        $payload = [
+            'first_name' => 'Ana',
+            'last_name' => 'Gomez',
+            'email' => 'ana@example.test',
+            'phone' => '+1 555 0001',
+        ];
+
+        $this
+            ->postJson('/api/public/businesses/star-coffee/customers/register', $payload, [
+                'Authorization' => 'Bearer '.$token,
+            ])
+            ->assertCreated();
+
+        $this
+            ->postJson('/api/public/businesses/star-coffee/customers/register', $payload, [
+                'Authorization' => 'Bearer '.$token,
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseCount('customers', 1);
+
+        $this->assertDatabaseHas('customers', [
+            'user_id' => $customerUser->id,
+            'business_id' => $business->id,
+        ]);
+    }
+
+    public function test_guest_customer_register_behavior_unchanged(): void
+    {
+        $business = Business::factory()->create([
+            'slug' => 'star-coffee',
+        ]);
+
+        $loyaltyCard = LoyaltyCard::query()->create([
+            'business_id' => $business->id,
+            'reward_name' => 'Free Drink',
+            'required_stamps' => 10,
+            'reward_description' => 'Reward description',
+        ]);
+
+        $this
+            ->postJson('/api/public/businesses/star-coffee/customers/register', [
+                'first_name' => 'Ana',
+                'last_name' => 'Gomez',
+                'email' => 'ana@example.test',
+                'phone' => '+1 555 0001',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('message', 'Customer registered successfully.')
+            ->assertJsonPath('customer.business_id', (string) $business->id)
+            ->assertJsonPath('customer.user_id', null)
+            ->assertJsonPath('loyalty_card', null);
+
+        // Loyalty progress is still created for guest flow if a loyalty card exists.
+        $customer = Customer::query()->where('business_id', $business->id)->first();
+        $this->assertNotNull($customer);
+        $this->assertDatabaseHas('customer_loyalties', [
+            'customer_id' => $customer->id,
+            'loyalty_card_id' => $loyaltyCard->id,
+            'current_stamps' => 0,
+        ]);
+    }
+
+    public function test_authenticated_admin_cannot_link_customer_membership(): void
+    {
+        $business = Business::factory()->create([
+            'slug' => 'star-coffee',
+        ]);
+
+        User::factory()->create([
+            'role' => UserRole::BusinessOwner,
+        ]);
+
+        $adminUser = User::factory()->create([
+            'role' => UserRole::BusinessOwner,
+        ]);
+
+        $token = $adminUser->createToken('test')->plainTextToken;
+
+        $this
+            ->postJson('/api/public/businesses/star-coffee/customers/register', [
+                'first_name' => 'Admin',
+                'last_name' => 'User',
+                'email' => 'admin@example.test',
+            ], [
+                'Authorization' => 'Bearer '.$token,
+            ])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Forbidden.');
+
+        $this->assertDatabaseCount('customers', 0);
+    }
+
+    public function test_authenticated_business_owner_cannot_link_customer_membership(): void
+    {
+        $business = Business::factory()->create([
+            'slug' => 'star-coffee',
+        ]);
+
+        $businessOwner = User::factory()->create([
+            'role' => UserRole::BusinessOwner,
+        ]);
+
+        $token = $businessOwner->createToken('test')->plainTextToken;
+
+        $this
+            ->postJson('/api/public/businesses/star-coffee/customers/register', [
+                'first_name' => 'Owner',
+                'last_name' => 'User',
+                'email' => 'owner@example.test',
+            ], [
+                'Authorization' => 'Bearer '.$token,
+            ])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Forbidden.');
+
+        $this->assertDatabaseCount('customers', 0);
     }
 }

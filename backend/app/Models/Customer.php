@@ -15,6 +15,7 @@ class Customer extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'business_id',
         'first_name',
         'last_name',
@@ -26,6 +27,11 @@ class Customer extends Model
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function visits(): HasMany

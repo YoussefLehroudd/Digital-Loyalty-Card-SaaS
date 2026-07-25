@@ -17,6 +17,14 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
+     * Get the master customer profile (business-independent).
+     */
+    public function customerProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CustomerProfile::class);
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QrCode, RefreshCw, XCircle } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-guard";
@@ -34,9 +34,13 @@ export default function ScannerPage() {
 
   const [redeeming, setRedeeming] = useState(false);
 
-  const [scanAnother, setScanAnother] = useState<(() => void) | null>(null);
+  const scanAnotherRef = useRef<(() => void) | null>(null);
 
   const qrValue = useMemo(() => decodedQr ?? "", [decodedQr]);
+
+  const handleResetReady = useCallback((resetFn: () => void) => {
+    scanAnotherRef.current = resetFn;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,10 +173,7 @@ export default function ScannerPage() {
           <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 md:items-start">
             {/* Left: scanner */}
             <div className="min-w-0">
-              <StaffQrScanner
-                onQrScanned={handleQrScanned}
-                onResetReady={(resetFn) => setScanAnother(() => resetFn)}
-              />
+              <StaffQrScanner onQrScanned={handleQrScanned} onResetReady={handleResetReady} />
             </div>
 
             {/* Right: your customer QR (stretch to match left card height when possible) */}
@@ -236,7 +237,7 @@ export default function ScannerPage() {
               onClose={clearResult}
               onScanAnother={() => {
                 clearResult();
-                scanAnother?.();
+                scanAnotherRef.current?.();
               }}
             />
           ) : null}

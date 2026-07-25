@@ -10,6 +10,7 @@ import { z } from "zod";
 import { FormError } from "@/components/auth/form-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { registerBusinessOwner, storeToken } from "@/lib/auth";
@@ -151,7 +152,11 @@ function Field({ label, error, type = "text", registration }: FieldProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type={type} {...registration} />
+      {type === "password" ? (
+        <PasswordInput id={id} {...registration} />
+      ) : (
+        <Input id={id} type={type} {...registration} />
+      )}
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>
   );

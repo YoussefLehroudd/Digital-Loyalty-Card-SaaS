@@ -10,6 +10,7 @@ import { z } from "zod";
 import { FormError } from "@/components/auth/form-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { login, storeToken } from "@/lib/auth";
@@ -90,11 +91,10 @@ export function LoginForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
+        <PasswordInput
           autoComplete="current-password"
           id="password"
           placeholder="Password"
-          type="password"
           {...register("password")}
         />
         {errors.password ? (
