@@ -21,8 +21,8 @@ export default function UserCardsPage() {
   const [scanOpen, setScanOpen] = useState(false);
   const [joining, setJoining] = useState(false);
 
-  const reload = async () => {
-    if (!token) return;
+  const reload = async (): Promise<CustomerCardItem[]> => {
+    if (!token) return [];
     setLoading(true);
     setError(null);
 
@@ -37,8 +37,11 @@ export default function UserCardsPage() {
       } else {
         setSelected(null);
       }
+
+      return list;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load your cards");
+      return [];
     } finally {
       setLoading(false);
     }
@@ -67,11 +70,27 @@ export default function UserCardsPage() {
         <Card>
           <CardContent className="space-y-4 p-4">
             <p className="text-sm text-muted-foreground">
-              Scan a business QR code to get your loyalty card instantly
+              Join a business loyalty program to see your cards here.
             </p>
-            <Button type="button" onClick={() => setScanOpen((v) => !v)} disabled={joining}>
-              {scanOpen ? "Close Scanner" : "Scan QR Code"}
-            </Button>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                onClick={() => router.push("/user/join")}
+                disabled={joining}
+              >
+                Join Loyalty Program
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setScanOpen((v) => !v)}
+                disabled={joining}
+              >
+                {scanOpen ? "Close Scanner" : "Scan QR Code"}
+              </Button>
+            </div>
 
             {scanOpen ? (
               <StaffQrScanner
@@ -93,7 +112,11 @@ export default function UserCardsPage() {
 
                     router.push("/user/cards");
                   } catch (err) {
-                    setError(err instanceof Error ? err.message : "Unable to join this business from QR");
+                    setError(
+                      err instanceof Error
+                        ? err.message
+                        : "Unable to join this business from QR",
+                    );
                   } finally {
                     setJoining(false);
                   }
@@ -106,12 +129,23 @@ export default function UserCardsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Button
+              type="button"
+              onClick={() => router.push("/user/join")}
+              className="w-full sm:w-auto"
+            >
+              + Add Loyalty Card
+            </Button>
+          </div>
+
           <CustomerCardCarousel
             cards={cards}
             selectedId={selected?.id}
             onChange={(card) => {
               setSelected(card);
             }}
+            onRefresh={reload}
           />
         </div>
       )}

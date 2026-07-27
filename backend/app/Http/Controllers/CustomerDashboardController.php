@@ -15,6 +15,39 @@ use Throwable;
 
 class CustomerDashboardController extends Controller
 {
+    public function deleteCard(string $membershipId): JsonResponse
+    {
+        $userId = (int) auth()->user()->id;
+        $membershipCustomerId = (int) $membershipId;
+
+        // MembershipId is expected to be the `customers.id` row (frontend uses CustomerCardItem.id).
+        $customer = Customer::query()
+            ->where('user_id', $userId)
+            ->whereKey($membershipCustomerId)
+            ->first();
+
+        if (! $customer) {
+            return response()->json(['message' => 'Card not found.'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Delete loyalty progress first (customer loyalty rows point to this customer).
+        CustomerLoyalty::query()
+            ->where('customer_id', $customer->id)
+            ->delete();
+
+        // Delete membership row for this business.
+        $customer->delete();
+
+        return response()->json([
+            'message' => 'Card removed successfully.',
+            'data' => [
+                'membershipId' => (string) $membershipCustomerId,
+            ],
+            'meta' => [],
+            'summary' => [],
+        ], Response::HTTP_OK);
+    }
+
     public function cards(): JsonResponse
     {
         $userId = (int) auth()->user()->id;

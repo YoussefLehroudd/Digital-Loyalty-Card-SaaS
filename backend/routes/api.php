@@ -44,6 +44,7 @@ Route::prefix('user')->group(function (): void {
         Route::put('/password', [CustomerAuthController::class, 'changePassword']);
         Route::get('/cards', [\App\Http\Controllers\CustomerDashboardController::class, 'cards']);
         Route::get('/cards/{id}', [\App\Http\Controllers\CustomerDashboardController::class, 'card']);
+        Route::delete('/cards/{membershipId}', [\App\Http\Controllers\CustomerDashboardController::class, 'deleteCard']);
         Route::get('/rewards', [\App\Http\Controllers\CustomerDashboardController::class, 'rewards']);
         Route::get('/activity', [\App\Http\Controllers\CustomerDashboardController::class, 'activity']);
         Route::get('/notifications', [\App\Http\Controllers\CustomerDashboardController::class, 'notifications']);

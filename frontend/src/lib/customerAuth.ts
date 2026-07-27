@@ -177,6 +177,13 @@ export function customerCardById(token: string, id: string) {
   return apiFetch<{ data: CustomerCardItem }>("/user/cards/" + id, { token });
 }
 
+export function customerDeleteCard(token: string, membershipId: string) {
+  return apiFetch<{ message: string }>(`/user/cards/${membershipId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
 export function customerRewards(token: string) {
   return apiFetch<{
     data: {
