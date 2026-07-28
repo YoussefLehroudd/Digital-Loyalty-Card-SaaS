@@ -1,0 +1,16 @@
+# Force Nixpacks to enable the pcntl extension for the PHP runtime.
+# Laravel Reverb requires pcntl for SIGINT/SIGTERM handling.
+
+[phases.setup]
+cmds = [
+  # If the helper exists (common in docker-php style images), enable pcntl.
+  "if command -v docker-php-ext-enable >/dev/null 2>&1; then docker-php-ext-enable pcntl; fi",
+  # No-op otherwise; extension availability is builder-dependent.
+  "true"
+]
+
+[variables]
+# Documented defaults; Railway env should override these.
+REVERB_HOST = "backendhrd.up.railway.app"
+REVERB_PORT = "443"
+REVERB_SCHEME = "https"
