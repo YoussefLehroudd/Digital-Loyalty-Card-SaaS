@@ -4,6 +4,13 @@ import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
 
 type Props = {
   businessName: string;
+  businessLogoUrl?: string | null;
+
+  heroImageUrl?: string | null;
+  heroImageZoom?: number | null;
+  heroImagePositionX?: number | null;
+  heroImagePositionY?: number | null;
+
   brandPrimaryColor?: string | null;
   memberName?: string | null;
   cardNumber?: string | null;
@@ -17,6 +24,11 @@ type Props = {
 
 export default function LoyaltyCard({
   businessName,
+  businessLogoUrl,
+  heroImageUrl,
+  heroImageZoom,
+  heroImagePositionX,
+  heroImagePositionY,
   brandPrimaryColor,
   memberName,
   cardNumber,
@@ -30,6 +42,11 @@ export default function LoyaltyCard({
   return (
     <LoyaltyCardVisual
       businessName={businessName}
+      businessLogoUrl={businessLogoUrl}
+      heroImageUrl={heroImageUrl}
+      heroImageZoom={heroImageZoom}
+      heroImagePositionX={heroImagePositionX}
+      heroImagePositionY={heroImagePositionY}
       brandPrimaryColor={brandPrimaryColor}
       memberName={memberName}
       cardNumber={cardNumber}

@@ -157,6 +157,11 @@ export default function CustomerCardPortalPage() {
             {profile.data && loyalty && loyaltyCard ? (
               <LoyaltyCard
                 businessName={profile.data.business.name ?? ""}
+                businessLogoUrl={profile.data.business.logo_url ?? null}
+                heroImageUrl={profile.data.business.hero_image_url ?? null}
+                heroImageZoom={profile.data.business.hero_image_zoom ?? null}
+                heroImagePositionX={profile.data.business.hero_image_position_x ?? null}
+                heroImagePositionY={profile.data.business.hero_image_position_y ?? null}
                 brandPrimaryColor={profile.data.business.primary_color}
                 memberName={`${profile.data.customer.first_name} ${profile.data.customer.last_name}`.trim()}
                 cardNumber={null}

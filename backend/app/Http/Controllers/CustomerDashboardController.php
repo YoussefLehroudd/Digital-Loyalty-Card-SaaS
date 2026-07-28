@@ -78,6 +78,10 @@ class CustomerDashboardController extends Controller
                     'slug' => $customer->business?->slug,
                     'logo_url' => $customer->business?->logo_url,
                     'primary_color' => $customer->business?->primary_color,
+                    'hero_image_url' => $customer->business?->hero_image_url,
+                    'hero_image_zoom' => $customer->business?->hero_image_zoom,
+                    'hero_image_position_x' => $customer->business?->hero_image_position_x,
+                    'hero_image_position_y' => $customer->business?->hero_image_position_y,
                 ],
                 'membership' => [
                     'qr_code' => $customer->qr_code,

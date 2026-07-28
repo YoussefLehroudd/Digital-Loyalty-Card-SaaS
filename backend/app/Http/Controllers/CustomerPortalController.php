@@ -130,6 +130,10 @@ class CustomerPortalController extends Controller
                     'slug' => $business->slug,
                     'logo_url' => $business->logo_url,
                     'primary_color' => $business->primary_color,
+                    'hero_image_url' => $business->hero_image_url,
+                    'hero_image_zoom' => $business->hero_image_zoom,
+                    'hero_image_position_x' => $business->hero_image_position_x,
+                    'hero_image_position_y' => $business->hero_image_position_y,
                 ],
                 'loyalty' => [
                     'current_stamps' => $current,
@@ -190,6 +194,10 @@ class CustomerPortalController extends Controller
                         'name' => $business?->name,
                         'logo_url' => $business?->logo_url,
                         'primary_color' => $business?->primary_color,
+                        'hero_image_url' => $business?->hero_image_url,
+                        'hero_image_zoom' => $business?->hero_image_zoom,
+                        'hero_image_position_x' => $business?->hero_image_position_x,
+                        'hero_image_position_y' => $business?->hero_image_position_y,
                     ],
                     // In Phase 1 we keep the existing QR code behavior for scanning.
                     // QR image data generation happens on frontend.

@@ -133,6 +133,11 @@ export function CustomerCardCarousel({
 
         <LoyaltyCardVisual
           businessName={current.business.name}
+          businessLogoUrl={current.business.logo_url}
+          heroImageUrl={current.business.hero_image_url}
+          heroImageZoom={current.business.hero_image_zoom}
+          heroImagePositionX={current.business.hero_image_position_x}
+          heroImagePositionY={current.business.hero_image_position_y}
           brandPrimaryColor={current.business.primary_color}
           memberName={displayName}
           rewardName={rewardName}

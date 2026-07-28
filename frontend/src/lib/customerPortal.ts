@@ -15,6 +15,10 @@ export type CustomerPortalProfile = {
     slug: string;
     logo_url: string | null;
     primary_color: string | null;
+    hero_image_url: string | null;
+    hero_image_zoom: number | null;
+    hero_image_position_x: number | null;
+    hero_image_position_y: number | null;
   };
   loyalty: {
     current_stamps: number;
@@ -41,6 +45,10 @@ export type CustomerPortalCardsResponse = {
     name: string | null;
     logo_url: string | null;
     primary_color: string | null;
+    hero_image_url: string | null;
+    hero_image_zoom: number | null;
+    hero_image_position_x: number | null;
+    hero_image_position_y: number | null;
   };
   customer_qr_code: string | null;
 };

@@ -145,6 +145,10 @@ export type CustomerCardItem = {
     slug: string;
     logo_url: string | null;
     primary_color: string | null;
+    hero_image_url: string | null;
+    hero_image_zoom: number | null;
+    hero_image_position_x: number | null;
+    hero_image_position_y: number | null;
   };
   membership: {
     qr_code: string | null;

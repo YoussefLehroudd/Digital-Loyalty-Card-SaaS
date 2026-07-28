@@ -79,7 +79,7 @@ export function CustomerLayout({
       </nav>
 
       <footer className="mx-auto w-full max-w-md px-4 pb-28 text-center text-xs text-muted-foreground">
-        {user ? `Signed in as ${user.email}` : ""}
+        {user && pathname === "/user/profile" ? `Signed in as ${user.email}` : ""}
       </footer>
     </div>
   );
