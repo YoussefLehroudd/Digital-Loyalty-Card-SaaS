@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     curl \
     supervisor \
+    nginx \
+    gettext-base \
     libpq-dev \
     libzip-dev \
     libonig-dev \
@@ -49,10 +51,14 @@ RUN if [ ! -f .env ] && [ -f .env.example ]; then cp .env.example .env; fi
 # Ensure writable dirs
 RUN mkdir -p /app/storage /app/bootstrap/cache && chmod -R 777 /app/storage /app/bootstrap/cache
 
-# Supervisor to run API + Reverb
+# Supervisor + Nginx config/templates
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY nginx.conf.template /etc/nginx/nginx.conf.template
+COPY start-nginx.sh /usr/local/bin/start-nginx.sh
+RUN chmod +x /usr/local/bin/start-nginx.sh
 
+# Internal API/Reverb ports + public nginx port
 EXPOSE 8000
-EXPOSE 8080
+EXPOSE 8081
 
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

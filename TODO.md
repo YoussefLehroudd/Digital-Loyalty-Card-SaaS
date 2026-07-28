@@ -1,7 +1,13 @@
-# TODO
+# TODO - Railway single-service Nginx + Laravel API + Reverb
 
-- [ ] Add Customer Join QR section to loyalty card settings UI (QR image, join URL, copy, download)
-- [ ] Add join-intent persistence utility (save/read/clear pending join QR)
-- [ ] Update customer login/register to complete pending join after auth
-- [ ] Run frontend lint
-- [ ] Run frontend build
+- [ ] Update `backend/Dockerfile` to install and configure nginx + envsubst support with supervisor startup
+- [ ] Update `backend/supervisord.conf` to run:
+  - [ ] API on `127.0.0.1:8000`
+  - [ ] Reverb on `127.0.0.1:8081`
+  - [ ] Nginx via envsubst startup script using `$PORT`
+- [ ] Create `backend/nginx.conf.template` with:
+  - [ ] `/app/` proxy to Reverb (`127.0.0.1:8081`) including websocket headers
+  - [ ] `/` proxy to API (`127.0.0.1:8000`)
+  - [ ] `listen 0.0.0.0:${PORT}`
+- [ ] Create `backend/start-nginx.sh` to render nginx config with envsubst then start nginx foreground
+- [ ] Final review of changed files for syntax/consistency
