@@ -81,7 +81,16 @@ function UserCardsPageInner() {
     };
 
     eventNames.forEach((evt) => {
-      echo.private(customerChannel).listen(evt, handler);
+      try {
+        echo.private(customerChannel).listen(evt, handler);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.log("Echo listen failed (customer)", {
+          channel: customerChannel,
+          event: evt,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
     });
 
     // Also listen business updates per current cards list
@@ -89,12 +98,27 @@ function UserCardsPageInner() {
 
     businessIds.forEach((businessId) => {
       const businessChannel = `business.${businessId}`;
-      echo.private(businessChannel).listen("BusinessCardUpdated", handler);
-      echo.private(businessChannel).listen("BusinessBrandUpdated", handler);
-      echo.private(businessChannel).listen("StampAdded", handler);
-      echo.private(businessChannel).listen("RewardRedeemed", handler);
-      echo.private(businessChannel).listen("MembershipCreated", handler);
-      echo.private(businessChannel).listen("MembershipDeleted", handler);
+      const events = [
+        "BusinessCardUpdated",
+        "BusinessBrandUpdated",
+        "StampAdded",
+        "RewardRedeemed",
+        "MembershipCreated",
+        "MembershipDeleted",
+      ] as const;
+
+      events.forEach((evt) => {
+        try {
+          echo.private(businessChannel).listen(evt, handler);
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.log("Echo listen failed (business)", {
+            channel: businessChannel,
+            event: evt,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      });
     });
 
     return () => {
