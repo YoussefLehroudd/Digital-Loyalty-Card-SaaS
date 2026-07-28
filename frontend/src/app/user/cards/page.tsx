@@ -16,7 +16,6 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
-import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
 import { useCallback, useRef } from "react";
 
 function UserCardsPageInner() {
@@ -28,7 +27,6 @@ function UserCardsPageInner() {
   const [error, setError] = useState<string | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [joining, setJoining] = useState(false);
-  const { echo } = useEcho();
 
   const reload = useCallback(async (): Promise<CustomerCardItem[]> => {
     if (!token) return [];
@@ -59,92 +57,8 @@ function UserCardsPageInner() {
 
   const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    installPusherBindGuard();
     reload();
   }, [token, reload]);
-
-  useEffect(() => {
-    if (!echo || !token) return;
-    if (!user?.id) return;
-
-    const customerChannel = `customer.${user.id}`;
-
-    const eventNames = ["StampAdded", "RewardRedeemed", "MembershipCreated", "MembershipDeleted"];
-
-    const handler = () => {
-      // Non-blocking: schedule a single resync burst
-      if (resyncTimerRef.current) return;
-      resyncTimerRef.current = setTimeout(async () => {
-        resyncTimerRef.current = null;
-        await reload();
-      }, 250);
-    };
-
-    eventNames.forEach((evt) => {
-      try {
-        echo.private(customerChannel).listen(evt, handler);
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.log("Echo listen failed (customer)", {
-          channel: customerChannel,
-          event: evt,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
-    });
-
-    // Also listen business updates per current cards list
-    const businessIds = Array.from(new Set(cards.map((c) => c.business?.id).filter(Boolean))) as string[];
-
-    businessIds.forEach((businessId) => {
-      const businessChannel = `business.${businessId}`;
-      const events = [
-        "BusinessCardUpdated",
-        "BusinessBrandUpdated",
-        "StampAdded",
-        "RewardRedeemed",
-        "MembershipCreated",
-        "MembershipDeleted",
-      ] as const;
-
-      events.forEach((evt) => {
-        try {
-          echo.private(businessChannel).listen(evt, handler);
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.log("Echo listen failed (business)", {
-            channel: businessChannel,
-            event: evt,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-      });
-    });
-
-    return () => {
-      eventNames.forEach((evt) => {
-        try {
-          echo.private(customerChannel).stopListening(evt);
-        } catch {
-          // ignore
-        }
-      });
-
-      businessIds.forEach((businessId) => {
-        const businessChannel = `business.${businessId}`;
-        try {
-          echo.private(businessChannel).stopListening();
-        } catch {
-          // ignore
-        }
-      });
-
-      if (resyncTimerRef.current) {
-        clearTimeout(resyncTimerRef.current);
-        resyncTimerRef.current = null;
-      }
-    };
-  }, [echo, cards, reload, token, user?.id]);
 
   return (
     <CustomerLayout title="My Cards" subtitle="Switch between business loyalty cards">
@@ -245,9 +159,5 @@ function UserCardsPageInner() {
 export default function UserCardsPage() {
   const { token } = useCustomerAuth();
 
-  return (
-    <EchoProvider token={token}>
-      <UserCardsPageInner />
-    </EchoProvider>
-  );
+  return <UserCardsPageInner />;
 }
