@@ -26,17 +26,22 @@ ENV APP_ENV=production \
 
 WORKDIR /app
 
+# Copy the full Laravel project first (composer install triggers artisan package discovery)
+COPY . /app/
+
 # Install Composer (backend-only build context; repo root composer.phar is not available here)
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Copy composer files first for layer caching
-COPY composer.json composer.lock /app/
+# Allow composer to run as superuser inside the build container
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Install PHP dependencies
 RUN composer install --no-interaction --no-dev --optimize-autoloader
 
-# Copy the rest of the backend source (build context is `backend/`)
-COPY . /app/
+# Clear caches (safe if files/config not fully present yet)
+RUN php artisan config:clear || true \
+ && php artisan route:clear || true \
+ && php artisan view:clear || true
 
 # Copy a default .env if none exists (Railway should override env vars anyway)
 RUN if [ ! -f .env ] && [ -f .env.example ]; then cp .env.example .env; fi
