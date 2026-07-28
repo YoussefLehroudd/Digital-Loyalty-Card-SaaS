@@ -228,7 +228,7 @@ export function StaffQrScanner({
   useEffect(() => {
     if (!onResetReady) return;
     onResetReady(() => resetRef.current());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [onResetReady]);
 
   return (

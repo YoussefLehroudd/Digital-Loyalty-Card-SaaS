@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { installPusherBindGuard } from "@/lib/realtime/guardPusherBind";
 import { useRouter } from "next/navigation";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
@@ -58,6 +59,7 @@ function UserCardsPageInner() {
 
   const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    installPusherBindGuard();
     reload();
   }, [token, reload]);
 
