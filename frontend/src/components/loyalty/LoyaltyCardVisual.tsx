@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Modal } from "@/components/ui/modal";
 
@@ -23,6 +23,11 @@ type Props = {
    * Business preview should stay pixel-identical, so default is false.
    */
   showQrPayloadText?: boolean;
+
+  /**
+   * Keep business preview styling unchanged. Enable richer stamp UI only for customer view.
+   */
+  stampUiVariant?: "standard" | "customer";
 
   heroImageUrl?: string | null;
   heroImageZoom?: number | null;
@@ -49,6 +54,7 @@ export default function LoyaltyCardVisual({
   cardNumber,
   qrToken,
   showQrPayloadText = false,
+  stampUiVariant = "standard",
   heroImageUrl,
   heroImageZoom,
   heroImagePositionX,
@@ -70,10 +76,22 @@ export default function LoyaltyCardVisual({
 
   const [qrModalOpen, setQrModalOpen] = useState(false);
 
+  const isCustomerStampUi = stampUiVariant === "customer";
+  const shouldShowQrPayloadText = showQrPayloadText && !isCustomerStampUi;
+  const qrButtonMarginTopClass = isCustomerStampUi ? "-mt-6" : "-mt-9";
+
+  const [animateStampIndices, setAnimateStampIndices] = useState<number[]>([]);
+  const [celebrate, setCelebrate] = useState(false);
+
+  const prevFilledRef = useRef<number>(0);
+
   const stampGoal = Math.max(1, Math.floor(requiredStamps || 1));
   const maxSlots = 10;
-  const filled = Math.min(stampGoal, maxSlots);
-  const remaining = Math.max(0, stampGoal - filled);
+
+  // Grid should represent CURRENT stamps, not only the goal.
+  const normalizedCurrent = Math.max(0, Math.floor(currentStamps || 0));
+  const filled = Math.min(normalizedCurrent, maxSlots);
+  const remaining = Math.max(0, stampGoal - normalizedCurrent);
 
   const qrValue = qrToken ?? null;
 
@@ -89,6 +107,57 @@ export default function LoyaltyCardVisual({
       : `Goal: ${stampGoal} stamps`;
 
   const qrSize = useMemo(() => 220, []);
+
+  const normalizedReward = (rewardName ?? "").toLowerCase();
+
+  const CompletedStampIcon = ({ className }: { className?: string }) => (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M20 6L9 17l-5-5"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 2a10 10 0 1 0 10 10"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        opacity="0.35"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+
+  const ActiveStampIcon = isCustomerStampUi ? CompletedStampIcon : null;
+
+  useEffect(() => {
+    if (!isCustomerStampUi) return;
+
+    // First render init
+    if (prevFilledRef.current === 0 && filled === 0) {
+      prevFilledRef.current = 0;
+    }
+
+    const prevFilled = prevFilledRef.current;
+    const nextFilled = filled;
+
+    if (nextFilled > prevFilled) {
+      const indices: number[] = [];
+      for (let i = prevFilled; i < nextFilled; i++) indices.push(i);
+      setAnimateStampIndices(indices);
+      window.setTimeout(() => setAnimateStampIndices([]), 650);
+    }
+
+    const isComplete = stampGoal > 0 && remaining === 0;
+    if (isComplete && !celebrate) {
+      setCelebrate(true);
+      window.setTimeout(() => setCelebrate(false), 1400);
+    }
+
+    prevFilledRef.current = nextFilled;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filled, remaining, isCustomerStampUi, stampGoal]);
 
   return (
     <div
@@ -188,7 +257,7 @@ export default function LoyaltyCardVisual({
           <div className="col-span-2">
             <button
               type="button"
-              className="w-full flex flex-col items-center -mt-9"
+              className={`w-full flex flex-col items-center ${qrButtonMarginTopClass}`}
               onClick={() => setQrModalOpen(true)}
               aria-label="Tap to show QR fullscreen"
               disabled={!qrValue}
@@ -210,10 +279,12 @@ export default function LoyaltyCardVisual({
                 </div>
               )}
 
-              {showQrPayloadText && qrValue ? (
-                <p className="mt-2 max-w-[104px] break-all text-center font-mono text-[11px] leading-tight opacity-90">
-                  {qrValue}
-                </p>
+              {shouldShowQrPayloadText && qrValue ? (
+                <>
+                  <p className="mt-2 max-w-[104px] break-all text-center font-mono text-[11px] leading-tight opacity-90">
+                    {qrValue}
+                  </p>
+                </>
               ) : null}
             </button>
           </div>
@@ -228,20 +299,65 @@ export default function LoyaltyCardVisual({
           </div>
 
           <div className="mt-3 grid grid-cols-5 gap-2">
-            {Array.from({ length: maxSlots }).map((_, index) => (
-              <div
-                key={index}
-                className="aspect-square rounded-md border border-white/20"
-                style={{
-                  backgroundColor:
-                    index < filled ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.10)",
-                }}
-                aria-hidden="true"
-              />
-            ))}
+            {Array.from({ length: maxSlots }).map((_, index) => {
+              const isFilled = index < filled;
+
+              if (!isCustomerStampUi) {
+                return (
+                  <div
+                    key={index}
+                    className="aspect-square rounded-md border border-white/20"
+                    style={{
+                      backgroundColor: isFilled ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.10)",
+                    }}
+                    aria-hidden="true"
+                  />
+                );
+              }
+
+              const Icon = ActiveStampIcon;
+
+              const shouldAnimate = isFilled && animateStampIndices.includes(index);
+
+              return (
+                <div
+                  key={index}
+                  className={[
+                    "relative aspect-square rounded-md border",
+                    isFilled ? "border-white/30" : "border-white/20",
+                    shouldAnimate ? "scale-[1.08] opacity-100" : "scale-100",
+                    shouldAnimate ? "shadow-[0_0_22px_rgba(255,255,255,0.55)]" : "shadow-none",
+                    "transition-transform duration-300",
+                  ].join(" ")}
+                  style={{
+                    backgroundColor: isFilled ? "rgba(255,255,255,0.18)" : "transparent",
+                    backgroundImage: isFilled
+                      ? "radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.10) 55%, rgba(255,255,255,0.06) 100%)"
+                      : "none",
+                    boxShadow: isFilled
+                      ? "0 0 0 1px rgba(255,255,255,0.22), 0 0 14px rgba(255,255,255,0.18), inset 0 0 10px rgba(255,255,255,0.20)"
+                      : "none",
+                  }}
+                  aria-hidden="true"
+                >
+                  {isFilled && Icon ? (
+                    <div className="absolute inset-0 flex items-center justify-center text-white/95">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
 
-          <div className="mt-3 text-xs opacity-90">{stampEmptyText}</div>
+          <div
+            className={[
+              "mt-3 text-xs opacity-90 transition-all",
+              celebrate && remaining === 0 ? "drop-shadow-[0_0_10px_rgba(245,158,11,0.65)]" : "",
+            ].join(" ")}
+          >
+            {stampEmptyText}
+          </div>
         </div>
       </div>
 

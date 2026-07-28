@@ -151,7 +151,8 @@ export function CustomerCardCarousel({
           rewardDescription={rewardDescription}
           cardNumber={current.id}
           qrToken={qrValue}
-          showQrPayloadText={true}
+          showQrPayloadText={false}
+          stampUiVariant="customer"
           progressPercent={progressPercent}
           currentStamps={currentStamps}
           requiredStamps={requiredStamps}

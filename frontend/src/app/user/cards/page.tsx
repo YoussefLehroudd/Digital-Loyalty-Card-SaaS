@@ -10,18 +10,21 @@ import { customerCardById, customerCards, customerJoinByQr, type CustomerCardIte
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
+import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
+import { useCallback, useRef } from "react";
 
-export default function UserCardsPage() {
+function UserCardsPageInner() {
   const router = useRouter();
-  const { token } = useCustomerAuth();
+  const { token, user } = useCustomerAuth();
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
   const [selected, setSelected] = useState<CustomerCardItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [joining, setJoining] = useState(false);
+  const { echo } = useEcho();
 
-  const reload = async (): Promise<CustomerCardItem[]> => {
+  const reload = useCallback(async (): Promise<CustomerCardItem[]> => {
     if (!token) return [];
     setLoading(true);
     setError(null);
@@ -32,7 +35,8 @@ export default function UserCardsPage() {
       setCards(list);
 
       if (list.length > 0) {
-        const picked = await customerCardById(token, list[0].id);
+        const nextSelectedId = selected?.id ?? list[0].id;
+        const picked = await customerCardById(token, nextSelectedId);
         setSelected(picked.data);
       } else {
         setSelected(null);
@@ -45,11 +49,74 @@ export default function UserCardsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selected?.id, token]);
 
+  const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     reload();
-  }, [token]);
+  }, [token, reload]);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    if (!user?.id) return;
+
+    const customerChannel = `customer.${user.id}`;
+
+    const eventNames = ["StampAdded", "RewardRedeemed", "MembershipCreated", "MembershipDeleted"];
+
+    const handler = () => {
+      // Non-blocking: schedule a single resync burst
+      if (resyncTimerRef.current) return;
+      resyncTimerRef.current = setTimeout(async () => {
+        resyncTimerRef.current = null;
+        await reload();
+      }, 250);
+    };
+
+    eventNames.forEach((evt) => {
+      echo.private(customerChannel).listen(evt, handler);
+    });
+
+    // Also listen business updates per current cards list
+    const businessIds = Array.from(new Set(cards.map((c) => c.business?.id).filter(Boolean))) as string[];
+    const businessHandlers = new Map<string, () => void>();
+
+    businessIds.forEach((businessId) => {
+      const businessChannel = `business.${businessId}`;
+      const businessHandler = handler;
+      businessHandlers.set(businessId, businessHandler);
+      echo.private(businessChannel).listen("BusinessCardUpdated", businessHandler);
+      echo.private(businessChannel).listen("BusinessBrandUpdated", businessHandler);
+      echo.private(businessChannel).listen("StampAdded", businessHandler);
+      echo.private(businessChannel).listen("RewardRedeemed", businessHandler);
+      echo.private(businessChannel).listen("MembershipCreated", businessHandler);
+      echo.private(businessChannel).listen("MembershipDeleted", businessHandler);
+    });
+
+    return () => {
+      eventNames.forEach((evt) => {
+        try {
+          echo.private(customerChannel).stopListening(evt);
+        } catch {
+          // ignore
+        }
+      });
+
+      businessIds.forEach((businessId) => {
+        const businessChannel = `business.${businessId}`;
+        try {
+          echo.private(businessChannel).stopListening();
+        } catch {
+          // ignore
+        }
+      });
+
+      if (resyncTimerRef.current) {
+        clearTimeout(resyncTimerRef.current);
+        resyncTimerRef.current = null;
+      }
+    };
+  }, [echo, cards, reload, token, user?.id]);
 
   return (
     <CustomerLayout title="My Cards" subtitle="Switch between business loyalty cards">

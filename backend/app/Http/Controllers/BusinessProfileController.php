@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BusinessBrandUpdated;
 use App\Http\Requests\Business\UpdateBusinessProfileRequest;
 use App\Http\Requests\Business\UploadBusinessLogoRequest;
 use App\Models\Business;
@@ -25,6 +26,10 @@ class BusinessProfileController extends Controller
     {
         $business = $this->currentBusiness($request);
         $business->update($request->validated());
+
+        event(new BusinessBrandUpdated(
+            businessId: (int) $business->id,
+        ));
 
         return response()->json([
             'message' => 'Business profile updated successfully.',
@@ -75,6 +80,10 @@ class BusinessProfileController extends Controller
                 'hero_image_public_id' => $upload['public_id'],
             ]);
 
+            event(new BusinessBrandUpdated(
+                businessId: (int) $business->id,
+            ));
+
             return response()->json([
                 'message' => 'Business hero image uploaded successfully.',
                 'secure_url' => $upload['secure_url'],
@@ -87,6 +96,10 @@ class BusinessProfileController extends Controller
             'logo_url' => $upload['secure_url'],
             'logo_public_id' => $upload['public_id'],
         ]);
+
+        event(new BusinessBrandUpdated(
+            businessId: (int) $business->id,
+        ));
 
         return response()->json([
             'message' => 'Business logo uploaded successfully.',

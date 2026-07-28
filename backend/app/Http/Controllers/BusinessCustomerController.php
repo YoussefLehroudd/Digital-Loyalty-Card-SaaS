@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MembershipDeleted;
 use App\Http\Requests\Customer\CreateCustomerRequest;
 use App\Models\Business;
 use App\Models\Customer;
@@ -308,7 +309,18 @@ class BusinessCustomerController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        $deletedCustomerId = (int) $customerRecord->id;
+        $businessId = (int) $business->id;
+
         $customerRecord->delete();
+
+        // Broadcast after commit.
+        \Illuminate\Support\Facades\DB::afterCommit(function () use ($businessId, $deletedCustomerId): void {
+            event(new MembershipDeleted(
+                businessId: $businessId,
+                customerId: $deletedCustomerId,
+            ));
+        });
 
         return response()->json([], Response::HTTP_NO_CONTENT);
     }

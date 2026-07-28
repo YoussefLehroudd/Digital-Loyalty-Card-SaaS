@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\BusinessCardUpdated;
 use App\Http\Requests\LoyaltyCard\CreateLoyaltyCardRequest;
 use App\Http\Requests\LoyaltyCard\UpdateLoyaltyCardRequest;
 use App\Models\LoyaltyCard;
@@ -49,6 +50,11 @@ class LoyaltyCardController extends Controller
             ...$request->validated(),
         ]);
 
+        event(new BusinessCardUpdated(
+            businessId: (int) $business->id,
+            loyaltyCardId: (int) $loyaltyCard->id,
+        ));
+
         return response()->json([
             'message' => 'Loyalty card created successfully.',
             'loyalty_card' => $this->serialize($loyaltyCard),
@@ -70,6 +76,11 @@ class LoyaltyCardController extends Controller
         }
 
         $loyaltyCard->update($request->validated());
+
+        event(new BusinessCardUpdated(
+            businessId: (int) $business->id,
+            loyaltyCardId: (int) $loyaltyCard->id,
+        ));
 
         return response()->json([
             'message' => 'Loyalty card updated successfully.',

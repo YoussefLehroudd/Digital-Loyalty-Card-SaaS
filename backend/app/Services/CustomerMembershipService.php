@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Events\MembershipCreated;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\CustomerLoyalty;
 use App\Models\LoyaltyCard;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class CustomerMembershipService
 {
@@ -59,6 +61,18 @@ class CustomerMembershipService
                     ]
                 );
         }
+
+        DB::afterCommit(function () use ($business, $customer, $loyaltyCard): void {
+            if (! $customer) {
+                return;
+            }
+
+            event(new MembershipCreated(
+                businessId: (int) $business->id,
+                customerId: (int) $customer->id,
+                loyaltyCardId: $loyaltyCard?->id ? (int) $loyaltyCard->id : null,
+            ));
+        });
 
         return [
             'customer' => $customer,

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Events\StampAdded;
+use App\Events\RewardRedeemed;
 use Symfony\Component\HttpFoundation\Response;
 
 class StampController extends Controller
@@ -126,6 +128,15 @@ class StampController extends Controller
             ->whereNull('redeemed_at')
             ->exists();
 
+        // Broadcast after the transaction has completed (DB changes are committed).
+        event(new StampAdded(
+            businessId: (int) $business->id,
+            customerId: (int) $customer->id,
+            currentStamps: (int) ($freshCustomerLoyalty?->current_stamps ?? 0),
+            requiredStamps: (int) $loyaltyCard->required_stamps,
+            rewardUnlocked: (bool) $rewardUnlocked,
+        ));
+
         return response()->json([
             'message' => 'Stamp added successfully.',
             'loyalty' => [
@@ -238,6 +249,13 @@ class StampController extends Controller
         $freshCustomerLoyalty = CustomerLoyalty::query()
             ->where('customer_id', $customer->id)
             ->first();
+
+        event(new RewardRedeemed(
+            businessId: (int) $business->id,
+            customerId: (int) $customer->id,
+            currentStamps: (int) ($freshCustomerLoyalty?->current_stamps ?? 0),
+            requiredStamps: (int) $required,
+        ));
 
         return response()->json([
             'success' => true,
