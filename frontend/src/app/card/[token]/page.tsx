@@ -156,11 +156,13 @@ export default function CustomerCardPortalPage() {
             {/* Loyalty card */}
             {profile.data && loyalty && loyaltyCard ? (
               <LoyaltyCard
-                businessName={profile.data.business.name}
+                businessName={profile.data.business.name ?? ""}
                 brandPrimaryColor={profile.data.business.primary_color}
-                cardNumber={loyaltyCard.reward_name}
-                qrCode={null}
+                memberName={`${profile.data.customer.first_name} ${profile.data.customer.last_name}`.trim()}
+                cardNumber={null}
+                qrCode={loyaltyCard.customer_qr_code}
                 rewardName={loyaltyCard.reward_name}
+                rewardDescription={loyaltyCard.reward_description}
                 progressPercent={loyalty.progress_percent}
                 currentStamps={loyalty.current_stamps}
                 requiredStamps={loyalty.required_stamps}
