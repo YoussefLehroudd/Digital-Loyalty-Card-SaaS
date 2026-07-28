@@ -4,10 +4,13 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 
+type EchoLike = {
+  private: (channel: string) => { listen: (event: string, cb: (...args: unknown[]) => void) => EchoLike; stopListening: (...args: unknown[]) => void };
+  disconnect: () => void;
+};
+
 type EchoContextValue = {
-  // Echo has complex generics and connector typing; keep it typed loosely but safely.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  echo: any | null;
+  echo: EchoLike | null;
   connected: boolean;
 };
 
@@ -38,11 +41,9 @@ export function EchoProvider({
     const scheme = getEnv("NEXT_PUBLIC_REVERB_SCHEME") || "https";
 
     // Ensure pusher is set up globally for Echo.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).Pusher = Pusher;
+    (window as unknown as { Pusher?: typeof Pusher }).Pusher = Pusher;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const e: any = new (Echo as any)({
+    const e = new Echo({
       broadcaster: "reverb",
       key: appKey,
       wsHost: host,
@@ -58,9 +59,10 @@ export function EchoProvider({
       },
       // Avoid noisy reconnect loops while app bootstraps.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    });
 
-    return e;
+    // Cast because Echo's runtime connector shape isn't strongly typed.
+    return e as unknown as EchoLike;
   }, [token]);
 
   useEffect(() => {
@@ -69,21 +71,31 @@ export function EchoProvider({
     const onConnected = () => setConnected(true);
     const onDisconnected = () => setConnected(false);
 
-    // laravel-echo types are strict; use runtime connector shape.
-    const anyEcho = echo as any;
-    const pusherConnection = anyEcho?.connector?.pusher?.connection;
+    const echoUnknown = echo as unknown as {
+      connector?: {
+        pusher?: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          connection?: { bind?: (event: string, cb: () => void) => void; unbind?: (event: string, cb: () => void) => void };
+        };
+      };
+    };
 
-    if (!pusherConnection?.bind) return;
+    const pusherConnection = echoUnknown?.connector?.pusher?.connection;
 
-    pusherConnection.bind("connected", onConnected);
-    pusherConnection.bind("disconnected", onDisconnected);
-    pusherConnection.bind("unavailable", onDisconnected);
+    const bind = pusherConnection?.bind;
+    const unbind = pusherConnection?.unbind;
+
+    if (!bind || !unbind) return;
+
+    bind("connected", onConnected);
+    bind("disconnected", onDisconnected);
+    bind("unavailable", onDisconnected);
 
     return () => {
       try {
-        pusherConnection.unbind("connected", onConnected);
-        pusherConnection.unbind("disconnected", onDisconnected);
-        pusherConnection.unbind("unavailable", onDisconnected);
+        unbind("connected", onConnected);
+        unbind("disconnected", onDisconnected);
+        unbind("unavailable", onDisconnected);
       } catch {
         // no-op
       }

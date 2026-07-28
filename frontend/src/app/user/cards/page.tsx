@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { CustomerCardCarousel } from "@/components/customer-app/customer-card-carousel";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
-import { customerCardById, customerCards, customerJoinByQr, type CustomerCardItem } from "@/lib/customerAuth";
+import {
+  customerCardById,
+  customerCards,
+  customerJoinByQr,
+  type CustomerCardItem,
+} from "@/lib/customerAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
@@ -79,18 +84,15 @@ function UserCardsPageInner() {
 
     // Also listen business updates per current cards list
     const businessIds = Array.from(new Set(cards.map((c) => c.business?.id).filter(Boolean))) as string[];
-    const businessHandlers = new Map<string, () => void>();
 
     businessIds.forEach((businessId) => {
       const businessChannel = `business.${businessId}`;
-      const businessHandler = handler;
-      businessHandlers.set(businessId, businessHandler);
-      echo.private(businessChannel).listen("BusinessCardUpdated", businessHandler);
-      echo.private(businessChannel).listen("BusinessBrandUpdated", businessHandler);
-      echo.private(businessChannel).listen("StampAdded", businessHandler);
-      echo.private(businessChannel).listen("RewardRedeemed", businessHandler);
-      echo.private(businessChannel).listen("MembershipCreated", businessHandler);
-      echo.private(businessChannel).listen("MembershipDeleted", businessHandler);
+      echo.private(businessChannel).listen("BusinessCardUpdated", handler);
+      echo.private(businessChannel).listen("BusinessBrandUpdated", handler);
+      echo.private(businessChannel).listen("StampAdded", handler);
+      echo.private(businessChannel).listen("RewardRedeemed", handler);
+      echo.private(businessChannel).listen("MembershipCreated", handler);
+      echo.private(businessChannel).listen("MembershipDeleted", handler);
     });
 
     return () => {
@@ -136,16 +138,10 @@ function UserCardsPageInner() {
       ) : cards.length === 0 ? (
         <Card>
           <CardContent className="space-y-4 p-4">
-            <p className="text-sm text-muted-foreground">
-              Join a business loyalty program to see your cards here.
-            </p>
+            <p className="text-sm text-muted-foreground">Join a business loyalty program to see your cards here.</p>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                onClick={() => router.push("/user/join")}
-                disabled={joining}
-              >
+              <Button type="button" onClick={() => router.push("/user/join")} disabled={joining}>
                 Join Loyalty Program
               </Button>
 
@@ -217,5 +213,15 @@ function UserCardsPageInner() {
         </div>
       )}
     </CustomerLayout>
+  );
+}
+
+export default function UserCardsPage() {
+  const { token } = useCustomerAuth();
+
+  return (
+    <EchoProvider token={token}>
+      <UserCardsPageInner />
+    </EchoProvider>
   );
 }
