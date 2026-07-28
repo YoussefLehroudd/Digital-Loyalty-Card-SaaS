@@ -57,8 +57,12 @@ COPY nginx.conf.template /etc/nginx/nginx.conf.template
 COPY start-nginx.sh /usr/local/bin/start-nginx.sh
 RUN chmod +x /usr/local/bin/start-nginx.sh
 
+# Startup wrapper (runs optimize:clear once, then supervisord)
+COPY start-app.sh /usr/local/bin/start-app.sh
+RUN chmod +x /usr/local/bin/start-app.sh
+
 # Internal API/Reverb ports + public nginx port
 EXPOSE 8000
 EXPOSE 8081
 
-CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/usr/local/bin/start-app.sh"]
