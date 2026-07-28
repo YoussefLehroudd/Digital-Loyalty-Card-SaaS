@@ -16,12 +16,6 @@ type EchoContextValue = {
 
 const EchoContext = createContext<EchoContextValue | null>(null);
 
-function getEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env var: ${name}`);
-  return v;
-}
-
 export function EchoProvider({
   children,
   token,
@@ -34,11 +28,20 @@ export function EchoProvider({
   const echo = useMemo(() => {
     if (!token) return null;
 
-    // Reverb via Pusher protocol settings.
-    const appKey = getEnv("NEXT_PUBLIC_REVERB_APP_KEY");
-    const host = getEnv("NEXT_PUBLIC_REVERB_HOST");
-    const port = Number(getEnv("NEXT_PUBLIC_REVERB_PORT"));
-    const scheme = getEnv("NEXT_PUBLIC_REVERB_SCHEME") || "https";
+    // Reverb via Pusher protocol settings (static env access for Next.js client build).
+    const appKey = process.env.NEXT_PUBLIC_REVERB_APP_KEY;
+    const host = process.env.NEXT_PUBLIC_REVERB_HOST;
+    const portRaw = process.env.NEXT_PUBLIC_REVERB_PORT;
+    const scheme = process.env.NEXT_PUBLIC_REVERB_SCHEME ?? "https";
+
+    if (!appKey) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_APP_KEY");
+    if (!host) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_HOST");
+    if (!portRaw) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_PORT");
+
+    const port = Number(portRaw);
+    if (!Number.isFinite(port)) {
+      throw new Error("Invalid env var: NEXT_PUBLIC_REVERB_PORT must be a number");
+    }
 
     // Ensure pusher is set up globally for Echo.
     (window as unknown as { Pusher?: typeof Pusher }).Pusher = Pusher;
@@ -57,8 +60,6 @@ export function EchoProvider({
           Authorization: `Bearer ${token}`,
         },
       },
-      // Avoid noisy reconnect loops while app bootstraps.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     });
 
     // Cast because Echo's runtime connector shape isn't strongly typed.
@@ -74,7 +75,6 @@ export function EchoProvider({
     const echoUnknown = echo as unknown as {
       connector?: {
         pusher?: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           connection?: { bind?: (event: string, cb: () => void) => void; unbind?: (event: string, cb: () => void) => void };
         };
       };
