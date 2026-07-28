@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Trash2, WalletCards } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -38,6 +38,13 @@ export function CustomerCardCarousel({
   }, [cards, selectedId]);
 
   const [index, setIndex] = useState(initialIndex);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const idx = cards.findIndex((c) => c.id === selectedId);
+    if (idx < 0) return;
+    if (idx !== index) setIndex(idx);
+  }, [cards, selectedId]); // intentionally exclude `index` to avoid loops
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -144,6 +151,7 @@ export function CustomerCardCarousel({
           rewardDescription={rewardDescription}
           cardNumber={current.id}
           qrToken={qrValue}
+          showQrPayloadText={true}
           progressPercent={progressPercent}
           currentStamps={currentStamps}
           requiredStamps={requiredStamps}

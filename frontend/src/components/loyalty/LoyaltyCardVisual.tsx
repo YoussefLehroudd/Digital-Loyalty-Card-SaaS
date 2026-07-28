@@ -18,6 +18,12 @@ type Props = {
 
   qrToken?: string | null;
 
+  /**
+   * Customer cards need the raw membership code text below the QR.
+   * Business preview should stay pixel-identical, so default is false.
+   */
+  showQrPayloadText?: boolean;
+
   heroImageUrl?: string | null;
   heroImageZoom?: number | null;
   heroImagePositionX?: number | null;
@@ -42,6 +48,7 @@ export default function LoyaltyCardVisual({
   rewardDescription,
   cardNumber,
   qrToken,
+  showQrPayloadText = false,
   heroImageUrl,
   heroImageZoom,
   heroImagePositionX,
@@ -186,7 +193,6 @@ export default function LoyaltyCardVisual({
               aria-label="Tap to show QR fullscreen"
               disabled={!qrValue}
             >
-
               {qrValue ? (
                 <div className="w-[104px] h-[104px] rounded-2xl bg-white flex items-center justify-center">
                   <QRCodeSVG
@@ -204,10 +210,11 @@ export default function LoyaltyCardVisual({
                 </div>
               )}
 
-              {/* raw payload below QR, small monospace */}
-              {/*
-                Customers must never see the raw membership/QR payload.
-              */}
+              {showQrPayloadText && qrValue ? (
+                <p className="mt-2 max-w-[104px] break-all text-center font-mono text-[11px] leading-tight opacity-90">
+                  {qrValue}
+                </p>
+              ) : null}
             </button>
           </div>
         </div>
