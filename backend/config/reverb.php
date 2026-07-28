@@ -9,6 +9,9 @@ return [
             'name' => env('REVERB_APP_NAME', 'default'),
             'key' => env('REVERB_APP_KEY'),
             'secret' => env('REVERB_APP_SECRET'),
+            'allowed_origins' => [
+                '*',
+            ],
         ],
 
     ],
