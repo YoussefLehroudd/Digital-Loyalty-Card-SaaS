@@ -53,5 +53,6 @@ RUN mkdir -p /app/storage /app/bootstrap/cache && chmod -R 777 /app/storage /app
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 8000
+EXPOSE 8080
 
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
