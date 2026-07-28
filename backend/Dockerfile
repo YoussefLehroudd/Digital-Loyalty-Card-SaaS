@@ -1,11 +1,12 @@
 # Use non-ZTS PHP CLI base image
 FROM php:8.2-cli
 
-# Install system deps + PHP extensions (including pcntl)
+# Install system deps + PHP extensions (including pcntl) + supervisor
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
     curl \
+    supervisor \
     libpq-dev \
     libzip-dev \
     libonig-dev \
@@ -17,8 +18,7 @@ RUN docker-php-ext-install \
     pdo_pgsql \
     pgsql \
     zip \
-    mbstring \
-    && true
+    mbstring
 
 # For better performance & predictable behavior
 ENV APP_ENV=production \
@@ -26,32 +26,27 @@ ENV APP_ENV=production \
 
 WORKDIR /app
 
-# Copy backend composer files first for layer caching
-COPY backend/composer.json backend/composer.lock /app/
+# Install Composer (backend-only build context; repo root composer.phar is not available here)
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Install composer
-COPY composer.phar /usr/local/bin/composer
-RUN chmod +x /usr/local/bin/composer
+# Copy composer files first for layer caching
+COPY composer.json composer.lock /app/
 
 # Install PHP dependencies
-RUN composer install --no-interaction --no-dev --optimize-autoloader || composer install --no-interaction --optimize-autoloader
+RUN composer install --no-interaction --no-dev --optimize-autoloader
 
-# Copy the rest of the backend source
-COPY backend/ /app/
-
-# Build frontend assets used by Laravel (Vite) if needed
-# (If you already build assets elsewhere, you can remove this step.)
-RUN if [ -f package.json ]; then npm install && npm run build; fi
+# Copy the rest of the backend source (build context is `backend/`)
+COPY . /app/
 
 # Copy a default .env if none exists (Railway should override env vars anyway)
-RUN if [ ! -f .env ]; then cp .env.example .env; fi
+RUN if [ ! -f .env ] && [ -f .env.example ]; then cp .env.example .env; fi
 
 # Ensure writable dirs
 RUN mkdir -p /app/storage /app/bootstrap/cache && chmod -R 777 /app/storage /app/bootstrap/cache
 
 # Supervisor to run API + Reverb
-COPY backend/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-EXPOSE 8000 8080
+EXPOSE 8000
 
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
