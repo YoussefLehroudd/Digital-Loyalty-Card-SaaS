@@ -56,6 +56,9 @@ export function EchoProvider({
       throw new Error("Missing env var: NEXT_PUBLIC_API_URL");
     }
 
+    // If NEXT_PUBLIC_API_URL includes "/api", strip it for Laravel broadcasting auth.
+    const laravelBaseUrl = apiUrl.replace(/\/api\/?$/, "");
+
     const forceTLS = scheme === "https";
     const enabledTransports = (forceTLS ? ["wss"] : ["ws", "wss"]) as unknown as any;
 
@@ -67,7 +70,7 @@ export function EchoProvider({
       wssPort: port,
       forceTLS,
       enabledTransports,
-      authEndpoint: `${apiUrl}/broadcasting/auth`,
+      authEndpoint: `${laravelBaseUrl}/broadcasting/auth`,
       auth: {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       },
