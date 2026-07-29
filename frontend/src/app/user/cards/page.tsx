@@ -200,36 +200,75 @@ export default function UserCardsPage() {
 
     const url = `${API_BASE_URL}/user/cards/events`;
 
-    // eslint-disable-next-line no-console
-    console.log("[SSE] connecting", { url });
+    const controller = new AbortController();
 
-    // TS: EventSource doesn't consistently type withCredentials across TS DOM libs.
-    // Runtime: browser will include cookies for the same-origin URL.
-    const es = new EventSource(url);
+    const run = async () => {
+      try {
+        // eslint-disable-next-line no-console
+        console.log("[SSE(fetch)] connecting", { url });
 
-    const onMessage = () => {
-      // Some browsers call onmessage; we rely on named event handler below too.
+        const res = await fetch(url, {
+          method: "GET",
+          headers: {
+            Accept: "text/event-stream",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+          signal: controller.signal,
+        });
+
+        if (!res.ok || !res.body) {
+          // eslint-disable-next-line no-console
+          console.log("[SSE(fetch)] failed", { ok: res.ok, status: res.status });
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+
+        let buffer = "";
+
+        while (!controller.signal.aborted) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // SSE events are separated by blank line
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() ?? "";
+
+          for (const part of parts) {
+            const lines = part.split("\n").map((l) => l.trim());
+            if (lines.length === 0) continue;
+
+            let eventName: string | null = null;
+            let dataStr: string | null = null;
+
+            for (const line of lines) {
+              if (line.startsWith("event:")) eventName = line.slice("event:".length).trim();
+              if (line.startsWith("data:")) dataStr = line.slice("data:".length).trim();
+            }
+
+            if (eventName === "card.updated") {
+              // eslint-disable-next-line no-console
+              console.log("[SSE(fetch)] received card.updated", { data: dataStr });
+              reloadRef.current?.();
+            }
+          }
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.log("[SSE(fetch)] error", err);
+      }
     };
 
-    const onCardUpdated = (ev: MessageEvent) => {
-      // eslint-disable-next-line no-console
-      console.log("[SSE] received card.updated", ev.data);
-      reloadRef.current?.();
-    };
-
-    es.onmessage = onMessage;
-    es.addEventListener("card.updated", onCardUpdated);
-
-    es.onerror = (err) => {
-      // eslint-disable-next-line no-console
-      console.log("[SSE] error", err);
-    };
+    void run();
 
     return () => {
-      es.removeEventListener("card.updated", onCardUpdated);
-      es.close();
+      controller.abort();
       // eslint-disable-next-line no-console
-      console.log("[SSE] closed");
+      console.log("[SSE(fetch)] closed");
     };
   }, [token]);
 
