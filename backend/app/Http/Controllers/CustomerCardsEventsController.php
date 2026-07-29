@@ -10,12 +10,22 @@ class CustomerCardsEventsController extends Controller
 {
     public function events(Request $request): StreamedResponse
     {
-        $customerId = (int) $request->user()->id;
+        try {
+            $user = $request->user();
 
-        // Cache key: store latest payload + updated_at marker
-        // payload shape:
-        // { card_id, customer_id, updated_at }
-        $cacheKey = "customer:{$customerId}:card.updated";
+            if (! $user) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+
+            $customerId = (int) $user->id;
+
+            // Cache key: store latest payload + updated_at marker
+            // payload shape:
+            // { card_id, customer_id, updated_at }
+            $cacheKey = "customer:{$customerId}:card.updated";
+        } catch (Throwable $e) {
+            return response()->json(['message' => 'SSE bootstrap failed.'], 500);
+        }
 
         $headers = [
             'Content-Type' => 'text/event-stream',
