@@ -4,8 +4,13 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 
+type EchoPrivateChannelLike = {
+  listen: (event: string, cb: (...args: unknown[]) => void) => EchoPrivateChannelLike;
+  stopListening: (...args: unknown[]) => void;
+};
+
 type EchoLike = {
-  private: (channel: string) => { listen: (event: string, cb: (...args: unknown[]) => void) => EchoLike; stopListening: (...args: unknown[]) => void };
+  private: (channel: string) => EchoPrivateChannelLike;
   disconnect: () => void;
 };
 
@@ -32,7 +37,7 @@ export function EchoProvider({
     const appKey = process.env.NEXT_PUBLIC_REVERB_APP_KEY;
     const host = process.env.NEXT_PUBLIC_REVERB_HOST;
     const portRaw = process.env.NEXT_PUBLIC_REVERB_PORT;
-    const scheme = process.env.NEXT_PUBLIC_REVERB_SCHEME ?? "https";
+    const scheme = (process.env.NEXT_PUBLIC_REVERB_SCHEME ?? "https").toLowerCase();
 
     if (!appKey) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_APP_KEY");
     if (!host) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_HOST");
@@ -46,19 +51,25 @@ export function EchoProvider({
     // Ensure pusher is set up globally for Echo.
     (window as unknown as { Pusher?: typeof Pusher }).Pusher = Pusher;
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+    if (!apiUrl) {
+      throw new Error("Missing env var: NEXT_PUBLIC_API_URL");
+    }
+
+    const forceTLS = scheme === "https";
+    const enabledTransports = (forceTLS ? ["wss"] : ["ws", "wss"]) as unknown as any;
+
     const e = new Echo({
       broadcaster: "reverb",
       key: appKey,
       wsHost: host,
       wsPort: port,
       wssPort: port,
-      forceTLS: scheme === "https",
-      enabledTransports: ["ws", "wss"],
-      authEndpoint: `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "http://127.0.0.1:8000"}/broadcasting/auth`,
+      forceTLS,
+      enabledTransports,
+      authEndpoint: `${apiUrl}/broadcasting/auth`,
       auth: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       },
     });
 

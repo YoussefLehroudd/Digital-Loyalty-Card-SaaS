@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-guard";
+import { EchoProvider } from "@/components/echo/echo-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,7 @@ const sidebarItems = [
 ];
 
 export function DashboardShell({ activeItem, children }: DashboardShellProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, token } = useAuth();
   const businessName = user.business?.name ?? "Business";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -167,7 +168,9 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             </div>
           </div>
 
-          {children}
+          <EchoProvider token={token ?? null}>
+            {children}
+          </EchoProvider>
         </section>
       </div>
     </main>
