@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { installPusherBindGuard } from "@/lib/realtime/guardPusherBind";
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
@@ -17,6 +18,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
+
+installPusherBindGuard();
 
 function UserCardsPageInner() {
   const { echo } = useEcho();
@@ -59,7 +62,6 @@ function UserCardsPageInner() {
   const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    installPusherBindGuard();
     reload();
   }, [reload]);
 
