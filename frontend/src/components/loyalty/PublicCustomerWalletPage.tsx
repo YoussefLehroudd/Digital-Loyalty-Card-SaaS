@@ -168,7 +168,23 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
       void reloadWallet(qrCode, true);
     };
 
-    const c = echo.echo.private(channel);
+    // eslint-disable-next-line no-console
+    console.log("[Wallet channel]", { channel, customerId: currentCustomerId });
+
+    // Cast because our simplified channel type doesn't include subscribed/error hooks.
+    const c = echo.echo.private(channel) as any;
+
+    // Echo channel auth/debug hooks (supported by laravel-echo).
+    c.subscribed(() => {
+      // eslint-disable-next-line no-console
+      console.log("[Wallet subscribed]", { channel });
+    });
+
+    c.error((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.log("[Wallet channel error]", { channel, err });
+    });
+
     c.listen("StampAdded", onStamp);
     c.listen("RewardRedeemed", onReward);
     c.listen("MembershipDeleted", onMembershipDeleted);
