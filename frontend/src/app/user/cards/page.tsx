@@ -251,6 +251,30 @@ function UserCardsPageInner() {
 
 export default function UserCardsPage() {
   const { token } = useCustomerAuth();
+  const [echoEnabled, setEchoEnabled] = useState(false);
+
+  useEffect(() => {
+    // Only mount EchoProvider when client-side globals are ready.
+    // This avoids the bind/callback crash happening during early initialization.
+    if (typeof window === "undefined") return;
+
+    const w = window as unknown as { Pusher?: unknown; Echo?: unknown };
+
+    if (w.Pusher && w.Echo) {
+      setEchoEnabled(true);
+      return;
+    }
+
+    const t = setTimeout(() => {
+      if (w.Pusher && w.Echo) setEchoEnabled(true);
+    }, 1500);
+
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!echoEnabled) {
+    return <UserCardsPageInner />;
+  }
 
   return (
     <EchoProvider token={token}>
