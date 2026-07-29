@@ -67,7 +67,12 @@ function CardsUI({
 
   useEffect(() => {
     if (!onProvideReload) return;
+
+    // eslint-disable-next-line no-console
+    console.log("[CardsUI] Providing reload fn to Echo listeners");
     onProvideReload(() => {
+      // eslint-disable-next-line no-console
+      console.log("[CardsUI] reload() triggered by realtime");
       void reload();
     });
   }, [onProvideReload, reload]);
@@ -192,9 +197,13 @@ function UserCardsPageInnerWithEcho() {
 
   const handler = useMemo(() => {
     return () => {
+      // eslint-disable-next-line no-console
+      console.log("[Echo] received event -> schedule reload");
       if (resyncTimerRef.current) return;
       resyncTimerRef.current = setTimeout(() => {
         resyncTimerRef.current = null;
+        // eslint-disable-next-line no-console
+        console.log("[Echo] executing reloadRef.current?.()");
         reloadRef.current?.();
       }, 250);
     };
@@ -214,10 +223,12 @@ function UserCardsPageInnerWithEcho() {
 
     eventNames.forEach((evt) => {
       try {
+        // eslint-disable-next-line no-console
+        console.log("[Echo] listening customer", { channel: customerChannel, event: evt });
         echo.private(customerChannel).listen(evt, handler);
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.log("Echo listen failed (customer)", {
+        console.log("[Echo] listen failed (customer)", {
           channel: customerChannel,
           event: evt,
           error: err instanceof Error ? err.message : String(err),
