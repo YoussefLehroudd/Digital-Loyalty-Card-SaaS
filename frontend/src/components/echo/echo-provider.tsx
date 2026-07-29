@@ -35,13 +35,30 @@ export function EchoProvider({
 
     // Reverb via Pusher protocol settings (static env access for Next.js client build).
     const appKey = process.env.NEXT_PUBLIC_REVERB_APP_KEY;
-    const host = process.env.NEXT_PUBLIC_REVERB_HOST;
-    const portRaw = process.env.NEXT_PUBLIC_REVERB_PORT;
+    const hostFromEnv = process.env.NEXT_PUBLIC_REVERB_HOST;
+    const portRawFromEnv = process.env.NEXT_PUBLIC_REVERB_PORT;
     const scheme = (process.env.NEXT_PUBLIC_REVERB_SCHEME ?? "https").toLowerCase();
 
+    // Important for Railway/production:
+    // - Do NOT hardcode 127.0.0.1 in client-side WebSocket config.
+    // - If REVERB host isn't provided, fall back to the current browser hostname.
+    const host =
+      (hostFromEnv && hostFromEnv.trim().length > 0
+        ? hostFromEnv.trim()
+        : typeof window !== "undefined"
+          ? window.location.hostname
+          : null);
+
+    const portRaw =
+      (portRawFromEnv && portRawFromEnv.trim().length > 0
+        ? portRawFromEnv.trim()
+        : typeof window !== "undefined"
+          ? window.location.port
+          : null);
+
     if (!appKey) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_APP_KEY");
-    if (!host) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_HOST");
-    if (!portRaw) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_PORT");
+    if (!host) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_HOST (and window.location.hostname is unavailable)");
+    if (!portRaw) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_PORT (and window.location.port is unavailable)");
 
     const port = Number(portRaw);
     if (!Number.isFinite(port)) {

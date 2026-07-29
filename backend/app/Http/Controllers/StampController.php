@@ -140,13 +140,13 @@ class StampController extends Controller
 
         // SSE source of truth: write latest card.updated payload to Cache
         Cache::put(
-            key: "customer:{$customer->id}:card.updated",
-            value: [
+            "customer:{$customer->id}:card.updated",
+            [
                 'card_id' => (int) ($loyaltyCard->id ?? 0),
                 'customer_id' => (int) $customer->id,
                 'updated_at' => now()->toISOString(),
             ],
-            minutes: 10
+            now()->addMinutes(10)
         );
 
         return response()->json([
@@ -271,13 +271,13 @@ class StampController extends Controller
 
         // SSE source of truth: write latest card.updated payload to Cache
         Cache::put(
-            key: "customer:{$customer->id}:card.updated",
-            value: [
+            "customer:{$customer->id}:card.updated",
+            [
                 'card_id' => (int) ($loyaltyCard->id ?? 0),
                 'customer_id' => (int) $customer->id,
                 'updated_at' => now()->toISOString(),
             ],
-            minutes: 10
+            now()->addMinutes(10)
         );
 
         return response()->json([
