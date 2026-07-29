@@ -20,7 +20,11 @@ import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
 
 installPusherBindGuard();
 
-function CardsUI({ onExternalRefresh }: { onExternalRefresh?: () => void }) {
+function CardsUI({
+  onProvideReload,
+}: {
+  onProvideReload?: (reloadFn: () => void) => void;
+}) {
   const router = useRouter();
   const { token } = useCustomerAuth();
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
@@ -62,9 +66,11 @@ function CardsUI({ onExternalRefresh }: { onExternalRefresh?: () => void }) {
   }, [reload]);
 
   useEffect(() => {
-    if (!onExternalRefresh) return;
-    onExternalRefresh();
-  }, [onExternalRefresh]);
+    if (!onProvideReload) return;
+    onProvideReload(() => {
+      void reload();
+    });
+  }, [onProvideReload, reload]);
 
   return (
     <CustomerLayout
@@ -182,16 +188,13 @@ function UserCardsPageInnerWithEcho() {
   const { token, user } = useCustomerAuth();
   const reloadRef = useRef<null | (() => void)>(null);
 
-  // We only mount listeners; UI already refreshes via onRefresh callback in carousel.
   const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handler = useMemo(() => {
     return () => {
       if (resyncTimerRef.current) return;
-      resyncTimerRef.current = setTimeout(async () => {
+      resyncTimerRef.current = setTimeout(() => {
         resyncTimerRef.current = null;
-        // Best-effort: trigger carousel's refresh path by simulating external refresh.
-        // Reload is internal to CardsUI; we can only call onRefresh via its prop, so we fallback to window refresh tick.
         reloadRef.current?.();
       }, 250);
     };
@@ -208,8 +211,6 @@ function UserCardsPageInnerWithEcho() {
       "MembershipCreated",
       "MembershipDeleted",
     ];
-
-    const businessIds = [] as string[];
 
     eventNames.forEach((evt) => {
       try {
@@ -240,7 +241,13 @@ function UserCardsPageInnerWithEcho() {
     };
   }, [echo, handler, token, user?.id]);
 
-  return <CardsUI onExternalRefresh={() => reloadRef.current?.()} />;
+  return (
+    <CardsUI
+      onProvideReload={(fn) => {
+        reloadRef.current = fn;
+      }}
+    />
+  );
 }
 
 export default function UserCardsPage() {
