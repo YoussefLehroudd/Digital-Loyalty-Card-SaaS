@@ -36,34 +36,50 @@ class CustomerCardsEventsController extends Controller
         $intervalSeconds = 1; // server-side polling interval
 
         return new StreamedResponse(function () use ($cacheKey, $intervalSeconds): void {
-            // SSE "handshake"
-            echo "event: connected\n";
-            echo "data: {}\n\n";
-            @ob_flush();
-            @flush();
+            try {
+                // SSE "handshake"
+                echo "event: connected\n";
+                echo "data: {}\n\n";
+                @ob_flush();
+                @flush();
 
-            $lastUpdatedAt = null;
+                $lastUpdatedAt = null;
 
-            while (true) {
-                $payload = Cache::get($cacheKey);
+                while (true) {
+                    $payload = Cache::get($cacheKey);
 
-                $updatedAt = is_array($payload) ? ($payload['updated_at'] ?? null) : null;
+                    $updatedAt = is_array($payload) ? ($payload['updated_at'] ?? null) : null;
 
-                if ($updatedAt && $updatedAt !== $lastUpdatedAt) {
-                    $lastUpdatedAt = $updatedAt;
+                    if ($updatedAt && $updatedAt !== $lastUpdatedAt) {
+                        $lastUpdatedAt = $updatedAt;
 
-                    $data = is_array($payload) ? $payload : [];
+                        $data = is_array($payload) ? $payload : [];
 
-                    // SSE event
-                    echo "event: card.updated\n";
-                    echo 'data: ' . json_encode($data, JSON_UNESCAPED_SLASHES) . "\n\n";
+                        // SSE event
+                        echo "event: card.updated\n";
+                        echo 'data: ' . json_encode($data, JSON_UNESCAPED_SLASHES) . "\n\n";
 
-                    @ob_flush();
-                    @flush();
+                        @ob_flush();
+                        @flush();
+                    }
+
+                    // Avoid busy loop
+                    sleep($intervalSeconds);
                 }
+            } catch (\Throwable $e) {
+                \Log::error('SSE cards error', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                    'cacheKey' => $cacheKey,
+                ]);
 
-                // Avoid busy loop
-                sleep($intervalSeconds);
+                // Best-effort SSE error event (avoid hard 500 that breaks client)
+                echo "event: error\n";
+                echo 'data: ' . json_encode(['message' => $e->getMessage()], JSON_UNESCAPED_SLASHES) . "\n\n";
+                @ob_flush();
+                @flush();
             }
         }, 200, $headers);
     }
