@@ -21,11 +21,90 @@ import {
   getPublicCustomerWallet,
   type PublicCustomerWalletResponse,
 } from "@/lib/public";
-import { useEcho } from "@/components/echo/echo-provider";
+import {
+  EchoProvider,
+  useEcho,
+} from "@/components/echo/echo-provider";
 
-export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
+export function PublicCustomerWalletPage({
+  qrCode,
+}: {
+  qrCode: string;
+}) {
+  const [portalToken, setPortalToken] = useState<string | null>(null);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [isTokenLoading, setIsTokenLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function bootstrapToken() {
+      setIsTokenLoading(true);
+      setTokenError(null);
+
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+        if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL");
+
+        const res = await fetch(
+          `${apiBase}/public/customers/wallet/${qrCode}/portal-token`,
+          {
+            method: "GET",
+            headers: { Accept: "application/json" },
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error(`Token bootstrap failed (${res.status})`);
+        }
+
+        const json = (await res.json()) as {
+          data?: { token?: string };
+        };
+
+        const token = json?.data?.token ?? null;
+
+        if (!cancelled) setPortalToken(token);
+      } catch {
+        if (!cancelled) {
+          setPortalToken(null);
+          setTokenError("Realtime auth unavailable for this wallet.");
+        }
+      } finally {
+        if (!cancelled) setIsTokenLoading(false);
+      }
+    }
+
+    void bootstrapToken();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [qrCode]);
+
+  return (
+    <EchoProvider token={portalToken}>
+      <WalletInner
+        qrCode={qrCode}
+        tokenError={tokenError}
+        isTokenLoading={isTokenLoading}
+      />
+    </EchoProvider>
+  );
+}
+
+function WalletInner({
+  qrCode,
+}: {
+  qrCode: string;
+  tokenError: string | null;
+  isTokenLoading: boolean;
+}) {
   const echo = useEcho();
-  const [data, setData] = useState<PublicCustomerWalletResponse | null>(null);
+
+  const [data, setData] = useState<PublicCustomerWalletResponse | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +156,11 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
           setShowPlusOne(true);
           window.setTimeout(() => setShowPlusOne(false), 1600);
         }
-        if (prevRewardUnlocked !== null && !prevRewardUnlocked && nextRewardUnlocked) {
+        if (
+          prevRewardUnlocked !== null &&
+          !prevRewardUnlocked &&
+          nextRewardUnlocked
+        ) {
           setRewardUnlockedPulse((x) => x + 1);
           setShowRewardUnlocked(true);
           window.setTimeout(() => setShowRewardUnlocked(false), 2200);
@@ -171,19 +254,7 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
     // eslint-disable-next-line no-console
     console.log("[Wallet channel]", { channel, customerId: currentCustomerId });
 
-    // Cast because our simplified channel type doesn't include subscribed/error hooks.
-    const c = echo.echo.private(channel) as any;
-
-    // Echo channel auth/debug hooks (supported by laravel-echo).
-    c.subscribed(() => {
-      // eslint-disable-next-line no-console
-      console.log("[Wallet subscribed]", { channel });
-    });
-
-    c.error((err: unknown) => {
-      // eslint-disable-next-line no-console
-      console.log("[Wallet channel error]", { channel, err });
-    });
+    const c = echo.echo.private(channel);
 
     c.listen("StampAdded", onStamp);
     c.listen("RewardRedeemed", onReward);
@@ -218,7 +289,7 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
     const stampCount = Math.max(1, Math.min(requiredStamps || 8, 16));
     const stampSlots = Array.from(
       { length: stampCount },
-      (_, index) => index < currentStamps,
+      (_, index) => index < currentStamps
     );
 
     const rewardUnlocked =
@@ -277,8 +348,8 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
     );
   }
 
-  const { business, customer, loyalty_card, loyalty, progressPercent } = computed;
-  const { stampSlots, currentStamps, requiredStamps } = computed;
+  const { business, customer, loyalty_card, loyalty } = computed;
+  const { stampSlots, currentStamps, requiredStamps, progressPercent } = computed;
 
   return (
     <main className="min-h-screen bg-background px-4 py-4 text-foreground sm:px-6">
@@ -313,9 +384,7 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium opacity-90">
-                    Digital loyalty card
-                  </p>
+                  <p className="text-sm font-medium opacity-90">Digital loyalty card</p>
                   <p className="mt-1 text-lg font-semibold">
                     {loyalty_card?.reward_name ?? "Loyalty reward"}
                   </p>
@@ -340,7 +409,6 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
                       <span>{progressPercent}%</span>
                     </div>
 
-                    {/* progress bar (animate width change) */}
                     <div className="h-2 overflow-hidden rounded-full bg-white/25">
                       <div
                         key={stampAddedPulse}
@@ -349,7 +417,6 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
                       />
                     </div>
 
-                    {/* temporary notifications */}
                     {showPlusOne ? (
                       <div className="pt-1 text-xs font-semibold text-white/95">
                         +1 Stamp added 🎉

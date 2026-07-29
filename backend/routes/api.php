@@ -112,6 +112,7 @@ Route::middleware(['json.api', 'auth:sanctum', 'role:business_owner'])
 Route::get('/public/businesses/{slug}', [PublicCustomerController::class, 'showBusiness']);
 Route::post('/public/businesses/{slug}/customers/register', [PublicCustomerController::class, 'register']);
 Route::get('/public/customers/wallet/{qrCode}', [PublicCustomerController::class, 'wallet']);
+Route::get('/public/customers/wallet/{qrCode}/portal-token', [\App\Http\Controllers\PublicCustomerPortalTokenController::class, 'portalTokenFromQr']);
 
 Route::middleware(['customer_portal_token'])
     ->prefix('customer/portal')
