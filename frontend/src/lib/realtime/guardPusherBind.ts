@@ -20,7 +20,9 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function hasCallbacks(thisValue: unknown): boolean {
   if (!isObject(thisValue)) return false;
-  return "callbacks" in thisValue && Boolean(thisValue.callbacks);
+  // Some pusher-js objects keep callbacks non-enumerable; fallback to property read.
+  if ("callbacks" in thisValue) return Boolean((thisValue as { callbacks?: unknown }).callbacks);
+  return false;
 }
 
 export function installPusherBindGuard() {
@@ -34,7 +36,6 @@ export function installPusherBindGuard() {
     Pusher?: unknown;
   };
 
-  // pusher-js may expose constructor on window.Pusher; we patch best-effort.
   const pusher = w.Pusher as
     | undefined
     | {
@@ -45,6 +46,7 @@ export function installPusherBindGuard() {
 
   const prototypes: Array<BindablePrototype | undefined> = [
     pusher?.Channel?.prototype,
+    (pusher as unknown as { Channel?: { prototype?: BindablePrototype } })?.Channel?.prototype,
     pusher?._EventDispatcher?.prototype,
     pusher?.EventDispatcher?.prototype,
   ];
@@ -54,8 +56,7 @@ export function installPusherBindGuard() {
 
     const originalBind = proto.bind;
 
-    // eslint-disable-next-line func-names
-    (proto as BindablePrototype).bind = function guardBind(...args: unknown[]) {
+    proto.bind = function guardBind(...args: unknown[]) {
       try {
         if (!hasCallbacks(this)) {
           const eventName = args[0];
@@ -63,18 +64,25 @@ export function installPusherBindGuard() {
           // eslint-disable-next-line no-console
           console.log("PUSHER/ECHO DEBUG (guard): bind target missing callbacks", {
             eventName,
-            hasWindowEcho: Boolean((w as unknown as { Echo?: unknown }).Echo),
+            hasWindowEcho: Boolean(w.Echo),
             thisType: typeof this,
           });
 
           // Swallow to avoid crash.
           return this;
         }
-      } catch {
-        // swallow
-      }
 
-      return originalBind(...args);
+        return originalBind(...args);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.log("PUSHER/ECHO DEBUG (guard): bind threw, swallowed", {
+          error: err instanceof Error ? err.message : String(err),
+          eventName: args[0],
+        });
+
+        // Swallow to keep UI alive.
+        return this;
+      }
     };
   };
 

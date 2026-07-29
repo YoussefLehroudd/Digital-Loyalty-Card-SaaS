@@ -58,7 +58,15 @@ function UserCardsPageInner() {
   const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     reload();
-  }, [token, reload]);
+
+    // Fallback to keep data fresh without realtime:
+    // poll cards endpoint periodically while this page is mounted.
+    const interval = setInterval(() => {
+      void reload();
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [reload, token]);
 
   return (
     <CustomerLayout title="My Cards" subtitle="Switch between business loyalty cards">
