@@ -60,7 +60,7 @@ export function EchoProvider({
     const laravelBaseUrl = apiUrl.replace(/\/api\/?$/, "");
 
     const forceTLS = scheme === "https";
-    const enabledTransports = (forceTLS ? ["wss"] : ["ws", "wss"]) as unknown as any;
+    const enabledTransports: Array<"ws" | "wss"> = forceTLS ? ["wss"] : ["ws", "wss"];
 
     const e = new Echo({
       broadcaster: "reverb",
