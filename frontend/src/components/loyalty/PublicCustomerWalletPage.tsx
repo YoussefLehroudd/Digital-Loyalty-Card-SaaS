@@ -152,9 +152,21 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
 
     const channel = `customer.${currentCustomerId}`;
 
-    const onStamp = () => void reloadWallet(qrCode, true);
-    const onReward = () => void reloadWallet(qrCode, true);
-    const onMembershipDeleted = () => void reloadWallet(qrCode, true);
+    const onStamp = (event?: unknown) => {
+      // eslint-disable-next-line no-console
+      console.log("[StampAdded]", event);
+      void reloadWallet(qrCode, true);
+    };
+    const onReward = (event?: unknown) => {
+      // eslint-disable-next-line no-console
+      console.log("[RewardRedeemed]", event);
+      void reloadWallet(qrCode, true);
+    };
+    const onMembershipDeleted = (event?: unknown) => {
+      // eslint-disable-next-line no-console
+      console.log("[MembershipDeleted]", event);
+      void reloadWallet(qrCode, true);
+    };
 
     const c = echo.echo.private(channel);
     c.listen("StampAdded", onStamp);
