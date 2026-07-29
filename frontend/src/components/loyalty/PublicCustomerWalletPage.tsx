@@ -21,10 +21,10 @@ import {
   getPublicCustomerWallet,
   type PublicCustomerWalletResponse,
 } from "@/lib/public";
-
-const POLL_MS = 5000;
+import { useEcho } from "@/components/echo/echo-provider";
 
 export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
+  const echo = useEcho();
   const [data, setData] = useState<PublicCustomerWalletResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -33,55 +33,71 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   // Animation / UX state
-  const [stampAddedPulse, setStampAddedPulse] = useState(0); // key to retrigger
+  const [stampAddedPulse, setStampAddedPulse] = useState(0);
   const [showPlusOne, setShowPlusOne] = useState(false);
   const [rewardUnlockedPulse, setRewardUnlockedPulse] = useState(0);
   const [showRewardUnlocked, setShowRewardUnlocked] = useState(false);
 
-  // Track previous values to avoid replaying animations on refresh / no-change polling.
+  // Track previous values to avoid replaying animations on initial load.
   const prevStampsRef = useRef<number | null>(null);
   const prevRewardUnlockedRef = useRef<boolean | null>(null);
   const didInitRef = useRef(false);
 
-  async function loadWallet(qrCodeToLoad: string) {
-    let cancelled = false;
-
-    setIsLoading(true);
-    setError(null);
-    setNotFound(false);
+  async function reloadWallet(qrCodeToLoad: string, silent = false) {
+    if (!silent) {
+      setIsLoading(true);
+      setError(null);
+      setNotFound(false);
+    }
 
     try {
       const response = await getPublicCustomerWallet(qrCodeToLoad);
-      if (cancelled) return;
-
       setData(response);
-    } catch (unknownError) {
-      if (cancelled) return;
 
+      // trigger animations by comparing against previous values
+      const nextCard = response.loyalty_card;
+      const nextLoyalty = response.loyalty;
+
+      const required = nextCard?.required_stamps ?? 0;
+      const raw = nextLoyalty?.current_stamps ?? 0;
+      const nextStamps = required ? Math.min(raw, required) : raw;
+
+      const nextRewardUnlocked =
+        !!nextCard && required > 0 ? nextStamps >= required : false;
+
+      const prevStamps = prevStampsRef.current;
+      const prevRewardUnlocked = prevRewardUnlockedRef.current;
+
+      if (!didInitRef.current) {
+        prevStampsRef.current = nextStamps;
+        prevRewardUnlockedRef.current = nextRewardUnlocked;
+      } else {
+        if (prevStamps !== null && nextStamps > prevStamps) {
+          setStampAddedPulse((x) => x + 1);
+          setShowPlusOne(true);
+          window.setTimeout(() => setShowPlusOne(false), 1600);
+        }
+        if (prevRewardUnlocked !== null && !prevRewardUnlocked && nextRewardUnlocked) {
+          setRewardUnlockedPulse((x) => x + 1);
+          setShowRewardUnlocked(true);
+          window.setTimeout(() => setShowRewardUnlocked(false), 2200);
+        }
+
+        prevStampsRef.current = nextStamps;
+        prevRewardUnlockedRef.current = nextRewardUnlocked;
+      }
+
+      didInitRef.current = true;
+    } catch (unknownError) {
       if (unknownError instanceof ApiError && unknownError.status === 404) {
         setNotFound(true);
         setData(null);
-        return;
+      } else {
+        setError("Unable to load wallet right now. Please try again.");
+        setData(null);
       }
-
-      setError("Unable to load wallet right now. Please try again.");
-      setData(null);
     } finally {
-      if (!cancelled) setIsLoading(false);
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }
-
-  async function fetchWalletForPolling(qrCodeToLoad: string) {
-    // Keep this polling silent: don't flip isLoading for every poll.
-    try {
-      const response = await getPublicCustomerWallet(qrCodeToLoad);
-      return response;
-    } catch {
-      return null;
+      if (!silent) setIsLoading(false);
     }
   }
 
@@ -118,101 +134,44 @@ export function PublicCustomerWalletPage({ qrCode }: { qrCode: string }) {
     };
   }, [qrCode]);
 
+  // Initial load
   useEffect(() => {
     didInitRef.current = false;
     prevStampsRef.current = null;
     prevRewardUnlockedRef.current = null;
 
-    let intervalId: number | null = null;
-    let mounted = true;
+    void reloadWallet(qrCode, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrCode]);
 
-    async function init() {
-      setIsLoading(true);
-      setError(null);
-      setNotFound(false);
+  // Realtime updates via Reverb
+  useEffect(() => {
+    if (!echo.echo) return;
+    const currentCustomerId = data?.customer?.id;
+    if (!currentCustomerId) return;
 
-      try {
-        const response = await getPublicCustomerWallet(qrCode);
-        if (!mounted) return;
-        setData(response);
-      } catch (unknownError) {
-        if (!mounted) return;
+    const channel = `customer.${currentCustomerId}`;
 
-        if (unknownError instanceof ApiError && unknownError.status === 404) {
-          setNotFound(true);
-          setData(null);
-          return;
-        }
+    const onStamp = () => void reloadWallet(qrCode, true);
+    const onReward = () => void reloadWallet(qrCode, true);
+    const onMembershipDeleted = () => void reloadWallet(qrCode, true);
 
-        setError("Unable to load wallet right now. Please try again.");
-        setData(null);
-      } finally {
-        if (mounted) setIsLoading(false);
-        // First load should not trigger animations.
-        didInitRef.current = true;
-      }
-    }
-
-    void init();
-
-    intervalId = window.setInterval(async () => {
-      if (!mounted) return;
-
-      const response = await fetchWalletForPolling(qrCode);
-      if (!mounted) return;
-      if (!response) return;
-
-      setData(response);
-
-      // Compare and trigger animations only when loyalty values change.
-      const nextLoyalty = response.loyalty;
-      const nextCard = response.loyalty_card;
-
-      const required = nextCard?.required_stamps ?? 0;
-      const raw = nextLoyalty?.current_stamps ?? 0;
-      const nextStamps = required ? Math.min(raw, required) : raw;
-
-      const nextRewardUnlocked =
-        !!nextCard && required > 0 ? nextStamps >= required : false;
-
-      const prevStamps = prevStampsRef.current;
-      const prevRewardUnlocked = prevRewardUnlockedRef.current;
-
-      // Avoid animating on first poll right after init (and on refresh).
-      if (!didInitRef.current) {
-        prevStampsRef.current = nextStamps;
-        prevRewardUnlockedRef.current = nextRewardUnlocked;
-        return;
-      }
-
-      if (prevStamps === null) {
-        prevStampsRef.current = nextStamps;
-      } else if (nextStamps > prevStamps) {
-        setStampAddedPulse((x) => x + 1);
-        setShowPlusOne(true);
-        setTimeout(() => setShowPlusOne(false), 1600);
-        prevStampsRef.current = nextStamps;
-      } else {
-        prevStampsRef.current = nextStamps;
-      }
-
-      if (prevRewardUnlocked === null) {
-        prevRewardUnlockedRef.current = nextRewardUnlocked;
-      } else if (!prevRewardUnlocked && nextRewardUnlocked) {
-        setRewardUnlockedPulse((x) => x + 1);
-        setShowRewardUnlocked(true);
-        setTimeout(() => setShowRewardUnlocked(false), 2200);
-        prevRewardUnlockedRef.current = nextRewardUnlocked;
-      } else {
-        prevRewardUnlockedRef.current = nextRewardUnlocked;
-      }
-    }, POLL_MS);
+    const c = echo.echo.private(channel);
+    c.listen("StampAdded", onStamp);
+    c.listen("RewardRedeemed", onReward);
+    c.listen("MembershipDeleted", onMembershipDeleted);
 
     return () => {
-      mounted = false;
-      if (intervalId) window.clearInterval(intervalId);
+      try {
+        c.stopListening("StampAdded");
+        c.stopListening("RewardRedeemed");
+        c.stopListening("MembershipDeleted");
+      } catch {
+        // no-op
+      }
     };
-  }, [qrCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [echo.echo, data?.customer?.id, qrCode]);
 
   const computed = useMemo(() => {
     const loyalty = data?.loyalty ?? null;

@@ -2,15 +2,18 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class BusinessCardUpdated implements ShouldBroadcast
+class BusinessCardUpdated implements ShouldBroadcast, ShouldQueue
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public string $broadcastQueue = 'default';
 
     public function __construct(
         public readonly int $businessId,
@@ -21,7 +24,7 @@ class BusinessCardUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel("business.{$this->businessId}"),
+            new PrivateChannel("business.{$this->businessId}"),
         ];
     }
 

@@ -22,11 +22,14 @@ import {
   type DashboardOverview,
 } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useEcho } from "@/components/echo/echo-provider";
 
 const formatter = new Intl.NumberFormat("en");
 
 export function BusinessDashboard() {
   const { token, user } = useAuth();
+  const echo = useEcho();
+
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,10 +48,50 @@ export function BusinessDashboard() {
     }
   }
 
+  async function loadDashboardSilent() {
+    try {
+      const response = await getDashboardOverview(token);
+      setOverview(response);
+    } catch {
+      // keep existing UI state on silent refresh failures
+    }
+  }
+
   useEffect(() => {
     loadDashboard();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // Realtime updates for the business workspace
+  useEffect(() => {
+    if (!echo.echo) return;
+    const businessId = user?.business?.id ?? user?.business_id ?? null;
+    if (!businessId) return;
+
+    const channel = `business.${businessId}`;
+
+    const c = echo.echo.private(channel);
+    c.listen("StampAdded", () => void loadDashboardSilent());
+    c.listen("RewardRedeemed", () => void loadDashboardSilent());
+    c.listen("MembershipCreated", () => void loadDashboardSilent());
+    c.listen("MembershipDeleted", () => void loadDashboardSilent());
+    c.listen("BusinessBrandUpdated", () => void loadDashboardSilent());
+    c.listen("BusinessCardUpdated", () => void loadDashboardSilent());
+
+    return () => {
+      try {
+        c.stopListening("StampAdded");
+        c.stopListening("RewardRedeemed");
+        c.stopListening("MembershipCreated");
+        c.stopListening("MembershipDeleted");
+        c.stopListening("BusinessBrandUpdated");
+        c.stopListening("BusinessCardUpdated");
+      } catch {
+        // no-op
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [echo.echo, user?.business?.id, user?.business_id, token]);
 
   const metrics = overview?.metrics;
   const isEmpty = metrics ? Object.values(metrics).every((value) => value === 0) : false;

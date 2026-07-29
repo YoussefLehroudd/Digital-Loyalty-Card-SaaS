@@ -2,15 +2,21 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StampAdded implements ShouldBroadcast
+class StampAdded implements ShouldBroadcast, ShouldQueue
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    /**
+     * Optional: ensure broadcasting uses the queue workers queue if configured.
+     */
+    public string $broadcastQueue = 'default';
 
     public function __construct(
         public readonly int $businessId,
@@ -24,8 +30,8 @@ class StampAdded implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel("customer.{$this->customerId}"),
-            new Channel("business.{$this->businessId}"),
+            new PrivateChannel("customer.{$this->customerId}"),
+            new PrivateChannel("business.{$this->businessId}"),
         ];
     }
 
