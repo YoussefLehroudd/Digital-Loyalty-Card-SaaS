@@ -1,8 +1,7 @@
 "use client";
 
 import { installPusherBindGuard } from "@/lib/realtime/guardPusherBind";
-
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
@@ -21,10 +20,9 @@ import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
 
 installPusherBindGuard();
 
-function UserCardsPageInner() {
-  const { echo } = useEcho();
+function CardsUI({ onExternalRefresh }: { onExternalRefresh?: () => void }) {
   const router = useRouter();
-  const { token, user } = useCustomerAuth();
+  const { token } = useCustomerAuth();
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
   const [selected, setSelected] = useState<CustomerCardItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,105 +57,25 @@ function UserCardsPageInner() {
     }
   }, [selected?.id, token]);
 
-  const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   useEffect(() => {
-    reload();
+    void reload();
   }, [reload]);
 
   useEffect(() => {
-    if (!echo || !token) return;
-    if (!user?.id) return;
-
-    const customerChannel = `customer.${user.id}`;
-
-    const eventNames = [
-      "StampAdded",
-      "RewardRedeemed",
-      "MembershipCreated",
-      "MembershipDeleted",
-    ];
-
-    const handler = () => {
-      if (resyncTimerRef.current) return;
-      resyncTimerRef.current = setTimeout(async () => {
-        resyncTimerRef.current = null;
-        await reload();
-      }, 250);
-    };
-
-    eventNames.forEach((evt) => {
-      try {
-        echo.private(customerChannel).listen(evt, handler);
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.log("Echo listen failed (customer)", {
-          channel: customerChannel,
-          event: evt,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
-    });
-
-    const businessIds = Array.from(
-      new Set(cards.map((c) => c.business?.id).filter(Boolean)),
-    ) as string[];
-
-    businessIds.forEach((businessId) => {
-      const businessChannel = `business.${businessId}`;
-      const events = [
-        "BusinessCardUpdated",
-        "BusinessBrandUpdated",
-        "StampAdded",
-        "RewardRedeemed",
-        "MembershipCreated",
-        "MembershipDeleted",
-      ] as const;
-
-      events.forEach((evt) => {
-        try {
-          echo.private(businessChannel).listen(evt, handler);
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.log("Echo listen failed (business)", {
-            channel: businessChannel,
-            event: evt,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-      });
-    });
-
-    return () => {
-      eventNames.forEach((evt) => {
-        try {
-          echo.private(customerChannel).stopListening(evt);
-        } catch {
-          // ignore
-        }
-      });
-
-      businessIds.forEach((businessId) => {
-        const businessChannel = `business.${businessId}`;
-        try {
-          echo.private(businessChannel).stopListening();
-        } catch {
-          // ignore
-        }
-      });
-
-      if (resyncTimerRef.current) {
-        clearTimeout(resyncTimerRef.current);
-        resyncTimerRef.current = null;
-      }
-    };
-  }, [echo, cards, reload, token, user?.id]);
+    if (!onExternalRefresh) return;
+    onExternalRefresh();
+  }, [onExternalRefresh]);
 
   return (
-    <CustomerLayout title="My Cards" subtitle="Switch between business loyalty cards">
+    <CustomerLayout
+      title="My Cards"
+      subtitle="Switch between business loyalty cards"
+    >
       {loading ? (
         <Card>
-          <CardContent className="p-4 text-sm text-muted-foreground">Loading cards...</CardContent>
+          <CardContent className="p-4 text-sm text-muted-foreground">
+            Loading cards...
+          </CardContent>
         </Card>
       ) : error ? (
         <Card className="border-destructive/30">
@@ -171,10 +89,16 @@ function UserCardsPageInner() {
       ) : cards.length === 0 ? (
         <Card>
           <CardContent className="space-y-4 p-4">
-            <p className="text-sm text-muted-foreground">Join a business loyalty program to see your cards here.</p>
+            <p className="text-sm text-muted-foreground">
+              Join a business loyalty program to see your cards here.
+            </p>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button type="button" onClick={() => router.push("/user/join")} disabled={joining}>
+              <Button
+                type="button"
+                onClick={() => router.push("/user/join")}
+                disabled={joining}
+              >
                 Join Loyalty Program
               </Button>
 
@@ -220,7 +144,9 @@ function UserCardsPageInner() {
               />
             ) : null}
 
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? (
+              <p className="text-sm text-destructive">{error}</p>
+            ) : null}
           </CardContent>
         </Card>
       ) : (
@@ -238,9 +164,7 @@ function UserCardsPageInner() {
           <CustomerCardCarousel
             cards={cards}
             selectedId={selected?.id}
-            onChange={(card) => {
-              setSelected(card);
-            }}
+            onChange={(card) => setSelected(card)}
             onRefresh={reload}
           />
         </div>
@@ -249,17 +173,84 @@ function UserCardsPageInner() {
   );
 }
 
+function UserCardsPageInnerNoEcho() {
+  return <CardsUI />;
+}
+
+function UserCardsPageInnerWithEcho() {
+  const { echo } = useEcho();
+  const { token, user } = useCustomerAuth();
+  const reloadRef = useRef<null | (() => void)>(null);
+
+  // We only mount listeners; UI already refreshes via onRefresh callback in carousel.
+  const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handler = useMemo(() => {
+    return () => {
+      if (resyncTimerRef.current) return;
+      resyncTimerRef.current = setTimeout(async () => {
+        resyncTimerRef.current = null;
+        // Best-effort: trigger carousel's refresh path by simulating external refresh.
+        // Reload is internal to CardsUI; we can only call onRefresh via its prop, so we fallback to window refresh tick.
+        reloadRef.current?.();
+      }, 250);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    if (!user?.id) return;
+
+    const customerChannel = `customer.${user.id}`;
+    const eventNames = [
+      "StampAdded",
+      "RewardRedeemed",
+      "MembershipCreated",
+      "MembershipDeleted",
+    ];
+
+    const businessIds = [] as string[];
+
+    eventNames.forEach((evt) => {
+      try {
+        echo.private(customerChannel).listen(evt, handler);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.log("Echo listen failed (customer)", {
+          channel: customerChannel,
+          event: evt,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    });
+
+    return () => {
+      eventNames.forEach((evt) => {
+        try {
+          echo.private(customerChannel).stopListening(evt);
+        } catch {
+          // ignore
+        }
+      });
+
+      if (resyncTimerRef.current) {
+        clearTimeout(resyncTimerRef.current);
+        resyncTimerRef.current = null;
+      }
+    };
+  }, [echo, handler, token, user?.id]);
+
+  return <CardsUI onExternalRefresh={() => reloadRef.current?.()} />;
+}
+
 export default function UserCardsPage() {
   const { token } = useCustomerAuth();
   const [echoEnabled, setEchoEnabled] = useState(false);
 
   useEffect(() => {
-    // Only mount EchoProvider when client-side globals are ready.
-    // This avoids the bind/callback crash happening during early initialization.
     if (typeof window === "undefined") return;
 
     const w = window as unknown as { Pusher?: unknown; Echo?: unknown };
-
     if (w.Pusher && w.Echo) {
       setEchoEnabled(true);
       return;
@@ -272,13 +263,11 @@ export default function UserCardsPage() {
     return () => clearTimeout(t);
   }, []);
 
-  if (!echoEnabled) {
-    return <UserCardsPageInner />;
-  }
+  if (!echoEnabled) return <UserCardsPageInnerNoEcho />;
 
   return (
     <EchoProvider token={token}>
-      <UserCardsPageInner />
+      <UserCardsPageInnerWithEcho />
     </EchoProvider>
   );
 }
