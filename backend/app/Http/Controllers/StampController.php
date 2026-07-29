@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Events\StampAdded;
 use App\Events\RewardRedeemed;
 use Symfony\Component\HttpFoundation\Response;
@@ -137,6 +138,17 @@ class StampController extends Controller
             rewardUnlocked: (bool) $rewardUnlocked,
         ));
 
+        // SSE source of truth: write latest card.updated payload to Cache
+        Cache::put(
+            key: "customer:{$customer->id}:card.updated",
+            value: [
+                'card_id' => (int) ($loyaltyCard->id ?? 0),
+                'customer_id' => (int) $customer->id,
+                'updated_at' => now()->toISOString(),
+            ],
+            minutes: 10
+        );
+
         return response()->json([
             'message' => 'Stamp added successfully.',
             'loyalty' => [
@@ -256,6 +268,17 @@ class StampController extends Controller
             currentStamps: (int) ($freshCustomerLoyalty?->current_stamps ?? 0),
             requiredStamps: (int) $required,
         ));
+
+        // SSE source of truth: write latest card.updated payload to Cache
+        Cache::put(
+            key: "customer:{$customer->id}:card.updated",
+            value: [
+                'card_id' => (int) ($loyaltyCard->id ?? 0),
+                'customer_id' => (int) $customer->id,
+                'updated_at' => now()->toISOString(),
+            ],
+            minutes: 10
+        );
 
         return response()->json([
             'success' => true,

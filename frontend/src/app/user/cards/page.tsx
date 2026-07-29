@@ -1,7 +1,6 @@
 "use client";
 
-import { installPusherBindGuard } from "@/lib/realtime/guardPusherBind";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
@@ -16,9 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
-import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
-
-installPusherBindGuard();
+import { API_BASE_URL } from "@/lib/api";
 
 function CardsUI({
   onProvideReload,
@@ -68,11 +65,7 @@ function CardsUI({
   useEffect(() => {
     if (!onProvideReload) return;
 
-    // eslint-disable-next-line no-console
-    console.log("[CardsUI] Providing reload fn to Echo listeners");
     onProvideReload(() => {
-      // eslint-disable-next-line no-console
-      console.log("[CardsUI] reload() triggered by realtime");
       void reload();
     });
   }, [onProvideReload, reload]);
@@ -188,104 +181,63 @@ function UserCardsPageInnerNoEcho() {
   return <CardsUI />;
 }
 
-function UserCardsPageInnerWithEcho() {
-  const { echo } = useEcho();
-  const { token, user } = useCustomerAuth();
-  const reloadRef = useRef<null | (() => void)>(null);
-
-  const resyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handler = useMemo(() => {
-    return () => {
-      // eslint-disable-next-line no-console
-      console.log("[Echo] received event -> schedule reload");
-      if (resyncTimerRef.current) return;
-      resyncTimerRef.current = setTimeout(() => {
-        resyncTimerRef.current = null;
-        // eslint-disable-next-line no-console
-        console.log("[Echo] executing reloadRef.current?.()");
-        reloadRef.current?.();
-      }, 250);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!echo || !token) return;
-    if (!user?.id) return;
-
-    const customerChannel = `customer.${user.id}`;
-    const eventNames = [
-      "StampAdded",
-      "RewardRedeemed",
-      "MembershipCreated",
-      "MembershipDeleted",
-    ];
-
-    eventNames.forEach((evt) => {
-      try {
-        // eslint-disable-next-line no-console
-        console.log("[Echo] listening customer", { channel: customerChannel, event: evt });
-        echo.private(customerChannel).listen(evt, handler);
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.log("[Echo] listen failed (customer)", {
-          channel: customerChannel,
-          event: evt,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
-    });
-
-    return () => {
-      eventNames.forEach((evt) => {
-        try {
-          echo.private(customerChannel).stopListening(evt);
-        } catch {
-          // ignore
-        }
-      });
-
-      if (resyncTimerRef.current) {
-        clearTimeout(resyncTimerRef.current);
-        resyncTimerRef.current = null;
-      }
-    };
-  }, [echo, handler, token, user?.id]);
-
-  return (
-    <CardsUI
-      onProvideReload={(fn) => {
-        reloadRef.current = fn;
-      }}
-    />
-  );
+function UserCardsPageInnerWithSse({
+  onProvideReload,
+}: {
+  onProvideReload?: (reloadFn: () => void) => void;
+}) {
+  return <CardsUI onProvideReload={onProvideReload} />;
 }
 
 export default function UserCardsPage() {
   const { token } = useCustomerAuth();
-  const [echoEnabled, setEchoEnabled] = useState(false);
+
+  const reloadRef = useRef<null | (() => void)>(null);
 
   useEffect(() => {
+    if (!token) return;
     if (typeof window === "undefined") return;
 
-    const w = window as unknown as { Pusher?: unknown; Echo?: unknown };
-    if (w.Pusher && w.Echo) {
-      setEchoEnabled(true);
-      return;
-    }
+    const url = `${API_BASE_URL}/user/cards/events`;
 
-    const t = setTimeout(() => {
-      if (w.Pusher && w.Echo) setEchoEnabled(true);
-    }, 1500);
+    // eslint-disable-next-line no-console
+    console.log("[SSE] connecting", { url });
 
-    return () => clearTimeout(t);
-  }, []);
+    // TS: EventSource doesn't consistently type withCredentials across TS DOM libs.
+    // Runtime: browser will include cookies for the same-origin URL.
+    const es = new EventSource(url);
 
-  if (!echoEnabled) return <UserCardsPageInnerNoEcho />;
+    const onMessage = () => {
+      // Some browsers call onmessage; we rely on named event handler below too.
+    };
+
+    const onCardUpdated = (ev: MessageEvent) => {
+      // eslint-disable-next-line no-console
+      console.log("[SSE] received card.updated", ev.data);
+      reloadRef.current?.();
+    };
+
+    es.onmessage = onMessage;
+    es.addEventListener("card.updated", onCardUpdated);
+
+    es.onerror = (err) => {
+      // eslint-disable-next-line no-console
+      console.log("[SSE] error", err);
+    };
+
+    return () => {
+      es.removeEventListener("card.updated", onCardUpdated);
+      es.close();
+      // eslint-disable-next-line no-console
+      console.log("[SSE] closed");
+    };
+  }, [token]);
 
   return (
-    <EchoProvider token={token}>
-      <UserCardsPageInnerWithEcho />
-    </EchoProvider>
+    <UserCardsPageInnerWithSse
+      onProvideReload={(fn) => {
+        reloadRef.current = fn;
+      }}
+    />
   );
 }

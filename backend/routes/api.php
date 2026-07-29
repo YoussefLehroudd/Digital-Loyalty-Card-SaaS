@@ -122,6 +122,8 @@ Route::middleware(['customer_portal_token'])
         Route::get('/activity', [\App\Http\Controllers\CustomerPortalController::class, 'activity']);
     });
 
+Route::middleware(['auth:sanctum', 'customer'])->get('/user/cards/events', [\App\Http\Controllers\CustomerCardsEventsController::class, 'events']);
+
 
 Route::get('/user', function (Request $request) {
     return $request->user();
