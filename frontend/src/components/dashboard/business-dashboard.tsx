@@ -196,7 +196,7 @@ function DashboardSummary({ metrics }: { metrics: DashboardMetrics }) {
       : 0;
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+    <div className="grid gap-6 xl:grid-cols-1">
       <Card>
         <CardHeader>
           <CardTitle>Performance snapshot</CardTitle>
@@ -223,28 +223,6 @@ function DashboardSummary({ metrics }: { metrics: DashboardMetrics }) {
             <SummaryTile label="Monthly visits" value={metrics.visits_this_month} />
             <SummaryTile label="Rewards claimed" value={metrics.rewards_redeemed} />
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Workspace status</CardTitle>
-          <CardDescription>Current business dashboard health.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {[
-            "Tenant access verified",
-            "Metrics scoped to business",
-            "Dashboard API online",
-          ].map((item) => (
-            <div
-              className="flex items-center justify-between rounded-lg border bg-background p-3 text-sm"
-              key={item}
-            >
-              <span>{item}</span>
-              <span className="size-2 rounded-full bg-success" />
-            </div>
-          ))}
         </CardContent>
       </Card>
     </div>

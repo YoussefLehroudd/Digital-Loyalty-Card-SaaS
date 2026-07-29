@@ -92,6 +92,7 @@ export default function RewardsPage() {
   const { token } = useAuth();
 
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<RewardStatusFilter>("all");
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
@@ -108,6 +109,17 @@ export default function RewardsPage() {
     return statusFilter;
   }, [statusFilter]);
 
+  // Debounce search input to reduce API requests while typing
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQ(q), 350);
+    return () => window.clearTimeout(t);
+  }, [q]);
+
+  useEffect(() => {
+    // Reset pagination when query/filter changes
+    setPage(1);
+  }, [debouncedQ, statusFilter]);
+
   const loadRewards = async (opts?: { nextPage?: number }) => {
     if (!token) return;
 
@@ -118,7 +130,7 @@ export default function RewardsPage() {
 
     try {
       const params = new URLSearchParams({
-        q: q,
+        q: debouncedQ,
         page: String(nextPage),
         per_page: String(perPage),
       });
@@ -141,18 +153,10 @@ export default function RewardsPage() {
   };
 
   useEffect(() => {
-    // Reset page on q/status changes
-    setPage(1);
-  }, [q, statusFilter]);
-
-  useEffect(() => {
-    loadRewards();
+    // Single fetch effect driven by (page, debouncedQ, statusFilter)
+    loadRewards({ nextPage: page });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
-
-  useEffect(() => {
-    // load when statusFilter/q reset page triggers page change
-  }, [statusFilter, q]);
+  }, [page, debouncedQ, statusFilter, statusQueryValue]);
 
   const rewards = response?.data ?? [];
   const isEmpty = !isLoading && response && rewards.length === 0;

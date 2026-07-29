@@ -121,6 +121,7 @@ export default function CustomersPage() {
   const { token } = useAuth();
 
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
 
@@ -140,11 +141,22 @@ export default function CustomersPage() {
   const canPrev = response ? page > 1 : false;
   const canNext = response ? page < response.meta.last_page : false;
 
+  // Debounce search input to reduce API requests while typing
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQ(q), 350);
+    return () => window.clearTimeout(t);
+  }, [q]);
+
+  useEffect(() => {
+    // Reset pagination when the debounced query changes
+    setPage(1);
+  }, [debouncedQ]);
+
   const loadCustomers = async (opts?: { nextPage?: number; nextQ?: string }) => {
     if (!token) return;
 
     const nextPage = opts?.nextPage ?? page;
-    const nextQ = opts?.nextQ ?? q;
+    const nextQ = opts?.nextQ ?? debouncedQ;
 
     setIsLoading(true);
     setError(null);
@@ -170,19 +182,10 @@ export default function CustomersPage() {
   };
 
   useEffect(() => {
-    // initial + whenever q/page changes
-    loadCustomers();
+    // Single fetch effect driven by (page, debouncedQ)
+    loadCustomers({ nextPage: page, nextQ: debouncedQ });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [q]);
-
-  useEffect(() => {
-    loadCustomers({ nextPage: 1, nextQ: q });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  }, [page, debouncedQ]);
 
   const openDetails = async (c: CustomerRow) => {
     if (!token) return;
@@ -354,11 +357,11 @@ export default function CustomersPage() {
                         <td className="px-4 py-4 text-sm">{formatDate(c.last_visit)}</td>
                         <td className="px-4 py-4 text-sm">{formatDate(c.joined_at)}</td>
 
-                        <td className="px-4 py-4 text-right">
-                          <Button variant="secondary" onClick={() => openDetails(c)}>
-                            View Details
-                          </Button>
-                        </td>
+<td className="px-4 py-4 text-right">
+  <Button variant="secondary" className="cursor-pointer" onClick={() => openDetails(c)}>
+    View Details
+  </Button>
+</td>
                       </tr>
                     ))
                   )}
@@ -383,22 +386,24 @@ export default function CustomersPage() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={!canPrev || isLoading}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setPage((p) => Math.min(response.meta.last_page, p + 1))}
-                    disabled={!canNext || isLoading}
-                  >
-                    Next
-                  </Button>
-                </div>
+<div className="flex items-center gap-2">
+  <Button
+    variant="outline"
+    className="cursor-pointer"
+    onClick={() => setPage((p) => Math.max(1, p - 1))}
+    disabled={!canPrev || isLoading}
+  >
+    Previous
+  </Button>
+  <Button
+    variant="outline"
+    className="cursor-pointer"
+    onClick={() => setPage((p) => Math.min(response.meta.last_page, p + 1))}
+    disabled={!canNext || isLoading}
+  >
+    Next
+  </Button>
+</div>
               </div>
             ) : null}
           </CardContent>
@@ -416,19 +421,19 @@ export default function CustomersPage() {
           }}
         >
           <div className="w-full max-w-3xl overflow-hidden rounded-xl border bg-background shadow-lg">
-            <div className="flex items-center justify-between border-b px-5 py-4">
-              <div>
-                <div className="text-base font-semibold">
-                  {selectedCustomer ? formatName(selectedCustomer) : "Customer"}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {selectedCustomer?.email || selectedCustomer?.phone || "—"}
-                </div>
-              </div>
-              <Button variant="ghost" onClick={closeModal}>
-                Close
-              </Button>
-            </div>
+<div className="flex items-center justify-between border-b px-5 py-4">
+  <div>
+    <div className="text-base font-semibold">
+      {selectedCustomer ? formatName(selectedCustomer) : "Customer"}
+    </div>
+    <div className="text-sm text-muted-foreground">
+      {selectedCustomer?.email || selectedCustomer?.phone || "—"}
+    </div>
+  </div>
+  <Button variant="ghost" className="cursor-pointer" onClick={closeModal}>
+    Close
+  </Button>
+</div>
 
             <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
               {isFetchingDetails || !details ? (

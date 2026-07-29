@@ -65,6 +65,20 @@ body {
   color: var(--foreground);
 }
 
+/* Cursor UX: ensure all clickable elements show pointer on hover.
+   Avoid overriding disabled/aria-disabled states. */
+a[href]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="link"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--ring) 24%, transparent);
 }
