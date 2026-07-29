@@ -80,41 +80,8 @@ export function EchoProvider({
     return e as unknown as EchoLike;
   }, [token]);
 
-  useEffect(() => {
-    if (!echo) return;
-
-    const onConnected = () => setConnected(true);
-    const onDisconnected = () => setConnected(false);
-
-    const echoUnknown = echo as unknown as {
-      connector?: {
-        pusher?: {
-          connection?: { bind?: (event: string, cb: () => void) => void; unbind?: (event: string, cb: () => void) => void };
-        };
-      };
-    };
-
-    const pusherConnection = echoUnknown?.connector?.pusher?.connection;
-
-    const bind = pusherConnection?.bind;
-    const unbind = pusherConnection?.unbind;
-
-    if (!bind || !unbind) return;
-
-    bind("connected", onConnected);
-    bind("disconnected", onDisconnected);
-    bind("unavailable", onDisconnected);
-
-    return () => {
-      try {
-        unbind("connected", onConnected);
-        unbind("disconnected", onDisconnected);
-        unbind("unavailable", onDisconnected);
-      } catch {
-        // no-op
-      }
-    };
-  }, [echo]);
+  // Intentionally no manual binding/unbinding to internal Echo connector internals.
+  // The connector shape differs across builds/versions and can crash at runtime.
 
   useEffect(() => {
     if (!echo) return;
