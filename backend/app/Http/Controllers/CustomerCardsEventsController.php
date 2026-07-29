@@ -8,79 +8,57 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CustomerCardsEventsController extends Controller
 {
-    public function events(Request $request): StreamedResponse
+    public function events(Request $request)
     {
-        try {
-            $user = $request->user();
+        $user = $request->user();
 
-            if (! $user) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
-            }
-
-            $customerId = (int) $user->id;
-
-            // Cache key: store latest payload + updated_at marker
-            // payload shape:
-            // { card_id, customer_id, updated_at }
-            $cacheKey = "customer:{$customerId}:card.updated";
-        } catch (Throwable $e) {
-            return response()->json(['message' => 'SSE bootstrap failed.'], 500);
+        if (! $user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
         }
 
-        $headers = [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache, no-transform',
-            'X-Accel-Buffering' => 'no',
-        ];
+        $customerId = (int) $user->id;
 
-        $intervalSeconds = 1; // server-side polling interval
+        $cacheKey = "customer:{$customerId}:card.updated";
 
-        return new StreamedResponse(function () use ($cacheKey, $intervalSeconds): void {
-            try {
-                // SSE "handshake"
-                echo "event: connected\n";
-                echo "data: {}\n\n";
-                @ob_flush();
-                @flush();
+        return new StreamedResponse(function () use ($cacheKey): void {
+            echo "event: connected\n";
+            echo "data: {}\n\n";
 
-                $lastUpdatedAt = null;
+            if (ob_get_level()) {
+                ob_flush();
+            }
+            flush();
 
-                while (true) {
-                    $payload = Cache::get($cacheKey);
+            $lastUpdatedAt = null;
 
-                    $updatedAt = is_array($payload) ? ($payload['updated_at'] ?? null) : null;
+            while (true) {
+                $payload = Cache::get($cacheKey);
+
+                if (is_array($payload)) {
+                    $updatedAt = $payload['updated_at'] ?? null;
 
                     if ($updatedAt && $updatedAt !== $lastUpdatedAt) {
                         $lastUpdatedAt = $updatedAt;
 
-                        $data = is_array($payload) ? $payload : [];
-
-                        // SSE event
                         echo "event: card.updated\n";
-                        echo 'data: ' . json_encode($data, JSON_UNESCAPED_SLASHES) . "\n\n";
+                        echo "data: " . json_encode($payload) . "\n\n";
 
-                        @ob_flush();
-                        @flush();
+                        if (ob_get_level()) {
+                            ob_flush();
+                        }
+                        flush();
                     }
-
-                    // Avoid busy loop
-                    sleep($intervalSeconds);
                 }
-            } catch (\Throwable $e) {
-                \Log::error('SSE cards error', [
-                    'message' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString(),
-                    'cacheKey' => $cacheKey,
-                ]);
 
-                // Best-effort SSE error event (avoid hard 500 that breaks client)
-                echo "event: error\n";
-                echo 'data: ' . json_encode(['message' => $e->getMessage()], JSON_UNESCAPED_SLASHES) . "\n\n";
-                @ob_flush();
-                @flush();
+                sleep(1);
             }
-        }, 200, $headers);
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
     }
 }
