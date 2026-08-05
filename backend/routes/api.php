@@ -9,6 +9,7 @@ use App\Http\Controllers\LoyaltyCardController;
 use App\Http\Controllers\PublicCustomerController;
 use App\Http\Controllers\StampController;
 use App\Http\Controllers\CustomerAuthController;
+use App\Events\TestEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -126,3 +127,16 @@ Route::middleware(['customer_portal_token'])
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
+
+Route::get('/test-broadcast', function () {
+    event(new TestEvent([
+        'message' => 'Hello from TestEvent',
+        'ts' => now()->toISOString(),
+    ]));
+
+    return response()->json([
+        'ok' => true,
+        'channel' => 'test-public',
+        'event' => 'TestEvent',
+    ]);
+})->middleware('json.api');
