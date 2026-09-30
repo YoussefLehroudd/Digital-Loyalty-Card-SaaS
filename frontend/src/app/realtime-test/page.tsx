@@ -8,6 +8,29 @@ type ReceivedEvent = {
   raw: unknown;
 };
 
+type EchoChannel = {
+  subscribed?: (callback: () => void) => void;
+  listen: (event: string, callback: (payload: unknown) => void) => void;
+  stopListening?: (event: string) => void;
+};
+
+type EchoLike = {
+  connector?: {
+    pusher?: {
+      connection?: {
+        socket_id?: string | null;
+        state?: string;
+      };
+    };
+  };
+  channel: (name: string) => EchoChannel;
+  leaveChannel?: (name: string) => void;
+};
+
+function getApiBaseUrl() {
+  return process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ?? "";
+}
+
 export default function RealtimeTestPage() {
   const { echo, connected } = useEcho();
   const [channelSubscribed, setChannelSubscribed] = useState(false);
@@ -24,61 +47,40 @@ export default function RealtimeTestPage() {
   useEffect(() => {
     if (!echo) return;
 
-    const anyEcho = echo as any;
+    const echoClient = echo as unknown as EchoLike;
+    const id = echoClient.connector?.pusher?.connection?.socket_id ?? null;
+    setSocketId(id);
 
-    // Socket id (best-effort, depends on Echo internals)
-    try {
-      const id = anyEcho?.connector?.pusher?.connection?.socket_id ?? null;
-      setSocketId(id);
-    } catch {
-      // ignore
-    }
-
-    let channel: any;
+    let channel: EchoChannel;
     const name = "test-public";
 
     try {
-      // Public channel subscription (must use channel(), not private())
-      channel = anyEcho.channel(name);
+      channel = echoClient.channel(name);
 
       channel.subscribed?.(() => {
         setChannelSubscribed(true);
-        // eslint-disable-next-line no-console
-        console.log("[RealtimeTest] Channel subscribed:", name);
       });
 
       channel.listen("TestEvent", (payload: unknown) => {
-        // eslint-disable-next-line no-console
-        console.log("[RealtimeTest] TestEvent received:", payload);
-
         setEvents((prev) => [{ ts: Date.now(), raw: payload }, ...prev]);
       });
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error("[RealtimeTest] Subscription/setup failed:", e);
+    } catch {
       return;
     }
 
     return () => {
-      try {
-        channel?.stopListening?.("TestEvent");
-        anyEcho?.leaveChannel?.(name);
-      } catch {
-        // ignore
-      }
+      channel.stopListening?.("TestEvent");
+      echoClient.leaveChannel?.(name);
     };
   }, [echo]);
 
   const websocketState = useMemo(() => {
     if (!mounted) return "Echo not created";
     if (!echo) return "Echo not created";
-    try {
-      const state = (echo as any)?.connector?.pusher?.connection?.state;
-      return state ?? "unknown";
-    } catch {
-      return "unknown";
-    }
-  }, [echo, events.length, connected, mounted]);
+
+    const echoClient = echo as unknown as EchoLike;
+    return echoClient.connector?.pusher?.connection?.state ?? "unknown";
+  }, [echo, mounted]);
 
   return (
     <main className="min-h-screen bg-background p-6 text-foreground">
@@ -90,12 +92,10 @@ export default function RealtimeTestPage() {
           {connected ? "Yes" : "No"}
         </div>
         <div>
-          <span className="font-medium">WebSocket state:</span>{" "}
-          {websocketState}
+          <span className="font-medium">WebSocket state:</span> {websocketState}
         </div>
         <div>
-          <span className="font-medium">Socket ID:</span>{" "}
-          {socketId ?? "—"}
+          <span className="font-medium">Socket ID:</span> {socketId ?? "-"}
         </div>
         <div>
           <span className="font-medium">Channel:</span> {publicChannelName} /{" "}
@@ -109,13 +109,10 @@ export default function RealtimeTestPage() {
           type="button"
           className="rounded-md border bg-background px-3 py-1 text-sm"
           onClick={async () => {
-            const res = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ?? ""}/api/test-broadcast`,
-              { method: "GET" }
-            );
-            const json = await res.json();
-            // eslint-disable-next-line no-console
-            console.log("[RealtimeTest] /api/test-broadcast response:", json);
+            const res = await fetch(`${getApiBaseUrl()}/test-broadcast`, {
+              method: "GET",
+            });
+            await res.json();
           }}
         >
           Trigger /api/test-broadcast
