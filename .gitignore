@@ -1,8 +1,5 @@
-composer.phar
-
 # Dependencies
 node_modules/
-vendor/
 
 # Build output
 .next/
@@ -18,8 +15,6 @@ public/build/
 # Logs and caches
 *.log
 .logs/
-.phpunit.cache/
-.phpunit.result.cache
 *.tsbuildinfo
 
 # Editors and OS files
@@ -27,5 +22,3 @@ public/build/
 Thumbs.db
 .idea/
 .vscode/
-
-composer.phar

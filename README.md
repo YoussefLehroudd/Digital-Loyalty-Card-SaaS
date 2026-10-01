@@ -2,76 +2,62 @@
 
 Production-oriented MVP for a multi-tenant digital loyalty card platform.
 
-## Phase 1
+The app now runs as a single Vercel-hosted Next.js project:
 
-This phase creates the foundation only:
+- `frontend`: Next.js 15, TypeScript, Tailwind CSS, shadcn-compatible UI primitives, Lucide icons, dark mode support.
+- `frontend/src/app/api`: Vercel-ready Node.js API routes.
+- `frontend/src/lib/server/db.ts`: Neon PostgreSQL connection for server-side code.
+- `frontend/src/app/api/[...path]/route.ts`: API dispatcher for auth, dashboard, business profile, loyalty cards, customers, rewards, stamping, public wallet pages, and Google Wallet links.
 
-- `frontend`: Next.js 15, TypeScript, TailwindCSS, shadcn-compatible UI primitives, Lucide icons, dark mode support.
-- `backend`: Laravel 12 REST API, Sanctum installed, API route file enabled, PostgreSQL env defaults.
-- `docker-compose.yml`: local PostgreSQL service for development.
+## Production
+
+Deploy the `frontend` directory to Vercel.
+
+Required Vercel settings:
+
+- Root Directory: `frontend`
+- Build Command: `npm run build`
+- Install Command: `npm install`
+- Framework Preset: `Next.js`
+
+Required environment variables:
+
+- `DATABASE_URL`: Neon pooled PostgreSQL connection string.
+- `NEXT_PUBLIC_APP_URL`: production app URL.
+- `NEXT_PUBLIC_API_URL`: leave empty or set to `/api` so the app uses the Vercel API routes.
+- `CLOUDINARY_NAME` or `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+Optional environment variables:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `GOOGLE_WALLET_ISSUER_ID`
+- `GOOGLE_WALLET_CLIENT_EMAIL`
+- `GOOGLE_WALLET_PRIVATE_KEY`
 
 ## Local Development
 
-Start PostgreSQL:
-
-```bash
-docker compose up -d
-```
-
-Start the Laravel API:
-
-```bash
-cd backend
-php artisan serve
-```
-
-Start the Next.js frontend:
+Create `frontend/.env.local` from the example file, then run:
 
 ```bash
 cd frontend
+npm install
 npm run dev
 ```
 
 Default local URLs:
 
-- Frontend: `http://localhost:3000`
-- API: `http://localhost:8000/api`
-- API health: `http://localhost:8000/api/health`
+- App: `http://localhost:3000`
+- API health: `http://localhost:3000/api/health`
+- Database health: `http://localhost:3000/api/db/health`
 
-## Environment
+## API
 
-Copy environment files before running new installs:
+The app uses relative API calls by default. If `NEXT_PUBLIC_API_URL` is not set, requests go to `/api`.
 
-```bash
-cp frontend/.env.example frontend/.env.local
-cp backend/.env.example backend/.env
-```
-
-The backend expects PostgreSQL by default:
-
-- database: `digital_loyalty`
-- username: `loyalty`
-- password: `secret`
-- port: `5432`
-
-On this machine, Composer was downloaded as `composer.phar` because no global Composer binary was available.
-
-For Laravel commands on this machine, PHP needs these extensions enabled:
-`openssl`, `curl`, `mbstring`, `fileinfo`, `pdo_pgsql`, `pgsql`, `pdo_sqlite`, `sqlite3`, and `zip`.
-
-## Phase 2
-
-Authentication is implemented with Laravel Sanctum API tokens.
-
-Frontend routes:
-
-- `/register`
-- `/login`
-- `/forgot-password`
-- `/reset-password`
-- `/dashboard` protected for `business_owner`
-
-API routes:
+Important route groups:
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
@@ -80,60 +66,19 @@ API routes:
 - `POST /api/auth/forgot-password`
 - `POST /api/auth/reset-password`
 - `GET /api/dashboard/session`
-
-Database additions:
-
-- `businesses`
-- `users.business_id`
-- `users.role`
-
-## Phase 3
-
-Business dashboard is implemented for authenticated business owners.
-
-API route:
-
 - `GET /api/dashboard`
-
-Returned metrics:
-
-- `total_customers`
-- `active_customers`
-- `visits_this_month`
-- `rewards_redeemed`
-
-Dashboard metric tables added:
-
-- `customers`
-- `visits`
-- `reward_redemptions`
-
-All dashboard metric queries are scoped to the authenticated user's `business_id`.
-
-## Phase 4
-
-Business profile and branding settings are implemented for authenticated business owners.
-
-API routes:
-
-- `GET /api/business/profile`
-- `PATCH /api/business/profile`
+- `GET/PATCH /api/business/profile`
 - `POST /api/business/profile/logo`
-
-Profile fields:
-
-- business name
-- logo URL and Cloudinary public ID
-- primary color
-- address
-- phone
-- email
-
-Cloudinary environment:
-
-- `CLOUDINARY_CLOUD_NAME`
-- `CLOUDINARY_API_KEY`
-- `CLOUDINARY_API_SECRET`
-- `CLOUDINARY_FOLDER`
-
-All profile routes are protected by `auth:sanctum` and `role:business_owner`, and the backend resolves the business from the authenticated user's tenant.
+- `POST /api/business/profile/hero-image`
+- `GET/POST/PUT /api/loyalty-card`
+- `GET /api/business/customers`
+- `GET /api/business/rewards`
+- `POST /api/stamp`
+- `POST /api/redeem-reward`
+- `GET /api/public/businesses/:slug`
+- `POST /api/public/businesses/:slug/customers/register`
+- `GET /api/public/customers/wallet/:qrCode`
+- `POST /api/user/register`
+- `POST /api/user/login`
+- `GET /api/user/cards`
+- `POST /api/user/wallet/google/:membershipId`

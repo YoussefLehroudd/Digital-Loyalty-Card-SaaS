@@ -1,10 +1,21 @@
 # Next API Routes
 
-This folder is the Vercel-ready backend layer for the app.
+This folder contains the Vercel-ready Node.js backend for the app.
 
-Current endpoints:
+Health checks:
 
 - `GET /api/health`
 - `GET /api/db/health`
 
-Move Laravel endpoints from `backend/routes/api.php` into this folder gradually. Keep database access in `src/lib/server/*` so secrets like `DATABASE_URL` never reach client components.
+The catch-all route in `[...path]/route.ts` handles the application API groups:
+
+- `/api/auth/*`
+- `/api/dashboard*`
+- `/api/business/*`
+- `/api/loyalty-card`
+- `/api/public/*`
+- `/api/stamp`
+- `/api/redeem-reward`
+- `/api/user/*`
+
+Database access stays in `src/lib/server/*` so secrets such as `DATABASE_URL` are only used on the server.
