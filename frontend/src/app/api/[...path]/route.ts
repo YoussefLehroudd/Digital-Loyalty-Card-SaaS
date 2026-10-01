@@ -625,6 +625,24 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
 
 async function handleRealtimeVersion(req: Request, sql: Sql) {
   const auth = await requireAuth(req, sql);
+
+  if (auth.user.role === "customer") {
+    const userId = auth.user.id;
+    const rows = (await sql`
+      SELECT
+        GREATEST(
+          COALESCE((SELECT max(c.updated_at) FROM customers c WHERE c.user_id = ${userId}), 'epoch'::timestamptz),
+          COALESCE((SELECT max(cl.updated_at) FROM customer_loyalties cl JOIN customers c ON c.id = cl.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz),
+          COALESCE((SELECT max(v.created_at) FROM visits v JOIN customers c ON c.id = v.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz),
+          COALESCE((SELECT max(COALESCE(r.redeemed_at, r.earned_at)) FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz)
+        ) AS changed_at,
+        (SELECT count(*)::int FROM customers WHERE user_id = ${userId}) AS cards_count,
+        (SELECT count(*)::int FROM visits v JOIN customers c ON c.id = v.customer_id WHERE c.user_id = ${userId}) AS visits_count,
+        (SELECT count(*)::int FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE c.user_id = ${userId}) AS rewards_count
+    `) as Array<{ changed_at: string; cards_count: number; visits_count: number; rewards_count: number }>;
+    return json({ version: rows[0] });
+  }
+
   if (!auth.business) return error("Business not found.", 404);
   const businessId = auth.business.id;
   const rows = (await sql`
