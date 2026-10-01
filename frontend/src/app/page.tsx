@@ -82,13 +82,13 @@ export default function Home() {
             >
               <Menu className="size-5" />
             </Button>
-            <div className="relative size-14 overflow-hidden rounded-xl border bg-card shadow-sm">
+            <div className="relative flex size-16 items-center justify-center rounded-xl border bg-card shadow-sm">
               <Image
                 alt="LOYVANCE logo"
-                className="scale-125 object-cover"
+                className="object-contain p-0.5"
                 fill
                 priority
-                sizes="56px"
+                sizes="64px"
                 src="/brand/logo.png"
               />
             </div>
