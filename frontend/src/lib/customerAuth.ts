@@ -198,6 +198,13 @@ export function customerDeleteCard(token: string, membershipId: string) {
   });
 }
 
+export function customerGoogleWalletLink(token: string, membershipId: string) {
+  return apiFetch<{ url: string }>(`/user/wallet/google/${membershipId}`, {
+    method: "POST",
+    token,
+  });
+}
+
 export function customerRewards(token: string) {
   return apiFetch<{
     data: {
