@@ -48,7 +48,9 @@ export function CustomerCardCarousel({
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
   const touchDeltaX = useRef(0);
+  const touchDeltaY = useRef(0);
   const [deleting, setDeleting] = useState(false);
 
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -67,21 +69,40 @@ export function CustomerCardCarousel({
   };
 
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    // Swipe navigation is intentionally touch-only. Mouse/trackpad gestures on desktop
+    // are left to normal page scrolling and the explicit card controls.
+    if (event.touches.length !== 1) return;
     touchStartX.current = event.touches[0]?.clientX ?? null;
+    touchStartY.current = event.touches[0]?.clientY ?? null;
     touchDeltaX.current = 0;
+    touchDeltaY.current = 0;
   };
 
   const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (touchStartX.current === null) return;
-    touchDeltaX.current = (event.touches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    touchDeltaX.current = touch.clientX - touchStartX.current;
+    touchDeltaY.current = touch.clientY - touchStartY.current;
   };
 
   const onTouchEnd = () => {
-    const delta = touchDeltaX.current;
+    const deltaX = touchDeltaX.current;
+    const deltaY = touchDeltaY.current;
     touchStartX.current = null;
+    touchStartY.current = null;
     touchDeltaX.current = 0;
-    if (Math.abs(delta) < 45) return;
-    if (delta < 0) setAndNotify(index + 1);
+    touchDeltaY.current = 0;
+
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    // A card changes only for a deliberate horizontal swipe. Normal vertical
+    // scrolling may drift sideways, so horizontal movement must clearly dominate.
+    if (horizontalDistance < 70) return;
+    if (horizontalDistance < verticalDistance * 1.6) return;
+
+    if (deltaX < 0) setAndNotify(index + 1);
     else setAndNotify(index - 1);
   };
 
