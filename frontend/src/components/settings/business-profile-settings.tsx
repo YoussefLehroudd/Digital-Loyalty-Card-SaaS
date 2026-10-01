@@ -6,12 +6,15 @@ import {
   BadgeCheck,
   Building2,
   ImageUp,
+  KeyRound,
   Loader2,
   Mail,
   MapPin,
   Palette,
   Phone,
   Save,
+  ShieldCheck,
+  UserRound,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,10 +32,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 import {
   getBusinessProfile,
+  updateAccountPassword,
+  updateAccountProfile,
   updateBusinessProfile,
   uploadBusinessHeroImage,
   uploadBusinessLogo,
@@ -51,7 +57,25 @@ const schema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/, "Use a valid hex color."),
 });
 
+const accountSchema = z.object({
+  name: z.string().min(2, "Enter your name.").max(255),
+  email: z.string().email("Enter a valid login email."),
+});
+
+const passwordSchema = z
+  .object({
+    current_password: z.string().min(1, "Enter your current password."),
+    password: z.string().min(10, "Use at least 10 characters."),
+    password_confirmation: z.string().min(1, "Confirm the new password."),
+  })
+  .refine((values) => values.password === values.password_confirmation, {
+    message: "Password confirmation does not match.",
+    path: ["password_confirmation"],
+  });
+
 type ProfileValues = z.infer<typeof schema>;
+type AccountValues = z.infer<typeof accountSchema>;
+type PasswordValues = z.infer<typeof passwordSchema>;
 
 type BrandingImageState = {
   dataUrl: string;
@@ -62,7 +86,7 @@ type BrandingImageState = {
 };
 
 export function BusinessProfileSettings() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [business, setBusiness] = useState<Business | null>(null);
@@ -100,6 +124,48 @@ export function BusinessProfileSettings() {
       primary_color: "#171717",
     },
   });
+
+  const {
+    register: registerAccount,
+    handleSubmit: handleAccountSubmit,
+    reset: resetAccount,
+    formState: {
+      errors: accountErrors,
+      isSubmitting: isAccountSubmitting,
+      isDirty: isAccountDirty,
+    },
+  } = useForm<AccountValues>({
+    resolver: zodResolver(accountSchema),
+    defaultValues: {
+      name: user.name,
+      email: user.email,
+    },
+  });
+
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    reset: resetPassword,
+    formState: {
+      errors: passwordErrors,
+      isSubmitting: isPasswordSubmitting,
+      isDirty: isPasswordDirty,
+    },
+  } = useForm<PasswordValues>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
+      current_password: "",
+      password: "",
+      password_confirmation: "",
+    },
+  });
+
+  useEffect(() => {
+    resetAccount({
+      name: user.name,
+      email: user.email,
+    });
+  }, [resetAccount, user.email, user.name]);
 
   useEffect(() => {
     let isMounted = true;
@@ -154,6 +220,52 @@ export function BusinessProfileSettings() {
         primary_color: watchedValues.primary_color || business.primary_color,
       }
     : null;
+
+  async function onAccountSubmit(values: AccountValues) {
+    setSuccess(null);
+    setError(null);
+
+    try {
+      const response = await updateAccountProfile(token, values);
+      resetAccount({
+        name: response.user.name,
+        email: response.user.email,
+      });
+      setSuccess(response.message);
+    } catch (unknownError) {
+      if (unknownError instanceof ApiError) {
+        setError(
+          unknownError.errors?.email?.[0] ??
+            unknownError.errors?.name?.[0] ??
+            unknownError.message,
+        );
+        return;
+      }
+      setError("Account profile could not be updated.");
+    }
+  }
+
+  async function onPasswordSubmit(values: PasswordValues) {
+    setSuccess(null);
+    setError(null);
+
+    try {
+      const response = await updateAccountPassword(token, values);
+      resetPassword();
+      setSuccess(response.message);
+    } catch (unknownError) {
+      if (unknownError instanceof ApiError) {
+        setError(
+          unknownError.errors?.current_password?.[0] ??
+            unknownError.errors?.password?.[0] ??
+            unknownError.errors?.password_confirmation?.[0] ??
+            unknownError.message,
+        );
+        return;
+      }
+      setError("Password could not be updated.");
+    }
+  }
 
   async function onSubmit(values: ProfileValues) {
     setSuccess(null);
@@ -247,6 +359,120 @@ export function BusinessProfileSettings() {
         {error ? (
           <Alert className="border-red-500/30 text-red-600">{error}</Alert>
         ) : null}
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserRound className="size-5 text-muted-foreground" />
+                Owner profile
+              </CardTitle>
+              <CardDescription>
+                Login identity for the person managing this business dashboard.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-5" onSubmit={handleAccountSubmit(onAccountSubmit)}>
+                <div className="flex items-center gap-3 rounded-lg border bg-background p-4">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-secondary text-sm font-semibold text-secondary-foreground">
+                    {getInitials(user.name)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{user.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      Business owner account
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <ProfileField
+                    error={accountErrors.name?.message}
+                    icon={UserRound}
+                    label="Owner name"
+                  >
+                    <Input {...registerAccount("name")} />
+                  </ProfileField>
+                  <ProfileField
+                    error={accountErrors.email?.message}
+                    icon={Mail}
+                    label="Login email"
+                  >
+                    <Input type="email" {...registerAccount("email")} />
+                  </ProfileField>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    disabled={!isAccountDirty || isAccountSubmitting}
+                    type="submit"
+                  >
+                    {isAccountSubmitting ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Save className="size-4" />
+                    )}
+                    {isAccountSubmitting ? "Saving..." : "Save profile"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="size-5 text-muted-foreground" />
+                Security
+              </CardTitle>
+              <CardDescription>
+                Change the password used to access this business workspace.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-5" onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
+                <ProfileField
+                  error={passwordErrors.current_password?.message}
+                  icon={KeyRound}
+                  label="Current password"
+                >
+                  <PasswordInput autoComplete="current-password" {...registerPassword("current_password")} />
+                </ProfileField>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <ProfileField
+                    error={passwordErrors.password?.message}
+                    icon={KeyRound}
+                    label="New password"
+                  >
+                    <PasswordInput autoComplete="new-password" {...registerPassword("password")} />
+                  </ProfileField>
+                  <ProfileField
+                    error={passwordErrors.password_confirmation?.message}
+                    icon={KeyRound}
+                    label="Confirm password"
+                  >
+                    <PasswordInput autoComplete="new-password" {...registerPassword("password_confirmation")} />
+                  </ProfileField>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    disabled={!isPasswordDirty || isPasswordSubmitting}
+                    type="submit"
+                  >
+                    {isPasswordSubmitting ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="size-4" />
+                    )}
+                    {isPasswordSubmitting ? "Updating..." : "Update password"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
 
         {isLoading ? (
           <SettingsSkeleton />
