@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
-import { customerCardById, customerCards, customerJoinByQr, type CustomerCardItem } from "@/lib/customerAuth";
+import { customerCards, customerJoinByQr, type CustomerCardItem } from "@/lib/customerAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -56,12 +56,8 @@ export default function UserJoinPage() {
               const refreshed = await reloadCards();
               setCardsSnapshot(refreshed);
 
-              const cardId = joinResult.loyalty_card?.id;
-              if (cardId) {
-                await customerCardById(token, cardId);
-              }
-
-              router.push("/user/cards");
+              const membershipId = joinResult.customer?.id;
+              router.push(membershipId ? `/user/cards?selected=${encodeURIComponent(membershipId)}` : "/user/cards");
             } catch (err) {
               setError(
                 err instanceof Error ? err.message : "Unable to join this business from QR",
