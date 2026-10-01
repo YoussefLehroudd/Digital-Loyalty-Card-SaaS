@@ -615,7 +615,7 @@ async function handleRealtimeVersion(req: Request, sql: Sql) {
         COALESCE((SELECT max(updated_at) FROM customers WHERE business_id = ${businessId}), 'epoch'::timestamptz),
         COALESCE((SELECT max(cl.updated_at) FROM customer_loyalties cl JOIN customers c ON c.id = cl.customer_id WHERE c.business_id = ${businessId}), 'epoch'::timestamptz),
         COALESCE((SELECT max(created_at) FROM visits WHERE business_id = ${businessId}), 'epoch'::timestamptz),
-        COALESCE((SELECT max(created_at) FROM reward_redemptions WHERE business_id = ${businessId}), 'epoch'::timestamptz)
+        COALESCE((SELECT max(COALESCE(redeemed_at, earned_at)) FROM reward_redemptions WHERE business_id = ${businessId}), 'epoch'::timestamptz)
       ) AS changed_at,
       (SELECT count(*)::int FROM customers WHERE business_id = ${businessId}) AS customers_count,
       (SELECT count(*)::int FROM visits WHERE business_id = ${businessId}) AS visits_count,
