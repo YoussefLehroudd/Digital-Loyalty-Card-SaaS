@@ -30,7 +30,7 @@ export function CustomerLayout({
   const router = useRouter();
 
   return (
-    <div className="min-h-dvh bg-background text-foreground lg:flex">
+    <div className="min-h-dvh overflow-x-clip bg-background text-foreground lg:flex">
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-64 lg:flex-col lg:border-r lg:bg-card/40 lg:backdrop-blur-xl">
         <div className="border-b px-6 py-6">
           <p className="text-lg font-semibold tracking-tight">Loyalty Wallet</p>
@@ -78,7 +78,7 @@ export function CustomerLayout({
           {children}
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur lg:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-[100] translate-z-0 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden [transform:translate3d(0,0,0)]">
           <div className="mx-auto grid w-full max-w-md grid-cols-5 gap-1 px-2 py-2">
             {nav.map((item) => {
               const active = pathname === item.href;
