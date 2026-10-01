@@ -99,7 +99,7 @@ export default function UserRewardsPage() {
                   </CardTitle>
                   <p className="mt-1 text-sm text-muted-foreground">Rewards from your loyalty cards</p>
                 </div>
-                <Badge variant="secondary">{available.length} {available.length === 1 ? "reward" : "rewards"}</Badge>
+                <Badge>{available.length} {available.length === 1 ? "reward" : "rewards"}</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4 p-4 sm:p-5">
@@ -147,7 +147,7 @@ export default function UserRewardsPage() {
             <CardHeader className="border-b bg-muted/20 pb-4">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="flex items-center gap-2 text-lg"><History className="h-5 w-5" /> Reward history</CardTitle>
-                <Badge variant="secondary">{history.length} claimed</Badge>
+                <Badge>{history.length} claimed</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 p-4 sm:p-5">
@@ -166,7 +166,7 @@ export default function UserRewardsPage() {
                     <p className="truncate font-medium">{item.reward_name}</p>
                     <p className="truncate text-sm text-muted-foreground">{item.business_name}</p>
                   </div>
-                  <Badge variant="outline">{item.status}</Badge>
+                  <Badge>{item.status}</Badge>
                 </div>
               ))}
             </CardContent>
