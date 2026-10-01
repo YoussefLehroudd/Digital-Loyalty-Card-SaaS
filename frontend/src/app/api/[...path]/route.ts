@@ -1578,7 +1578,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
         {
           id: "stamps",
           header: "Stamp card",
-          body: googleWalletStampStrip(current, required),
+          body: googleWalletStampStrip(currentStamps, requiredStamps),
         },
         {
           id: "reward",
