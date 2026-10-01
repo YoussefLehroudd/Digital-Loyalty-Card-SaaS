@@ -1180,7 +1180,7 @@ async function googleWalletAccessToken() {
   return data.access_token || null;
 }
 
-async function patchGoogleWallet(resource: "loyaltyclass" | "loyaltyobject", id: string, body: JsonRecord, accessToken: string) {
+async function patchGoogleWallet(resource: "loyaltyClass" | "loyaltyObject", id: string, body: JsonRecord, accessToken: string) {
   const response = await fetch(
     `https://walletobjects.googleapis.com/walletobjects/v1/${resource}/${encodeURIComponent(id)}`,
     {
@@ -1196,7 +1196,7 @@ async function patchGoogleWallet(resource: "loyaltyclass" | "loyaltyobject", id:
   return response.status;
 }
 
-async function upsertGoogleWallet(resource: "loyaltyclass" | "loyaltyobject", id: string, body: JsonRecord, accessToken: string) {
+async function upsertGoogleWallet(resource: "loyaltyClass" | "loyaltyObject", id: string, body: JsonRecord, accessToken: string) {
   const getResponse = await fetch(
     `https://walletobjects.googleapis.com/walletobjects/v1/${resource}/${encodeURIComponent(id)}`,
     { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -1253,7 +1253,7 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
     const memberName = `${customer.first_name ?? ""} ${customer.last_name ?? ""}`.trim() || "Member";
 
     await Promise.all([
-      patchGoogleWallet("loyaltyclass", classId, {
+      patchGoogleWallet("loyaltyClass", classId, {
         programName: business.name,
         programLogo: {
           sourceUri: { uri: logoUrl },
@@ -1262,7 +1262,7 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
         hexBackgroundColor: business.primary_color || "#111827",
         reviewStatus: "UNDER_REVIEW",
       }, accessToken),
-      patchGoogleWallet("loyaltyobject", objectId, {
+      patchGoogleWallet("loyaltyObject", objectId, {
         accountName: memberName,
         barcode: {
           type: "QR_CODE",
@@ -1540,8 +1540,8 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const accessToken = await googleWalletAccessToken();
     if (!accessToken) return error("Could not authenticate with Google Wallet.", 502);
     try {
-      await upsertGoogleWallet("loyaltyclass", classId, loyaltyClass, accessToken);
-      await upsertGoogleWallet("loyaltyobject", objectId, loyaltyObject, accessToken);
+      await upsertGoogleWallet("loyaltyClass", classId, loyaltyClass, accessToken);
+      await upsertGoogleWallet("loyaltyObject", objectId, loyaltyObject, accessToken);
     } catch (walletError) {
       console.error("Google Wallet upsert before save failed", walletError);
       return error(walletError instanceof Error ? walletError.message : "Could not synchronize Google Wallet.", 502);
