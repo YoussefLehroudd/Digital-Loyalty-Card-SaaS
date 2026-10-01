@@ -78,23 +78,23 @@ type AuthContext = {
 const scrypt = promisify(scryptCallback);
 let schemaReady: Promise<void> | null = null;
 
-const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-
-function rateLimit(req: Request, bucket: string, limit: number, windowMs: number) {
+async function rateLimit(sql: Sql, req: Request, bucket: string, limit: number, windowMs: number) {
   const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const ip = forwarded || req.headers.get("x-real-ip") || "unknown";
   const key = `${bucket}:${ip}`;
-  const now = Date.now();
-  const current = rateBuckets.get(key);
-  if (!current || current.resetAt <= now) {
-    rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
-    return null;
-  }
-  if (current.count >= limit) {
-    const retryAfter = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+  const rows = (await sql`
+    INSERT INTO api_rate_limits (key, request_count, reset_at)
+    VALUES (${key}, 1, now() + (${windowMs} * interval '1 millisecond'))
+    ON CONFLICT (key) DO UPDATE SET
+      request_count = CASE WHEN api_rate_limits.reset_at <= now() THEN 1 ELSE api_rate_limits.request_count + 1 END,
+      reset_at = CASE WHEN api_rate_limits.reset_at <= now() THEN now() + (${windowMs} * interval '1 millisecond') ELSE api_rate_limits.reset_at END
+    RETURNING request_count, reset_at
+  `) as Array<{ request_count: number; reset_at: string }>;
+  const current = rows[0];
+  if (current.request_count > limit) {
+    const retryAfter = Math.max(1, Math.ceil((new Date(current.reset_at).getTime() - Date.now()) / 1000));
     return json({ message: "Too many requests. Please try again later." }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
   }
-  current.count += 1;
   return null;
 }
 
@@ -300,6 +300,19 @@ async function ensureSchema(sql: Sql) {
         expires_at timestamptz NOT NULL,
         created_at timestamptz DEFAULT now()
       )`;
+
+      await sql`CREATE TABLE IF NOT EXISTS api_rate_limits (
+        key text PRIMARY KEY,
+        request_count integer NOT NULL DEFAULT 0,
+        reset_at timestamptz NOT NULL
+      )`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_api_rate_limits_reset_at ON api_rate_limits(reset_at)`;
+      await sql`CREATE TABLE IF NOT EXISTS notification_reads (
+        user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+        reward_redemption_id uuid NOT NULL REFERENCES reward_redemptions(id) ON DELETE CASCADE,
+        read_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, reward_redemption_id)
+      )`;
     })();
   }
   await schemaReady;
@@ -472,7 +485,7 @@ async function customerRow(sql: Sql, customer: DbCustomer, card: DbLoyaltyCard |
 
 async function handleAuth(path: string[], req: Request, sql: Sql) {
   if (path[1] === "register" && req.method === "POST") {
-    const limited = rateLimit(req, "business-register", 8, 15 * 60 * 1000);
+    const limited = await rateLimit(sql, req, "business-register", 8, 15 * 60 * 1000);
     if (limited) return limited;
     const body = await readJson(req);
     const businessName = asString(body.business_name);
@@ -516,7 +529,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "login" && req.method === "POST") {
-    const limited = rateLimit(req, "business-login", 12, 15 * 60 * 1000);
+    const limited = await rateLimit(sql, req, "business-login", 12, 15 * 60 * 1000);
     if (limited) return limited;
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
@@ -545,12 +558,12 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "forgot-password" && req.method === "POST") {
-    const limited = rateLimit(req, "forgot-password", 5, 15 * 60 * 1000);
+    const limited = await rateLimit(sql, req, "forgot-password", 5, 15 * 60 * 1000);
     if (limited) return limited;
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
     const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role = 'business_owner' LIMIT 1`) as DbUser[])[0];
-    if (!user) return json({ message: "If that email exists, a reset link has been created." });
+    if (!user) return json({ message: "If that email exists, a password reset email has been sent." });
     const token = randomBytes(32).toString("hex");
     const tokenHash = (await import("crypto")).createHash("sha256").update(token).digest("hex");
     await sql`DELETE FROM password_reset_tokens WHERE user_id = ${user.id}`;
@@ -580,7 +593,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "reset-password" && req.method === "POST") {
-    const limited = rateLimit(req, "reset-password", 8, 15 * 60 * 1000);
+    const limited = await rateLimit(sql, req, "reset-password", 8, 15 * 60 * 1000);
     if (limited) return limited;
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
@@ -950,21 +963,45 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     return json({ message: "Password updated." });
   }
   if (path[1] === "notifications") {
+    if (req.method === "POST") {
+      const body = await readJson(req);
+      const notificationId = asString(body.notification_id);
+      if (notificationId) {
+        await sql`
+          INSERT INTO notification_reads (user_id, reward_redemption_id)
+          SELECT ${auth.user.id}, r.id
+          FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id
+          WHERE r.id = ${notificationId} AND c.user_id = ${auth.user.id}
+          ON CONFLICT DO NOTHING
+        `;
+      } else {
+        await sql`
+          INSERT INTO notification_reads (user_id, reward_redemption_id)
+          SELECT ${auth.user.id}, r.id
+          FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id
+          WHERE c.user_id = ${auth.user.id}
+          ON CONFLICT DO NOTHING
+        `;
+      }
+      return json({ message: notificationId ? "Notification marked as read." : "Notifications marked as read." });
+    }
     const rewards = (await sql`
-      SELECT r.id, r.status, b.name AS business_name, COALESCE(r.redeemed_at, r.earned_at)::text AS created_at
+      SELECT r.id, r.status, b.name AS business_name, COALESCE(r.redeemed_at, r.earned_at)::text AS created_at,
+             (nr.reward_redemption_id IS NOT NULL) AS read
       FROM reward_redemptions r
       JOIN customers c ON c.id = r.customer_id
       JOIN businesses b ON b.id = r.business_id
+      LEFT JOIN notification_reads nr ON nr.reward_redemption_id = r.id AND nr.user_id = ${auth.user.id}
       WHERE c.user_id = ${auth.user.id}
       ORDER BY COALESCE(r.redeemed_at, r.earned_at) DESC LIMIT 50
-    `) as Array<{ id: string; status: string; business_name: string; created_at: string }>;
+    `) as Array<{ id: string; status: string; business_name: string; created_at: string; read: boolean }>;
     return json({ data: rewards.map((r) => ({
       id: r.id,
       type: r.status === "redeemed" ? "reward_redeemed" : "reward_ready",
       title: r.status === "redeemed" ? "Reward redeemed" : "Reward ready",
       message: r.status === "redeemed" ? `Your reward at ${r.business_name} was redeemed.` : `You unlocked a reward at ${r.business_name}.`,
       created_at: r.created_at,
-      read: false,
+      read: r.read,
     })) });
   }
 
