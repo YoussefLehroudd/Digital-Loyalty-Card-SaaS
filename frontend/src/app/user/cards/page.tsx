@@ -183,8 +183,8 @@ function CardsUI() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-4 lg:space-y-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:max-w-5xl lg:mx-auto">
             <Button
               type="button"
               onClick={() => router.push("/user/join")}
