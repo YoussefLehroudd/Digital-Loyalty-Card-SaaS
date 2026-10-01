@@ -249,7 +249,7 @@ export function CustomerCardCarousel({
                   <div
                     key={card.id}
                     className={cn(
-                      "col-start-1 row-start-1 transform-gpu [transform-style:preserve-3d]",
+                      "col-start-1 row-start-1 overflow-hidden rounded-[1.4rem] transform-gpu [transform-style:preserve-3d]",
                       dragging && isActive ? "transition-none" : "transition-all duration-[600ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]",
                       !isActive && "pointer-events-none",
                     )}
