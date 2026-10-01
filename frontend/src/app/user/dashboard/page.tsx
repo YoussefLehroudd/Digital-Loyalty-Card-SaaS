@@ -96,8 +96,8 @@ export default function UserDashboardPage() {
           </Card>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-4 lg:space-y-6">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-muted-foreground">Cards</CardTitle>
