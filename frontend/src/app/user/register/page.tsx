@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { useCustomerAuth } from "@/components/customer-app/customer-auth-provide
 
 export default function UserRegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { register } = useCustomerAuth();
 
   const [firstName, setFirstName] = useState("");
@@ -41,7 +42,15 @@ export default function UserRegisterPage() {
         password_confirmation: passwordConfirmation,
         device_name: "web-user-register",
       });
-      router.push("/user/dashboard");
+      const join = searchParams.get("join");
+      const joinBusinessId = searchParams.get("join_business_id");
+      if (join) {
+        router.push(`/user/join?auto=${encodeURIComponent(join)}`);
+      } else if (joinBusinessId) {
+        router.push(`/user/join?auto_business_id=${encodeURIComponent(joinBusinessId)}`);
+      } else {
+        router.push("/user/dashboard");
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -140,7 +149,7 @@ export default function UserRegisterPage() {
 
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/user/login" className="text-primary underline-offset-4 hover:underline">
+              <Link href={`/user/login${searchParams.toString() ? `?${searchParams.toString()}` : ""}`} className="text-primary underline-offset-4 hover:underline">
                 Login
               </Link>
             </p>
