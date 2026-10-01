@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/auth/auth-guard";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useEcho } from "@/components/echo/echo-provider";
 
 type RewardStatus = "collecting" | "ready" | "redeemed";
 
@@ -119,6 +120,7 @@ function formatName(c: CustomerRow) {
 
 export default function CustomersPage() {
   const { token } = useAuth();
+  const { echo } = useEcho();
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -186,6 +188,15 @@ export default function CustomersPage() {
     loadCustomers({ nextPage: page, nextQ: debouncedQ });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, debouncedQ]);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    const channel = echo.private("business");
+    const refresh = () => { void loadCustomers({ nextPage: page, nextQ: debouncedQ }); };
+    channel.listen("data.changed", refresh);
+    return () => { channel.stopListening("data.changed", refresh); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [echo, token, page, debouncedQ]);
 
   const openDetails = async (c: CustomerRow) => {
     if (!token) return;
