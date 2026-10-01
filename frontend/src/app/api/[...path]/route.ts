@@ -1254,6 +1254,7 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
 
     await Promise.all([
       patchGoogleWallet("loyaltyClass", classId, {
+        notifyPreference: "notifyOnUpdate",
         programName: business.name,
         programLogo: {
           sourceUri: { uri: logoUrl },
@@ -1263,6 +1264,9 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
         reviewStatus: "UNDER_REVIEW",
       }, accessToken),
       patchGoogleWallet("loyaltyObject", objectId, {
+        // Google Wallet uses this transient flag to immediately notify/refresh
+        // supported loyalty balance changes on saved passes.
+        notifyPreference: "notifyOnUpdate",
         accountName: memberName,
         barcode: {
           type: "QR_CODE",
