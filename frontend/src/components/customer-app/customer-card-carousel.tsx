@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Trash2, WalletCards } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -47,6 +47,8 @@ export function CustomerCardCarousel({
   }, [cards, selectedId]); // intentionally exclude `index` to avoid loops
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef(0);
   const [deleting, setDeleting] = useState(false);
 
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -59,8 +61,28 @@ export function CustomerCardCarousel({
 
   const setAndNotify = (nextIndex: number) => {
     const normalized = Math.min(cards.length - 1, Math.max(0, nextIndex));
+    if (normalized === index) return;
     setIndex(normalized);
     onChange?.(cards[normalized]);
+  };
+
+  const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+    touchDeltaX.current = 0;
+  };
+
+  const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current === null) return;
+    touchDeltaX.current = (event.touches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+  };
+
+  const onTouchEnd = () => {
+    const delta = touchDeltaX.current;
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+    if (Math.abs(delta) < 45) return;
+    if (delta < 0) setAndNotify(index + 1);
+    else setAndNotify(index - 1);
   };
 
   const handleDelete = async () => {
@@ -140,25 +162,58 @@ export function CustomerCardCarousel({
           </Badge>
         </div>
 
-        <LoyaltyCardVisual
-          businessName={current.business.name}
-          businessLogoUrl={current.business.logo_url}
-          heroImageUrl={current.business.hero_image_url}
-          heroImageZoom={current.business.hero_image_zoom}
-          heroImagePositionX={current.business.hero_image_position_x}
-          heroImagePositionY={current.business.hero_image_position_y}
-          brandPrimaryColor={current.business.primary_color}
-          memberName={displayName}
-          rewardName={rewardName}
-          rewardDescription={rewardDescription}
-          cardNumber={current.id}
-          qrToken={qrValue}
-          showQrPayloadText={false}
-          stampUiVariant="customer"
-          progressPercent={progressPercent}
-          currentStamps={currentStamps}
-          requiredStamps={requiredStamps}
-        />
+        <div
+          className="relative mx-auto w-full max-w-[560px] touch-pan-y select-none"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <div className="pointer-events-none absolute inset-x-4 top-0 h-full translate-y-3 scale-[0.96] rounded-[1.4rem] border bg-card/70 opacity-70 shadow-sm transition-all duration-500" />
+          {cards.length > 1 ? (
+            <div className="pointer-events-none absolute inset-x-8 top-0 h-full translate-y-6 scale-[0.92] rounded-[1.4rem] border bg-card/40 opacity-50 shadow-sm transition-all duration-500" />
+          ) : null}
+          <div
+            key={current.id}
+            className="relative z-10 animate-in fade-in slide-in-from-right-5 duration-500 ease-out"
+          >
+            <LoyaltyCardVisual
+              businessName={current.business.name}
+              businessLogoUrl={current.business.logo_url}
+              heroImageUrl={current.business.hero_image_url}
+              heroImageZoom={current.business.hero_image_zoom}
+              heroImagePositionX={current.business.hero_image_position_x}
+              heroImagePositionY={current.business.hero_image_position_y}
+              brandPrimaryColor={current.business.primary_color}
+              memberName={displayName}
+              rewardName={rewardName}
+              rewardDescription={rewardDescription}
+              cardNumber={current.id}
+              qrToken={qrValue}
+              showQrPayloadText={false}
+              stampUiVariant="customer"
+              progressPercent={progressPercent}
+              currentStamps={currentStamps}
+              requiredStamps={requiredStamps}
+            />
+          </div>
+        </div>
+
+        {showNav ? (
+          <div className="flex justify-center gap-1.5 pt-3" aria-label="Card position">
+            {cards.map((card, cardIndex) => (
+              <button
+                key={card.id}
+                type="button"
+                aria-label={`Show card ${cardIndex + 1}`}
+                onClick={() => setAndNotify(cardIndex)}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300",
+                  cardIndex === index ? "w-7 bg-foreground" : "w-1.5 bg-muted-foreground/35 hover:bg-muted-foreground/60",
+                )}
+              />
+            ))}
+          </div>
+        ) : null}
 
         <Button
           type="button"
