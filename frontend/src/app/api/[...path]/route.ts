@@ -1116,13 +1116,26 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const membershipIds = memberships.map((m) => m.id);
     if (!membershipIds.length) return json({ data: { available: [], history: [] } });
     const available = cards.filter((c) => c.loyalty_card).map((c) => ({
-      loyalty_card_id: c.loyalty_card!.id, business_id: c.business.id, reward_name: c.loyalty_card!.reward_name,
-      reward_description: c.loyalty_card!.reward_description, points_required: c.loyalty_card!.required_stamps,
+      loyalty_card_id: c.loyalty_card!.id,
+      business_id: c.business.id,
+      business_name: c.business.name,
+      business_logo_url: c.business.logo_url,
+      business_primary_color: c.business.primary_color,
+      reward_name: c.loyalty_card!.reward_name,
+      reward_description: c.loyalty_card!.reward_description,
+      points_required: c.loyalty_card!.required_stamps,
+      current_stamps: c.loyalty?.current_stamps ?? 0,
+      progress_percent: c.loyalty?.progress_percent ?? 0,
       ready: Boolean(c.loyalty && c.loyalty.current_stamps >= c.loyalty.required_stamps),
     }));
     const history = (await sql`
-      SELECT r.id, r.status, r.business_id, r.customer_id, r.earned_at::text, r.redeemed_at::text
-      FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id
+      SELECT r.id, r.status, r.business_id, r.customer_id, r.earned_at::text, r.redeemed_at::text,
+             b.name AS business_name, b.logo_url AS business_logo_url, b.primary_color AS business_primary_color,
+             lc.reward_name, lc.reward_description, lc.required_stamps AS points_required
+      FROM reward_redemptions r
+      JOIN customers c ON c.id = r.customer_id
+      JOIN businesses b ON b.id = r.business_id
+      JOIN loyalty_cards lc ON lc.id = r.loyalty_card_id
       WHERE c.user_id = ${auth.user.id} ORDER BY r.earned_at DESC
     `) as JsonRecord[];
     return json({ data: { available, history } });
