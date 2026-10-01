@@ -48,8 +48,7 @@ export function ForgotPasswordForm() {
 
     try {
       const response = await forgotPassword(values);
-      const resetUrl = (response as { message: string; reset_url?: string }).reset_url;
-      setSuccess(resetUrl ? `${response.message} ${resetUrl}` : response.message);
+      setSuccess(response.message);
     } catch (unknownError) {
       if (unknownError instanceof ApiError) {
         setError(unknownError.errors?.email?.[0] ?? unknownError.message);
