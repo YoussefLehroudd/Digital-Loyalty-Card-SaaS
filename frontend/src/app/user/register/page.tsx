@@ -1,4 +1,15 @@
-"use client";
-import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-export default function LegacyUserRegisterPage(){const router=useRouter();const params=useSearchParams();useEffect(()=>{const q=params.toString();router.replace(`/register${q?`?${q}`:""}`);},[params,router]);return null;}
+import { redirect } from "next/navigation";
+
+export default async function LegacyUserRegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) value.forEach((item) => query.append(key, item));
+    else if (value) query.set(key, value);
+  }
+  redirect(`/register${query.size ? `?${query.toString()}` : ""}`);
+}
