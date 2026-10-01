@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/auth/auth-guard";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useEcho } from "@/components/echo/echo-provider";
 
 type RewardStatusFilter = "all" | "ready" | "redeemed";
 
@@ -90,6 +91,7 @@ function statusLabel(status: RewardRow["status"]) {
 
 export default function RewardsPage() {
   const { token } = useAuth();
+  const { echo } = useEcho();
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -157,6 +159,15 @@ export default function RewardsPage() {
     loadRewards({ nextPage: page });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, debouncedQ, statusFilter, statusQueryValue]);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    const channel = echo.private("business");
+    const refresh = () => { void loadRewards({ nextPage: page }); };
+    channel.listen("data.changed", refresh);
+    return () => { channel.stopListening("data.changed", refresh); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [echo, token, page, debouncedQ, statusQueryValue]);
 
   const rewards = response?.data ?? [];
   const isEmpty = !isLoading && response && rewards.length === 0;
