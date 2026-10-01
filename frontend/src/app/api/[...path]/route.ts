@@ -419,6 +419,9 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
       return error("Please fill all required fields.", 422);
     }
 
+    const duplicate = ((await sql`SELECT id FROM app_users WHERE email = ${email} LIMIT 1`) as Array<{ id: string }>)[0];
+    if (duplicate) return error("This email is already registered.", 422, { email: ["This email is already registered."] });
+
     const businessId = randomUUID();
     const userId = randomUUID();
     const passwordHash = await hashPassword(password);
@@ -729,13 +732,17 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   `) as DbLoyalty[])[0];
 
   if (path[0] === "redeem-reward") {
-    await sql`
+    const redeemed = (await sql`
       UPDATE reward_redemptions SET status = 'redeemed', redeemed_at = now()
       WHERE id = (
         SELECT id FROM reward_redemptions WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready' ORDER BY earned_at DESC LIMIT 1
       )
-    `;
-    return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: current.current_stamps, required_stamps: card.required_stamps, reward_unlocked: current.current_stamps >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
+      RETURNING id
+    `) as Array<{ id: string }>;
+    if (!redeemed[0]) return error("No reward is ready to redeem.", 409);
+    await sql`UPDATE customer_loyalties SET current_stamps = GREATEST(0, current_stamps - ${card.required_stamps}), updated_at = now() WHERE id = ${current.id}`;
+    const remaining = Math.max(0, current.current_stamps - card.required_stamps);
+    return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: remaining, required_stamps: card.required_stamps, reward_unlocked: remaining >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
   }
 
   await sql`INSERT INTO visits (id, business_id, customer_id) VALUES (${randomUUID()}, ${auth.business.id}, ${customer.id})`;
@@ -762,6 +769,8 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       const first = asString(body.first_name);
       const last = asString(body.last_name);
       if (!first || !last || !email || password.length < 6) return error("Please fill all required fields.", 422);
+      const duplicate = ((await sql`SELECT id FROM app_users WHERE email = ${email} LIMIT 1`) as Array<{ id: string }>)[0];
+      if (duplicate) return error("This email is already registered.", 422, { email: ["This email is already registered."] });
       const user = ((await sql`
         INSERT INTO app_users (id, name, email, password_hash, role)
         VALUES (${randomUUID()}, ${`${first} ${last}`}, ${email}, ${await hashPassword(password)}, 'customer')
@@ -816,7 +825,24 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     await sql`UPDATE app_users SET password_hash = ${await hashPassword(newPassword)}, updated_at = now() WHERE id = ${auth.user.id}`;
     return json({ message: "Password updated." });
   }
-  if (path[1] === "notifications") return json({ data: [] });
+  if (path[1] === "notifications") {
+    const rewards = (await sql`
+      SELECT r.id, r.status, b.name AS business_name, COALESCE(r.redeemed_at, r.earned_at)::text AS created_at
+      FROM reward_redemptions r
+      JOIN customers c ON c.id = r.customer_id
+      JOIN businesses b ON b.id = r.business_id
+      WHERE c.user_id = ${auth.user.id}
+      ORDER BY COALESCE(r.redeemed_at, r.earned_at) DESC LIMIT 50
+    `) as Array<{ id: string; status: string; business_name: string; created_at: string }>;
+    return json({ data: rewards.map((r) => ({
+      id: r.id,
+      type: r.status === "redeemed" ? "reward_redeemed" : "reward_ready",
+      title: r.status === "redeemed" ? "Reward redeemed" : "Reward ready",
+      message: r.status === "redeemed" ? `Your reward at ${r.business_name} was redeemed.` : `You unlocked a reward at ${r.business_name}.`,
+      created_at: r.created_at,
+      read: false,
+    })) });
+  }
 
   const memberships = (await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE user_id = ${auth.user.id} ORDER BY created_at DESC`) as DbCustomer[];
   const cards = await Promise.all(memberships.map(async (m) => {
