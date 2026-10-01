@@ -77,6 +77,7 @@ export function EchoProvider({
     let cursor = "0";
     let timer: number | undefined;
     let inFlight = false;
+    let failures = 0;
 
     const poll = async () => {
       if (stopped.current || inFlight) return;
@@ -104,6 +105,7 @@ export function EchoProvider({
         const body = (await res.json()) as unknown;
         const snapshot = JSON.stringify(body);
         setConnected(true);
+        failures = 0;
 
         if (cursor !== "0" && snapshot !== cursor) {
           for (const callbacks of listeners.current.values()) {
@@ -113,9 +115,10 @@ export function EchoProvider({
         cursor = snapshot;
       } catch {
         setConnected(false);
+        failures = Math.min(failures + 1, 5);
       } finally {
         inFlight = false;
-        if (!stopped.current) timer = window.setTimeout(poll, 2500);
+        if (!stopped.current) timer = window.setTimeout(poll, failures ? Math.min(30000, 2500 * 2 ** failures) : 2500);
       }
     };
 
