@@ -92,7 +92,7 @@ export function EchoProvider({
 
       inFlight = true;
       try {
-        const res = await fetch(`${apiBase()}/dashboard`, {
+        const res = await fetch(`${apiBase()}/realtime-version`, {
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${authToken}`,
@@ -115,7 +115,7 @@ export function EchoProvider({
         setConnected(false);
       } finally {
         inFlight = false;
-        if (!stopped.current) timer = window.setTimeout(poll, 1200);
+        if (!stopped.current) timer = window.setTimeout(poll, 2500);
       }
     };
 
