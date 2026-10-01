@@ -194,9 +194,14 @@ export function customerRewards(token: string) {
       available: Array<{
         loyalty_card_id: string;
         business_id: string;
+        business_name: string;
+        business_logo_url: string | null;
+        business_primary_color: string | null;
         reward_name: string;
         reward_description: string | null;
         points_required: number;
+        current_stamps: number;
+        progress_percent: number;
         ready: boolean;
       }>;
       history: Array<{
@@ -204,6 +209,12 @@ export function customerRewards(token: string) {
         status: string;
         business_id: string;
         customer_id: string;
+        business_name: string;
+        business_logo_url: string | null;
+        business_primary_color: string | null;
+        reward_name: string;
+        reward_description: string | null;
+        points_required: number;
         earned_at: string | null;
         redeemed_at: string | null;
       }>;
