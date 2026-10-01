@@ -1164,13 +1164,23 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   }
   if (path[1] === "activity") {
     const visits = (await sql`
-      SELECT v.id, 'visit' AS type, v.business_id, v.customer_id, v.created_at::text AS date, 1 AS points
-      FROM visits v JOIN customers c ON c.id = v.customer_id WHERE c.user_id = ${auth.user.id}
+      SELECT v.id, 'visit' AS type, v.business_id, v.customer_id, v.created_at::text AS date, 1 AS points,
+             b.name AS business_name, b.logo_url AS business_logo_url, b.primary_color AS business_primary_color
+      FROM visits v
+      JOIN customers c ON c.id = v.customer_id
+      JOIN businesses b ON b.id = v.business_id
+      WHERE c.user_id = ${auth.user.id}
     `) as JsonRecord[];
     const rewards = (await sql`
       SELECT r.id, CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed' ELSE 'reward_earned' END AS type,
-        r.business_id, r.customer_id, COALESCE(r.redeemed_at, r.earned_at)::text AS date
-      FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE c.user_id = ${auth.user.id}
+        r.business_id, r.customer_id, COALESCE(r.redeemed_at, r.earned_at)::text AS date,
+        b.name AS business_name, b.logo_url AS business_logo_url, b.primary_color AS business_primary_color,
+        lc.reward_name
+      FROM reward_redemptions r
+      JOIN customers c ON c.id = r.customer_id
+      JOIN businesses b ON b.id = r.business_id
+      JOIN loyalty_cards lc ON lc.id = r.loyalty_card_id
+      WHERE c.user_id = ${auth.user.id}
     `) as JsonRecord[];
     const items = [...visits, ...rewards].sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
     return json({ data: { items } });
