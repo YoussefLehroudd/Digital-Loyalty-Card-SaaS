@@ -231,15 +231,19 @@ export function CustomerCardCarousel({
                 const requiredForCard = card.loyalty?.required_stamps ?? card.loyalty_card?.required_stamps ?? 0;
 
                 const side = offset > 0 ? 1 : -1;
-                const baseX = side * distance * 26;
-                const baseScale = 1 - distance * 0.045;
-                const baseRotate = side * distance * -4;
-                const opacity = 1 - distance * 0.18;
-                const brightness = 1 - distance * 0.08;
+                // Fan the inactive cards upward and outward so their rounded top
+                // corner is visible instead of looking like a flat side strip.
+                const baseX = side * (34 + (distance - 1) * 22);
+                const baseY = -10 - (distance - 1) * 7;
+                const baseScale = 1 - distance * 0.055;
+                const baseRotateY = side * distance * -5;
+                const baseRotateZ = side * distance * 0.7;
+                const opacity = 1 - distance * 0.16;
+                const brightness = 1 - distance * 0.07;
                 const activeTransform = dragging
                   ? `translateX(${dragX}px) rotateZ(${dragX * 0.055}deg) scale(${1 - Math.min(Math.abs(dragX), 150) / 1800})`
                   : "translateX(0px) rotateY(0deg) scale(1)";
-                const stackedTransform = `translateX(${baseX}px) rotateY(${baseRotate}deg) scale(${baseScale})`;
+                const stackedTransform = `translate3d(${baseX}px, ${baseY}px, ${-distance * 18}px) rotateY(${baseRotateY}deg) rotateZ(${baseRotateZ}deg) scale(${baseScale})`;
 
                 return (
                   <div
