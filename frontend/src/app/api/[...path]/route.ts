@@ -499,6 +499,35 @@ async function customerRow(sql: Sql, customer: DbCustomer, card: DbLoyaltyCard |
   };
 }
 
+function escapeEmailHtml(value: string) {
+  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char] ?? char));
+}
+
+function loyvanceEmailTemplate(options: { title: string; preheader: string; greeting: string; message: string; actionLabel?: string; actionUrl?: string; footerNote?: string }) {
+  const action = options.actionLabel && options.actionUrl
+    ? `<tr><td style="padding:8px 32px 28px"><a href="${options.actionUrl}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 20px;border-radius:10px">${escapeEmailHtml(options.actionLabel)}</a></td></tr>`
+    : "";
+  return `<!doctype html><html><body style="margin:0;background:#f4f5f7;font-family:Arial,sans-serif;color:#111827"><div style="display:none;max-height:0;overflow:hidden">${escapeEmailHtml(options.preheader)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f5f7;padding:32px 12px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden"><tr><td style="background:#111827;padding:24px 32px;color:#fff"><div style="font-size:22px;font-weight:800;letter-spacing:.4px">LOYVANCE</div><div style="font-size:12px;color:#cbd5e1;margin-top:4px">Digital loyalty, made simple.</div></td></tr><tr><td style="padding:32px 32px 10px"><h1 style="margin:0 0 18px;font-size:25px;line-height:1.25">${escapeEmailHtml(options.title)}</h1><p style="margin:0 0 14px;font-size:15px;line-height:1.7">Hi ${escapeEmailHtml(options.greeting)},</p><p style="margin:0;font-size:15px;line-height:1.7;color:#374151">${escapeEmailHtml(options.message)}</p></td></tr>${action}<tr><td style="padding:0 32px 30px"><p style="margin:0;font-size:12px;line-height:1.6;color:#6b7280">${escapeEmailHtml(options.footerNote ?? "This is an automated security message from LOYVANCE.")}</p></td></tr><tr><td style="border-top:1px solid #e5e7eb;padding:18px 32px;font-size:11px;color:#9ca3af">© ${new Date().getFullYear()} LOYVANCE · Please do not reply to this automated email.</td></tr></table></td></tr></table></body></html>`;
+}
+
+async function sendLoyvanceEmail(options: { to: string; subject: string; html: string; category?: "security" | "support" | "notifications" }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("RESEND_API_KEY is not configured; email was not sent.");
+    return false;
+  }
+  const domain = process.env.RESEND_DOMAIN || "youssefhrd.com";
+  const local = options.category === "support" ? "support" : options.category === "notifications" ? "notifications" : "security";
+  const from = process.env.RESEND_FROM_EMAIL || `LOYVANCE <${local}@${domain}>`;
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: [options.to], subject: options.subject, html: options.html }),
+  });
+  if (!response.ok) console.error("LOYVANCE email delivery failed", response.status, await response.text());
+  return response.ok;
+}
+
 async function handleAuth(path: string[], req: Request, sql: Sql) {
   if (path[1] === "register" && req.method === "POST") {
     const limited = await rateLimit(sql, req, "business-register", 8, 15 * 60 * 1000);
@@ -728,25 +757,20 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     await sql`INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (${tokenHash}, ${user.id}, now() + interval '30 minutes')`;
     const origin = new URL(req.url).origin;
     const resetUrl = `${origin}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || "Loyalty Card <noreply@youssefhrd.com>";
-    if (resendApiKey) {
-      const sendResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: [email],
-          subject: "Reset your Loyalty Card password",
-          html: `<p>Hello ${user.name.replace(/[<>&"']/g, "")},</p><p>Use the link below to reset your password. It expires in 30 minutes.</p><p><a href="${resetUrl}">Reset password</a></p><p>If you did not request this, you can ignore this email.</p>`,
-        }),
-      });
-      if (!sendResponse.ok) {
-        console.error("Resend password reset delivery failed", sendResponse.status, await sendResponse.text());
-      }
-    } else {
-      console.warn("RESEND_API_KEY is not configured; password reset email was not sent.");
-    }
+    await sendLoyvanceEmail({
+      to: email,
+      subject: "Reset your LOYVANCE password",
+      category: "security",
+      html: loyvanceEmailTemplate({
+        title: "Reset your password",
+        preheader: "Your secure LOYVANCE password reset link.",
+        greeting: user.name,
+        message: "We received a request to reset your LOYVANCE password. Use the secure button below within 30 minutes.",
+        actionLabel: "Reset password",
+        actionUrl: resetUrl,
+        footerNote: "If you did not request a password reset, you can safely ignore this email. Your password will not change.",
+      }),
+    });
     return json({ message: "If that email exists, a password reset email has been sent." });
   }
 
