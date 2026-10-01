@@ -47,6 +47,8 @@ export function CustomerCardCarousel({
   }, [cards, selectedId]); // intentionally exclude `index` to avoid loops
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
+  const [isSwitching, setIsSwitching] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchDeltaX = useRef(0);
@@ -63,9 +65,12 @@ export function CustomerCardCarousel({
 
   const setAndNotify = (nextIndex: number) => {
     const normalized = Math.min(cards.length - 1, Math.max(0, nextIndex));
-    if (normalized === index) return;
+    if (normalized === index || isSwitching) return;
+    setSlideDirection(normalized > index ? "left" : "right");
+    setIsSwitching(true);
     setIndex(normalized);
     onChange?.(cards[normalized]);
+    window.setTimeout(() => setIsSwitching(false), 620);
   };
 
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -189,13 +194,30 @@ export function CustomerCardCarousel({
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
-          <div className="pointer-events-none absolute inset-x-4 top-0 h-full translate-y-3 scale-[0.96] rounded-[1.4rem] border bg-card/70 opacity-70 shadow-sm transition-all duration-500" />
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-x-4 top-0 h-full rounded-[1.4rem] border bg-card/70 opacity-70 shadow-md transition-all duration-500 ease-out",
+              isSwitching ? "translate-y-1 scale-[0.985] opacity-90" : "translate-y-3 scale-[0.96]",
+            )}
+          />
           {cards.length > 1 ? (
-            <div className="pointer-events-none absolute inset-x-8 top-0 h-full translate-y-6 scale-[0.92] rounded-[1.4rem] border bg-card/40 opacity-50 shadow-sm transition-all duration-500" />
+            <div
+              className={cn(
+                "pointer-events-none absolute inset-x-8 top-0 h-full rounded-[1.4rem] border bg-card/40 opacity-50 shadow-sm transition-all duration-500 ease-out",
+                isSwitching ? "translate-y-4 scale-[0.945] opacity-65" : "translate-y-6 scale-[0.92]",
+              )}
+            />
           ) : null}
           <div
             key={current.id}
-            className="relative z-10 animate-in fade-in slide-in-from-right-5 duration-500 ease-out"
+            className={cn(
+              "relative z-10 transform-gpu will-change-transform",
+              "animate-in fade-in zoom-in-[0.94] duration-500 ease-out",
+              slideDirection === "left"
+                ? "slide-in-from-right-12 rotate-[0.35deg]"
+                : "slide-in-from-left-12 -rotate-[0.35deg]",
+              isSwitching && "drop-shadow-2xl",
+            )}
           >
             <LoyaltyCardVisual
               businessName={current.business.name}
