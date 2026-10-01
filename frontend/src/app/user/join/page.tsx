@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 
 export default function UserJoinPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const autoJoinStarted = useRef(false);
   const { token } = useCustomerAuth();
 
   const [loading, setLoading] = useState(false);
@@ -24,6 +26,32 @@ export default function UserJoinPage() {
     const res = await customerCards(token);
     return res.data ?? [];
   };
+
+  useEffect(() => {
+    if (!token || autoJoinStarted.current) return;
+    const join = searchParams.get("auto");
+    const joinBusinessId = searchParams.get("auto_business_id");
+    if (!join && !joinBusinessId) return;
+
+    autoJoinStarted.current = true;
+    setLoading(true);
+    setError(null);
+
+    const qr = join
+      ? `${window.location.origin}/user/login?join=${encodeURIComponent(join)}`
+      : `${window.location.origin}/user/login?join_business_id=${encodeURIComponent(joinBusinessId ?? "")}`;
+
+    void customerJoinByQr(token, qr)
+      .then((result) => {
+        const membershipId = result.customer?.id;
+        router.replace(membershipId ? `/user/cards?selected=${encodeURIComponent(membershipId)}` : "/user/cards");
+      })
+      .catch((err) => {
+        autoJoinStarted.current = false;
+        setError(err instanceof Error ? err.message : "Unable to join this business from QR");
+      })
+      .finally(() => setLoading(false));
+  }, [router, searchParams, token]);
 
   return (
     <CustomerLayout title="Join Loyalty Program" subtitle="Scan a QR code to add a loyalty card">
