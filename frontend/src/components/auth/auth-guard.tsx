@@ -25,6 +25,7 @@ type AuthContextValue = {
   token: string;
   user: AuthUser;
   signOut: () => Promise<void>;
+  updateUser: (user: AuthUser) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -129,6 +130,7 @@ export function AuthGuard({
     return {
       token,
       user,
+      updateUser: (nextUser) => setUser(nextUser),
       signOut: async () => {
         try {
           await logout(token);
