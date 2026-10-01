@@ -12,7 +12,6 @@ import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
 
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -204,13 +203,6 @@ export function CustomerCardCarousel({
               : "slide-in-from-left-16",
           )}
         >
-          <div className="flex items-center justify-between transition-all duration-500">
-            <div className="sr-only">Loyalty card preview</div>
-            <Badge className="border-white/30 bg-white/20 text-white shadow-sm backdrop-blur-sm">
-              Card {index + 1} of {cards.length}
-            </Badge>
-          </div>
-
           <div
             className="relative mx-auto w-full max-w-[560px] touch-pan-y select-none [perspective:1500px]"
             onTouchStart={onTouchStart}
