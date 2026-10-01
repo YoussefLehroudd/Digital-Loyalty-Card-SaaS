@@ -7,7 +7,7 @@ import { LoginForm } from "@/components/auth/login-form";
 export default function LoginPage() {
   return (
     <AuthShell
-      description="Access your business workspace, scanner flows, and protected loyalty tools."
+      description="One secure sign-in for customers and businesses. We will take you to the right workspace automatically."
       eyebrow="Welcome back"
       footer={
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -15,7 +15,7 @@ export default function LoginPage() {
             Forgot password?
           </Link>
           <span>
-            New workspace?{" "}
+            New to LOYVANCE?{" "}
             <Link className="font-medium text-foreground" href="/register">
               Create account
             </Link>
