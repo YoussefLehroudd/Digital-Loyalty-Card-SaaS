@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { CustomerCardCarousel } from "@/components/customer-app/customer-card-carousel";
@@ -19,7 +19,6 @@ import { useEcho } from "@/components/echo/echo-provider";
 
 function CardsUI() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { token } = useCustomerAuth();
   const { echo } = useEcho();
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
@@ -41,7 +40,10 @@ function CardsUI() {
       setCards(list);
 
       if (list.length > 0) {
-        const querySelectedId = searchParams.get("selected");
+        const querySelectedId =
+          typeof window !== "undefined"
+            ? new URLSearchParams(window.location.search).get("selected")
+            : null;
         const savedSelectedId =
           typeof window !== "undefined"
             ? window.localStorage.getItem("digital_loyalty_selected_card")
@@ -64,7 +66,7 @@ function CardsUI() {
     } finally {
       setLoading(false);
     }
-  }, [searchParams, selected?.id, token]);
+  }, [selected?.id, token]);
 
   const initialLoadDone = useRef(false);
   useEffect(() => {
