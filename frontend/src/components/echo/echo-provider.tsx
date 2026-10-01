@@ -92,7 +92,7 @@ export function EchoProvider({
 
       inFlight = true;
       try {
-        const res = await fetch(`${apiBase()}/realtime?after=${encodeURIComponent(cursor)}`, {
+        const res = await fetch(`${apiBase()}/dashboard`, {
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${authToken}`,
@@ -101,19 +101,16 @@ export function EchoProvider({
         });
 
         if (!res.ok) throw new Error(`Realtime HTTP ${res.status}`);
-        const body = (await res.json()) as {
-          data?: Array<{ id: string; event_name: string; payload?: unknown }>;
-          cursor?: string;
-        };
-
+        const body = (await res.json()) as unknown;
+        const snapshot = JSON.stringify(body);
         setConnected(true);
-        for (const event of body.data ?? []) {
-          cursor = event.id || cursor;
-          for (const callback of listeners.current.get(event.event_name) ?? []) {
-            callback(event.payload);
+
+        if (cursor !== "0" && snapshot !== cursor) {
+          for (const callbacks of listeners.current.values()) {
+            for (const callback of callbacks) callback(body);
           }
         }
-        if (body.cursor) cursor = body.cursor;
+        cursor = snapshot;
       } catch {
         setConnected(false);
       } finally {
