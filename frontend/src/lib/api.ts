@@ -27,12 +27,6 @@ export class ApiError extends Error {
   }
 }
 
-function isStateChangingMethod(method?: string) {
-  if (!method) return false;
-  const m = method.toUpperCase();
-  return m === "POST" || m === "PATCH" || m === "PUT" || m === "DELETE";
-}
-
 export async function apiFetch<T>(
   path: string,
   { token, headers, ...options }: ApiFetchOptions = {},
