@@ -1281,12 +1281,26 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
                   },
                 },
               },
+              {
+                oneItem: {
+                  item: {
+                    firstValue: { fields: [{ fieldPath: "object.textModulesData['stamps']" }] },
+                  },
+                },
+              },
             ],
           },
           cardBarcodeSectionDetails: {
             firstTopDetail: {
               fieldSelector: { fields: [{ fieldPath: "object.accountName" }] },
             },
+          },
+          detailsTemplateOverride: {
+            detailsItemInfos: [
+              { item: { firstValue: { fields: [{ fieldPath: "object.textModulesData['reward']" }] } } },
+              { item: { firstValue: { fields: [{ fieldPath: "object.textModulesData['progress']" }] } } },
+              { item: { firstValue: { fields: [{ fieldPath: "object.accountId" }] } } },
+            ],
           },
         },
         reviewStatus: "UNDER_REVIEW",
@@ -1305,6 +1319,15 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
         secondaryLoyaltyPoints: {
           label: ready ? "Reward" : "Remaining",
           balance: { string: ready ? "READY" : String(remaining) },
+        },
+        appLinkData: {
+          webAppLinkInfo: {
+            appTarget: { targetUri: { uri: "https://digital-loyalty-card-saa-s.vercel.app/dashboard/" } },
+          },
+          displayText: { defaultValue: { language: "en-US", value: "Open loyalty card" } },
+        },
+        linksModuleData: {
+          uris: [{ id: "loyvance", uri: "https://digital-loyalty-card-saa-s.vercel.app/dashboard/", description: "Open in LOYVANCE" }],
         },
         textModulesData: [
           {
@@ -1573,6 +1596,15 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       secondaryLoyaltyPoints: {
         label: rewardReady ? "Reward" : "Remaining",
         balance: { string: rewardReady ? "READY" : String(remainingStamps) },
+      },
+      appLinkData: {
+        webAppLinkInfo: {
+          appTarget: { targetUri: { uri: "https://digital-loyalty-card-saa-s.vercel.app/dashboard/" } },
+        },
+        displayText: { defaultValue: { language: "en-US", value: "Open loyalty card" } },
+      },
+      linksModuleData: {
+        uris: [{ id: "loyvance", uri: "https://digital-loyalty-card-saa-s.vercel.app/dashboard/", description: "Open in LOYVANCE" }],
       },
       textModulesData: [
         {
