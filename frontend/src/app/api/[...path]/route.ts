@@ -518,11 +518,25 @@ async function sendLoyvanceEmail(options: { to: string; subject: string; html: s
   }
   const domain = process.env.RESEND_DOMAIN || "youssefhrd.com";
   const local = options.category === "support" ? "support" : options.category === "notifications" ? "notifications" : "security";
-  const from = process.env.RESEND_FROM_EMAIL || `LOYVANCE <${local}@${domain}>`;
+  const from = local === "security"
+    ? `LOYVANCE Security <security@${domain}>`
+    : local === "support"
+      ? `LOYVANCE Support <support@${domain}>`
+      : `LOYVANCE <notifications@${domain}>`;
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [options.to], subject: options.subject, html: options.html }),
+    body: JSON.stringify({
+      from,
+      to: [options.to],
+      subject: options.subject,
+      html: options.html,
+      headers: {
+        "X-Entity-Ref-ID": randomUUID(),
+        "X-Auto-Response-Suppress": "OOF, AutoReply",
+      },
+      tags: [{ name: "category", value: options.category ?? "notifications" }],
+    }),
   });
   if (!response.ok) console.error("LOYVANCE email delivery failed", response.status, await response.text());
   return response.ok;
