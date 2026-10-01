@@ -27,6 +27,7 @@ export type AuthUser = {
   name: string;
   email: string;
   role: UserRole;
+  avatar_url?: string | null;
   business: Business | null;
 };
 
@@ -200,6 +201,29 @@ export function updateAccountProfile(token: string, payload: AccountProfilePaylo
     method: "PUT",
     token,
     body: JSON.stringify(payload),
+  });
+}
+
+export function uploadAccountAvatar(token: string, file: File) {
+  const body = new FormData();
+  body.append("avatar", file);
+
+  return apiFetch<{
+    message: string;
+    secure_url: string;
+    public_id: string;
+    user: AuthUser;
+  }>("/auth/avatar", {
+    method: "POST",
+    token,
+    body,
+  });
+}
+
+export function removeAccountAvatar(token: string) {
+  return apiFetch<{ message: string; user: AuthUser }>("/auth/avatar", {
+    method: "DELETE",
+    token,
   });
 }
 
