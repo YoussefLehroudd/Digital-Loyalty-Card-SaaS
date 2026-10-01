@@ -86,7 +86,7 @@ type BrandingImageState = {
 };
 
 export function BusinessProfileSettings() {
-  const { token, user } = useAuth();
+  const { token, user, updateUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [business, setBusiness] = useState<Business | null>(null);
@@ -231,6 +231,7 @@ export function BusinessProfileSettings() {
         name: response.user.name,
         email: response.user.email,
       });
+      updateUser(response.user);
       setSuccess(response.message);
     } catch (unknownError) {
       if (unknownError instanceof ApiError) {
