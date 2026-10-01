@@ -35,6 +35,7 @@ type DbBusiness = {
   hero_image_zoom: number | null;
   hero_image_position_x: number | null;
   hero_image_position_y: number | null;
+  google_wallet_show_background: boolean;
   primary_color: string;
   phone: string | null;
   address: string | null;
@@ -205,12 +206,15 @@ async function ensureSchema(sql: Sql) {
         hero_image_zoom double precision DEFAULT 1,
         hero_image_position_x double precision DEFAULT 50,
         hero_image_position_y double precision DEFAULT 50,
+        google_wallet_show_background boolean NOT NULL DEFAULT true,
         primary_color text DEFAULT '#111827',
         phone text,
         address text,
         created_at timestamptz DEFAULT now(),
         updated_at timestamptz DEFAULT now()
       )`;
+
+      await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS google_wallet_show_background boolean NOT NULL DEFAULT true`;
 
       await sql`CREATE TABLE IF NOT EXISTS app_users (
         id uuid PRIMARY KEY,
@@ -355,6 +359,7 @@ function publicBusiness(b: DbBusiness) {
     hero_image_zoom: b.hero_image_zoom,
     hero_image_position_x: b.hero_image_position_x,
     hero_image_position_y: b.hero_image_position_y,
+    google_wallet_show_background: b.google_wallet_show_background ?? true,
     primary_color: b.primary_color,
     phone: b.phone,
     address: b.address,
@@ -859,6 +864,7 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
           hero_image_zoom = ${asNumber(body.hero_image_zoom, auth.business.hero_image_zoom ?? 1)},
           hero_image_position_x = ${asNumber(body.hero_image_position_x, auth.business.hero_image_position_x ?? 50)},
           hero_image_position_y = ${asNumber(body.hero_image_position_y, auth.business.hero_image_position_y ?? 50)},
+          google_wallet_show_background = ${typeof body.google_wallet_show_background === "boolean" ? body.google_wallet_show_background : auth.business.google_wallet_show_background},
           updated_at = now()
         WHERE id = ${businessId}
         RETURNING *
@@ -1267,12 +1273,12 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
           sourceUri: { uri: logoUrl },
           contentDescription: { defaultValue: { language: "en-US", value: `${business.name} logo` } },
         },
-        ...(business.hero_image_url ? {
-          heroImage: {
-            sourceUri: { uri: business.hero_image_url },
-            contentDescription: { defaultValue: { language: "en-US", value: `${business.name} card background` } },
-          },
-        } : {}),
+        heroImage: business.google_wallet_show_background && business.hero_image_url
+          ? {
+              sourceUri: { uri: business.hero_image_url },
+              contentDescription: { defaultValue: { language: "en-US", value: `${business.name} card background` } },
+            }
+          : null,
         hexBackgroundColor: business.primary_color || "#111827",
         classTemplateInfo: {
           cardTemplateOverride: {
@@ -1558,14 +1564,14 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
           defaultValue: { language: "en-US", value: `${selected.business.name} logo` },
         },
       },
-      ...(selected.business.hero_image_url ? {
-        heroImage: {
-          sourceUri: { uri: selected.business.hero_image_url },
-          contentDescription: {
-            defaultValue: { language: "en-US", value: `${selected.business.name} card background` },
-          },
-        },
-      } : {}),
+      heroImage: selected.business.google_wallet_show_background && selected.business.hero_image_url
+        ? {
+            sourceUri: { uri: selected.business.hero_image_url },
+            contentDescription: {
+              defaultValue: { language: "en-US", value: `${selected.business.name} card background` },
+            },
+          }
+        : null,
       hexBackgroundColor: selected.business.primary_color || "#111827",
       classTemplateInfo: {
         cardTemplateOverride: {
