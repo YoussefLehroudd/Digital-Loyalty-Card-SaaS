@@ -1,13 +1,14 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Save } from "lucide-react";
+import { Camera, Save, UserRound } from "lucide-react";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import {
   customerChangePassword,
   customerUpdateProfile,
+  customerUploadAvatar,
   defaultCustomerPreferences,
   type CustomerPreferences,
 } from "@/lib/customerAuth";
@@ -37,6 +38,7 @@ export default function UserProfilePage() {
   const [email, setEmail] = useState(defaults.email);
   const [phone, setPhone] = useState(defaults.phone);
   const [avatarUrl, setAvatarUrl] = useState(defaults.avatar_url);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -56,6 +58,32 @@ export default function UserProfilePage() {
     setPhone(defaults.phone);
     setAvatarUrl(defaults.avatar_url);
   }, [defaults]);
+
+  async function onAvatarChange(file: File | undefined) {
+    if (!file || !token) return;
+    const allowed = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+    if (!allowed.has(file.type)) {
+      setProfileError("Please choose a JPG, PNG, WEBP or GIF image.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setProfileError("Profile photo must be 10 MB or smaller.");
+      return;
+    }
+    setUploadingAvatar(true);
+    setProfileError(null);
+    setProfileMessage(null);
+    try {
+      const result = await customerUploadAvatar(token, file);
+      setAvatarUrl(result.secure_url);
+      await refresh();
+      setProfileMessage("Profile photo updated successfully.");
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "Failed to upload profile photo.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
 
   async function onSaveProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -138,15 +166,32 @@ export default function UserProfilePage() {
                 <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+212..." />
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="avatarUrl">Avatar URL</Label>
-                <Input
-                  id="avatarUrl"
-                  type="url"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://..."
-                />
+              <div className="space-y-2">
+                <Label htmlFor="avatarUpload">Profile photo</Label>
+                <div className="flex items-center gap-4 rounded-xl border bg-muted/20 p-3">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-background">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+                    ) : (
+                      <UserRound className="h-7 w-7 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <label htmlFor="avatarUpload" className="inline-flex h-10 cursor-pointer items-center justify-center rounded-md border bg-background px-4 text-sm font-medium shadow-sm hover:bg-muted">
+                      <Camera className="mr-2 h-4 w-4" />
+                      {uploadingAvatar ? "Uploading..." : avatarUrl ? "Change photo" : "Upload photo"}
+                    </label>
+                    <input
+                      id="avatarUpload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      disabled={uploadingAvatar}
+                      onChange={(e) => void onAvatarChange(e.target.files?.[0])}
+                    />
+                    <p className="mt-1.5 text-xs text-muted-foreground">JPG, PNG, WEBP or GIF · max 10 MB</p>
+                  </div>
+                </div>
               </div>
 
               {profileError ? <p className="text-sm text-destructive">{profileError}</p> : null}
