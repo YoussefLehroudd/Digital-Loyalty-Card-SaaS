@@ -118,7 +118,11 @@ export function EchoProvider({
         failures = Math.min(failures + 1, 5);
       } finally {
         inFlight = false;
-        if (!stopped.current) timer = window.setTimeout(poll, failures ? Math.min(30000, 5000 * 2 ** failures) : 5000);
+        if (!stopped.current) {
+          const activeInterval = document.visibilityState === "visible" ? 1000 : 15000;
+          const delay = failures ? Math.min(30000, activeInterval * 2 ** failures) : activeInterval;
+          timer = window.setTimeout(poll, delay);
+        }
       }
     };
 
