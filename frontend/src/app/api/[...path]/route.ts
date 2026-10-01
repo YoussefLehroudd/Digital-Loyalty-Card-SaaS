@@ -1189,9 +1189,43 @@ async function patchGoogleWallet(resource: "loyaltyclass" | "loyaltyobject", id:
       body: JSON.stringify(body),
     },
   );
-  // A 404 simply means this customer has never added the pass.
-  if (!response.ok && response.status !== 404) {
-    console.error("Google Wallet sync failed", resource, response.status, await response.text());
+  if (!response.ok) {
+    const details = await response.text();
+    console.error("Google Wallet sync failed", resource, id, response.status, details);
+  }
+  return response.status;
+}
+
+async function upsertGoogleWallet(resource: "loyaltyclass" | "loyaltyobject", id: string, body: JsonRecord, accessToken: string) {
+  const getResponse = await fetch(
+    `https://walletobjects.googleapis.com/walletobjects/v1/${resource}/${encodeURIComponent(id)}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (getResponse.ok) {
+    const status = await patchGoogleWallet(resource, id, body, accessToken);
+    if (status < 200 || status >= 300) throw new Error(`Google Wallet ${resource} update failed (${status}).`);
+    return;
+  }
+
+  if (getResponse.status !== 404) {
+    const details = await getResponse.text();
+    console.error("Google Wallet lookup failed", resource, id, getResponse.status, details);
+    throw new Error(`Google Wallet ${resource} lookup failed (${getResponse.status}).`);
+  }
+
+  const createResponse = await fetch(
+    `https://walletobjects.googleapis.com/walletobjects/v1/${resource}`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!createResponse.ok && createResponse.status !== 409) {
+    const details = await createResponse.text();
+    console.error("Google Wallet create failed", resource, id, createResponse.status, details);
+    throw new Error(`Google Wallet ${resource} create failed (${createResponse.status}).`);
   }
 }
 
