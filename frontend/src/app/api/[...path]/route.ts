@@ -170,6 +170,24 @@ async function uploadImageToCloudinary(file: File, folder: string) {
   return { secureUrl: result.secure_url, publicId: result.public_id };
 }
 
+async function deleteCloudinaryImage(publicId: string | null | undefined) {
+  if (!publicId || !publicId.startsWith("digital-loyalty-card-saas/")) return;
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey || !apiSecret) return;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signaturePayload = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+  const signature = (await import("crypto")).createHash("sha1").update(signaturePayload).digest("hex");
+  const form = new URLSearchParams({ public_id: publicId, timestamp: String(timestamp), api_key: apiKey, signature });
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form,
+  });
+  if (!response.ok) console.error("Cloudinary cleanup failed", response.status, await response.text());
+}
+
 async function ensureSchema(sql: Sql) {
   if (!schemaReady) {
     schemaReady = (async () => {
@@ -675,9 +693,13 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
         return error(uploadError instanceof Error ? uploadError.message : "Image upload failed.", 422);
       }
       const field = path[2] === "logo" ? "logo" : "hero";
+      const previousPublicId = field === "logo" ? auth.business.logo_public_id : auth.business.hero_image_public_id;
       const updated = field === "logo"
         ? ((await sql`UPDATE businesses SET logo_url = ${uploaded.secureUrl}, logo_public_id = ${uploaded.publicId}, updated_at = now() WHERE id = ${businessId} RETURNING *`) as DbBusiness[])[0]
         : ((await sql`UPDATE businesses SET hero_image_url = ${uploaded.secureUrl}, hero_image_public_id = ${uploaded.publicId}, updated_at = now() WHERE id = ${businessId} RETURNING *`) as DbBusiness[])[0];
+      if (previousPublicId && previousPublicId !== uploaded.publicId) {
+        await deleteCloudinaryImage(previousPublicId);
+      }
       return json({ message: "Image uploaded.", secure_url: uploaded.secureUrl, public_id: uploaded.publicId, business: publicBusiness(updated) });
     }
   }
