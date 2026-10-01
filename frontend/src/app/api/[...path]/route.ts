@@ -557,6 +557,27 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   return null;
 }
 
+async function handleRealtimeVersion(req: Request, sql: Sql) {
+  const auth = await requireAuth(req, sql);
+  if (!auth.business) return error("Business not found.", 404);
+  const businessId = auth.business.id;
+  const rows = (await sql`
+    SELECT
+      GREATEST(
+        COALESCE((SELECT max(updated_at) FROM businesses WHERE id = ${businessId}), 'epoch'::timestamptz),
+        COALESCE((SELECT max(updated_at) FROM loyalty_cards WHERE business_id = ${businessId}), 'epoch'::timestamptz),
+        COALESCE((SELECT max(updated_at) FROM customers WHERE business_id = ${businessId}), 'epoch'::timestamptz),
+        COALESCE((SELECT max(updated_at) FROM customer_loyalties cl JOIN customers c ON c.id = cl.customer_id WHERE c.business_id = ${businessId}), 'epoch'::timestamptz),
+        COALESCE((SELECT max(created_at) FROM visits WHERE business_id = ${businessId}), 'epoch'::timestamptz),
+        COALESCE((SELECT max(created_at) FROM reward_redemptions WHERE business_id = ${businessId}), 'epoch'::timestamptz)
+      ) AS changed_at,
+      (SELECT count(*)::int FROM customers WHERE business_id = ${businessId}) AS customers_count,
+      (SELECT count(*)::int FROM visits WHERE business_id = ${businessId}) AS visits_count,
+      (SELECT count(*)::int FROM reward_redemptions WHERE business_id = ${businessId}) AS rewards_count
+  `) as Array<{ changed_at: string; customers_count: number; visits_count: number; rewards_count: number }>;
+  return json({ version: rows[0] });
+}
+
 async function handleDashboard(path: string[], req: Request, sql: Sql) {
   const auth = await requireAuth(req, sql);
   if (!auth.business) return error("Business not found.", 404);
@@ -1021,6 +1042,7 @@ async function dispatch(req: Request, context: RouteContext) {
     let response: Response | null = null;
     if (path[0] === "auth") response = await handleAuth(path, req, sql);
     else if (path[0] === "dashboard") response = await handleDashboard(path, req, sql);
+    else if (path[0] === "realtime-version") response = await handleRealtimeVersion(req, sql);
     else if (path[0] === "business") response = await handleBusiness(path, req, sql);
     else if (path[0] === "loyalty-card") response = await handleLoyaltyCard(req, sql);
     else if (path[0] === "public") response = await handlePublic(path, req, sql);
