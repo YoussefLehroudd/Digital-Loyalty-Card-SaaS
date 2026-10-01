@@ -18,6 +18,7 @@ type EchoContextValue = { echo: RealtimeClient | null; connected: boolean };
 
 const EchoContext = createContext<EchoContextValue | null>(null);
 const TOKEN_KEY = "digital_loyalty_token";
+const CUSTOMER_TOKEN_KEY = "digital_loyalty_customer_token";
 
 function apiBase() {
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -83,7 +84,11 @@ export function EchoProvider({
       if (stopped.current || inFlight) return;
       const authToken =
         token ||
-        (typeof window !== "undefined" ? window.localStorage.getItem(TOKEN_KEY) : null);
+        (typeof window !== "undefined"
+          ? (window.location.pathname.startsWith("/user/")
+              ? window.localStorage.getItem(CUSTOMER_TOKEN_KEY)
+              : window.localStorage.getItem(TOKEN_KEY))
+          : null);
 
       if (!authToken) {
         setConnected(false);
