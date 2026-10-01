@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Trash2, WalletCards } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import type { CustomerCardItem } from "@/lib/customerAuth";
-import { customerDeleteCard } from "@/lib/customerAuth";
+import { customerDeleteCard, customerGoogleWalletLink } from "@/lib/customerAuth";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 
 import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
@@ -55,6 +55,7 @@ export function CustomerCardCarousel({
   const touchDeltaX = useRef(0);
   const touchDeltaY = useRef(0);
   const [deleting, setDeleting] = useState(false);
+  const [addingToWallet, setAddingToWallet] = useState(false);
 
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const showToast = (t: { type: "success" | "error"; message: string }) => {
@@ -146,6 +147,21 @@ export function CustomerCardCarousel({
       });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleGoogleWallet = async () => {
+    if (!token || !current) return;
+    setAddingToWallet(true);
+    try {
+      const { url } = await customerGoogleWalletLink(token, current.id);
+      window.location.assign(url);
+    } catch (err) {
+      showToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Could not open Google Wallet.",
+      });
+      setAddingToWallet(false);
     }
   };
 
@@ -307,9 +323,15 @@ export function CustomerCardCarousel({
           Delete Card
         </Button>
 
-        <Button variant="outline" className="w-full" disabled>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => void handleGoogleWallet()}
+          disabled={addingToWallet}
+        >
           <WalletCards className="mr-2 h-4 w-4" />
-          Add to Google Wallet (coming soon)
+          {addingToWallet ? "Opening Google Wallet..." : "Add to Google Wallet"}
         </Button>
       </div>
 
