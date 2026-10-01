@@ -115,13 +115,13 @@ function CardsUI() {
                     await reload();
                     setScanOpen(false);
 
-                    const cardId = joinResult.loyalty_card?.id;
-                    if (cardId) {
-                      const picked = await customerCardById(token, cardId);
+                    const membershipId = joinResult.customer?.id;
+                    if (membershipId) {
+                      const picked = await customerCardById(token, membershipId);
                       setSelected(picked.data);
                     }
 
-                    router.push("/user/cards");
+                    router.push(membershipId ? `/user/cards?selected=${encodeURIComponent(membershipId)}` : "/user/cards");
                   } catch (err) {
                     setError(
                       err instanceof Error
