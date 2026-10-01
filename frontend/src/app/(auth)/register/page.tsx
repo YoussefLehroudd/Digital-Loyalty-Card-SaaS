@@ -6,8 +6,8 @@ import { RegisterForm } from "@/components/auth/register-form";
 export default function RegisterPage() {
   return (
     <AuthShell
-      description="Create the business tenant and first owner account for your loyalty workspace."
-      eyebrow="Start your workspace"
+      description="Create a customer account to collect rewards, or launch a business loyalty workspace."
+      eyebrow="Join LOYVANCE"
       footer={
         <span>
           Already have an account?{" "}
@@ -16,7 +16,7 @@ export default function RegisterPage() {
           </Link>
         </span>
       }
-      title="Create your business account"
+      title="Create your account"
     >
       <RegisterForm />
     </AuthShell>
