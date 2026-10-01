@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
+import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
 
@@ -975,6 +975,25 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   return json({ message: "Stamp added.", loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
 }
 
+function base64Url(input: string) {
+  return Buffer.from(input).toString("base64url");
+}
+
+function signGoogleWalletJwt(payload: JsonRecord, clientEmail: string, privateKey: string) {
+  const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const body = base64Url(JSON.stringify(payload));
+  const unsigned = `${header}.${body}`;
+  const signer = createSign("RSA-SHA256");
+  signer.update(unsigned);
+  signer.end();
+  const signature = signer.sign(privateKey.replace(/\\n/g, "\n"), "base64url");
+  return `${unsigned}.${signature}`;
+}
+
+function walletSafeId(value: string) {
+  return value.replace(/[^A-Za-z0-9._-]/g, "_");
+}
+
 async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   if ((path[1] === "register" || path[1] === "login") && req.method === "POST") {
     const body = await readJson(req);
@@ -1117,6 +1136,71 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       qr: { qr_code: m.qr_code },
     };
   }));
+
+  if (path[1] === "wallet" && path[2] === "google" && path[3] && req.method === "POST") {
+    const selected = cards.find((c) => c.id === path[3]);
+    if (!selected) return error("Card not found.", 404);
+
+    const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID?.trim();
+    const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL?.trim();
+    const privateKey = process.env.GOOGLE_WALLET_PRIVATE_KEY;
+    if (!issuerId || !clientEmail || !privateKey) return error("Google Wallet is not configured.", 503);
+
+    const logoUrl = selected.business.logo_url || selected.business.hero_image_url;
+    if (!logoUrl) return error("This business needs a logo before its card can be added to Google Wallet.", 422);
+
+    const classId = `${issuerId}.business_${walletSafeId(selected.business.id)}`;
+    const objectId = `${issuerId}.member_${walletSafeId(selected.id)}`;
+    const memberName = `${selected.membership.first_name ?? ""} ${selected.membership.last_name ?? ""}`.trim() || auth.user.name;
+    const qrValue = selected.qr.qr_code || selected.membership.qr_code || selected.id;
+    const currentStamps = selected.loyalty?.current_stamps ?? 0;
+    const requiredStamps = selected.loyalty?.required_stamps ?? selected.loyalty_card?.required_stamps ?? 10;
+
+    const loyaltyClass = {
+      id: classId,
+      issuerName: "LOYVANCE",
+      reviewStatus: "UNDER_REVIEW",
+      programName: selected.business.name,
+      programLogo: {
+        sourceUri: { uri: logoUrl },
+        contentDescription: {
+          defaultValue: { language: "en-US", value: `${selected.business.name} logo` },
+        },
+      },
+      accountNameLabel: "Member",
+      accountIdLabel: "Card ID",
+    };
+
+    const loyaltyObject = {
+      id: objectId,
+      classId,
+      state: "ACTIVE",
+      accountName: memberName,
+      accountId: selected.id.slice(0, 20),
+      barcode: { type: "QR_CODE", value: qrValue, alternateText: "Loyalty card" },
+      loyaltyPoints: {
+        label: "Stamps",
+        balance: { int: currentStamps },
+      },
+      textModulesData: selected.loyalty_card ? [{
+        id: "reward",
+        header: selected.loyalty_card.reward_name,
+        body: selected.loyalty_card.reward_description || `Collect ${requiredStamps} stamps to unlock this reward.`,
+      }] : [],
+      hexBackgroundColor: selected.business.primary_color || "#111827",
+    };
+
+    const token = signGoogleWalletJwt({
+      iss: clientEmail,
+      aud: "google",
+      typ: "savetowallet",
+      iat: Math.floor(Date.now() / 1000),
+      origins: ["https://digital-loyalty-card-saa-s.vercel.app"],
+      payload: { loyaltyClasses: [loyaltyClass], loyaltyObjects: [loyaltyObject] },
+    }, clientEmail, privateKey);
+
+    return json({ url: `https://pay.google.com/gp/v/save/${token}` });
+  }
 
   if (path[1] === "cards") {
     if (path[2] && req.method === "DELETE") {
