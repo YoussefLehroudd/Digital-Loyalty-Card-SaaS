@@ -37,6 +37,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 import {
+  forgotPassword,
   getBusinessProfile,
   removeAccountAvatar,
   updateAccountPassword,
@@ -99,6 +100,7 @@ export function BusinessProfileSettings() {
   const [isUploading, setIsUploading] = useState(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   const [isAvatarRemoving, setIsAvatarRemoving] = useState(false);
+  const [isResetSending, setIsResetSending] = useState(false);
 
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -291,6 +293,20 @@ export function BusinessProfileSettings() {
       setError(unknownError instanceof ApiError ? unknownError.message : "Profile photo could not be removed.");
     } finally {
       setIsAvatarRemoving(false);
+    }
+  }
+
+  async function onForgotPassword() {
+    setSuccess(null);
+    setError(null);
+    setIsResetSending(true);
+    try {
+      const response = await forgotPassword({ email: user.email });
+      setSuccess(response.message);
+    } catch (unknownError) {
+      setError(unknownError instanceof ApiError ? unknownError.message : "Password reset email could not be sent.");
+    } finally {
+      setIsResetSending(false);
     }
   }
 
@@ -558,7 +574,15 @@ export function BusinessProfileSettings() {
                   </ProfileField>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    className="text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                    disabled={isResetSending}
+                    type="button"
+                    onClick={() => void onForgotPassword()}
+                  >
+                    {isResetSending ? "Sending reset email..." : "Forgot your password? Send a secure reset link"}
+                  </button>
                   <Button
                     disabled={!isPasswordDirty || isPasswordSubmitting}
                     type="submit"
