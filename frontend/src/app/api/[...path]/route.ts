@@ -723,7 +723,7 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
     const q = (url.searchParams.get("q") ?? "").toLowerCase();
     const page = Math.max(1, Number(url.searchParams.get("page") ?? 1));
     const perPage = Math.max(1, Number(url.searchParams.get("per_page") ?? 10));
-    const customers = (await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE business_id = ${businessId} ORDER BY created_at DESC`) as DbCustomer[];
+    const customers = (await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.business_id = ${businessId} ORDER BY c.created_at DESC`) as DbCustomer[];
     const rows = await Promise.all(customers.map((c) => customerRow(sql, c, card)));
     const filtered = q
       ? rows.filter((c) => `${c.first_name} ${c.last_name} ${c.email ?? ""} ${c.phone ?? ""}`.toLowerCase().includes(q))
@@ -1103,6 +1103,7 @@ async function dispatch(req: Request, context: RouteContext) {
   } catch (caught) {
     if (caught instanceof Response) return caught;
     const message = caught instanceof Error ? caught.message : "Unexpected API error.";
+    console.error("API request failed", { method: req.method, url: req.url, message, stack: caught instanceof Error ? caught.stack : undefined });
     return error(message, 500);
   }
 }
