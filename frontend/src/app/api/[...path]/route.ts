@@ -1340,6 +1340,13 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       WHERE user_id = ${auth.user.id}
       RETURNING first_name, last_name, phone, avatar_url, preferences, ${email} AS email
     `) as JsonRecord[])[0];
+    await sql`
+      UPDATE customers
+      SET first_name = ${first}, last_name = ${last}, email = ${email}, updated_at = now()
+      WHERE user_id = ${auth.user.id}
+    `;
+    const membershipsToSync = (await sql`SELECT id FROM customers WHERE user_id = ${auth.user.id}`) as Array<{ id: string }>;
+    await Promise.all(membershipsToSync.map((membership) => syncGoogleWalletCustomer(sql, membership.id)));
     const updatedUser = { ...auth.user, name: `${first} ${last}`, email };
     return json({ message: "Profile saved.", user: publicUser(updatedUser, null, updatedProfile) });
   }
