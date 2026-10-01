@@ -1137,6 +1137,132 @@ function walletSafeId(value: string) {
   return value.replace(/[^A-Za-z0-9._-]/g, "_");
 }
 
+
+const googleWalletDesignVersion = "v2";
+
+function googleWalletIds(issuerId: string, businessId: string, customerId: string) {
+  return {
+    classId: `${issuerId}.business_${walletSafeId(businessId)}_${googleWalletDesignVersion}`,
+    objectId: `${issuerId}.member_${walletSafeId(customerId)}_${googleWalletDesignVersion}`,
+  };
+}
+
+async function googleWalletAccessToken() {
+  const clientEmail = process.env.GOOGLE_WALLET_CLIENT_EMAIL?.trim();
+  const privateKey = process.env.GOOGLE_WALLET_PRIVATE_KEY;
+  if (!clientEmail || !privateKey) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const assertion = signGoogleWalletJwt({
+    iss: clientEmail,
+    scope: "https://www.googleapis.com/auth/wallet_object.issuer",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  }, clientEmail, privateKey);
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  if (!response.ok) {
+    console.error("Google Wallet OAuth failed", response.status, await response.text());
+    return null;
+  }
+  const data = await response.json() as { access_token?: string };
+  return data.access_token || null;
+}
+
+async function patchGoogleWallet(resource: "loyaltyclass" | "loyaltyobject", id: string, body: JsonRecord, accessToken: string) {
+  const response = await fetch(
+    `https://walletobjects.googleapis.com/walletobjects/v1/${resource}/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  // A 404 simply means this customer has never added the pass.
+  if (!response.ok && response.status !== 404) {
+    console.error("Google Wallet sync failed", resource, response.status, await response.text());
+  }
+}
+
+async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
+  try {
+    const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID?.trim();
+    if (!issuerId) return;
+    const accessToken = await googleWalletAccessToken();
+    if (!accessToken) return;
+
+    const customer = ((await sql`SELECT * FROM customers WHERE id = ${customerId} LIMIT 1`) as DbCustomer[])[0];
+    if (!customer) return;
+    const business = ((await sql`SELECT * FROM businesses WHERE id = ${customer.business_id} LIMIT 1`) as DbBusiness[])[0];
+    if (!business) return;
+    const card = await defaultCard(sql, business.id);
+    const loyalty = ((await sql`SELECT * FROM customer_loyalties WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as DbLoyalty[])[0];
+    const logoUrl = business.logo_url || business.hero_image_url;
+    if (!logoUrl) return;
+
+    const { classId, objectId } = googleWalletIds(issuerId, business.id, customer.id);
+    const current = loyalty?.current_stamps ?? 0;
+    const required = card.required_stamps;
+    const remaining = Math.max(0, required - current);
+    const ready = current >= required;
+    const memberName = `${customer.first_name ?? ""} ${customer.last_name ?? ""}`.trim() || "Member";
+
+    await Promise.all([
+      patchGoogleWallet("loyaltyclass", classId, {
+        programName: business.name,
+        programLogo: {
+          sourceUri: { uri: logoUrl },
+          contentDescription: { defaultValue: { language: "en-US", value: `${business.name} logo` } },
+        },
+        hexBackgroundColor: business.primary_color || "#111827",
+        reviewStatus: "UNDER_REVIEW",
+      }, accessToken),
+      patchGoogleWallet("loyaltyobject", objectId, {
+        accountName: memberName,
+        barcode: {
+          type: "QR_CODE",
+          value: customer.qr_code || customer.id,
+          alternateText: business.name,
+        },
+        loyaltyPoints: { label: "Stamps", balance: { string: `${current} / ${required}` } },
+        secondaryLoyaltyPoints: {
+          label: ready ? "Reward" : "Remaining",
+          balance: { string: ready ? "READY" : String(remaining) },
+        },
+        textModulesData: [
+          {
+            id: "reward",
+            header: ready ? "Reward ready" : card.reward_name,
+            body: ready
+              ? `You unlocked ${card.reward_name}. Show this card at ${business.name} to redeem it.`
+              : card.reward_description || `Collect ${required} stamps to unlock ${card.reward_name}.`,
+          },
+          {
+            id: "progress",
+            header: "Your progress",
+            body: ready
+              ? `${current} of ${required} stamps collected. Your reward is ready.`
+              : `${current} of ${required} stamps collected · ${remaining} to go.`,
+          },
+        ],
+      }, accessToken),
+    ]);
+  } catch (caught) {
+    console.error("Google Wallet customer sync failed", caught);
+  }
+}
+
+async function syncGoogleWalletBusiness(sql: Sql, businessId: string) {
+  const customers = (await sql`SELECT id FROM customers WHERE business_id = ${businessId}`) as Array<{ id: string }>;
+  await Promise.all(customers.map((customer) => syncGoogleWalletCustomer(sql, customer.id)));
+}
+
 async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   if ((path[1] === "register" || path[1] === "login") && req.method === "POST") {
     const body = await readJson(req);
@@ -1295,9 +1421,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     // Version the pass IDs when the Wallet layout changes. Google keeps fields from
     // previously created classes/objects, so a new version guarantees the compact
     // pass does not inherit the old hero image.
-    const walletDesignVersion = "v2";
-    const classId = `${issuerId}.business_${walletSafeId(selected.business.id)}_${walletDesignVersion}`;
-    const objectId = `${issuerId}.member_${walletSafeId(selected.id)}_${walletDesignVersion}`;
+    const { classId, objectId } = googleWalletIds(issuerId, selected.business.id, selected.id);
     const memberName = `${selected.membership.first_name ?? ""} ${selected.membership.last_name ?? ""}`.trim() || auth.user.name;
     const qrValue = selected.qr.qr_code || selected.membership.qr_code || selected.id;
     const currentStamps = selected.loyalty?.current_stamps ?? 0;
