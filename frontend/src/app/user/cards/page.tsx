@@ -14,6 +14,7 @@ import {
 } from "@/lib/customerAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
 import { useEcho } from "@/components/echo/echo-provider";
 
@@ -184,11 +185,14 @@ function CardsUI() {
         </Card>
       ) : (
         <div className="space-y-4 lg:space-y-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:max-w-5xl lg:mx-auto">
+          <div className="flex items-center justify-between gap-3 lg:mx-auto lg:max-w-5xl">
+            <Badge className="shrink-0 border-white/30 bg-white/20 px-3 py-2 text-sm text-white shadow-sm backdrop-blur-sm">
+              Card {Math.max(1, cards.findIndex((card) => card.id === selected?.id) + 1)} of {cards.length}
+            </Badge>
             <Button
               type="button"
               onClick={() => router.push("/user/join")}
-              className="w-full sm:w-auto"
+              className="min-w-0 flex-1 sm:flex-none"
             >
               + Add Loyalty Card
             </Button>
