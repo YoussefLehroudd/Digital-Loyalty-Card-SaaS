@@ -78,6 +78,26 @@ type AuthContext = {
 const scrypt = promisify(scryptCallback);
 let schemaReady: Promise<void> | null = null;
 
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimit(req: Request, bucket: string, limit: number, windowMs: number) {
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const ip = forwarded || req.headers.get("x-real-ip") || "unknown";
+  const key = `${bucket}:${ip}`;
+  const now = Date.now();
+  const current = rateBuckets.get(key);
+  if (!current || current.resetAt <= now) {
+    rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return null;
+  }
+  if (current.count >= limit) {
+    const retryAfter = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+    return json({ message: "Too many requests. Please try again later." }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
+  }
+  current.count += 1;
+  return null;
+}
+
 function json(data: unknown, init?: ResponseInit) {
   return Response.json(data, {
     ...init,
@@ -434,6 +454,8 @@ async function customerRow(sql: Sql, customer: DbCustomer, card: DbLoyaltyCard |
 
 async function handleAuth(path: string[], req: Request, sql: Sql) {
   if (path[1] === "register" && req.method === "POST") {
+    const limited = rateLimit(req, "business-register", 8, 15 * 60 * 1000);
+    if (limited) return limited;
     const body = await readJson(req);
     const businessName = asString(body.business_name);
     const businessEmail = asString(body.business_email);
@@ -476,6 +498,8 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "login" && req.method === "POST") {
+    const limited = rateLimit(req, "business-login", 12, 15 * 60 * 1000);
+    if (limited) return limited;
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
     const password = asString(body.password);
@@ -503,6 +527,8 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "forgot-password" && req.method === "POST") {
+    const limited = rateLimit(req, "forgot-password", 5, 15 * 60 * 1000);
+    if (limited) return limited;
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
     const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role = 'business_owner' LIMIT 1`) as DbUser[])[0];
@@ -536,6 +562,8 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "reset-password" && req.method === "POST") {
+    const limited = rateLimit(req, "reset-password", 8, 15 * 60 * 1000);
+    if (limited) return limited;
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
     const token = asString(body.token);
