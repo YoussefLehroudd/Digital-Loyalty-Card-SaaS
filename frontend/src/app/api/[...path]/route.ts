@@ -1268,6 +1268,27 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
             contentDescription: { defaultValue: { language: "en-US", value: `${business.name} loyalty card artwork` } },
           },
         } : {}),
+        classTemplateInfo: {
+          cardTemplateOverride: {
+            cardRowTemplateInfos: [
+              {
+                twoItems: {
+                  startItem: {
+                    firstValue: { fields: [{ fieldPath: "object.loyaltyPoints" }] },
+                  },
+                  endItem: {
+                    firstValue: { fields: [{ fieldPath: "object.secondaryLoyaltyPoints" }] },
+                  },
+                },
+              },
+            ],
+          },
+          cardBarcodeSectionDetails: {
+            firstTopDetail: {
+              fieldSelector: { fields: [{ fieldPath: "object.accountName" }] },
+            },
+          },
+        },
         reviewStatus: "UNDER_REVIEW",
       }, accessToken),
       patchGoogleWallet("loyaltyObject", objectId, {
@@ -1513,6 +1534,27 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
           },
         },
       } : {}),
+      classTemplateInfo: {
+        cardTemplateOverride: {
+          cardRowTemplateInfos: [
+            {
+              twoItems: {
+                startItem: {
+                  firstValue: { fields: [{ fieldPath: "object.loyaltyPoints" }] },
+                },
+                endItem: {
+                  firstValue: { fields: [{ fieldPath: "object.secondaryLoyaltyPoints" }] },
+                },
+              },
+            },
+          ],
+        },
+        cardBarcodeSectionDetails: {
+          firstTopDetail: {
+            fieldSelector: { fields: [{ fieldPath: "object.accountName" }] },
+          },
+        },
+      },
       accountNameLabel: "Member",
       accountIdLabel: "Card ID",
     };
