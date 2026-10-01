@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Building2, UserRound } from "lucide-react";
 import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { z } from "zod";
 
@@ -14,6 +14,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { registerBusinessOwner, storeToken } from "@/lib/auth";
+import { customerRegister, storeCustomerToken } from "@/lib/customerAuth";
 
 const passwordSchema = z
   .string()
@@ -40,6 +41,8 @@ type RegisterValues = z.infer<typeof schema>;
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [accountType, setAccountType] = useState<"customer" | "business">("customer");
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -62,6 +65,26 @@ export function RegisterForm() {
     setError(null);
 
     try {
+      if (accountType === "customer") {
+        const nameParts = values.name.trim().split(/\\s+/);
+        const firstName = nameParts.shift() || values.name.trim();
+        const lastName = nameParts.join(" ") || "-";
+        const response = await customerRegister({
+          first_name: firstName,
+          last_name: lastName,
+          email: values.email,
+          password: values.password,
+          password_confirmation: values.passwordConfirmation,
+          device_name: "web-unified-register",
+        });
+        storeCustomerToken(response.token);
+        const join = searchParams.get("join");
+        const joinBusinessId = searchParams.get("join_business_id");
+        router.replace(join ? `/user/join?auto=${encodeURIComponent(join)}` : joinBusinessId ? `/user/join?auto_business_id=${encodeURIComponent(joinBusinessId)}` : "/user/dashboard");
+        router.refresh();
+        return;
+      }
+
       const response = await registerBusinessOwner({
         business_name: values.businessName,
         business_email: values.businessEmail,
@@ -91,7 +114,11 @@ export function RegisterForm() {
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
       <FormError message={error} />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
+        <button type="button" onClick={() => setAccountType("customer")} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition ${accountType === "customer" ? "bg-background shadow-sm" : "text-muted-foreground"}`}><UserRound className="size-4" />Customer</button>
+        <button type="button" onClick={() => setAccountType("business")} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition ${accountType === "business" ? "bg-background shadow-sm" : "text-muted-foreground"}`}><Building2 className="size-4" />Business</button>
+      </div>
+      {accountType === "business" ? <div className="grid gap-4 sm:grid-cols-2">
         <Field
           error={errors.businessName?.message}
           label="Business name"
@@ -103,11 +130,11 @@ export function RegisterForm() {
           registration={register("businessEmail")}
           type="email"
         />
-      </div>
+      </div> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           error={errors.name?.message}
-          label="Owner name"
+          label={accountType === "business" ? "Owner name" : "Full name"}
           registration={register("name")}
         />
         <Field
@@ -132,7 +159,7 @@ export function RegisterForm() {
         />
       </div>
       <Button className="w-full" disabled={isSubmitting} type="submit">
-        {isSubmitting ? "Creating workspace..." : "Create workspace"}
+        {isSubmitting ? "Creating account..." : accountType === "business" ? "Create business account" : "Create customer account"}
         <ArrowRight className="size-4" />
       </Button>
     </form>
