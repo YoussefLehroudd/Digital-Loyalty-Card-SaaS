@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Gift, History, Sparkles, Store } from "lucide-react";
+import Image from "next/image";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
@@ -109,7 +110,7 @@ export default function UserRewardsPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-background shadow-sm">
                       {reward.business_logo_url ? (
-                        <img src={reward.business_logo_url} alt="" className="h-full w-full object-cover" />
+                        <Image src={reward.business_logo_url} alt={`${reward.business_name} logo`} width={56} height={56} className="h-full w-full object-cover" unoptimized />
                       ) : <Store className="h-6 w-6 text-muted-foreground" />}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -159,7 +160,7 @@ export default function UserRewardsPage() {
               ) : history.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 rounded-xl border p-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-background">
-                    {item.business_logo_url ? <img src={item.business_logo_url} alt="" className="h-full w-full object-cover" /> : <Sparkles className="h-5 w-5 text-muted-foreground" />}
+                    {item.business_logo_url ? <Image src={item.business_logo_url} alt={`${item.business_name} logo`} width={44} height={44} className="h-full w-full object-cover" unoptimized /> : <Sparkles className="h-5 w-5 text-muted-foreground" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{item.reward_name}</p>
