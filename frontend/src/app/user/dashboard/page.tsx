@@ -21,6 +21,7 @@ export default function UserDashboardPage() {
 
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [activitiesCount, setActivitiesCount] = useState(0);
   const [availableRewards, setAvailableRewards] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +41,15 @@ export default function UserDashboardPage() {
     Promise.all([customerCards(token), customerActivity(token), customerRewards(token)])
       .then(([cardsRes, activityRes, rewardsRes]) => {
         if (!mounted) return;
-        setCards(cardsRes.data ?? []);
+        const nextCards = cardsRes.data ?? [];
+        setCards(nextCards);
+        const savedCardId = window.localStorage.getItem("digital_loyalty_selected_card");
+        const nextSelectedId =
+          (savedCardId && nextCards.some((card) => card.id === savedCardId) && savedCardId) ||
+          nextCards[0]?.id ||
+          null;
+        setSelectedCardId(nextSelectedId);
+        if (nextSelectedId) window.localStorage.setItem("digital_loyalty_selected_card", nextSelectedId);
         setActivitiesCount(activityRes.data.items?.length ?? 0);
         setAvailableRewards(
           (rewardsRes.data.available ?? []).filter((item) => Boolean(item.ready)).length,
@@ -139,7 +148,14 @@ export default function UserDashboardPage() {
             </Card>
           </div>
 
-          <CustomerCardCarousel cards={cards} />
+          <CustomerCardCarousel
+            cards={cards}
+            selectedId={selectedCardId}
+            onChange={(card) => {
+              setSelectedCardId(card.id);
+              window.localStorage.setItem("digital_loyalty_selected_card", card.id);
+            }}
+          />
         </div>
       )}
     </CustomerLayout>
