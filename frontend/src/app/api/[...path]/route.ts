@@ -1292,8 +1292,12 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const logoUrl = selected.business.logo_url || selected.business.hero_image_url;
     if (!logoUrl) return error("This business needs a logo before its card can be added to Google Wallet.", 422);
 
-    const classId = `${issuerId}.business_${walletSafeId(selected.business.id)}`;
-    const objectId = `${issuerId}.member_${walletSafeId(selected.id)}`;
+    // Version the pass IDs when the Wallet layout changes. Google keeps fields from
+    // previously created classes/objects, so a new version guarantees the compact
+    // pass does not inherit the old hero image.
+    const walletDesignVersion = "v2";
+    const classId = `${issuerId}.business_${walletSafeId(selected.business.id)}_${walletDesignVersion}`;
+    const objectId = `${issuerId}.member_${walletSafeId(selected.id)}_${walletDesignVersion}`;
     const memberName = `${selected.membership.first_name ?? ""} ${selected.membership.last_name ?? ""}`.trim() || auth.user.name;
     const qrValue = selected.qr.qr_code || selected.membership.qr_code || selected.id;
     const currentStamps = selected.loyalty?.current_stamps ?? 0;
