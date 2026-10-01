@@ -567,6 +567,85 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     return json({ user: publicUser(auth.user, auth.business) });
   }
 
+  if (path[1] === "profile" && req.method === "PUT") {
+    const auth = await requireAuth(req, sql);
+    if (auth.user.role !== "business_owner") return error("Forbidden.", 403);
+
+    const body = await readJson(req);
+    const name = asString(body.name).trim();
+    const email = asString(body.email).trim().toLowerCase();
+
+    if (name.length < 2 || !email || !email.includes("@")) {
+      return error("Enter a valid name and email.", 422, {
+        name: name.length < 2 ? ["Enter your name."] : [],
+        email: !email || !email.includes("@") ? ["Enter a valid login email."] : [],
+      });
+    }
+
+    const duplicate = ((await sql`
+      SELECT id FROM app_users WHERE email = ${email} AND id <> ${auth.user.id} LIMIT 1
+    `) as Array<{ id: string }>)[0];
+    if (duplicate) {
+      return error("This email is already registered.", 422, {
+        email: ["This email is already registered."],
+      });
+    }
+
+    const updated = ((await sql`
+      UPDATE app_users
+      SET name = ${name}, email = ${email}, updated_at = now()
+      WHERE id = ${auth.user.id}
+      RETURNING *
+    `) as DbUser[])[0];
+
+    return json({
+      message: "Owner profile updated successfully.",
+      user: publicUser(updated, auth.business),
+    });
+  }
+
+  if (path[1] === "password" && req.method === "PUT") {
+    const limited = await rateLimit(sql, req, "change-password", 8, 15 * 60 * 1000);
+    if (limited) return limited;
+
+    const auth = await requireAuth(req, sql);
+    if (auth.user.role !== "business_owner") return error("Forbidden.", 403);
+
+    const body = await readJson(req);
+    const currentPassword = asString(body.current_password);
+    const password = asString(body.password);
+    const confirmation = asString(body.password_confirmation);
+
+    if (!(await verifyPassword(currentPassword, auth.user.password_hash))) {
+      return error("Current password is incorrect.", 422, {
+        current_password: ["Current password is incorrect."],
+      });
+    }
+    if (password.length < 10) {
+      return error("Use a password of at least 10 characters.", 422, {
+        password: ["Use at least 10 characters."],
+      });
+    }
+    if (password !== confirmation) {
+      return error("Password confirmation does not match.", 422, {
+        password_confirmation: ["Password confirmation does not match."],
+      });
+    }
+    if (await verifyPassword(password, auth.user.password_hash)) {
+      return error("Choose a password different from your current password.", 422, {
+        password: ["Choose a password different from your current password."],
+      });
+    }
+
+    await sql`
+      UPDATE app_users
+      SET password_hash = ${await hashPassword(password)}, updated_at = now()
+      WHERE id = ${auth.user.id}
+    `;
+
+    return json({ message: "Password updated successfully." });
+  }
+
   if (path[1] === "forgot-password" && req.method === "POST") {
     const limited = await rateLimit(sql, req, "forgot-password", 5, 15 * 60 * 1000);
     if (limited) return limited;
