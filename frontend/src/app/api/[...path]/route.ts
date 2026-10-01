@@ -600,16 +600,19 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
     const password = asString(body.password);
-    const rows = (await sql`SELECT * FROM app_users WHERE email = ${email} AND role = 'business_owner' LIMIT 1`) as DbUser[];
+    const rows = (await sql`SELECT * FROM app_users WHERE email = ${email} LIMIT 1`) as DbUser[];
     const user = rows[0];
     if (!user || !(await verifyPassword(password, user.password_hash))) {
       return error("Invalid credentials.", 401);
     }
-    const business = user.business_id
+    const business = user.role === "business_owner" && user.business_id
       ? (((await sql`SELECT * FROM businesses WHERE id = ${user.business_id} LIMIT 1`) as DbBusiness[])[0] ?? null)
       : null;
+    const profile = user.role === "customer"
+      ? (((await sql`SELECT first_name, last_name, phone, avatar_url, preferences, ${user.email} AS email FROM customer_profiles WHERE user_id = ${user.id}`) as JsonRecord[])[0] ?? null)
+      : null;
     const token = await createSession(sql, user.id);
-    return json({ token, token_type: "Bearer", user: publicUser(user, business) });
+    return json({ token, token_type: "Bearer", user: publicUser(user, business, profile) });
   }
 
   if (path[1] === "logout" && req.method === "POST") {
