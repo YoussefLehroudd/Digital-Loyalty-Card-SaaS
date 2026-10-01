@@ -81,6 +81,17 @@ export type BusinessProfilePayload = {
   hero_image_position_y?: number | null;
 };
 
+export type AccountProfilePayload = {
+  name: string;
+  email: string;
+};
+
+export type ChangePasswordPayload = {
+  current_password: string;
+  password: string;
+  password_confirmation: string;
+};
+
 export type RegisterBusinessOwnerPayload = {
   business_name: string;
   business_email: string;
@@ -181,6 +192,22 @@ export async function logout(token: string) {
 export function getCurrentUser(token: string) {
   return apiFetch<{ user: AuthUser }>("/auth/me", {
     token,
+  });
+}
+
+export function updateAccountProfile(token: string, payload: AccountProfilePayload) {
+  return apiFetch<{ message: string; user: AuthUser }>("/auth/profile", {
+    method: "PUT",
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAccountPassword(token: string, payload: ChangePasswordPayload) {
+  return apiFetch<{ message: string }>("/auth/password", {
+    method: "PUT",
+    token,
+    body: JSON.stringify(payload),
   });
 }
 
