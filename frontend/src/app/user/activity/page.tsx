@@ -7,6 +7,7 @@ import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { customerActivity } from "@/lib/customerAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEcho } from "@/components/echo/echo-provider";
 
 type ActivityItem = {
   id: string;
@@ -26,6 +27,7 @@ function iconForType(type: string) {
 
 export default function UserActivityPage() {
   const { token } = useCustomerAuth();
+  const { echo } = useEcho();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,16 @@ export default function UserActivityPage() {
       })
       .finally(() => setLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    const channel = echo.private("customer");
+    const refresh = () => {
+      void customerActivity(token).then((res) => setItems(res.data.items ?? [])).catch(() => undefined);
+    };
+    channel.listen("data.changed", refresh);
+    return () => { channel.stopListening("data.changed", refresh); };
+  }, [echo, token]);
 
   return (
     <CustomerLayout title="Activity" subtitle="Your latest visits and reward events">
