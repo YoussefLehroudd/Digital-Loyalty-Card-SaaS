@@ -124,6 +124,32 @@ async function readJson(req: Request): Promise<JsonRecord> {
   return (await req.json().catch(() => ({}))) as JsonRecord;
 }
 
+async function uploadImageToCloudinary(file: File, folder: string) {
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey || !apiSecret) throw new Error("Cloudinary is not configured.");
+
+  const allowed = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+  if (!allowed.has(file.type)) throw new Error("Unsupported image format.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("Image must be 10 MB or smaller.");
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signaturePayload = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+  const signature = (await import("crypto")).createHash("sha1").update(signaturePayload).digest("hex");
+  const form = new FormData();
+  form.set("file", file);
+  form.set("api_key", apiKey);
+  form.set("timestamp", String(timestamp));
+  form.set("folder", folder);
+  form.set("signature", signature);
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: form });
+  const result = await response.json() as { secure_url?: string; public_id?: string; error?: { message?: string } };
+  if (!response.ok || !result.secure_url || !result.public_id) throw new Error(result.error?.message || "Cloudinary upload failed.");
+  return { secureUrl: result.secure_url, publicId: result.public_id };
+}
+
 async function ensureSchema(sql: Sql) {
   if (!schemaReady) {
     schemaReady = (async () => {
@@ -569,14 +595,17 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
       const form = await req.formData();
       const file = form.get("logo");
       if (!(file instanceof File)) return error("No image uploaded.", 422);
-      const bytes = Buffer.from(await file.arrayBuffer());
-      const dataUrl = `data:${file.type || "image/png"};base64,${bytes.toString("base64")}`;
-      const publicId = `neon-${path[2]}-${randomBytes(4).toString("hex")}`;
+      let uploaded: { secureUrl: string; publicId: string };
+      try {
+        uploaded = await uploadImageToCloudinary(file, `digital-loyalty-card-saas/${businessId}`);
+      } catch (uploadError) {
+        return error(uploadError instanceof Error ? uploadError.message : "Image upload failed.", 422);
+      }
       const field = path[2] === "logo" ? "logo" : "hero";
       const updated = field === "logo"
-        ? ((await sql`UPDATE businesses SET logo_url = ${dataUrl}, logo_public_id = ${publicId}, updated_at = now() WHERE id = ${businessId} RETURNING *`) as DbBusiness[])[0]
-        : ((await sql`UPDATE businesses SET hero_image_url = ${dataUrl}, hero_image_public_id = ${publicId}, updated_at = now() WHERE id = ${businessId} RETURNING *`) as DbBusiness[])[0];
-      return json({ message: "Image uploaded.", secure_url: dataUrl, public_id: publicId, business: publicBusiness(updated) });
+        ? ((await sql`UPDATE businesses SET logo_url = ${uploaded.secureUrl}, logo_public_id = ${uploaded.publicId}, updated_at = now() WHERE id = ${businessId} RETURNING *`) as DbBusiness[])[0]
+        : ((await sql`UPDATE businesses SET hero_image_url = ${uploaded.secureUrl}, hero_image_public_id = ${uploaded.publicId}, updated_at = now() WHERE id = ${businessId} RETURNING *`) as DbBusiness[])[0];
+      return json({ message: "Image uploaded.", secure_url: uploaded.secureUrl, public_id: uploaded.publicId, business: publicBusiness(updated) });
     }
   }
 
