@@ -55,6 +55,7 @@ const schema = z.object({
   email: z.string().email("Enter a valid business email."),
   phone: z.string().max(40).optional(),
   address: z.string().max(1000).optional(),
+  google_wallet_show_background: z.boolean(),
   primary_color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Use a valid hex color."),
@@ -128,6 +129,7 @@ export function BusinessProfileSettings() {
       phone: "",
       address: "",
       primary_color: "#171717",
+      google_wallet_show_background: true,
     },
   });
 
@@ -191,6 +193,7 @@ export function BusinessProfileSettings() {
           phone: response.business.phone ?? "",
           address: response.business.address ?? "",
           primary_color: response.business.primary_color,
+          google_wallet_show_background: response.business.google_wallet_show_background ?? true,
         });
 
         const persistedHero = toBrandingState(response.business);
@@ -329,6 +332,7 @@ export function BusinessProfileSettings() {
         hero_image_zoom: brandingImage?.zoom ?? null,
         hero_image_position_x: brandingImage?.offsetXPercent ?? null,
         hero_image_position_y: brandingImage?.offsetYPercent ?? null,
+        google_wallet_show_background: values.google_wallet_show_background,
       });
 
       setBusiness(response.business);
@@ -338,6 +342,7 @@ export function BusinessProfileSettings() {
         phone: response.business.phone ?? "",
         address: response.business.address ?? "",
         primary_color: response.business.primary_color,
+        google_wallet_show_background: response.business.google_wallet_show_background ?? true,
       });
 
       const persistedHero = toBrandingState(response.business);
@@ -603,6 +608,33 @@ export function BusinessProfileSettings() {
                     }}
                     onError={setError}
                   />
+
+                  <div className="flex flex-col gap-3 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Google Wallet background</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        Choose whether the card background image is shown on Google Wallet.
+                      </p>
+                    </div>
+                    <div className="inline-flex rounded-lg border bg-muted/40 p-1">
+                      <Button
+                        className="h-8 px-4"
+                        type="button"
+                        variant={watchedValues.google_wallet_show_background ? "default" : "ghost"}
+                        onClick={() => setValue("google_wallet_show_background", true, { shouldDirty: true })}
+                      >
+                        Show
+                      </Button>
+                      <Button
+                        className="h-8 px-4"
+                        type="button"
+                        variant={!watchedValues.google_wallet_show_background ? "default" : "ghost"}
+                        onClick={() => setValue("google_wallet_show_background", false, { shouldDirty: true })}
+                      >
+                        Hide
+                      </Button>
+                    </div>
+                  </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <ProfileField
