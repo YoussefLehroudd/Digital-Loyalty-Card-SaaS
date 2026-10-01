@@ -1229,6 +1229,13 @@ async function upsertGoogleWallet(resource: "loyaltyClass" | "loyaltyObject", id
   }
 }
 
+
+function googleWalletStampStrip(current: number, required: number) {
+  const total = Math.max(1, Math.min(required, 20));
+  const filled = Math.max(0, Math.min(current, total));
+  return Array.from({ length: total }, (_, i) => (i < filled ? "●" : "○")).join(" ");
+}
+
 async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
   try {
     const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID?.trim();
@@ -1300,6 +1307,11 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
           balance: { string: ready ? "READY" : String(remaining) },
         },
         textModulesData: [
+          {
+            id: "stamps",
+            header: "Stamp card",
+            body: googleWalletStampStrip(current, required),
+          },
           {
             id: "reward",
             header: ready ? "Reward ready" : card.reward_name,
@@ -1563,6 +1575,11 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
         balance: { string: rewardReady ? "READY" : String(remainingStamps) },
       },
       textModulesData: [
+        {
+          id: "stamps",
+          header: "Stamp card",
+          body: googleWalletStampStrip(current, required),
+        },
         {
           id: "reward",
           header: rewardReady ? "Reward ready" : rewardName,
