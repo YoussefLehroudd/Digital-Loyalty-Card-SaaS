@@ -49,6 +49,8 @@ export function CustomerCardCarousel({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [slideDirection, setSlideDirection] = useState<"left" | "right">("left");
   const [isSwitching, setIsSwitching] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchDeltaX = useRef(0);
@@ -81,6 +83,8 @@ export function CustomerCardCarousel({
     touchStartY.current = event.touches[0]?.clientY ?? null;
     touchDeltaX.current = 0;
     touchDeltaY.current = 0;
+    setDragX(0);
+    setDragging(true);
   };
 
   const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -89,6 +93,13 @@ export function CustomerCardCarousel({
     if (!touch) return;
     touchDeltaX.current = touch.clientX - touchStartX.current;
     touchDeltaY.current = touch.clientY - touchStartY.current;
+    const horizontalDistance = Math.abs(touchDeltaX.current);
+    const verticalDistance = Math.abs(touchDeltaY.current);
+    if (horizontalDistance > 8 && horizontalDistance > verticalDistance * 1.35) {
+      setDragX(Math.max(-150, Math.min(150, touchDeltaX.current)));
+    } else if (verticalDistance > horizontalDistance) {
+      setDragX(0);
+    }
   };
 
   const onTouchEnd = () => {
@@ -98,6 +109,8 @@ export function CustomerCardCarousel({
     touchStartY.current = null;
     touchDeltaX.current = 0;
     touchDeltaY.current = 0;
+    setDragging(false);
+    setDragX(0);
 
     const horizontalDistance = Math.abs(deltaX);
     const verticalDistance = Math.abs(deltaY);
@@ -199,60 +212,75 @@ export function CustomerCardCarousel({
           </div>
 
           <div
-            className={cn(
-              "relative mx-auto w-full max-w-[560px] touch-pan-y select-none transition-all duration-500 ease-out",
-              isSwitching ? "scale-[0.975] [transform:rotateX(1.5deg)]" : "scale-100 [transform:rotateX(0deg)]",
-            )}
+            className="relative mx-auto w-full max-w-[560px] touch-pan-y select-none [perspective:1500px]"
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           >
-          <div
-            className={cn(
-              "pointer-events-none absolute inset-x-4 top-0 h-full rounded-[1.4rem] border bg-card/70 opacity-70 shadow-md transition-all duration-500 ease-out",
-              isSwitching ? "translate-y-1 scale-[0.985] opacity-90" : "translate-y-3 scale-[0.96]",
-            )}
-          />
-          {cards.length > 1 ? (
-            <div
-              className={cn(
-                "pointer-events-none absolute inset-x-8 top-0 h-full rounded-[1.4rem] border bg-card/40 opacity-50 shadow-sm transition-all duration-500 ease-out",
-                isSwitching ? "translate-y-4 scale-[0.945] opacity-65" : "translate-y-6 scale-[0.92]",
-              )}
-            />
-          ) : null}
-          <div
-            key={current.id}
-            className={cn(
-              "relative z-10 transform-gpu will-change-transform",
-              "animate-in fade-in zoom-in-[0.94] duration-500 ease-out",
-              slideDirection === "left"
-                ? "slide-in-from-right-12 rotate-[0.35deg]"
-                : "slide-in-from-left-12 -rotate-[0.35deg]",
-              isSwitching && "drop-shadow-2xl",
-            )}
-          >
-            <LoyaltyCardVisual
-              businessName={current.business.name}
-              businessLogoUrl={current.business.logo_url}
-              heroImageUrl={current.business.hero_image_url}
-              heroImageZoom={current.business.hero_image_zoom}
-              heroImagePositionX={current.business.hero_image_position_x}
-              heroImagePositionY={current.business.hero_image_position_y}
-              brandPrimaryColor={current.business.primary_color}
-              memberName={displayName}
-              rewardName={rewardName}
-              rewardDescription={rewardDescription}
-              cardNumber={current.id}
-              qrToken={qrValue}
-              showQrPayloadText={false}
-              stampUiVariant="customer"
-              progressPercent={progressPercent}
-              currentStamps={currentStamps}
-              requiredStamps={requiredStamps}
-            />
+            <div className="relative grid">
+              {cards.map((card, cardIndex) => {
+                const offset = cardIndex - index;
+                const distance = Math.abs(offset);
+                const isActive = offset === 0;
+                if (distance > 3) return null;
+
+                const displayNameForCard = `${card.membership?.first_name ?? ""} ${card.membership?.last_name ?? ""}`.trim();
+                const qrForCard = card.qr?.qr_code ?? card.membership?.qr_code ?? null;
+                const progressForCard = card.loyalty?.progress_percent ?? 0;
+                const stampsForCard = card.loyalty?.current_stamps ?? 0;
+                const requiredForCard = card.loyalty?.required_stamps ?? card.loyalty_card?.required_stamps ?? 0;
+
+                const side = offset > 0 ? 1 : -1;
+                const baseX = side * distance * 26;
+                const baseScale = 1 - distance * 0.045;
+                const baseRotate = side * distance * -4;
+                const opacity = 1 - distance * 0.18;
+                const brightness = 1 - distance * 0.08;
+                const activeTransform = dragging
+                  ? `translateX(${dragX}px) rotateZ(${dragX * 0.055}deg) scale(${1 - Math.min(Math.abs(dragX), 150) / 1800})`
+                  : "translateX(0px) rotateY(0deg) scale(1)";
+                const stackedTransform = `translateX(${baseX}px) rotateY(${baseRotate}deg) scale(${baseScale})`;
+
+                return (
+                  <div
+                    key={card.id}
+                    className={cn(
+                      "col-start-1 row-start-1 transform-gpu [transform-style:preserve-3d]",
+                      dragging && isActive ? "transition-none" : "transition-all duration-[600ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]",
+                      !isActive && "pointer-events-none",
+                    )}
+                    style={{
+                      zIndex: 20 - distance,
+                      opacity,
+                      filter: `brightness(${brightness})`,
+                      transform: isActive ? activeTransform : stackedTransform,
+                      transformOrigin: "center center",
+                    }}
+                  >
+                    <LoyaltyCardVisual
+                      businessName={card.business.name}
+                      businessLogoUrl={card.business.logo_url}
+                      heroImageUrl={card.business.hero_image_url}
+                      heroImageZoom={card.business.hero_image_zoom}
+                      heroImagePositionX={card.business.hero_image_position_x}
+                      heroImagePositionY={card.business.hero_image_position_y}
+                      brandPrimaryColor={card.business.primary_color}
+                      memberName={displayNameForCard}
+                      rewardName={card.loyalty_card?.reward_name ?? null}
+                      rewardDescription={card.loyalty_card?.reward_description ?? null}
+                      cardNumber={card.id}
+                      qrToken={qrForCard}
+                      showQrPayloadText={false}
+                      stampUiVariant="customer"
+                      progressPercent={progressForCard}
+                      currentStamps={stampsForCard}
+                      requiredStamps={requiredForCard}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
           {showNav ? (
             <div className="flex justify-center gap-1.5 pt-3" aria-label="Card position">
