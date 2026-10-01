@@ -440,9 +440,13 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const name = asString(body.name);
     const email = asString(body.email).toLowerCase();
     const password = asString(body.password);
+    const passwordConfirmation = asString(body.password_confirmation);
 
-    if (!businessName || !businessEmail || !name || !email || password.length < 6) {
-      return error("Please fill all required fields.", 422);
+    if (!businessName || !businessEmail || !name || !email || password.length < 10) {
+      return error("Please fill all required fields and use a password of at least 10 characters.", 422);
+    }
+    if (password !== passwordConfirmation) {
+      return error("Password confirmation does not match.", 422, { password_confirmation: ["Password confirmation does not match."] });
     }
 
     const duplicate = ((await sql`SELECT id FROM app_users WHERE email = ${email} LIMIT 1`) as Array<{ id: string }>)[0];
@@ -508,7 +512,27 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     await sql`DELETE FROM password_reset_tokens WHERE user_id = ${user.id}`;
     await sql`INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (${tokenHash}, ${user.id}, now() + interval '30 minutes')`;
     const origin = new URL(req.url).origin;
-    return json({ message: "Password reset link created.", reset_url: `${origin}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}` });
+    const resetUrl = `${origin}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Loyalty Card <noreply@youssefhrd.com>";
+    if (resendApiKey) {
+      const sendResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [email],
+          subject: "Reset your Loyalty Card password",
+          html: `<p>Hello ${user.name.replace(/[<>&"']/g, "")},</p><p>Use the link below to reset your password. It expires in 30 minutes.</p><p><a href="${resetUrl}">Reset password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+        }),
+      });
+      if (!sendResponse.ok) {
+        console.error("Resend password reset delivery failed", sendResponse.status, await sendResponse.text());
+      }
+    } else {
+      console.warn("RESEND_API_KEY is not configured; password reset email was not sent.");
+    }
+    return json({ message: "If that email exists, a password reset email has been sent." });
   }
 
   if (path[1] === "reset-password" && req.method === "POST") {
