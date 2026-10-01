@@ -193,7 +193,7 @@ export function CustomerCardCarousel({
         </div>
       ) : null}
 
-      <div className="space-y-3 overflow-hidden px-1 pb-2">
+      <div className="space-y-3 overflow-visible px-3 pb-2">
         <div
           key={`wallet-stage-${current.id}`}
           className={cn(
@@ -233,7 +233,7 @@ export function CustomerCardCarousel({
                 const side = offset > 0 ? 1 : -1;
                 // Fan the inactive cards upward and outward so their rounded top
                 // corner is visible instead of looking like a flat side strip.
-                const baseX = side * (34 + (distance - 1) * 22);
+                const baseX = side * (24 + (distance - 1) * 18);
                 const baseY = -10 - (distance - 1) * 7;
                 const baseScale = 1 - distance * 0.055;
                 const baseRotateY = side * distance * -5;
