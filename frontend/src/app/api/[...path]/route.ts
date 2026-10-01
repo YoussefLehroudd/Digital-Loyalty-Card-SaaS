@@ -234,10 +234,13 @@ async function ensureSchema(sql: Sql) {
         last_name text NOT NULL,
         phone text,
         avatar_url text,
+        avatar_public_id text,
         preferences jsonb DEFAULT '{}'::jsonb,
         created_at timestamptz DEFAULT now(),
         updated_at timestamptz DEFAULT now()
       )`;
+
+      await sql`ALTER TABLE customer_profiles ADD COLUMN IF NOT EXISTS avatar_public_id text`;
 
       await sql`CREATE TABLE IF NOT EXISTS loyalty_cards (
         id uuid PRIMARY KEY,
@@ -1010,6 +1013,25 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     return json({ message: "Logged out." });
   }
   if (path[1] === "me") return json({ user: publicUser(auth.user, null, profile) });
+  if (path[1] === "profile" && path[2] === "avatar" && req.method === "POST") {
+    const form = await req.formData();
+    const file = form.get("avatar");
+    if (!(file instanceof File)) return error("No image uploaded.", 422);
+    let uploaded: { secureUrl: string; publicId: string };
+    try {
+      uploaded = await uploadImageToCloudinary(file, `digital-loyalty-card-saas/customers/${auth.user.id}`);
+    } catch (uploadError) {
+      return error(uploadError instanceof Error ? uploadError.message : "Image upload failed.", 422);
+    }
+    const current = ((await sql`SELECT avatar_public_id FROM customer_profiles WHERE user_id = ${auth.user.id} LIMIT 1`) as Array<{ avatar_public_id: string | null }>)[0];
+    const updatedProfile = ((await sql`
+      UPDATE customer_profiles SET avatar_url = ${uploaded.secureUrl}, avatar_public_id = ${uploaded.publicId}, updated_at = now()
+      WHERE user_id = ${auth.user.id}
+      RETURNING first_name, last_name, phone, avatar_url, preferences, ${auth.user.email} AS email
+    `) as JsonRecord[])[0];
+    if (current?.avatar_public_id && current.avatar_public_id !== uploaded.publicId) await deleteCloudinaryImage(current.avatar_public_id);
+    return json({ message: "Profile photo uploaded.", secure_url: uploaded.secureUrl, user: publicUser(auth.user, null, updatedProfile) });
+  }
   if (path[1] === "profile" && req.method === "PUT") {
     const body = await readJson(req);
     const first = asString(body.first_name);
