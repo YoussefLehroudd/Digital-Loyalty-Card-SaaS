@@ -1105,9 +1105,28 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const body = await readJson(req);
     const qr = asString(body.qr);
     let business: DbBusiness | undefined;
-    const bySlug = qr.replace(/^https?:\/\/[^/]+\//, "").replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
-    const slug = bySlug[0] === "business" ? bySlug[1] : (bySlug.length === 1 ? bySlug[0] : "");
-    if (slug) business = ((await sql`SELECT * FROM businesses WHERE slug = ${slug} LIMIT 1`) as DbBusiness[])[0];
+    let joinSlug = "";
+    let joinBusinessId = "";
+
+    try {
+      const parsed = new URL(qr);
+      joinSlug = parsed.searchParams.get("join")?.trim() ?? "";
+      joinBusinessId = parsed.searchParams.get("join_business_id")?.trim() ?? "";
+      if (!joinSlug) {
+        const segments = parsed.pathname.replace(/^\\/+|\\/+$/g, "").split("/").filter(Boolean);
+        joinSlug = segments[0] === "business" ? (segments[1] ?? "") : "";
+      }
+    } catch {
+      const bySlug = qr.replace(/^\\/+|\\/+$/g, "").split("/").filter(Boolean);
+      joinSlug = bySlug[0] === "business" ? (bySlug[1] ?? "") : (bySlug.length === 1 ? bySlug[0] : "");
+    }
+
+    if (joinSlug) {
+      business = ((await sql`SELECT * FROM businesses WHERE slug = ${joinSlug} LIMIT 1`) as DbBusiness[])[0];
+    }
+    if (!business && joinBusinessId) {
+      business = ((await sql`SELECT * FROM businesses WHERE id = ${joinBusinessId} LIMIT 1`) as DbBusiness[])[0];
+    }
     if (!business) {
       const existingCustomer = ((await sql`SELECT * FROM customers WHERE qr_code = ${qr} LIMIT 1`) as DbCustomer[])[0];
       if (existingCustomer) business = ((await sql`SELECT * FROM businesses WHERE id = ${existingCustomer.business_id} LIMIT 1`) as DbBusiness[])[0];
