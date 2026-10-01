@@ -11,6 +11,7 @@ import { CustomerEmptyState } from "@/components/customer-app/customer-empty-sta
 import { PullToRefresh } from "@/components/customer-app/pull-to-refresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useEcho } from "@/components/echo/echo-provider";
 
 type NotificationItem = {
   id?: string;
@@ -22,6 +23,7 @@ type NotificationItem = {
 
 export default function UserNotificationsPage() {
   const { token } = useCustomerAuth();
+  const { echo } = useEcho();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +46,16 @@ export default function UserNotificationsPage() {
   useEffect(() => {
     load();
   }, [token]);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    const channel = echo.private("customer");
+    const refresh = () => {
+      void customerNotifications(token).then((res) => setItems((res.data as NotificationItem[]) ?? [])).catch(() => undefined);
+    };
+    channel.listen("data.changed", refresh);
+    return () => { channel.stopListening("data.changed", refresh); };
+  }, [echo, token]);
 
   return (
     <CustomerLayout title="Notifications" subtitle="Recent updates and reward alerts">
