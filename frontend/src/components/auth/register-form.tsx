@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Building2, UserRound } from "lucide-react";
 import { useForm, type UseFormRegisterReturn } from "react-hook-form";
@@ -41,7 +41,6 @@ type RegisterValues = z.infer<typeof schema>;
 
 export function RegisterForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [accountType, setAccountType] = useState<"customer" | "business">("customer");
   const [error, setError] = useState<string | null>(null);
 
@@ -78,9 +77,7 @@ export function RegisterForm() {
           device_name: "web-unified-register",
         });
         storeCustomerToken(response.token);
-        const join = searchParams.get("join");
-        const joinBusinessId = searchParams.get("join_business_id");
-        router.replace(join ? `/user/join?auto=${encodeURIComponent(join)}` : joinBusinessId ? `/user/join?auto_business_id=${encodeURIComponent(joinBusinessId)}` : "/user/dashboard");
+        router.replace("/user/dashboard");
         router.refresh();
         return;
       }
