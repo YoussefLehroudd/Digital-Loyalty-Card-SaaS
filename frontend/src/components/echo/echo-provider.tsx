@@ -1,58 +1,29 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import Echo from "laravel-echo";
-import Pusher from "pusher-js";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-type EchoInstance = InstanceType<typeof Echo>;
-type EchoContextValue = {
-  echo: EchoInstance | null;
-  connected: boolean;
+type EventCallback = (payload?: unknown) => void;
+type Channel = {
+  listen: (event: string, callback: EventCallback) => Channel;
+  stopListening: (event: string, callback?: EventCallback) => Channel;
+  subscribed: (callback: () => void) => Channel;
 };
-
-type ReverbTransport = "ws" | "wss";
-type PusherEventCallback = (payload?: unknown) => void;
-
-type PusherConnection = {
-  state?: string;
-  socket_id?: string;
-  bind: (event: string, callback: PusherEventCallback) => void;
-  unbind: (event: string, callback: PusherEventCallback) => void;
+type RealtimeClient = {
+  private: (name: string) => Channel;
+  channel: (name: string) => Channel;
+  leaveChannel: (name: string) => void;
+  disconnect: () => void;
 };
-
-type EchoWithConnection = EchoInstance & {
-  connector?: {
-    pusher?: {
-      connection?: PusherConnection;
-    };
-  };
-};
-
-type EchoConfig = {
-  broadcaster: "reverb";
-  key: string;
-  client: Pusher;
-  authEndpoint?: string;
-  auth?: {
-    headers: Record<string, string>;
-  };
-};
-
-type StateChangePayload = {
-  previous?: unknown;
-  current?: unknown;
-};
-
-declare global {
-  interface Window {
-    Echo?: EchoInstance;
-  }
-}
+type EchoContextValue = { echo: RealtimeClient | null; connected: boolean };
 
 const EchoContext = createContext<EchoContextValue | null>(null);
+const TOKEN_KEY = "digital_loyalty_token";
 
-function isStateChangePayload(payload: unknown): payload is StateChangePayload {
-  return typeof payload === "object" && payload !== null;
+function apiBase() {
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (!raw) return "/api";
+  const base = raw.replace(/\/+$/, "");
+  return /\/api$/i.test(base) ? base : `${base}/api`;
 }
 
 export function EchoProvider({
@@ -63,142 +34,100 @@ export function EchoProvider({
   token: string | null;
 }) {
   const [connected, setConnected] = useState(false);
+  const listeners = useRef(new Map<string, Set<EventCallback>>());
+  const stopped = useRef(false);
 
-  const echo = useMemo(() => {
-    if (typeof window === "undefined") return null;
-
-    const appKey = process.env.NEXT_PUBLIC_REVERB_APP_KEY?.trim();
-    const hostFromEnv = process.env.NEXT_PUBLIC_REVERB_HOST;
-    const portRawFromEnv = process.env.NEXT_PUBLIC_REVERB_PORT;
-    const scheme = (process.env.NEXT_PUBLIC_REVERB_SCHEME ?? "https").toLowerCase();
-
-    const host = hostFromEnv?.trim();
-    const portRaw = portRawFromEnv?.trim();
-
-    if (!appKey || !host || !portRaw) {
-      console.info("[Echo/Reverb] Realtime is disabled because Reverb env vars are not configured.");
-      return null;
-    }
-
-    const port = Number(portRaw);
-    if (!Number.isFinite(port)) {
-      console.warn("[Echo/Reverb] Realtime disabled: NEXT_PUBLIC_REVERB_PORT must be a number.");
-      return null;
-    }
-
-    // Railway/Reverb can be ws or wss. Enable both to avoid transport/scheme mismatch.
-    const forceTLS = scheme === "https";
-    const enabledTransports: ReverbTransport[] = ["ws", "wss"];
-
-    const pusherClient = new Pusher(appKey, {
-      cluster: "mt1",
-      wsHost: host,
-      wsPort: port,
-      wssPort: port,
-      forceTLS,
-      enabledTransports,
-    });
-
-    console.log("[Echo/Reverb] Using client config:", {
-      key: appKey,
-      wsHost: host,
-      wsPort: port,
-      wssPort: port,
-      scheme,
-      forceTLS,
-      enabledTransports,
-    });
-
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
-    const laravelBaseUrl = apiUrl?.replace(/\/api\/?$/, "");
-
-    const echoConfig: EchoConfig = {
-      broadcaster: "reverb",
-      key: appKey,
-      client: pusherClient,
-    };
-
-    if (token) {
-      if (!laravelBaseUrl) return null;
-      echoConfig.authEndpoint = `${laravelBaseUrl}/broadcasting/auth`;
-      echoConfig.auth = {
-        headers: { Authorization: `Bearer ${token}` },
+  const echo = useMemo<RealtimeClient>(() => {
+    const makeChannel = (_name: string): Channel => {
+      const channel: Channel = {
+        listen(event, callback) {
+          const key = event.replace(/^\./, "");
+          const set = listeners.current.get(key) ?? new Set<EventCallback>();
+          set.add(callback);
+          listeners.current.set(key, set);
+          return channel;
+        },
+        stopListening(event, callback) {
+          const key = event.replace(/^\./, "");
+          if (!callback) listeners.current.delete(key);
+          else listeners.current.get(key)?.delete(callback);
+          return channel;
+        },
+        subscribed(callback) {
+          queueMicrotask(callback);
+          return channel;
+        },
       };
-    }
+      return channel;
+    };
 
-    const instance = new Echo(echoConfig);
+    return {
+      private: makeChannel,
+      channel: makeChannel,
+      leaveChannel: () => undefined,
+      disconnect: () => {
+        stopped.current = true;
+        setConnected(false);
+      },
+    };
+  }, []);
 
-    console.log("Echo instance:", instance);
-    window.Echo = instance;
+  useEffect(() => {
+    stopped.current = false;
+    let cursor = "0";
+    let timer: number | undefined;
+    let inFlight = false;
 
-    return instance;
+    const poll = async () => {
+      if (stopped.current || inFlight) return;
+      const authToken =
+        token ||
+        (typeof window !== "undefined" ? window.localStorage.getItem(TOKEN_KEY) : null);
+
+      if (!authToken) {
+        setConnected(false);
+        timer = window.setTimeout(poll, 1000);
+        return;
+      }
+
+      inFlight = true;
+      try {
+        const res = await fetch(`${apiBase()}/realtime?after=${encodeURIComponent(cursor)}`, {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          cache: "no-store",
+        });
+
+        if (!res.ok) throw new Error(`Realtime HTTP ${res.status}`);
+        const body = (await res.json()) as {
+          data?: Array<{ id: string; event_name: string; payload?: unknown }>;
+          cursor?: string;
+        };
+
+        setConnected(true);
+        for (const event of body.data ?? []) {
+          cursor = event.id || cursor;
+          for (const callback of listeners.current.get(event.event_name) ?? []) {
+            callback(event.payload);
+          }
+        }
+        if (body.cursor) cursor = body.cursor;
+      } catch {
+        setConnected(false);
+      } finally {
+        inFlight = false;
+        if (!stopped.current) timer = window.setTimeout(poll, 1200);
+      }
+    };
+
+    void poll();
+    return () => {
+      stopped.current = true;
+      if (timer) window.clearTimeout(timer);
+    };
   }, [token]);
-
-  useEffect(() => {
-    if (!echo) return;
-
-    const connection = (echo as EchoWithConnection).connector?.pusher?.connection;
-    if (!connection?.bind) return;
-
-    console.log("Initial state:", connection.state);
-
-    connection.bind("state_change", (payload?: unknown) => {
-      if (isStateChangePayload(payload)) {
-        console.log("State changed:", payload.previous, "=>", payload.current);
-      }
-    });
-
-    connection.bind("connected", () => {
-      console.log("Connected!");
-      console.log("Socket ID:", connection.socket_id);
-    });
-
-    connection.bind("disconnected", () => {
-      console.log("Disconnected");
-    });
-
-    connection.bind("error", (err?: unknown) => {
-      console.error("Pusher Error:", err);
-    });
-
-    connection.bind("failed", () => {
-      console.error("Connection failed");
-    });
-
-    connection.bind("unavailable", () => {
-      console.warn("Connection unavailable");
-    });
-
-    const sync = () => {
-      const state = connection.state;
-      if (typeof state === "string") {
-        setConnected(state === "connected" || state === "authenticated" || state === "unavailable");
-      }
-    };
-
-    sync();
-
-    const onConnected: PusherEventCallback = () => setConnected(true);
-    const onDisconnected: PusherEventCallback = () => setConnected(false);
-    const onError: PusherEventCallback = () => setConnected(false);
-
-    connection.bind("connected", onConnected);
-    connection.bind("disconnected", onDisconnected);
-    connection.bind("error", onError);
-
-    return () => {
-      connection.unbind("connected", onConnected);
-      connection.unbind("disconnected", onDisconnected);
-      connection.unbind("error", onError);
-    };
-  }, [echo]);
-
-  useEffect(() => {
-    if (!echo) return;
-    return () => {
-      echo.disconnect();
-    };
-  }, [echo]);
 
   return <EchoContext.Provider value={{ echo, connected }}>{children}</EchoContext.Provider>;
 }
