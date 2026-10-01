@@ -229,14 +229,6 @@ async function ensureSchema(sql: Sql) {
       await sql`CREATE INDEX IF NOT EXISTS idx_customers_business ON customers(business_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_visits_business_customer ON visits(business_id, customer_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_rewards_business_customer ON reward_redemptions(business_id, customer_id)`;
-      await sql`CREATE TABLE IF NOT EXISTS realtime_events (
-        id bigserial PRIMARY KEY,
-        business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
-        event_name text NOT NULL,
-        payload jsonb NOT NULL DEFAULT '{}'::jsonb,
-        created_at timestamptz DEFAULT now()
-      )`;
-      await sql`CREATE INDEX IF NOT EXISTS idx_realtime_events_business_id ON realtime_events(business_id, id)`;
     })();
   }
   await schemaReady;
@@ -298,10 +290,6 @@ function publicLoyaltyCard(card: DbLoyaltyCard | null) {
     created_at: card.created_at,
     updated_at: card.updated_at,
   };
-}
-
-async function emitRealtime(sql: Sql, businessId: string, eventName: string, payload: JsonRecord = {}) {
-  await sql`INSERT INTO realtime_events (business_id, event_name, payload) VALUES (${businessId}, ${eventName}, ${JSON.stringify(payload)}::jsonb)`;
 }
 
 async function createSession(sql: Sql, userId: string) {
@@ -481,21 +469,6 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   return null;
 }
 
-async function handleRealtime(req: Request, sql: Sql) {
-  const auth = await requireAuth(req, sql);
-  if (!auth.business) return error("Business not found.", 404);
-  const url = new URL(req.url);
-  const after = Math.max(0, Number(url.searchParams.get("after") ?? 0));
-  const rows = await sql`
-    SELECT id::text, event_name, payload, created_at::text
-    FROM realtime_events
-    WHERE business_id = ${auth.business.id} AND id > ${after}
-    ORDER BY id ASC
-    LIMIT 100
-  `;
-  return json({ data: rows, cursor: rows.length ? String((rows[rows.length - 1] as { id: string }).id) : String(after) });
-}
-
 async function handleDashboard(path: string[], req: Request, sql: Sql) {
   const auth = await requireAuth(req, sql);
   if (!auth.business) return error("Business not found.", 404);
@@ -551,7 +524,6 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
         WHERE id = ${businessId}
         RETURNING *
       `) as DbBusiness[])[0];
-      await emitRealtime(sql, businessId, "BusinessBrandUpdated", { business_id: businessId });
       return json({ message: "Business profile updated.", business: publicBusiness(updated) });
     }
 
@@ -664,7 +636,6 @@ async function handleLoyaltyCard(req: Request, sql: Sql) {
       WHERE id = ${existing.id}
       RETURNING *
     `) as DbLoyaltyCard[])[0];
-    await emitRealtime(sql, auth.business.id, "BusinessCardUpdated", { loyalty_card_id: updated.id });
     return json({ message: "Loyalty card saved.", loyalty_card: publicLoyaltyCard(updated) });
   }
 
@@ -692,7 +663,6 @@ async function handlePublic(path: string[], req: Request, sql: Sql) {
     `) as DbCustomer[])[0];
     const card = await defaultCard(sql, business.id);
     await sql`INSERT INTO customer_loyalties (id, customer_id, loyalty_card_id) VALUES (${randomUUID()}, ${customer.id}, ${card.id}) ON CONFLICT DO NOTHING`;
-    await emitRealtime(sql, business.id, "MembershipCreated", { customer_id: customer.id });
     return json({ message: "Customer registered.", customer, wallet_url: `/wallet/${qr}` }, { status: 201 });
   }
 
@@ -730,7 +700,6 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
         SELECT id FROM reward_redemptions WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready' ORDER BY earned_at DESC LIMIT 1
       )
     `;
-    await emitRealtime(sql, auth.business.id, "RewardRedeemed", { customer_id: customer.id });
     return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: current.current_stamps, required_stamps: card.required_stamps, reward_unlocked: current.current_stamps >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
   }
 
@@ -746,7 +715,6 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
       redemptionCreated = true;
     }
   }
-  await emitRealtime(sql, auth.business.id, "StampAdded", { customer_id: customer.id, current_stamps: updated.current_stamps, reward_unlocked: unlocked });
   return json({ message: "Stamp added.", loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
 }
 
@@ -858,7 +826,6 @@ async function dispatch(req: Request, context: RouteContext) {
 
     let response: Response | null = null;
     if (path[0] === "auth") response = await handleAuth(path, req, sql);
-    else if (path[0] === "realtime" && req.method === "GET") response = await handleRealtime(req, sql);
     else if (path[0] === "dashboard") response = await handleDashboard(path, req, sql);
     else if (path[0] === "business") response = await handleBusiness(path, req, sql);
     else if (path[0] === "loyalty-card") response = await handleLoyaltyCard(req, sql);
