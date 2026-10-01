@@ -1041,7 +1041,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     })) });
   }
 
-  const memberships = (await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE user_id = ${auth.user.id} ORDER BY created_at DESC`) as DbCustomer[];
+  const memberships = (await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.user_id = ${auth.user.id} ORDER BY c.created_at DESC`) as DbCustomer[];
   const cards = await Promise.all(memberships.map(async (m) => {
     const business = ((await sql`SELECT * FROM businesses WHERE id = ${m.business_id} LIMIT 1`) as DbBusiness[])[0];
     const card = await defaultCard(sql, m.business_id);
