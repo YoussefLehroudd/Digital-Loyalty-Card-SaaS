@@ -16,6 +16,7 @@ export type Business = {
   hero_image_zoom?: number | null;
   hero_image_position_x?: number | null;
   hero_image_position_y?: number | null;
+  google_wallet_show_background?: boolean;
   primary_color: string;
   phone: string | null;
   address: string | null;
@@ -80,6 +81,7 @@ export type BusinessProfilePayload = {
   hero_image_zoom?: number | null;
   hero_image_position_x?: number | null;
   hero_image_position_y?: number | null;
+  google_wallet_show_background?: boolean;
 };
 
 export type AccountProfilePayload = {
