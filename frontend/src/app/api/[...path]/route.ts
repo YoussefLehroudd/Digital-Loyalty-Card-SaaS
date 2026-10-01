@@ -1305,7 +1305,6 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       `Collect ${requiredStamps} stamps to unlock ${rewardName}.`;
     const remainingStamps = Math.max(0, requiredStamps - currentStamps);
     const rewardReady = currentStamps >= requiredStamps;
-    const heroUrl = selected.business.hero_image_url || null;
     const cardId = selected.id.replace(/-/g, "").slice(0, 12).toUpperCase();
 
     const loyaltyClass = {
@@ -1343,19 +1342,6 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
         label: rewardReady ? "Reward" : "Remaining",
         balance: { string: rewardReady ? "READY" : String(remainingStamps) },
       },
-      ...(heroUrl
-        ? {
-            heroImage: {
-              sourceUri: { uri: heroUrl },
-              contentDescription: {
-                defaultValue: {
-                  language: "en-US",
-                  value: `${selected.business.name} loyalty card`,
-                },
-              },
-            },
-          }
-        : {}),
       textModulesData: [
         {
           id: "reward",
