@@ -19,6 +19,8 @@ type DbUser = {
   email: string;
   role: Role;
   password_hash: string;
+  avatar_url: string | null;
+  avatar_public_id: string | null;
 };
 
 type DbBusiness = {
@@ -217,9 +219,14 @@ async function ensureSchema(sql: Sql) {
         email text UNIQUE NOT NULL,
         password_hash text NOT NULL,
         role text NOT NULL,
+        avatar_url text,
+        avatar_public_id text,
         created_at timestamptz DEFAULT now(),
         updated_at timestamptz DEFAULT now()
       )`;
+
+      await sql`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS avatar_url text`;
+      await sql`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS avatar_public_id text`;
 
       await sql`CREATE TABLE IF NOT EXISTS user_sessions (
         token text PRIMARY KEY,
@@ -361,6 +368,7 @@ function publicUser(user: DbUser, business: DbBusiness | null, profile?: JsonRec
     name: user.name,
     email: user.email,
     role: user.role,
+    avatar_url: user.avatar_url ?? null,
     business: business ? publicBusiness(business) : null,
     customer_profile: profile ?? null,
   };
@@ -396,7 +404,7 @@ async function getAuth(req: Request, sql: Sql): Promise<AuthContext | null> {
   if (!token) return null;
 
   const rows = (await sql`
-    SELECT u.id, u.business_id, u.name, u.email, u.role, u.password_hash
+    SELECT u.id, u.business_id, u.name, u.email, u.role, u.password_hash, u.avatar_url, u.avatar_public_id
     FROM user_sessions s
     JOIN app_users u ON u.id = s.user_id
     WHERE s.token = ${token} AND s.expires_at > now()
@@ -644,6 +652,62 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     `;
 
     return json({ message: "Password updated successfully." });
+  }
+
+  if (path[1] === "avatar" && req.method === "POST") {
+    const auth = await requireAuth(req, sql);
+    if (auth.user.role !== "business_owner") return error("Forbidden.", 403);
+
+    const form = await req.formData();
+    const file = form.get("avatar");
+    if (!(file instanceof File) || file.size === 0) {
+      return error("Choose a profile image.", 422, { avatar: ["Choose a profile image."] });
+    }
+
+    try {
+      const uploaded = await uploadImageToCloudinary(file, "digital-loyalty-card-saas/owner-avatars");
+      const previousPublicId = auth.user.avatar_public_id;
+      const updated = ((await sql`
+        UPDATE app_users
+        SET avatar_url = ${uploaded.secureUrl}, avatar_public_id = ${uploaded.publicId}, updated_at = now()
+        WHERE id = ${auth.user.id}
+        RETURNING *
+      `) as DbUser[])[0];
+
+      if (previousPublicId && previousPublicId !== uploaded.publicId) {
+        await deleteCloudinaryImage(previousPublicId);
+      }
+
+      return json({
+        message: "Profile photo updated.",
+        secure_url: uploaded.secureUrl,
+        public_id: uploaded.publicId,
+        user: publicUser(updated, auth.business),
+      });
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Profile photo upload failed.";
+      return error(message, 422, { avatar: [message] });
+    }
+  }
+
+  if (path[1] === "avatar" && req.method === "DELETE") {
+    const auth = await requireAuth(req, sql);
+    if (auth.user.role !== "business_owner") return error("Forbidden.", 403);
+
+    const previousPublicId = auth.user.avatar_public_id;
+    const updated = ((await sql`
+      UPDATE app_users
+      SET avatar_url = NULL, avatar_public_id = NULL, updated_at = now()
+      WHERE id = ${auth.user.id}
+      RETURNING *
+    `) as DbUser[])[0];
+
+    if (previousPublicId) await deleteCloudinaryImage(previousPublicId);
+
+    return json({
+      message: "Profile photo removed.",
+      user: publicUser(updated, auth.business),
+    });
   }
 
   if (path[1] === "forgot-password" && req.method === "POST") {
