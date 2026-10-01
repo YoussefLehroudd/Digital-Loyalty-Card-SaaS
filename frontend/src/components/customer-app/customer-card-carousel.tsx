@@ -180,20 +180,33 @@ export function CustomerCardCarousel({
         </div>
       ) : null}
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="sr-only">Loyalty card preview</div>
-          <Badge className="bg-white/20 text-white border-white/30">
-            Card {index + 1} of {cards.length}
-          </Badge>
-        </div>
-
+      <div className="space-y-3 overflow-hidden px-1 pb-2">
         <div
-          className="relative mx-auto w-full max-w-[560px] touch-pan-y select-none"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
+          key={`wallet-stage-${current.id}`}
+          className={cn(
+            "space-y-3 transform-gpu will-change-transform [perspective:1200px]",
+            "animate-in fade-in zoom-in-[0.92] duration-500 ease-out",
+            slideDirection === "left"
+              ? "slide-in-from-right-16"
+              : "slide-in-from-left-16",
+          )}
         >
+          <div className="flex items-center justify-between transition-all duration-500">
+            <div className="sr-only">Loyalty card preview</div>
+            <Badge className="border-white/30 bg-white/20 text-white shadow-sm backdrop-blur-sm">
+              Card {index + 1} of {cards.length}
+            </Badge>
+          </div>
+
+          <div
+            className={cn(
+              "relative mx-auto w-full max-w-[560px] touch-pan-y select-none transition-all duration-500 ease-out",
+              isSwitching ? "scale-[0.975] [transform:rotateX(1.5deg)]" : "scale-100 [transform:rotateX(0deg)]",
+            )}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
           <div
             className={cn(
               "pointer-events-none absolute inset-x-4 top-0 h-full rounded-[1.4rem] border bg-card/70 opacity-70 shadow-md transition-all duration-500 ease-out",
@@ -241,22 +254,23 @@ export function CustomerCardCarousel({
           </div>
         </div>
 
-        {showNav ? (
-          <div className="flex justify-center gap-1.5 pt-3" aria-label="Card position">
-            {cards.map((card, cardIndex) => (
-              <button
-                key={card.id}
-                type="button"
-                aria-label={`Show card ${cardIndex + 1}`}
-                onClick={() => setAndNotify(cardIndex)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
-                  cardIndex === index ? "w-7 bg-foreground" : "w-1.5 bg-muted-foreground/35 hover:bg-muted-foreground/60",
-                )}
-              />
-            ))}
-          </div>
-        ) : null}
+          {showNav ? (
+            <div className="flex justify-center gap-1.5 pt-3" aria-label="Card position">
+              {cards.map((card, cardIndex) => (
+                <button
+                  key={card.id}
+                  type="button"
+                  aria-label={`Show card ${cardIndex + 1}`}
+                  onClick={() => setAndNotify(cardIndex)}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    cardIndex === index ? "w-7 bg-foreground" : "w-1.5 bg-muted-foreground/35 hover:bg-muted-foreground/60",
+                  )}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         <Button
           type="button"
