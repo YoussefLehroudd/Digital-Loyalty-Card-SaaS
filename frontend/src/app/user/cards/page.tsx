@@ -114,7 +114,7 @@ function CardsUI() {
         <Card className="border-destructive/30">
           <CardContent className="space-y-3 p-4">
             <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" onClick={reload}>
+            <Button variant="outline" onClick={() => void reload()}>
               Retry
             </Button>
           </CardContent>
