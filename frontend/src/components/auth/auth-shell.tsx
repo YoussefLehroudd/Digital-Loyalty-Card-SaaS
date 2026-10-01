@@ -24,13 +24,13 @@ export function AuthShell({
     <main className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link className="flex items-center gap-3" href="/">
-          <div className="relative size-14 overflow-hidden rounded-xl border bg-card shadow-sm">
+          <div className="relative flex size-16 items-center justify-center rounded-xl border bg-card shadow-sm">
             <Image
               alt="LOYVANCE logo"
-              className="scale-125 object-cover"
+              className="object-contain p-0.5"
               fill
               priority
-              sizes="56px"
+              sizes="64px"
               src="/brand/logo.png"
             />
           </div>
