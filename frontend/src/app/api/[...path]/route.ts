@@ -1113,11 +1113,11 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       joinSlug = parsed.searchParams.get("join")?.trim() ?? "";
       joinBusinessId = parsed.searchParams.get("join_business_id")?.trim() ?? "";
       if (!joinSlug) {
-        const segments = parsed.pathname.replace(/^\\/+|\\/+$/g, "").split("/").filter(Boolean);
+        const segments = parsed.pathname.replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
         joinSlug = segments[0] === "business" ? (segments[1] ?? "") : "";
       }
     } catch {
-      const bySlug = qr.replace(/^\\/+|\\/+$/g, "").split("/").filter(Boolean);
+      const bySlug = qr.replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
       joinSlug = bySlug[0] === "business" ? (bySlug[1] ?? "") : (bySlug.length === 1 ? bySlug[0] : "");
     }
 
