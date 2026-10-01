@@ -2,7 +2,7 @@ function normalizeApiBaseUrl() {
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
 
   if (!raw) {
-    return "http://127.0.0.1:8000/api";
+    return "/api";
   }
 
   const withoutTrailingSlash = raw.replace(/\/+$/, "");
@@ -27,40 +27,6 @@ export class ApiError extends Error {
   }
 }
 
-function getCookie(name: string) {
-  if (typeof window === "undefined") return null;
-
-  const cookieStr = window.document.cookie ?? "";
-  const parts = cookieStr.split(";").map((p) => p.trim());
-  for (const part of parts) {
-    if (part.startsWith(`${name}=`)) {
-      return decodeURIComponent(part.slice(name.length + 1));
-    }
-  }
-  return null;
-}
-
-function getSanctumCsrfCookieUrl() {
-  // API_BASE_URL is typically ".../api"
-  // Sanctum route is ".../sanctum/csrf-cookie"
-  return `${API_BASE_URL.replace(/\/api\/?$/, "")}/sanctum/csrf-cookie`;
-}
-
-async function primeSanctumCsrf() {
-  // Prime Sanctum CSRF cookie for state-changing requests.
-  // Laravel returns 419 if the XSRF-TOKEN cookie/header pair don't match.
-  const csrfResponse = await fetch(getSanctumCsrfCookieUrl(), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-
-  if (!csrfResponse.ok) {
-    // Let the original request fail with its own response details if priming fails
-    return;
-  }
-}
-
 function isStateChangingMethod(method?: string) {
   if (!method) return false;
   const m = method.toUpperCase();
@@ -75,7 +41,6 @@ export async function apiFetch<T>(
     typeof FormData !== "undefined" && options.body instanceof FormData;
 
   const method = options.method ?? "GET";
-  const stateChanging = isStateChangingMethod(method);
 
   const url = `${API_BASE_URL}${path}`;
 
@@ -88,18 +53,6 @@ export async function apiFetch<T>(
     ...(headers as Record<string, string>),
   };
 
-  // For Sanctum CSRF protection, ensure X-XSRF-TOKEN header matches XSRF-TOKEN cookie.
-  // This fixes production 419 when cookies are sent but header is missing.
-  if (stateChanging) {
-    await primeSanctumCsrf();
-    const xsrfToken = getCookie("XSRF-TOKEN");
-    const hasXsrf = Boolean(xsrfToken);
-
-    if (hasXsrf) {
-      finalHeaders["X-XSRF-TOKEN"] = xsrfToken as string;
-    }
-  }
-
   // Safe debug logs (no token/cookie contents)
   if (typeof window !== "undefined") {
     console.log("[apiFetch]", {
@@ -108,9 +61,7 @@ export async function apiFetch<T>(
       url,
       method,
       tokenProvided: Boolean(token),
-      stateChanging,
       authHeaderPresent: Boolean(token),
-      hasXSRFHeader: Boolean(finalHeaders["X-XSRF-TOKEN"] || finalHeaders["XSRF-TOKEN"]),
     });
   }
 
