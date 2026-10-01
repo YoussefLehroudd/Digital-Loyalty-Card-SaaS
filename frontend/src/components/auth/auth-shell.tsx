@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { CreditCard, ShieldCheck, Sparkles } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +24,18 @@ export function AuthShell({
     <main className="min-h-screen bg-background text-foreground">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link className="flex items-center gap-3" href="/">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <CreditCard className="size-4" />
+          <div className="relative size-10 overflow-hidden rounded-lg border bg-card shadow-sm">
+            <Image
+              alt="LOYVANCE logo"
+              className="object-cover"
+              fill
+              priority
+              sizes="40px"
+              src="/brand/logo.png"
+            />
           </div>
           <div>
-            <p className="text-sm font-semibold leading-none">
-              Digital Loyalty
-            </p>
+            <p className="text-sm font-semibold leading-none">LOYVANCE</p>
             <p className="text-xs text-muted-foreground">Business access</p>
           </div>
         </Link>

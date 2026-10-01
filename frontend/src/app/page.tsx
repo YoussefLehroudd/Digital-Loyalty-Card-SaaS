@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -81,14 +82,19 @@ export default function Home() {
             >
               <Menu className="size-5" />
             </Button>
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <CreditCard className="size-4" />
+            <div className="relative size-10 overflow-hidden rounded-lg border bg-card shadow-sm">
+              <Image
+                alt="LOYVANCE logo"
+                className="object-cover"
+                fill
+                priority
+                sizes="40px"
+                src="/brand/logo.png"
+              />
             </div>
             <div>
-              <p className="text-sm font-semibold leading-none">
-                Digital Loyalty
-              </p>
-              <p className="text-xs text-muted-foreground">SaaS console</p>
+              <p className="text-sm font-semibold leading-none">LOYVANCE</p>
+              <p className="text-xs text-muted-foreground">Loyalty platform</p>
             </div>
           </div>
 

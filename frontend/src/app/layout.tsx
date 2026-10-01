@@ -17,9 +17,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Digital Loyalty Card SaaS",
+  title: "LOYVANCE",
   description:
     "A multi-tenant loyalty card platform for customer stamps, rewards, and QR-based visits.",
+  icons: {
+    icon: "/brand/favicon.png",
+    shortcut: "/brand/favicon.png",
+    apple: "/brand/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "LOYVANCE",
+    description:
+      "A multi-tenant loyalty card platform for customer stamps, rewards, and QR-based visits.",
+    images: ["/brand/og-image.png"],
+  },
 };
 
 export default function RootLayout({
