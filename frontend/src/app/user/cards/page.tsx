@@ -15,10 +15,12 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
+import { useEcho } from "@/components/echo/echo-provider";
 
 function CardsUI() {
   const router = useRouter();
   const { token } = useCustomerAuth();
+  const { echo } = useEcho();
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
   const [selected, setSelected] = useState<CustomerCardItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +58,30 @@ function CardsUI() {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    const channel = echo.private("customer");
+    const refresh = () => {
+      void customerCards(token)
+        .then((res) => {
+          const list = res.data ?? [];
+          setCards(list);
+          if (!list.length) {
+            setSelected(null);
+            return;
+          }
+          const currentId = selected?.id;
+          const next = (currentId && list.find((card) => card.id === currentId)) || list[0];
+          setSelected(next);
+        })
+        .catch(() => undefined);
+    };
+    channel.listen("data.changed", refresh);
+    return () => {
+      channel.stopListening("data.changed", refresh);
+    };
+  }, [echo, selected?.id, token]);
 
   return (
     <CustomerLayout
