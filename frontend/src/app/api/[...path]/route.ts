@@ -229,6 +229,13 @@ async function ensureSchema(sql: Sql) {
       await sql`CREATE INDEX IF NOT EXISTS idx_customers_business ON customers(business_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_visits_business_customer ON visits(business_id, customer_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idx_rewards_business_customer ON reward_redemptions(business_id, customer_id)`;
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_user_business ON customers(user_id, business_id) WHERE user_id IS NOT NULL`;
+      await sql`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        token_hash text PRIMARY KEY,
+        user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+        expires_at timestamptz NOT NULL,
+        created_at timestamptz DEFAULT now()
+      )`;
     })();
   }
   await schemaReady;
@@ -462,8 +469,36 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     return json({ user: publicUser(auth.user, auth.business) });
   }
 
-  if ((path[1] === "forgot-password" || path[1] === "reset-password") && req.method === "POST") {
-    return json({ message: "Password reset emails are not configured yet on Vercel." });
+  if (path[1] === "forgot-password" && req.method === "POST") {
+    const body = await readJson(req);
+    const email = asString(body.email).toLowerCase();
+    const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role = 'business_owner' LIMIT 1`) as DbUser[])[0];
+    if (!user) return json({ message: "If that email exists, a reset link has been created." });
+    const token = randomBytes(32).toString("hex");
+    const tokenHash = (await import("crypto")).createHash("sha256").update(token).digest("hex");
+    await sql`DELETE FROM password_reset_tokens WHERE user_id = ${user.id}`;
+    await sql`INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (${tokenHash}, ${user.id}, now() + interval '30 minutes')`;
+    const origin = new URL(req.url).origin;
+    return json({ message: "Password reset link created.", reset_url: `${origin}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}` });
+  }
+
+  if (path[1] === "reset-password" && req.method === "POST") {
+    const body = await readJson(req);
+    const email = asString(body.email).toLowerCase();
+    const token = asString(body.token);
+    const password = asString(body.password);
+    if (password.length < 10 || password !== asString(body.password_confirmation)) return error("Invalid password or confirmation.", 422);
+    const tokenHash = (await import("crypto")).createHash("sha256").update(token).digest("hex");
+    const rows = (await sql`
+      SELECT u.* FROM password_reset_tokens p JOIN app_users u ON u.id = p.user_id
+      WHERE p.token_hash = ${tokenHash} AND p.expires_at > now() AND u.email = ${email} AND u.role = 'business_owner' LIMIT 1
+    `) as DbUser[];
+    const user = rows[0];
+    if (!user) return error("This reset link is invalid or expired.", 422);
+    await sql`UPDATE app_users SET password_hash = ${await hashPassword(password)}, updated_at = now() WHERE id = ${user.id}`;
+    await sql`DELETE FROM password_reset_tokens WHERE user_id = ${user.id}`;
+    await sql`DELETE FROM user_sessions WHERE user_id = ${user.id}`;
+    return json({ message: "Password reset successfully." });
   }
 
   return null;
@@ -754,8 +789,33 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     return json({ message: "Logged out." });
   }
   if (path[1] === "me") return json({ user: publicUser(auth.user, null, profile) });
-  if (path[1] === "profile" && req.method === "PUT") return json({ message: "Profile saved.", user: publicUser(auth.user, null, profile) });
-  if (path[1] === "password" && req.method === "PUT") return json({ message: "Password updated." });
+  if (path[1] === "profile" && req.method === "PUT") {
+    const body = await readJson(req);
+    const first = asString(body.first_name);
+    const last = asString(body.last_name);
+    const email = asString(body.email, auth.user.email).toLowerCase();
+    if (!first || !last || !email) return error("First name, last name and email are required.", 422);
+    const duplicate = ((await sql`SELECT id FROM app_users WHERE email = ${email} AND id <> ${auth.user.id} LIMIT 1`) as Array<{id:string}>)[0];
+    if (duplicate) return error("This email is already in use.", 422);
+    await sql`UPDATE app_users SET name = ${`${first} ${last}`}, email = ${email}, updated_at = now() WHERE id = ${auth.user.id}`;
+    const updatedProfile = ((await sql`
+      UPDATE customer_profiles SET first_name = ${first}, last_name = ${last}, phone = ${asNullableString(body.phone)},
+        avatar_url = ${asNullableString(body.avatar_url)}, preferences = ${JSON.stringify(body.preferences ?? {})}::jsonb, updated_at = now()
+      WHERE user_id = ${auth.user.id}
+      RETURNING first_name, last_name, phone, avatar_url, preferences, ${email} AS email
+    `) as JsonRecord[])[0];
+    const updatedUser = { ...auth.user, name: `${first} ${last}`, email };
+    return json({ message: "Profile saved.", user: publicUser(updatedUser, null, updatedProfile) });
+  }
+  if (path[1] === "password" && req.method === "PUT") {
+    const body = await readJson(req);
+    const oldPassword = asString(body.old_password);
+    const newPassword = asString(body.new_password);
+    if (!(await verifyPassword(oldPassword, auth.user.password_hash))) return error("Current password is incorrect.", 422);
+    if (newPassword.length < 10 || newPassword !== asString(body.new_password_confirmation)) return error("New password is invalid or confirmation does not match.", 422);
+    await sql`UPDATE app_users SET password_hash = ${await hashPassword(newPassword)}, updated_at = now() WHERE id = ${auth.user.id}`;
+    return json({ message: "Password updated." });
+  }
   if (path[1] === "notifications") return json({ data: [] });
 
   const memberships = (await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE user_id = ${auth.user.id} ORDER BY created_at DESC`) as DbCustomer[];
@@ -790,9 +850,64 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     return json({ data: cards.map((c) => ({ business: c.business, membership: c.membership, card: c.loyalty_card, loyalty_status: c.loyalty ?? { current_stamps: 0, progress_percent: 0, required_stamps: 10 } })) });
   }
 
-  if (path[1] === "rewards") return json({ data: { available: [], history: [] } });
-  if (path[1] === "activity") return json({ data: { items: [] } });
-  if (path[1] === "join-by-qr" && req.method === "POST") return error("Join by QR is not configured for this code yet.", 404);
+  if (path[1] === "rewards") {
+    const membershipIds = memberships.map((m) => m.id);
+    if (!membershipIds.length) return json({ data: { available: [], history: [] } });
+    const available = cards.filter((c) => c.loyalty_card).map((c) => ({
+      loyalty_card_id: c.loyalty_card!.id, business_id: c.business.id, reward_name: c.loyalty_card!.reward_name,
+      reward_description: c.loyalty_card!.reward_description, points_required: c.loyalty_card!.required_stamps,
+      ready: Boolean(c.loyalty && c.loyalty.current_stamps >= c.loyalty.required_stamps),
+    }));
+    const history = (await sql`
+      SELECT r.id, r.status, r.business_id, r.customer_id, r.earned_at::text, r.redeemed_at::text
+      FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id
+      WHERE c.user_id = ${auth.user.id} ORDER BY r.earned_at DESC
+    `) as JsonRecord[];
+    return json({ data: { available, history } });
+  }
+  if (path[1] === "activity") {
+    const visits = (await sql`
+      SELECT v.id, 'visit' AS type, v.business_id, v.customer_id, v.created_at::text AS date, 1 AS points
+      FROM visits v JOIN customers c ON c.id = v.customer_id WHERE c.user_id = ${auth.user.id}
+    `) as JsonRecord[];
+    const rewards = (await sql`
+      SELECT r.id, CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed' ELSE 'reward_earned' END AS type,
+        r.business_id, r.customer_id, COALESCE(r.redeemed_at, r.earned_at)::text AS date
+      FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE c.user_id = ${auth.user.id}
+    `) as JsonRecord[];
+    const items = [...visits, ...rewards].sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
+    return json({ data: { items } });
+  }
+  if (path[1] === "join-by-qr" && req.method === "POST") {
+    const body = await readJson(req);
+    const qr = asString(body.qr);
+    let business: DbBusiness | undefined;
+    const bySlug = qr.replace(/^https?:\/\/[^/]+\//, "").replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
+    const slug = bySlug[0] === "business" ? bySlug[1] : (bySlug.length === 1 ? bySlug[0] : "");
+    if (slug) business = ((await sql`SELECT * FROM businesses WHERE slug = ${slug} LIMIT 1`) as DbBusiness[])[0];
+    if (!business) {
+      const existingCustomer = ((await sql`SELECT * FROM customers WHERE qr_code = ${qr} LIMIT 1`) as DbCustomer[])[0];
+      if (existingCustomer) business = ((await sql`SELECT * FROM businesses WHERE id = ${existingCustomer.business_id} LIMIT 1`) as DbBusiness[])[0];
+    }
+    if (!business) return error("Business QR not found.", 404);
+    let membership = ((await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE user_id = ${auth.user.id} AND business_id = ${business.id} LIMIT 1`) as DbCustomer[])[0];
+    if (!membership) {
+      const p = profile as JsonRecord;
+      membership = ((await sql`
+        INSERT INTO customers (id, business_id, user_id, first_name, last_name, email, phone, qr_code)
+        VALUES (${randomUUID()}, ${business.id}, ${auth.user.id}, ${asNullableString(p.first_name)}, ${asNullableString(p.last_name)}, ${auth.user.email}, ${asNullableString(p.phone)}, ${`cust_${randomBytes(16).toString("hex")}`})
+        RETURNING *, created_at::text, updated_at::text
+      `) as DbCustomer[])[0];
+    }
+    const card = await defaultCard(sql, business.id);
+    const loyalty = ((await sql`
+      INSERT INTO customer_loyalties (id, customer_id, loyalty_card_id, current_stamps)
+      VALUES (${randomUUID()}, ${membership.id}, ${card.id}, 0)
+      ON CONFLICT (customer_id, loyalty_card_id) DO UPDATE SET updated_at = now()
+      RETURNING *
+    `) as DbLoyalty[])[0];
+    return json({ message: "Loyalty card added.", business: { id: business.id, slug: business.slug, name: business.name }, customer: { id: membership.id, qr_code: membership.qr_code }, loyalty_card: publicLoyaltyCard(card), loyalty });
+  }
 
   return null;
 }
