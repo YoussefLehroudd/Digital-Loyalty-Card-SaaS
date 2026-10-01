@@ -4,12 +4,56 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
 
+type EchoInstance = InstanceType<typeof Echo>;
 type EchoContextValue = {
-  echo: any | null;
+  echo: EchoInstance | null;
   connected: boolean;
 };
 
+type ReverbTransport = "ws" | "wss";
+type PusherEventCallback = (payload?: unknown) => void;
+
+type PusherConnection = {
+  state?: string;
+  socket_id?: string;
+  bind: (event: string, callback: PusherEventCallback) => void;
+  unbind: (event: string, callback: PusherEventCallback) => void;
+};
+
+type EchoWithConnection = EchoInstance & {
+  connector?: {
+    pusher?: {
+      connection?: PusherConnection;
+    };
+  };
+};
+
+type EchoConfig = {
+  broadcaster: "reverb";
+  key: string;
+  client: Pusher;
+  authEndpoint?: string;
+  auth?: {
+    headers: Record<string, string>;
+  };
+};
+
+type StateChangePayload = {
+  previous?: unknown;
+  current?: unknown;
+};
+
+declare global {
+  interface Window {
+    Echo?: EchoInstance;
+  }
+}
+
 const EchoContext = createContext<EchoContextValue | null>(null);
+
+function isStateChangePayload(payload: unknown): payload is StateChangePayload {
+  return typeof payload === "object" && payload !== null;
+}
 
 export function EchoProvider({
   children,
@@ -40,7 +84,7 @@ export function EchoProvider({
 
     // Railway/Reverb can be ws or wss. Enable both to avoid transport/scheme mismatch.
     const forceTLS = scheme === "https";
-    const enabledTransports = ["ws", "wss"] as any;
+    const enabledTransports: ReverbTransport[] = ["ws", "wss"];
 
     const pusherClient = new Pusher(appKey, {
       cluster: "mt1",
@@ -65,26 +109,26 @@ export function EchoProvider({
     const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
     const laravelBaseUrl = apiUrl?.replace(/\/api\/?$/, "");
 
-    const echoConfig = {
+    const echoConfig: EchoConfig = {
       broadcaster: "reverb",
       key: appKey,
       client: pusherClient,
-    } as any;
+    };
 
     if (token) {
       if (!laravelBaseUrl) throw new Error("Missing env var: NEXT_PUBLIC_API_URL");
-      (echoConfig as any).authEndpoint = `${laravelBaseUrl}/broadcasting/auth`;
-      (echoConfig as any).auth = {
+      echoConfig.authEndpoint = `${laravelBaseUrl}/broadcasting/auth`;
+      echoConfig.auth = {
         headers: { Authorization: `Bearer ${token}` },
       };
     }
 
-    const instance = new Echo(echoConfig as any);
+    const instance = new Echo(echoConfig);
 
     console.log("Echo instance:", instance);
 
     // مؤقتًا للتشخيص
-    (window as any).Echo = instance;
+    window.Echo = instance;
 
     return instance;
   }, [token]);
@@ -92,25 +136,27 @@ export function EchoProvider({
   useEffect(() => {
     if (!echo) return;
 
-    const connection = (echo as any)?.connector?.pusher?.connection;
+    const connection = (echo as EchoWithConnection).connector?.pusher?.connection;
     if (!connection?.bind) return;
 
     console.log("Initial state:", connection.state);
 
-    connection.bind("state_change", (states: any) => {
-      console.log("State changed:", states.previous, "=>", states.current);
+    connection.bind("state_change", (payload?: unknown) => {
+      if (isStateChangePayload(payload)) {
+        console.log("State changed:", payload.previous, "=>", payload.current);
+      }
     });
 
     connection.bind("connected", () => {
       console.log("Connected!");
-      console.log("Socket ID:", (connection as any).socket_id);
+      console.log("Socket ID:", connection.socket_id);
     });
 
     connection.bind("disconnected", () => {
       console.log("Disconnected");
     });
 
-    connection.bind("error", (err: any) => {
+    connection.bind("error", (err?: unknown) => {
       console.error("Pusher Error:", err);
     });
 
@@ -123,7 +169,7 @@ export function EchoProvider({
     });
 
     const sync = () => {
-      const state = connection.state as string | undefined;
+      const state = connection.state;
       if (typeof state === "string") {
         setConnected(state === "connected" || state === "authenticated" || state === "unavailable");
       }
@@ -131,9 +177,9 @@ export function EchoProvider({
 
     sync();
 
-    const onConnected = () => setConnected(true);
-    const onDisconnected = () => setConnected(false);
-    const onError = () => setConnected(false);
+    const onConnected: PusherEventCallback = () => setConnected(true);
+    const onDisconnected: PusherEventCallback = () => setConnected(false);
+    const onError: PusherEventCallback = () => setConnected(false);
 
     connection.bind("connected", onConnected);
     connection.bind("disconnected", onDisconnected);
