@@ -865,8 +865,29 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (!auth.business) return error("Business not found.", 404);
   const body = await readJson(req);
   const qr = asString(body.qr_code);
-  const customer = ((await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE qr_code = ${qr} AND business_id = ${auth.business.id} LIMIT 1`) as DbCustomer[])[0];
-  if (!customer) return error("Customer QR not found.", 404);
+  const customer = ((await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.qr_code = ${qr} AND c.business_id = ${auth.business.id} LIMIT 1`) as DbCustomer[])[0];
+  if (!customer) {
+    const otherCustomer = ((await sql`SELECT id, business_id FROM customers WHERE qr_code = ${qr} LIMIT 1`) as Array<{ id: string; business_id: string }>)[0];
+    if (otherCustomer) {
+      return error("This customer card belongs to another business. Please scan a customer card issued by your business.", 422);
+    }
+
+    let scannedBusiness: DbBusiness | undefined;
+    try {
+      const parsed = new URL(qr);
+      const joinSlug = parsed.searchParams.get("join")?.trim();
+      const joinBusinessId = parsed.searchParams.get("join_business_id")?.trim();
+      if (joinSlug) scannedBusiness = ((await sql`SELECT * FROM businesses WHERE slug = ${joinSlug} LIMIT 1`) as DbBusiness[])[0];
+      if (!scannedBusiness && joinBusinessId) scannedBusiness = ((await sql`SELECT * FROM businesses WHERE id = ${joinBusinessId} LIMIT 1`) as DbBusiness[])[0];
+    } catch {
+      // Not a URL; continue with the generic invalid-QR response.
+    }
+
+    if (scannedBusiness) {
+      return error("This is a business QR code. Please scan the customer's loyalty card QR instead.", 422);
+    }
+    return error("Invalid QR code. Please scan a valid customer loyalty card.", 422);
+  }
   const card = await defaultCard(sql, auth.business.id);
   const current = ((await sql`
     INSERT INTO customer_loyalties (id, customer_id, loyalty_card_id, current_stamps)
