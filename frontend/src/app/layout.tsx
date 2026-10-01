@@ -22,11 +22,10 @@ export const metadata: Metadata = {
     "A multi-tenant loyalty card platform for customer stamps, rewards, and QR-based visits.",
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
       { url: "/icon.png", type: "image/png" },
       { url: "/brand/favicon.png", type: "image/png" },
     ],
-    shortcut: "/favicon.ico",
+    shortcut: "/icon.png",
     apple: "/apple-icon.png",
   },
   openGraph: {
