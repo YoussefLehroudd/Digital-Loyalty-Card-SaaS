@@ -118,7 +118,7 @@ export function EchoProvider({
         failures = Math.min(failures + 1, 5);
       } finally {
         inFlight = false;
-        if (!stopped.current) timer = window.setTimeout(poll, failures ? Math.min(30000, 2500 * 2 ** failures) : 2500);
+        if (!stopped.current) timer = window.setTimeout(poll, failures ? Math.min(30000, 5000 * 2 ** failures) : 5000);
       }
     };
 
