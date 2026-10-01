@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Eye, EyeOff, KeyRound, Loader2, ShieldCheck } from "lucide-react";
+import { ApiError } from "@/lib/api";
 import { resetPassword } from "@/lib/auth";
 
 function ResetPasswordForm() {
@@ -30,7 +31,7 @@ function ResetPasswordForm() {
       await resetPassword({ token, email, password, password_confirmation: confirmation });
       setDone(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "This reset link is invalid or expired.");
+      setError(caught instanceof ApiError ? caught.message : "This reset link is invalid or expired.");
     } finally {
       setBusy(false);
     }
