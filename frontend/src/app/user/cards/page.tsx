@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { CustomerCardCarousel } from "@/components/customer-app/customer-card-carousel";
@@ -19,6 +19,7 @@ import { useEcho } from "@/components/echo/echo-provider";
 
 function CardsUI() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { token } = useCustomerAuth();
   const { echo } = useEcho();
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
@@ -28,9 +29,10 @@ function CardsUI() {
   const [scanOpen, setScanOpen] = useState(false);
   const [joining, setJoining] = useState(false);
 
-  const reload = useCallback(async (): Promise<CustomerCardItem[]> => {
+  const reload = useCallback(async (options?: { silent?: boolean }): Promise<CustomerCardItem[]> => {
     if (!token) return [];
-    setLoading(true);
+    const silent = options?.silent ?? false;
+    if (!silent) setLoading(true);
     setError(null);
 
     try {
@@ -39,11 +41,20 @@ function CardsUI() {
       setCards(list);
 
       if (list.length > 0) {
-        const nextSelectedId = selected?.id ?? list[0].id;
-        const picked = await customerCardById(token, nextSelectedId);
-        setSelected(picked.data);
+        const querySelectedId = searchParams.get("selected");
+        const savedSelectedId =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem("digital_loyalty_selected_card")
+            : null;
+        const preferredId = querySelectedId ?? selected?.id ?? savedSelectedId;
+        const next = (preferredId && list.find((card) => card.id === preferredId)) || list[0];
+        setSelected(next);
+        window.localStorage.setItem("digital_loyalty_selected_card", next.id);
       } else {
         setSelected(null);
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("digital_loyalty_selected_card");
+        }
       }
 
       return list;
@@ -53,9 +64,12 @@ function CardsUI() {
     } finally {
       setLoading(false);
     }
-  }, [selected?.id, token]);
+  }, [searchParams, selected?.id, token]);
 
+  const initialLoadDone = useRef(false);
   useEffect(() => {
+    if (initialLoadDone.current) return;
+    initialLoadDone.current = true;
     void reload();
   }, [reload]);
 
@@ -138,7 +152,7 @@ function CardsUI() {
 
                   try {
                     const joinResult = await customerJoinByQr(token, qrCode);
-                    await reload();
+                    await reload({ silent: true });
                     setScanOpen(false);
 
                     const membershipId = joinResult.customer?.id;
@@ -181,8 +195,11 @@ function CardsUI() {
           <CustomerCardCarousel
             cards={cards}
             selectedId={selected?.id}
-            onChange={(card) => setSelected(card)}
-            onRefresh={reload}
+            onChange={(card) => {
+              setSelected(card);
+              window.localStorage.setItem("digital_loyalty_selected_card", card.id);
+            }}
+            onRefresh={() => reload({ silent: true })}
           />
         </div>
       )}
