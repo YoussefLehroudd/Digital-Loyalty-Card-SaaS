@@ -240,6 +240,10 @@ export function customerActivity(token: string) {
         type: string;
         business_id: string;
         customer_id: string;
+        business_name: string;
+        business_logo_url: string | null;
+        business_primary_color: string | null;
+        reward_name?: string | null;
         date: string | null;
         points?: number;
       }>;
