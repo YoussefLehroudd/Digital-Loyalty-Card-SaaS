@@ -7,6 +7,7 @@ import {
   Building2,
   ImageUp,
   KeyRound,
+  Trash2,
   Loader2,
   Mail,
   MapPin,
@@ -37,9 +38,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 import {
   getBusinessProfile,
+  removeAccountAvatar,
   updateAccountPassword,
   updateAccountProfile,
   updateBusinessProfile,
+  uploadAccountAvatar,
   uploadBusinessHeroImage,
   uploadBusinessLogo,
   type Business,
@@ -88,10 +91,13 @@ type BrandingImageState = {
 export function BusinessProfileSettings() {
   const { token, user, updateUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   const [business, setBusiness] = useState<Business | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
+  const [isAvatarRemoving, setIsAvatarRemoving] = useState(false);
 
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -246,6 +252,45 @@ export function BusinessProfileSettings() {
     }
   }
 
+  async function onAvatarSelected(file?: File) {
+    if (!file) return;
+
+    setSuccess(null);
+    setError(null);
+    setIsAvatarUploading(true);
+
+    try {
+      const response = await uploadAccountAvatar(token, file);
+      updateUser(response.user);
+      setSuccess(response.message);
+    } catch (unknownError) {
+      if (unknownError instanceof ApiError) {
+        setError(unknownError.errors?.avatar?.[0] ?? unknownError.message);
+      } else {
+        setError("Profile photo upload failed.");
+      }
+    } finally {
+      setIsAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  }
+
+  async function onAvatarRemove() {
+    setSuccess(null);
+    setError(null);
+    setIsAvatarRemoving(true);
+
+    try {
+      const response = await removeAccountAvatar(token);
+      updateUser(response.user);
+      setSuccess(response.message);
+    } catch (unknownError) {
+      setError(unknownError instanceof ApiError ? unknownError.message : "Profile photo could not be removed.");
+    } finally {
+      setIsAvatarRemoving(false);
+    }
+  }
+
   async function onPasswordSubmit(values: PasswordValues) {
     setSuccess(null);
     setError(null);
@@ -374,15 +419,66 @@ export function BusinessProfileSettings() {
             </CardHeader>
             <CardContent>
               <form className="space-y-5" onSubmit={handleAccountSubmit(onAccountSubmit)}>
-                <div className="flex items-center gap-3 rounded-lg border bg-background p-4">
-                  <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-secondary text-sm font-semibold text-secondary-foreground">
-                    {getInitials(user.name)}
+                <div className="flex flex-col gap-4 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-sm font-semibold text-secondary-foreground ring-1 ring-border">
+                      {user.avatar_url ? (
+                        <img
+                          alt={`${user.name} profile`}
+                          className="h-full w-full object-cover"
+                          src={user.avatar_url}
+                        />
+                      ) : (
+                        getInitials(user.name)
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{user.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        Business owner account
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        JPG, PNG, WEBP or GIF · max 10 MB
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{user.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      Business owner account
-                    </p>
+
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <input
+                      ref={avatarInputRef}
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      type="file"
+                      onChange={(event) => void onAvatarSelected(event.target.files?.[0])}
+                    />
+                    <Button
+                      disabled={isAvatarUploading || isAvatarRemoving}
+                      onClick={() => avatarInputRef.current?.click()}
+                      type="button"
+                      variant="outline"
+                    >
+                      {isAvatarUploading ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <ImageUp className="size-4" />
+                      )}
+                      {user.avatar_url ? "Change photo" : "Add photo"}
+                    </Button>
+                    {user.avatar_url ? (
+                      <Button
+                        disabled={isAvatarUploading || isAvatarRemoving}
+                        onClick={() => void onAvatarRemove()}
+                        type="button"
+                        variant="ghost"
+                      >
+                        {isAvatarRemoving ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="size-4" />
+                        )}
+                        Remove
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
 
