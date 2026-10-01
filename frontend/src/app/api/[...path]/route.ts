@@ -1299,6 +1299,15 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const currentStamps = selected.loyalty?.current_stamps ?? 0;
     const requiredStamps = selected.loyalty?.required_stamps ?? selected.loyalty_card?.required_stamps ?? 10;
 
+    const rewardName = selected.loyalty_card?.reward_name || "Loyalty reward";
+    const rewardDescription =
+      selected.loyalty_card?.reward_description ||
+      `Collect ${requiredStamps} stamps to unlock ${rewardName}.`;
+    const remainingStamps = Math.max(0, requiredStamps - currentStamps);
+    const rewardReady = currentStamps >= requiredStamps;
+    const heroUrl = selected.business.hero_image_url || null;
+    const cardId = selected.id.replace(/-/g, "").slice(0, 12).toUpperCase();
+
     const loyaltyClass = {
       id: classId,
       issuerName: "LOYVANCE",
@@ -1310,6 +1319,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
           defaultValue: { language: "en-US", value: `${selected.business.name} logo` },
         },
       },
+      hexBackgroundColor: selected.business.primary_color || "#111827",
       accountNameLabel: "Member",
       accountIdLabel: "Card ID",
     };
@@ -1319,18 +1329,49 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       classId,
       state: "ACTIVE",
       accountName: memberName,
-      accountId: selected.id.slice(0, 20),
-      barcode: { type: "QR_CODE", value: qrValue, alternateText: "Loyalty card" },
+      accountId: cardId,
+      barcode: {
+        type: "QR_CODE",
+        value: qrValue,
+        alternateText: selected.business.name,
+      },
       loyaltyPoints: {
         label: "Stamps",
-        balance: { int: currentStamps },
+        balance: { string: `${currentStamps} / ${requiredStamps}` },
       },
-      textModulesData: selected.loyalty_card ? [{
-        id: "reward",
-        header: selected.loyalty_card.reward_name,
-        body: selected.loyalty_card.reward_description || `Collect ${requiredStamps} stamps to unlock this reward.`,
-      }] : [],
-      hexBackgroundColor: selected.business.primary_color || "#111827",
+      secondaryLoyaltyPoints: {
+        label: rewardReady ? "Reward" : "Remaining",
+        balance: { string: rewardReady ? "READY" : String(remainingStamps) },
+      },
+      ...(heroUrl
+        ? {
+            heroImage: {
+              sourceUri: { uri: heroUrl },
+              contentDescription: {
+                defaultValue: {
+                  language: "en-US",
+                  value: `${selected.business.name} loyalty card`,
+                },
+              },
+            },
+          }
+        : {}),
+      textModulesData: [
+        {
+          id: "reward",
+          header: rewardReady ? "Reward ready" : rewardName,
+          body: rewardReady
+            ? `You unlocked ${rewardName}. Show this card at ${selected.business.name} to redeem it.`
+            : rewardDescription,
+        },
+        {
+          id: "progress",
+          header: "Your progress",
+          body: rewardReady
+            ? `${currentStamps} of ${requiredStamps} stamps collected. Your reward is ready.`
+            : `${currentStamps} of ${requiredStamps} stamps collected · ${remainingStamps} to go.`,
+        },
+      ],
     };
 
     const token = signGoogleWalletJwt({
