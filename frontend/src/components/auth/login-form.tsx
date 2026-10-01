@@ -14,6 +14,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { login, storeToken } from "@/lib/auth";
+import { storeCustomerToken } from "@/lib/customerAuth";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -26,7 +27,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
-  const next = searchParams.get("next") || "/dashboard";
+  const next = searchParams.get("next");
 
   const {
     register,
@@ -45,7 +46,11 @@ export function LoginForm() {
 
     try {
       const response = await login({ ...values, device_name: "web" });
-      storeToken(response.token);
+      if (response.user.role === "customer") {
+        storeCustomerToken(response.token);
+      } else {
+        storeToken(response.token);
+      }
 
       // Temporary user cache to speed up the immediate post-login redirect flow
       // (avoids an extra /auth/me roundtrip on the first AuthGuard mount).
@@ -62,7 +67,16 @@ export function LoginForm() {
         // ignore
       }
 
-      router.replace(next);
+      const join = searchParams.get("join");
+      const joinBusinessId = searchParams.get("join_business_id");
+      const destination = response.user.role === "customer"
+        ? join
+          ? `/user/join?auto=${encodeURIComponent(join)}`
+          : joinBusinessId
+            ? `/user/join?auto_business_id=${encodeURIComponent(joinBusinessId)}`
+            : next?.startsWith("/user/") ? next : "/user/dashboard"
+        : next?.startsWith("/dashboard") ? next : "/dashboard";
+      router.replace(destination);
       router.refresh();
     } catch (unknownError) {
       if (unknownError instanceof ApiError) {
