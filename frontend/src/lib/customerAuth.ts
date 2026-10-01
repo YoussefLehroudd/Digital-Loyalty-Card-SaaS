@@ -128,6 +128,16 @@ export function customerUpdateProfile(token: string, payload: CustomerUpdateProf
   });
 }
 
+export function customerUploadAvatar(token: string, file: File) {
+  const form = new FormData();
+  form.set("avatar", file);
+  return apiFetch<{ message: string; secure_url: string; user: CustomerUser }>("/user/profile/avatar", {
+    method: "POST",
+    token,
+    body: form,
+  });
+}
+
 export function customerChangePassword(token: string, payload: CustomerChangePasswordPayload) {
   return apiFetch<{ message: string }>("/user/password", {
     method: "PUT",
