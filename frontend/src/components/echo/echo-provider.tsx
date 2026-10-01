@@ -75,12 +75,16 @@ export function EchoProvider({
     const host = hostFromEnv?.trim();
     const portRaw = portRawFromEnv?.trim();
 
-    if (!appKey) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_APP_KEY");
-    if (!host) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_HOST");
-    if (!portRaw) throw new Error("Missing env var: NEXT_PUBLIC_REVERB_PORT");
+    if (!appKey || !host || !portRaw) {
+      console.info("[Echo/Reverb] Realtime is disabled because Reverb env vars are not configured.");
+      return null;
+    }
 
     const port = Number(portRaw);
-    if (!Number.isFinite(port)) throw new Error("NEXT_PUBLIC_REVERB_PORT must be a number");
+    if (!Number.isFinite(port)) {
+      console.warn("[Echo/Reverb] Realtime disabled: NEXT_PUBLIC_REVERB_PORT must be a number.");
+      return null;
+    }
 
     // Railway/Reverb can be ws or wss. Enable both to avoid transport/scheme mismatch.
     const forceTLS = scheme === "https";
@@ -95,7 +99,6 @@ export function EchoProvider({
       enabledTransports,
     });
 
-    // Critical-path diagnostics: verify the exact runtime values used by the browser
     console.log("[Echo/Reverb] Using client config:", {
       key: appKey,
       wsHost: host,
@@ -116,7 +119,7 @@ export function EchoProvider({
     };
 
     if (token) {
-      if (!laravelBaseUrl) throw new Error("Missing env var: NEXT_PUBLIC_API_URL");
+      if (!laravelBaseUrl) return null;
       echoConfig.authEndpoint = `${laravelBaseUrl}/broadcasting/auth`;
       echoConfig.auth = {
         headers: { Authorization: `Bearer ${token}` },
@@ -126,8 +129,6 @@ export function EchoProvider({
     const instance = new Echo(echoConfig);
 
     console.log("Echo instance:", instance);
-
-    // مؤقتًا للتشخيص
     window.Echo = instance;
 
     return instance;
