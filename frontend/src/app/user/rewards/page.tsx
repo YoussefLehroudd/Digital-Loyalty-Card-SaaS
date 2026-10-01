@@ -8,6 +8,7 @@ import { useCustomerAuth } from "@/components/customer-app/customer-auth-provide
 import { customerRewards } from "@/lib/customerAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useEcho } from "@/components/echo/echo-provider";
 
 type RewardItem = {
   loyalty_card_id: string;
@@ -29,6 +30,7 @@ type RewardHistoryItem = {
 
 export default function UserRewardsPage() {
   const { token } = useCustomerAuth();
+  const { echo } = useEcho();
   const [loading, setLoading] = useState(true);
   const [available, setAvailable] = useState<RewardItem[]>([]);
   const [history, setHistory] = useState<RewardHistoryItem[]>([]);
@@ -50,6 +52,19 @@ export default function UserRewardsPage() {
       })
       .finally(() => setLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    const channel = echo.private("customer");
+    const refresh = () => {
+      void customerRewards(token).then((res) => {
+        setAvailable(res.data.available ?? []);
+        setHistory(res.data.history ?? []);
+      }).catch(() => undefined);
+    };
+    channel.listen("data.changed", refresh);
+    return () => { channel.stopListening("data.changed", refresh); };
+  }, [echo, token]);
 
   return (
     <CustomerLayout title="Rewards" subtitle="Track rewards you can claim and your history">
