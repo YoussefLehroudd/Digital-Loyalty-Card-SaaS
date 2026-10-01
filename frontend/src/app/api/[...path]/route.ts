@@ -863,6 +863,7 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
         WHERE id = ${businessId}
         RETURNING *
       `) as DbBusiness[])[0];
+      await syncGoogleWalletBusiness(sql, businessId);
       return json({ message: "Business profile updated.", business: publicBusiness(updated) });
     }
 
@@ -884,6 +885,7 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
       if (previousPublicId && previousPublicId !== uploaded.publicId) {
         await deleteCloudinaryImage(previousPublicId);
       }
+      await syncGoogleWalletBusiness(sql, businessId);
       return json({ message: "Image uploaded.", secure_url: uploaded.secureUrl, public_id: uploaded.publicId, business: publicBusiness(updated) });
     }
   }
@@ -982,6 +984,7 @@ async function handleLoyaltyCard(req: Request, sql: Sql) {
       WHERE id = ${existing.id}
       RETURNING *
     `) as DbLoyaltyCard[])[0];
+    await syncGoogleWalletBusiness(sql, auth.business.id);
     return json({ message: "Loyalty card saved.", loyalty_card: publicLoyaltyCard(updated) });
   }
 
@@ -1082,6 +1085,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     `) as Array<{ id: string; current_stamps: number }>;
     if (!redeemed[0]) return error("No reward is ready to redeem.", 409);
     const remaining = redeemed[0].current_stamps;
+    await syncGoogleWalletCustomer(sql, customer.id);
     return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: remaining, required_stamps: card.required_stamps, reward_unlocked: remaining >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
   }
 
@@ -1115,6 +1119,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (!updated) throw new Error("Could not add stamp.");
   const unlocked = updated.current_stamps >= card.required_stamps;
   const redemptionCreated = updated.redemption_created;
+  await syncGoogleWalletCustomer(sql, customer.id);
   return json({ message: "Stamp added.", loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
 }
 
