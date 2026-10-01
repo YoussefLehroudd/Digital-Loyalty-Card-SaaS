@@ -510,20 +510,27 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const passwordHash = await hashPassword(password);
     const slug = `${slugify(businessName)}-${randomBytes(2).toString("hex")}`;
 
-    const business = ((await sql`
-      INSERT INTO businesses (id, slug, name, email, primary_color)
-      VALUES (${businessId}, ${slug}, ${businessName}, ${businessEmail}, '#111827')
-      RETURNING *
-    `) as DbBusiness[])[0];
-
-    const user = ((await sql`
-      INSERT INTO app_users (id, business_id, name, email, password_hash, role)
-      VALUES (${userId}, ${businessId}, ${name}, ${email}, ${passwordHash}, 'business_owner')
-      RETURNING *
-    `) as DbUser[])[0];
-
-    await defaultCard(sql, businessId);
-    const token = await createSession(sql, user.id);
+    const token = randomBytes(32).toString("hex");
+    const cardId = randomUUID();
+    const [businessRows, userRows] = await sql.transaction([
+      sql`
+        INSERT INTO businesses (id, slug, name, email, primary_color)
+        VALUES (${businessId}, ${slug}, ${businessName}, ${businessEmail}, '#111827')
+        RETURNING *
+      `,
+      sql`
+        INSERT INTO app_users (id, business_id, name, email, password_hash, role)
+        VALUES (${userId}, ${businessId}, ${name}, ${email}, ${passwordHash}, 'business_owner')
+        RETURNING *
+      `,
+      sql`
+        INSERT INTO loyalty_cards (id, business_id, reward_name, required_stamps, reward_description)
+        VALUES (${cardId}, ${businessId}, 'Free Coffee', 10, 'Collect stamps to unlock your reward.')
+      `,
+      sql`INSERT INTO user_sessions (token, user_id) VALUES (${token}, ${userId})`,
+    ]);
+    const business = (businessRows as DbBusiness[])[0];
+    const user = (userRows as DbUser[])[0];
 
     return json({ token, token_type: "Bearer", user: publicUser(user, business) }, { status: 201 });
   }
@@ -870,30 +877,59 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
 
   if (path[0] === "redeem-reward") {
     const redeemed = (await sql`
-      UPDATE reward_redemptions SET status = 'redeemed', redeemed_at = now()
-      WHERE id = (
-        SELECT id FROM reward_redemptions WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready' ORDER BY earned_at DESC LIMIT 1
+      WITH selected AS (
+        SELECT id FROM reward_redemptions
+        WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready'
+        ORDER BY earned_at DESC LIMIT 1
+      ),
+      redeemed AS (
+        UPDATE reward_redemptions SET status = 'redeemed', redeemed_at = now()
+        WHERE id = (SELECT id FROM selected)
+        RETURNING id
+      ),
+      loyalty_update AS (
+        UPDATE customer_loyalties
+        SET current_stamps = GREATEST(0, current_stamps - ${card.required_stamps}), updated_at = now()
+        WHERE id = ${current.id} AND EXISTS (SELECT 1 FROM redeemed)
+        RETURNING current_stamps
       )
-      RETURNING id
-    `) as Array<{ id: string }>;
+      SELECT r.id, l.current_stamps FROM redeemed r CROSS JOIN loyalty_update l
+    `) as Array<{ id: string; current_stamps: number }>;
     if (!redeemed[0]) return error("No reward is ready to redeem.", 409);
-    await sql`UPDATE customer_loyalties SET current_stamps = GREATEST(0, current_stamps - ${card.required_stamps}), updated_at = now() WHERE id = ${current.id}`;
-    const remaining = Math.max(0, current.current_stamps - card.required_stamps);
+    const remaining = redeemed[0].current_stamps;
     return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: remaining, required_stamps: card.required_stamps, reward_unlocked: remaining >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
   }
 
-  await sql`INSERT INTO visits (id, business_id, customer_id) VALUES (${randomUUID()}, ${auth.business.id}, ${customer.id})`;
-  const nextStamps = current.current_stamps + 1;
-  const updated = ((await sql`UPDATE customer_loyalties SET current_stamps = ${nextStamps}, updated_at = now() WHERE id = ${current.id} RETURNING *`) as DbLoyalty[])[0];
+  const stampRows = (await sql`
+    WITH visit_insert AS (
+      INSERT INTO visits (id, business_id, customer_id)
+      VALUES (${randomUUID()}, ${auth.business.id}, ${customer.id})
+      RETURNING id
+    ),
+    loyalty_update AS (
+      UPDATE customer_loyalties
+      SET current_stamps = current_stamps + 1, updated_at = now()
+      WHERE id = ${current.id} AND EXISTS (SELECT 1 FROM visit_insert)
+      RETURNING *
+    ),
+    reward_insert AS (
+      INSERT INTO reward_redemptions (id, business_id, customer_id, loyalty_card_id, status)
+      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${card.id}, 'ready'
+      FROM loyalty_update lu
+      WHERE lu.current_stamps >= ${card.required_stamps}
+        AND NOT EXISTS (
+          SELECT 1 FROM reward_redemptions
+          WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready'
+        )
+      RETURNING id
+    )
+    SELECT lu.*, EXISTS (SELECT 1 FROM reward_insert) AS redemption_created
+    FROM loyalty_update lu
+  `) as Array<DbLoyalty & { redemption_created: boolean }>;
+  const updated = stampRows[0];
+  if (!updated) throw new Error("Could not add stamp.");
   const unlocked = updated.current_stamps >= card.required_stamps;
-  let redemptionCreated = false;
-  if (unlocked) {
-    const readyCount = ((await sql`SELECT count(*)::int AS count FROM reward_redemptions WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready'`) as Array<{ count: number }>)[0]?.count ?? 0;
-    if (!readyCount) {
-      await sql`INSERT INTO reward_redemptions (id, business_id, customer_id, loyalty_card_id, status) VALUES (${randomUUID()}, ${auth.business.id}, ${customer.id}, ${card.id}, 'ready')`;
-      redemptionCreated = true;
-    }
-  }
+  const redemptionCreated = updated.redemption_created;
   return json({ message: "Stamp added.", loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
 }
 
