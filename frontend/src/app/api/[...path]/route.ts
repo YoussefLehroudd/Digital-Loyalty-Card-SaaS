@@ -1244,7 +1244,6 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
     const loyalty = ((await sql`SELECT * FROM customer_loyalties WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as DbLoyalty[])[0];
     const logoUrl = business.logo_url || business.hero_image_url;
     if (!logoUrl) return;
-    const heroUrl = business.hero_image_url || null;
 
     const { classId, objectId } = googleWalletIds(issuerId, business.id, customer.id);
     const current = loyalty?.current_stamps ?? 0;
@@ -1262,12 +1261,6 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
           contentDescription: { defaultValue: { language: "en-US", value: `${business.name} logo` } },
         },
         hexBackgroundColor: business.primary_color || "#111827",
-        ...(heroUrl ? {
-          heroImage: {
-            sourceUri: { uri: heroUrl },
-            contentDescription: { defaultValue: { language: "en-US", value: `${business.name} loyalty card artwork` } },
-          },
-        } : {}),
         classTemplateInfo: {
           cardTemplateOverride: {
             cardRowTemplateInfos: [
@@ -1495,7 +1488,6 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
 
     const logoUrl = selected.business.logo_url || selected.business.hero_image_url;
     if (!logoUrl) return error("This business needs a logo before its card can be added to Google Wallet.", 422);
-    const heroUrl = selected.business.hero_image_url || null;
 
     // Version the pass IDs when the Wallet layout changes. Google keeps fields from
     // previously created classes/objects, so a new version guarantees the compact
@@ -1526,14 +1518,6 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
         },
       },
       hexBackgroundColor: selected.business.primary_color || "#111827",
-      ...(heroUrl ? {
-        heroImage: {
-          sourceUri: { uri: heroUrl },
-          contentDescription: {
-            defaultValue: { language: "en-US", value: `${selected.business.name} loyalty card artwork` },
-          },
-        },
-      } : {}),
       classTemplateInfo: {
         cardTemplateOverride: {
           cardRowTemplateInfos: [
