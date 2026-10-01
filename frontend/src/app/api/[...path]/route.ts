@@ -1534,13 +1534,31 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       ],
     };
 
+    // Keep Google's server-side resources authoritative and current before
+    // handing the user a Save-to-Wallet link. This also refreshes an object that
+    // was previously removed from a user's Wallet (removal only unlinks it).
+    const accessToken = await googleWalletAccessToken();
+    if (!accessToken) return error("Could not authenticate with Google Wallet.", 502);
+    try {
+      await upsertGoogleWallet("loyaltyclass", classId, loyaltyClass, accessToken);
+      await upsertGoogleWallet("loyaltyobject", objectId, loyaltyObject, accessToken);
+    } catch (walletError) {
+      console.error("Google Wallet upsert before save failed", walletError);
+      return error(walletError instanceof Error ? walletError.message : "Could not synchronize Google Wallet.", 502);
+    }
+
+    // Reference the already-created resources instead of asking Save-to-Wallet
+    // to recreate them from a potentially stale embedded snapshot.
     const token = signGoogleWalletJwt({
       iss: clientEmail,
       aud: "google",
       typ: "savetowallet",
       iat: Math.floor(Date.now() / 1000),
       origins: ["https://digital-loyalty-card-saa-s.vercel.app"],
-      payload: { loyaltyClasses: [loyaltyClass], loyaltyObjects: [loyaltyObject] },
+      payload: {
+        loyaltyClasses: [{ id: classId }],
+        loyaltyObjects: [{ id: objectId, classId }],
+      },
     }, clientEmail, privateKey);
 
     return json({ url: `https://pay.google.com/gp/v/save/${token}` });
