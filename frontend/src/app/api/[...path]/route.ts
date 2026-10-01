@@ -1267,6 +1267,12 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
           sourceUri: { uri: logoUrl },
           contentDescription: { defaultValue: { language: "en-US", value: `${business.name} logo` } },
         },
+        ...(business.hero_image_url ? {
+          heroImage: {
+            sourceUri: { uri: business.hero_image_url },
+            contentDescription: { defaultValue: { language: "en-US", value: `${business.name} card background` } },
+          },
+        } : {}),
         hexBackgroundColor: business.primary_color || "#111827",
         classTemplateInfo: {
           cardTemplateOverride: {
@@ -1552,6 +1558,14 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
           defaultValue: { language: "en-US", value: `${selected.business.name} logo` },
         },
       },
+      ...(selected.business.hero_image_url ? {
+        heroImage: {
+          sourceUri: { uri: selected.business.hero_image_url },
+          contentDescription: {
+            defaultValue: { language: "en-US", value: `${selected.business.name} card background` },
+          },
+        },
+      } : {}),
       hexBackgroundColor: selected.business.primary_color || "#111827",
       classTemplateInfo: {
         cardTemplateOverride: {
