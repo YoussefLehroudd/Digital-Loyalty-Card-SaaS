@@ -145,7 +145,7 @@ async function readJson(req: Request): Promise<JsonRecord> {
 }
 
 async function uploadImageToCloudinary(file: File, folder: string) {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const cloudName = process.env.CLOUDINARY_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
   if (!cloudName || !apiKey || !apiSecret) throw new Error("Cloudinary is not configured.");
@@ -172,7 +172,7 @@ async function uploadImageToCloudinary(file: File, folder: string) {
 
 async function deleteCloudinaryImage(publicId: string | null | undefined) {
   if (!publicId || !publicId.startsWith("digital-loyalty-card-saas/")) return;
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const cloudName = process.env.CLOUDINARY_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
   if (!cloudName || !apiKey || !apiSecret) return;
