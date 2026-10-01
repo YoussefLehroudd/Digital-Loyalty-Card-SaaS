@@ -1629,6 +1629,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       ],
     };
 
+    // Deployment refresh: Google Wallet enhanced layout enabled.
     // Keep Google's server-side resources authoritative and current before
     // handing the user a Save-to-Wallet link. This also refreshes an object that
     // was previously removed from a user's Wallet (removal only unlinks it).
