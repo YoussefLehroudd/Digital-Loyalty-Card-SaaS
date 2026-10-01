@@ -13,9 +13,11 @@ import {
   type CustomerCardItem,
 } from "@/lib/customerAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEcho } from "@/components/echo/echo-provider";
 
 export default function UserDashboardPage() {
   const { token, user } = useCustomerAuth();
+  const { echo } = useEcho();
 
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
@@ -57,6 +59,24 @@ export default function UserDashboardPage() {
       mounted = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (!echo || !token) return;
+    const channel = echo.private("customer");
+    const refresh = () => {
+      void Promise.all([customerCards(token), customerActivity(token), customerRewards(token)])
+        .then(([cardsRes, activityRes, rewardsRes]) => {
+          setCards(cardsRes.data ?? []);
+          setActivitiesCount(activityRes.data.items?.length ?? 0);
+          setAvailableRewards((rewardsRes.data.available ?? []).filter((item) => Boolean(item.ready)).length);
+        })
+        .catch(() => undefined);
+    };
+    channel.listen("data.changed", refresh);
+    return () => {
+      channel.stopListening("data.changed", refresh);
+    };
+  }, [echo, token]);
 
   return (
     <CustomerLayout
