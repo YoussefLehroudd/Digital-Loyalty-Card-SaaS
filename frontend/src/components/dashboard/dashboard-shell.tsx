@@ -75,14 +75,14 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
         <aside className="hidden min-h-screen border-r bg-card lg:block">
           <div className="sticky top-0 flex h-screen flex-col">
             <div className="flex h-16 items-center gap-3 border-b px-5">
-              <div className="flex size-12 items-center justify-center overflow-hidden rounded-xl bg-muted/30 ring-1 ring-border/70">
+              <div className="flex size-14 items-center justify-center rounded-xl bg-muted/30 ring-1 ring-border/70">
                 <Image
                   alt="LOYVANCE"
-                  className="h-full w-full scale-150 object-contain"
-                  height={40}
+                  className="h-full w-full object-contain"
+                  height={48}
                   priority
                   src="/brand/icon.png"
-                  width={40}
+                  width={48}
                 />
               </div>
               <div className="min-w-0">
@@ -133,11 +133,11 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
                   <div className="flex min-w-0 items-center gap-2">
                     <Image
                       alt="LOYVANCE"
-                      className="size-10 scale-150 object-contain"
-                      height={40}
+                      className="size-12 object-contain"
+                      height={48}
                       priority
                       src="/brand/icon.png"
-                      width={40}
+                      width={48}
                     />
                     <p className="truncate text-sm font-semibold">LOYVANCE</p>
                   </div>
@@ -319,7 +319,7 @@ function TopNav({
               height={32}
               priority
               src="/brand/icon.png"
-              width={40}
+              width={48}
             />
             <p className="truncate text-sm font-semibold">LOYVANCE</p>
           </div>
