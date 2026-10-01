@@ -57,16 +57,6 @@ export function CustomerCardCarousel({
 
   const current = cards[index] ?? cards[0];
 
-  const displayName = `${current.membership.first_name ?? ""} ${current.membership.last_name ?? ""}`.trim();
-  const rewardName = current.loyalty_card?.reward_name ?? null;
-  const rewardDescription = current.loyalty_card?.reward_description ?? null;
-  const qrValue = current.qr.qr_code ?? current.membership.qr_code ?? null;
-
-  const progressPercent = current.loyalty?.progress_percent ?? 0;
-  const currentStamps = current.loyalty?.current_stamps ?? 0;
-  const requiredStamps =
-    current.loyalty?.required_stamps ?? current.loyalty_card?.required_stamps ?? 0;
-
   const setAndNotify = (nextIndex: number) => {
     const normalized = Math.min(cards.length - 1, Math.max(0, nextIndex));
     setIndex(normalized);
@@ -99,17 +89,29 @@ export function CustomerCardCarousel({
     }
   };
 
-  if (!cards.length) {
+  if (!cards.length || !current) {
     return (
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="space-y-3 p-4">
           <p className="text-sm text-muted-foreground">
-            Visit a participating business and ask them to add you so your card appears here.
+            You do not have a loyalty card yet. Scan a business QR code or join a participating business to get your first card.
           </p>
+          <Button type="button" className="w-full" onClick={() => router.push("/user/join")}>
+            Add your first card
+          </Button>
         </CardContent>
       </Card>
     );
   }
+
+  const displayName = `${current.membership?.first_name ?? ""} ${current.membership?.last_name ?? ""}`.trim();
+  const rewardName = current.loyalty_card?.reward_name ?? null;
+  const rewardDescription = current.loyalty_card?.reward_description ?? null;
+  const qrValue = current.qr?.qr_code ?? current.membership?.qr_code ?? null;
+  const progressPercent = current.loyalty?.progress_percent ?? 0;
+  const currentStamps = current.loyalty?.current_stamps ?? 0;
+  const requiredStamps =
+    current.loyalty?.required_stamps ?? current.loyalty_card?.required_stamps ?? 0;
 
   const showNav = cards.length > 1;
 
