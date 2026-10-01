@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { AUTH_TOKEN_STORAGE_KEY } from "@/lib/auth";
 
-const authRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
+const guestOnlyAuthRoutes = ["/login", "/register", "/forgot-password"];
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_TOKEN_STORAGE_KEY)?.value;
@@ -15,7 +15,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (token && authRoutes.includes(pathname)) {
+  // Reset links must remain accessible even when the user already has an active session.
+  // This is especially important when the reset request is sent from dashboard/settings.
+  if (token && guestOnlyAuthRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
