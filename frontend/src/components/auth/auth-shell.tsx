@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CreditCard, Gift, QrCode, ShieldCheck, Sparkles, Stamp } from "lucide-react";
+import { CreditCard, ShieldCheck, Sparkles, Stamp } from "lucide-react";
 
 type AuthShellProps = {
   eyebrow: string;
@@ -24,18 +24,6 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
         style={{ backgroundImage: "url('/brand/Application%20de%20fid%C3%A9lit%C3%A9%20dor%C3%A9e%20et%20%C3%A9l%C3%A9gante.png')" }}
       />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,10,11,.80)_0%,rgba(8,10,11,.62)_45%,rgba(8,10,11,.76)_100%)]" />
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 -top-40 size-[560px] rounded-full bg-[#c68a2b]/20 blur-[110px]" />
-        <div className="absolute -bottom-56 right-[-80px] size-[620px] rounded-full bg-[#f1b84a]/15 blur-[120px]" />
-        <div className="absolute left-[58%] top-[-260px] h-[700px] w-[700px] rounded-full border border-[#c9953d]/15" />
-        <div className="absolute right-[-90px] top-16 rotate-[-10deg] rounded-[30px] border border-[#d8a342]/30 bg-gradient-to-br from-[#d9a74b]/25 to-[#111]/30 p-7 shadow-2xl backdrop-blur-sm">
-          <Gift className="size-16 text-[#e6b557]/60" />
-        </div>
-        <div className="absolute bottom-20 left-[-30px] rotate-[12deg] rounded-[28px] border border-[#d8a342]/25 bg-black/30 p-6 backdrop-blur-sm">
-          <QrCode className="size-20 text-[#efbd5d]/50" />
-        </div>
-      </div>
-
       <div className="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-12 sm:px-6 lg:px-8 lg:pt-16">
         <Link className="inline-flex items-center gap-4" href="/">
           <div className="relative flex size-[74px] items-center justify-center rounded-2xl border border-[#d4a24a]/25 bg-white/[0.04] shadow-[0_18px_50px_rgba(0,0,0,.35)]">
