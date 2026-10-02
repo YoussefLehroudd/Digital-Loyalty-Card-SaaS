@@ -13,7 +13,7 @@ const businesses = [
 ];
 
 const features: Array<[LucideIcon, string, string]> = [
-  [CreditCard,"Digital Loyalty Cards","Create branded digital cards with QR codes."],
+  [Layers3,"Digital Loyalty Cards","Create branded digital cards with QR codes."],
   [Gift,"Stamps & Rewards","Set custom rewards and incentives."],
   [Users,"Customer Management","Track customers and their activity."],
   [BarChart3,"Analytics & Insights","See what works and grow faster."],
@@ -117,7 +117,7 @@ export default function Home() {
             <div className="inline-flex items-center gap-2.5 rounded-full border border-[#d99b2b]/65 bg-[linear-gradient(180deg,rgba(31,24,10,.88),rgba(8,8,7,.92))] px-5 py-2.5 text-xs font-extrabold uppercase tracking-[.08em] text-[#f5c34f] shadow-[inset_0_0_0_1px_rgba(255,211,91,.08),0_0_7px_rgba(240,170,35,.28),0_0_18px_rgba(240,170,35,.14)] backdrop-blur self-start"><Sparkles className="size-4 stroke-[2.4] text-[#f5bd3e] drop-shadow-[0_0_5px_rgba(245,189,62,.55)]"/> Powerful features</div>
             <h2 className="mt-4 max-w-xl text-4xl font-bold leading-tight">Everything you need to <span className="text-[#f3bd55]">grow your business.</span></h2>
             <p className="mt-4 text-white/50">A complete loyalty solution designed for modern businesses.</p>
-            <div className="mt-9 grid gap-3 sm:grid-cols-2">{features.map(([I,t,d])=><div key={t} className="rounded-2xl border border-white/10 bg-[#111210] p-5"><div className="flex size-11 items-center justify-center rounded-xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-5"/></div><h3 className="mt-4 text-sm font-bold">{t}</h3><p className="mt-2 text-xs leading-5 text-white/45">{d}</p></div>)}</div>
+            <div className="mt-9 grid gap-3 sm:grid-cols-2">{features.map(([I,t,d])=><div key={t} className="flex min-h-[112px] items-center gap-4 rounded-xl border border-white/[.08] bg-[#111210]/95 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,.025),0_8px_24px_rgba(0,0,0,.18)]"><div className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-[#f3bd55]/20 bg-[linear-gradient(145deg,rgba(243,189,85,.13),rgba(243,189,85,.045))] text-[#f5bd3e] shadow-[inset_0_0_18px_rgba(243,189,85,.04),0_0_12px_rgba(243,189,85,.05)]"><I className="size-9 stroke-[1.8] drop-shadow-[0_0_4px_rgba(243,189,85,.3)]"/></div><div className="min-w-0"><h3 className="text-[15px] font-bold leading-tight text-white">{t}</h3><p className="mt-2 text-[13px] leading-[1.45] text-white/55">{d}</p></div></div>)}</div>
           </div>
         </div>
       </section>
