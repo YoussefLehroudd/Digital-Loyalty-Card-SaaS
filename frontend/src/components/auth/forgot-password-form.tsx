@@ -78,7 +78,7 @@ export function ForgotPasswordForm() {
           <p className="text-xs text-red-600">{errors.email.message}</p>
         ) : null}
       </div>
-      <Button className="w-full" disabled={isSubmitting} type="submit">
+      <Button className="w-full border-0 bg-[#efbd5d] font-semibold text-black shadow-[0_10px_30px_rgba(239,189,93,.16)] hover:bg-[#f4c86f]" disabled={isSubmitting} type="submit">
         {isSubmitting ? "Sending..." : "Send reset link"}
         <Mail className="size-4" />
       </Button>
