@@ -155,7 +155,7 @@ export function RegisterForm() {
           type="password"
         />
       </div>
-      <Button className="w-full" disabled={isSubmitting} type="submit">
+      <Button className="w-full border-0 bg-[#efbd5d] font-semibold text-black shadow-[0_10px_30px_rgba(239,189,93,.16)] hover:bg-[#f4c86f]" disabled={isSubmitting} type="submit">
         {isSubmitting ? "Creating account..." : accountType === "business" ? "Create business account" : "Create customer account"}
         <ArrowRight className="size-4" />
       </Button>
