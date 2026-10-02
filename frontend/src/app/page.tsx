@@ -66,9 +66,9 @@ export default function Home() {
       <section id="businesses" className="border-y border-white/10 bg-[#090a09] py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <p className="mb-8 text-center text-sm text-white/45">Perfect for any type of business</p>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-            {businesses.map(([name,img])=><div key={name} className="group relative h-52 overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#111] shadow-[0_14px_40px_rgba(0,0,0,.28)]">
-              <Image src={img} alt={name} fill sizes="(min-width: 1024px) 200px, (min-width: 768px) 33vw, 50vw" className="object-cover object-center transition duration-500 group-hover:scale-[1.035]"/>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {businesses.map(([name,img])=><div key={name} className="group relative aspect-[16/10] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#111] shadow-[0_18px_50px_rgba(0,0,0,.32)]">
+              <Image src={img} alt={name} fill sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw" className="object-cover object-center transition duration-500 group-hover:scale-[1.025]" quality={100}/>
             </div>)}
           </div>
         </div>
