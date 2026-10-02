@@ -73,7 +73,7 @@ export default function Home() {
                 alt={name}
                 fill
                 sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
-                className={`object-cover object-center transition duration-500 ${name === "Beauty & Wellness" ? "scale-[1.075] group-hover:scale-[1.095]" : "group-hover:scale-[1.025]"}`}
+                className="object-cover object-center transition duration-500 group-hover:scale-[1.025]"
                 quality={100}
               />
             </div>)}
