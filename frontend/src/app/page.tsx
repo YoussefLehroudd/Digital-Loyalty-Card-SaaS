@@ -52,7 +52,7 @@ export default function Home() {
         </div>
         <div className="relative mx-auto flex min-h-[640px] max-w-7xl items-end px-5 pb-12 pt-20 sm:min-h-[660px] sm:items-center sm:pb-0 sm:pt-0 lg:min-h-[620px] lg:px-8">
           <div className="max-w-[610px]">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#f3bd55]/45 bg-black/55 px-4 py-2 text-xs font-bold text-[#f3bd55] shadow-[0_0_20px_rgba(243,189,85,.12)] backdrop-blur"><Sparkles className="size-4"/> Modern Loyalty Platform</div>
+            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-[#d99b2b]/65 bg-[linear-gradient(180deg,rgba(31,24,10,.88),rgba(8,8,7,.92))] px-5 py-2.5 text-xs font-extrabold uppercase tracking-[.08em] text-[#f5c34f] shadow-[inset_0_0_0_1px_rgba(255,211,91,.08),0_0_7px_rgba(240,170,35,.28),0_0_18px_rgba(240,170,35,.14)] backdrop-blur"><Sparkles className="size-4"/> Modern Loyalty Platform</div>
             <h1 className="text-5xl font-black leading-[1.02] tracking-[-.045em] drop-shadow-[0_3px_14px_rgba(0,0,0,.65)] sm:text-6xl lg:text-7xl">Turn your customers into <span className="text-[#f3bd55]">loyal fans.</span></h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-white/80 drop-shadow-[0_2px_8px_rgba(0,0,0,.8)] sm:text-lg">Create digital loyalty cards, rewards, and personalized experiences for your business. Easy, fast, and professional.</p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -114,7 +114,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-7xl gap-14 px-5 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
           <div className="hidden lg:block" />
           <div className="flex flex-col justify-center">
-            <div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">Powerful features</div>
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-[#d99b2b]/65 bg-[linear-gradient(180deg,rgba(31,24,10,.88),rgba(8,8,7,.92))] px-5 py-2.5 text-xs font-extrabold uppercase tracking-[.08em] text-[#f5c34f] shadow-[inset_0_0_0_1px_rgba(255,211,91,.08),0_0_7px_rgba(240,170,35,.28),0_0_18px_rgba(240,170,35,.14)] backdrop-blur self-start"><Sparkles className="size-4 stroke-[2.4] text-[#f5bd3e] drop-shadow-[0_0_5px_rgba(245,189,62,.55)]"/> Powerful features</div>
             <h2 className="mt-4 max-w-xl text-4xl font-bold leading-tight">Everything you need to <span className="text-[#f3bd55]">grow your business.</span></h2>
             <p className="mt-4 text-white/50">A complete loyalty solution designed for modern businesses.</p>
             <div className="mt-9 grid gap-3 sm:grid-cols-2">{features.map(([I,t,d])=><div key={t} className="rounded-2xl border border-white/10 bg-[#111210] p-5"><div className="flex size-11 items-center justify-center rounded-xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-5"/></div><h3 className="mt-4 text-sm font-bold">{t}</h3><p className="mt-2 text-xs leading-5 text-white/45">{d}</p></div>)}</div>
