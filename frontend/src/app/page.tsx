@@ -86,7 +86,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how" className="relative py-24">
+      <section id="how" className="relative isolate overflow-hidden py-24">
+        <Image src="/brand/Arrière-plan doré futuriste avec cartes élégantes.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
+        <div className="absolute inset-0 -z-10 bg-black/25"/>
         <div className="relative mx-auto max-w-6xl px-5">
           <div className="text-center"><div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">How it works</div><h2 className="mt-4 text-4xl font-bold">Get started in <span className="text-[#f3bd55]">3 simple steps</span></h2><p className="mt-3 text-white/50">Launch your digital loyalty program in minutes.</p></div>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
@@ -109,8 +111,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="px-5 py-24">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 overflow-hidden rounded-[32px] border border-[#f3bd55]/40 bg-[radial-gradient(circle_at_15%_50%,rgba(243,189,85,.17),transparent_30%),#11100d] p-8 shadow-[0_0_70px_rgba(243,189,85,.08)] md:flex-row md:p-12">
+      <section className="relative isolate overflow-hidden px-5 py-24">
+        <Image src="/brand/Rubans dorés sur fond noir luxueux.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
+        <div className="absolute inset-0 -z-10 bg-black/20"/>
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 overflow-hidden rounded-[32px] border border-[#f3bd55]/40 bg-black/25 p-8 shadow-[0_0_70px_rgba(243,189,85,.08)] backdrop-blur-[2px] md:flex-row md:p-12">
           <div><div className="flex size-14 items-center justify-center rounded-2xl bg-[#f3bd55]/15 text-[#f3bd55]"><BarChart3/></div><h2 className="mt-5 text-3xl font-bold">Ready to grow your business <span className="text-[#f3bd55]">with loyalty?</span></h2><p className="mt-3 max-w-xl text-white/50">Create your account today and start building stronger customer relationships.</p></div>
           <div className="shrink-0 text-center"><Button asChild size="lg" className="h-14 bg-[#f3bd55] px-8 font-bold text-black hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button><p className="mt-3 text-xs text-white/35">Setup in minutes</p></div>
         </div>
