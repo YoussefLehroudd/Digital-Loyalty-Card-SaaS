@@ -15,7 +15,7 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
       />
       <div className="pointer-events-none absolute inset-0 bg-black/20" />
 
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:justify-end lg:px-[7vw]">
+      <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-6">
         <div className="relative w-full max-w-[470px]">
           <div className="pointer-events-none absolute -inset-10 rounded-full bg-[#d29b3d]/10 blur-3xl" />
           <div className="relative w-full rounded-[26px] border border-[#d4a24a]/35 bg-[#0b0d0e]/72 p-6 shadow-[0_30px_90px_rgba(0,0,0,.45)] backdrop-blur-lg sm:p-8">
