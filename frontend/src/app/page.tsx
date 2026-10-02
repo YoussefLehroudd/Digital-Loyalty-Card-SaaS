@@ -31,10 +31,10 @@ export default function Home() {
             <div><div className="font-bold tracking-wide">LOYVANCE</div><div className="text-xs text-white/45">Loyalty Platform</div></div>
           </Link>
           <nav className="hidden items-center gap-3 text-sm text-white/70 md:flex">
-            <a href="#home" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/55 hover:bg-[#f3bd55]/[.06] hover:text-[#f3bd55] hover:shadow-[0_0_0_1px_rgba(243,189,85,.12),0_0_18px_rgba(243,189,85,.18)] text-[#f3bd55]">Home</a>
-            <a href="#features" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/55 hover:bg-[#f3bd55]/[.06] hover:text-[#f3bd55] hover:shadow-[0_0_0_1px_rgba(243,189,85,.12),0_0_18px_rgba(243,189,85,.18)]">Features</a>
-            <a href="#how" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/55 hover:bg-[#f3bd55]/[.06] hover:text-[#f3bd55] hover:shadow-[0_0_0_1px_rgba(243,189,85,.12),0_0_18px_rgba(243,189,85,.18)]">How it works</a>
-            <a href="#businesses" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/55 hover:bg-[#f3bd55]/[.06] hover:text-[#f3bd55] hover:shadow-[0_0_0_1px_rgba(243,189,85,.12),0_0_18px_rgba(243,189,85,.18)]">Businesses</a>
+            <a href="#home" className="rounded-full border border-[#f3bd55]/35 bg-[#f3bd55]/[.035] px-4 py-2 text-[#f3bd55] shadow-[0_0_14px_rgba(243,189,85,.10)] transition-all duration-300 hover:border-[#f3bd55]/60 hover:bg-[#f3bd55]/[.07] hover:shadow-[0_0_18px_rgba(243,189,85,.18)]">Home</a>
+            <a href="#features" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/45 hover:bg-[#f3bd55]/[.04] hover:text-[#f3bd55] hover:shadow-[0_0_14px_rgba(243,189,85,.12)]">Features</a>
+            <a href="#how" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/45 hover:bg-[#f3bd55]/[.04] hover:text-[#f3bd55] hover:shadow-[0_0_14px_rgba(243,189,85,.12)]">How it works</a>
+            <a href="#businesses" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/45 hover:bg-[#f3bd55]/[.04] hover:text-[#f3bd55] hover:shadow-[0_0_14px_rgba(243,189,85,.12)]">Businesses</a>
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link href="/login">Sign in</Link></Button>
