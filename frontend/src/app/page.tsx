@@ -86,39 +86,7 @@ export default function Home() {
         </div>
       </section>
 
-      <style>{`
-        .how-step-card {
-          border: 1px solid rgba(243,189,85,.42);
-          background: rgba(0,0,0,.58);
-          box-shadow: inset 0 0 42px rgba(243,189,85,.075), 0 15px 50px rgba(0,0,0,.3);
-        }
-        .how-step-card::before {
-          content:"";
-          position:absolute;
-          inset:-2px;
-          z-index:-1;
-          border-radius:inherit;
-          opacity:.15;
-          box-shadow:0 0 5px rgba(255,204,79,.35);
-          pointer-events:none;
-          animation:goldLightning 3.1s steps(1,end) infinite;
-        }
-        @keyframes goldLightning {
-          0%,12%,24%,47%,70%,100% { opacity:.12; box-shadow:0 0 4px rgba(255,204,79,.25); }
-          13% { opacity:1; box-shadow:0 -2px 7px #fff0a0,10px 0 11px #ffc83d,0 0 20px rgba(255,190,35,.95); }
-          14% { opacity:.22; box-shadow:0 0 5px rgba(255,204,79,.35); }
-          15% { opacity:.95; box-shadow:-9px 0 8px #ffd45d,0 2px 14px #ffb91f,0 0 22px rgba(255,194,44,.9); }
-          25% { opacity:.75; box-shadow:8px 0 7px #ffe17a,0 -2px 12px #ffbd2f,0 0 18px rgba(255,195,48,.8); }
-          26% { opacity:.12; box-shadow:0 0 4px rgba(255,204,79,.25); }
-          48% { opacity:1; box-shadow:0 2px 8px #fff1a3,-7px 0 13px #ffc02f,0 0 24px rgba(255,190,35,.95); }
-          49% { opacity:.18; box-shadow:0 0 5px rgba(255,204,79,.3); }
-          71% { opacity:.9; box-shadow:7px 0 8px #ffe27d,0 -2px 13px #ffba24,0 0 21px rgba(255,190,35,.9); }
-          72% { opacity:.3; box-shadow:0 0 6px rgba(255,204,79,.4); }
-          73% { opacity:.95; box-shadow:-6px 0 7px #fff0a0,0 2px 12px #ffc238,0 0 20px rgba(255,190,35,.9); }
-          74% { opacity:.12; box-shadow:0 0 4px rgba(255,204,79,.25); }
-        }
-        @media (prefers-reduced-motion:reduce){.how-step-card::before{animation:none}}
-      `}</style>
+      
       <section id="how" className="relative isolate overflow-hidden py-24">
         <Image src="/brand/Arrière-plan doré futuriste avec cartes élégantes.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/35"/>
