@@ -30,8 +30,11 @@ export default function Home() {
             <div className="relative size-12 overflow-hidden rounded-xl border border-[#e7b354]/30 bg-black"><Image src="/brand/logo.png" alt="LOYVANCE" fill className="object-contain" /></div>
             <div><div className="font-bold tracking-wide">LOYVANCE</div><div className="text-xs text-white/45">Loyalty Platform</div></div>
           </Link>
-          <nav className="hidden items-center gap-8 text-sm text-white/70 md:flex">
-            <a href="#home" className="text-[#f3bd55]">Home</a><a href="#features">Features</a><a href="#how">How it works</a><a href="#businesses">Businesses</a>
+          <nav className="hidden items-center gap-3 text-sm text-white/70 md:flex">
+            <a href="#home" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/55 hover:bg-[#f3bd55]/[.06] hover:text-[#f3bd55] hover:shadow-[0_0_0_1px_rgba(243,189,85,.12),0_0_18px_rgba(243,189,85,.18)] text-[#f3bd55]">Home</a>
+            <a href="#features" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/55 hover:bg-[#f3bd55]/[.06] hover:text-[#f3bd55] hover:shadow-[0_0_0_1px_rgba(243,189,85,.12),0_0_18px_rgba(243,189,85,.18)]">Features</a>
+            <a href="#how" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/55 hover:bg-[#f3bd55]/[.06] hover:text-[#f3bd55] hover:shadow-[0_0_0_1px_rgba(243,189,85,.12),0_0_18px_rgba(243,189,85,.18)]">How it works</a>
+            <a href="#businesses" className="rounded-full border border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55]/55 hover:bg-[#f3bd55]/[.06] hover:text-[#f3bd55] hover:shadow-[0_0_0_1px_rgba(243,189,85,.12),0_0_18px_rgba(243,189,85,.18)]">Businesses</a>
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link href="/login">Sign in</Link></Button>
