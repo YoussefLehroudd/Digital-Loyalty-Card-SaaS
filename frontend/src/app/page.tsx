@@ -4,12 +4,12 @@ import { ArrowRight, BarChart3, Building2, Check, CreditCard, Gift, Menu, Palett
 import { Button } from "@/components/ui/button";
 
 const businesses = [
-  ["Restaurants","Warm dining experiences","/brand/Application de fidélité dorée et élégante.png"],
-  ["Cafés","Turn regulars into loyal fans","/brand/Application de fidélité dorée et élégante.png"],
-  ["Retail Stores","Rewards that bring shoppers back","/brand/Application de fidélité dorée et élégante.png"],
-  ["Beauty & Wellness","Keep clients coming back","/brand/Application de fidélité dorée et élégante.png"],
-  ["Hotels","Reward every stay","/brand/Application de fidélité dorée et élégante.png"],
-  ["Gyms & Fitness","Build stronger member loyalty","/brand/Application de fidélité dorée et élégante.png"],
+  ["Restaurants","/brand/Restaurant chic aux accents dorés.png"],
+  ["Cafés","/brand/Café doré au latte artistique.png"],
+  ["Retail Stores","/brand/Boutique de luxe illuminée en doré.png"],
+  ["Beauty & Wellness","/brand/Beauté et bien-être au spa de luxe.png"],
+  ["Hotels","/brand/Hall de réception d’hôtel luxueux.png"],
+  ["Gyms & Fitness","/brand/Salle de sport moderne aux néons dorés.png"],
 ];
 
 const features: Array<[LucideIcon, string, string]> = [
@@ -67,10 +67,8 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <p className="mb-8 text-center text-sm text-white/45">Perfect for any type of business</p>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-            {businesses.map(([name,desc,img],i)=><div key={name} className="group relative h-52 overflow-hidden rounded-2xl border border-[#e7b354]/20 bg-[#111]">
-              <Image src={img} alt="" fill className="object-cover transition duration-500 group-hover:scale-105" style={{objectPosition:`${12+i*15}% center`}}/>
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent"/>
-              <div className="absolute inset-x-0 bottom-0 p-4"><p className="font-bold">{name}</p><p className="mt-1 text-[11px] text-white/55">{desc}</p></div>
+            {businesses.map(([name,img])=><div key={name} className="group relative h-52 overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#111] shadow-[0_14px_40px_rgba(0,0,0,.28)]">
+              <Image src={img} alt={name} fill sizes="(min-width: 1024px) 200px, (min-width: 768px) 33vw, 50vw" className="object-cover object-center transition duration-500 group-hover:scale-[1.035]"/>
             </div>)}
           </div>
         </div>
