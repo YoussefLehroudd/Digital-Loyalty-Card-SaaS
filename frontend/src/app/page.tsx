@@ -23,7 +23,7 @@ const features: Array<[LucideIcon, string, string]> = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#070807] text-white">
+    <main className="h-[100dvh] snap-y snap-mandatory overflow-x-hidden overflow-y-auto scroll-smooth bg-[#070807] text-white">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
@@ -44,13 +44,14 @@ export default function Home() {
         </div>
       </header>
 
-      <section id="home" className="relative min-h-[720px] pt-20 sm:min-h-[740px] lg:min-h-[700px]">
+      <section id="home" className="relative min-h-[100dvh] snap-start snap-always scroll-mt-0 pt-20">
         <div className="absolute inset-0">
           <Image src="/brand/Expérience café et fidélité dorée.png" alt="" fill priority quality={100} sizes="100vw" className="object-cover object-top opacity-80 sm:object-[62%_top] lg:object-center"/>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,7,.18)_0%,rgba(7,8,7,.28)_42%,#070807_78%,#070807_100%)] sm:bg-[linear-gradient(90deg,#070807_0%,rgba(7,8,7,.82)_35%,rgba(7,8,7,.25)_68%,rgba(7,8,7,.62)_100%)]"/>
           <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[#070807] via-[#070807]/80 to-transparent sm:h-48"/>
+          <a href="#businesses" aria-label="Scroll to next section" className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 text-[10px] font-semibold uppercase tracking-[.22em] text-white/45 transition hover:text-[#f3bd55]"><span>Scroll</span><span className="block h-8 w-px animate-pulse bg-gradient-to-b from-[#f3bd55] to-transparent"/></a>
         </div>
-        <div className="relative mx-auto flex min-h-[640px] max-w-7xl items-end px-5 pb-12 pt-20 sm:min-h-[660px] sm:items-center sm:pb-0 sm:pt-0 lg:min-h-[620px] lg:px-8">
+        <div className="relative mx-auto flex min-h-[calc(100dvh-5rem)] max-w-7xl items-end px-5 pb-12 pt-20 sm:items-center sm:pb-0 sm:pt-0 lg:px-8">
           <div className="max-w-[610px]">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#e7b354]/30 bg-black/45 px-4 py-2 text-xs font-semibold text-[#f3bd55] backdrop-blur"><Sparkles className="size-4"/> Modern Loyalty Platform</div>
             <h1 className="text-5xl font-black leading-[.98] tracking-[-.045em] sm:text-6xl lg:text-7xl">Turn your customers into <span className="text-[#f3bd55]">loyal fans.</span></h1>
@@ -66,7 +67,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="businesses" className="relative isolate overflow-hidden border-y border-white/10 bg-[#090a09] py-16">
+      <section id="businesses" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden border-y border-white/10 bg-[#090a09] py-20">
         <Image src="/brand/Lobbу futuriste noir et or.png" alt="" fill quality={100} className="-z-20 object-cover object-center opacity-70"/>
         <div className="absolute inset-0 -z-10 bg-black/45"/>
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -86,7 +87,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how" className="relative isolate overflow-hidden py-24">
+      <section id="how" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden py-20">
         <Image src="/brand/Arrière-plan doré futuriste avec cartes élégantes.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/25"/>
         <div className="relative mx-auto max-w-6xl px-5">
@@ -97,7 +98,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="relative isolate overflow-hidden border-y border-white/10 bg-[#090a09] py-24">
+      <section id="features" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden border-y border-white/10 bg-[#090a09] py-20">
         <Image src="/brand/Café de luxe et fidélité dorée.png" alt="" fill quality={100} className="-z-20 object-cover object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/50"/>
         <div className="mx-auto grid max-w-7xl gap-14 px-5 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
@@ -111,7 +112,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative isolate overflow-hidden px-5 py-24">
+      <section id="get-started" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden px-5 py-20">
         <Image src="/brand/Rubans dorés sur fond noir luxueux.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/20"/>
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 overflow-hidden rounded-[32px] border border-[#f3bd55]/40 bg-black/25 p-8 shadow-[0_0_70px_rgba(243,189,85,.08)] backdrop-blur-[2px] md:flex-row md:p-12">
@@ -120,7 +121,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>© LOYVANCE. Digital loyalty, made simple.</span><div className="flex gap-6"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link></div></div></footer>
+      <footer className="snap-start border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>© LOYVANCE. Digital loyalty, made simple.</span><div className="flex gap-6"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link></div></div></footer>
     </main>
   );
 }
