@@ -68,7 +68,14 @@ export default function Home() {
           <p className="mb-8 text-center text-sm text-white/45">Perfect for any type of business</p>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {businesses.map(([name,img])=><div key={name} className="group relative aspect-[16/10] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#111] shadow-[0_18px_50px_rgba(0,0,0,.32)]">
-              <Image src={img} alt={name} fill sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw" className="object-cover object-center transition duration-500 group-hover:scale-[1.025]" quality={100}/>
+              <Image
+                src={img}
+                alt={name}
+                fill
+                sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
+                className={`object-cover object-center transition duration-500 ${name === "Beauty & Wellness" ? "scale-[1.075] group-hover:scale-[1.095]" : "group-hover:scale-[1.025]"}`}
+                quality={100}
+              />
             </div>)}
           </div>
         </div>
