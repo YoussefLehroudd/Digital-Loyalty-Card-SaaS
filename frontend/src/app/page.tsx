@@ -81,12 +81,28 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how" className="relative py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(213,155,55,.09),transparent_35%)]"/>
+      <section id="how" className="relative isolate overflow-hidden border-b border-white/10 bg-[#080908] py-24">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(183,119,28,.18),transparent_38%),linear-gradient(180deg,rgba(8,9,8,.82),rgba(8,9,8,.96))]"/>
+        <div className="absolute -left-32 top-20 size-[430px] rounded-full border border-[#f3bd55]/15 shadow-[0_0_80px_rgba(243,189,85,.08)]"/>
+        <div className="absolute -right-28 bottom-8 size-[360px] rounded-full border border-[#f3bd55]/10 shadow-[0_0_70px_rgba(243,189,85,.07)]"/>
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(180deg,transparent,rgba(194,126,30,.05))]"/>
         <div className="relative mx-auto max-w-6xl px-5">
-          <div className="text-center"><div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">How it works</div><h2 className="mt-4 text-4xl font-bold">Get started in <span className="text-[#f3bd55]">3 simple steps</span></h2><p className="mt-3 text-white/50">Launch your digital loyalty program in minutes.</p></div>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {([[1,Building2,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,QrCode,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d])=><div key={n} className="relative rounded-3xl border border-[#e7b354]/20 bg-[#10110f] p-8 text-center shadow-[0_20px_70px_rgba(0,0,0,.3)]"><div className="absolute left-5 top-5 flex size-9 items-center justify-center rounded-full border border-[#f3bd55]/50 bg-[#30240f] font-bold text-[#f3bd55]">{n}</div><div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-7"/></div><h3 className="mt-6 font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-white/50">{d}</p></div>)}
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-px w-10 bg-[#f3bd55]/70"/>
+            <div className="text-xs font-bold uppercase tracking-[.24em] text-[#f3bd55]">How it works</div>
+            <h2 className="mt-4 text-4xl font-bold">Get started in <span className="text-[#f3bd55]">3 simple steps</span></h2>
+            <p className="mt-3 text-white/50">Launch your digital loyalty program in minutes.</p>
+          </div>
+          <div className="relative mt-14 grid gap-5 md:grid-cols-3">
+            <div className="pointer-events-none absolute left-[16%] right-[16%] top-8 hidden h-px bg-gradient-to-r from-transparent via-[#f3bd55]/35 to-transparent md:block"/>
+            {([[1,Building2,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,QrCode,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d])=><div key={n} className="group relative overflow-hidden rounded-[28px] border border-[#e7b354]/25 bg-[linear-gradient(145deg,rgba(29,25,17,.88),rgba(13,14,13,.94))] p-8 text-center shadow-[0_24px_70px_rgba(0,0,0,.38)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-[#f3bd55]/45 hover:shadow-[0_28px_80px_rgba(179,116,25,.12)]">
+              <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#f3bd55]/65 to-transparent"/>
+              <div className="absolute -right-16 -top-16 size-40 rounded-full bg-[#f3bd55]/[.045] blur-2xl"/>
+              <div className="absolute left-5 top-5 flex size-9 items-center justify-center rounded-full border border-[#f3bd55]/35 bg-[#2d220f]/90 text-sm font-bold text-[#f3bd55] shadow-[0_0_25px_rgba(243,189,85,.08)]">{n}</div>
+              <div className="relative mx-auto flex size-16 items-center justify-center rounded-2xl border border-[#f3bd55]/15 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[inset_0_1px_0_rgba(255,255,255,.04),0_10px_35px_rgba(0,0,0,.22)] transition group-hover:bg-[#f3bd55]/15"><I className="size-7"/></div>
+              <h3 className="relative mt-6 font-bold text-white">{t}</h3>
+              <p className="relative mx-auto mt-2 max-w-[250px] text-sm leading-6 text-white/50">{d}</p>
+            </div>)}
           </div>
         </div>
       </section>
