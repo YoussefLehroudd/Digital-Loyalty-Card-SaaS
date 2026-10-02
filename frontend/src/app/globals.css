@@ -167,3 +167,46 @@ a[href]:not([aria-disabled="true"]) {
   border: 2px solid var(--foreground);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
 }
+
+
+/* LOYVANCE continuously travelling gold border */
+.gold-flow-border {
+  position: relative;
+  border: 1px solid rgba(217, 155, 43, .42);
+  isolation: isolate;
+}
+.gold-flow-border::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--gold-flow-angle),
+    transparent 0deg 235deg,
+    rgba(243,189,85,.12) 248deg,
+    #ffd96b 270deg,
+    #fff0ad 281deg,
+    #f3bd55 293deg,
+    rgba(243,189,85,.14) 310deg,
+    transparent 325deg 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 3px rgba(243,189,85,.75)) drop-shadow(0 0 8px rgba(243,189,85,.35));
+  animation: loyvance-gold-flow 3.2s linear infinite;
+}
+@property --gold-flow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes loyvance-gold-flow {
+  to { --gold-flow-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gold-flow-border::before { animation: none; }
+}
