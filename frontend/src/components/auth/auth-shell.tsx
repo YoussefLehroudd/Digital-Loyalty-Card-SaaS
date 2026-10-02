@@ -36,7 +36,7 @@ export function AuthShell({
           </div>
           <div>
             <p className="text-sm font-semibold leading-none">LOYVANCE</p>
-            <p className="text-xs text-muted-foreground">Business access</p>
+            <p className="text-xs text-muted-foreground">Loyalty for everyone</p>
           </div>
         </Link>
         <ThemeToggle />
@@ -50,19 +50,17 @@ export function AuthShell({
           </Badge>
           <div className="space-y-4">
             <h1 className="text-4xl font-semibold leading-tight">
-              Branded loyalty cards, secure owner access, and QR-ready
-              operations.
+              One loyalty experience for customers and businesses.
             </h1>
             <p className="text-base leading-7 text-muted-foreground">
-              Sign in to manage the customer experience behind every stamp,
-              visit, and reward.
+              Access your loyalty cards, rewards, customer experience, or business workspace from one secure account.
             </p>
           </div>
           <div className="grid gap-3">
             {[
-              "Tenant-aware business owner accounts",
-              "Protected workspaces for business teams",
-              "Password recovery for returning owners",
+              "One secure account for customers and businesses",
+              "Loyalty cards, stamps, rewards, and business tools",
+              "Automatic access to the right workspace",
             ].map((item) => (
               <div
                 className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm"
