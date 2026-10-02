@@ -1,303 +1,115 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  Bell,
-  Building2,
-  ChartNoAxesColumnIncreasing,
-  Check,
-  CreditCard,
-  Gift,
-  Menu,
-  QrCode,
-  ScanLine,
-  Search,
-  Sparkles,
-  Users,
-} from "lucide-react";
-
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, BarChart3, Building2, Check, CreditCard, Gift, Menu, Palette, QrCode, ScanLine, Sparkles, Stamp, Store, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 
-const metrics = [
-  {
-    label: "Total customers",
-    value: "12,480",
-    change: "+18.4%",
-    icon: Users,
-  },
-  {
-    label: "Visits this month",
-    value: "4,862",
-    change: "+11.2%",
-    icon: ScanLine,
-  },
-  {
-    label: "Rewards redeemed",
-    value: "738",
-    change: "+7.9%",
-    icon: Gift,
-  },
-  {
-    label: "Repeat rate",
-    value: "64%",
-    change: "+4.1%",
-    icon: ChartNoAxesColumnIncreasing,
-  },
+const businesses = [
+  ["Restaurants","Warm dining experiences","/brand/Application de fidélité dorée et élégante.png"],
+  ["Cafés","Turn regulars into loyal fans","/brand/Application de fidélité dorée et élégante.png"],
+  ["Retail Stores","Rewards that bring shoppers back","/brand/Application de fidélité dorée et élégante.png"],
+  ["Beauty & Wellness","Keep clients coming back","/brand/Application de fidélité dorée et élégante.png"],
+  ["Hotels","Reward every stay","/brand/Application de fidélité dorée et élégante.png"],
+  ["Gyms & Fitness","Build stronger member loyalty","/brand/Application de fidélité dorée et élégante.png"],
 ];
 
-const navigation = [
-  { label: "Workspace", icon: Building2 },
-  { label: "Scanner", icon: ScanLine },
-  { label: "Loyalty card", icon: CreditCard },
-  { label: "Analytics", icon: ChartNoAxesColumnIncreasing },
-];
-
-const visits = [
-  { name: "Maya Chen", status: "Stamp added", time: "2 min ago" },
-  { name: "Alex Morgan", status: "Reward redeemed", time: "18 min ago" },
-  { name: "Jordan Lee", status: "Customer joined", time: "41 min ago" },
+const features = [
+  [CreditCard,"Digital Loyalty Cards","Create branded digital cards with QR codes."],
+  [Gift,"Stamps & Rewards","Set custom rewards and incentives."],
+  [Users,"Customer Management","Track customers and their activity."],
+  [BarChart3,"Analytics & Insights","See what works and grow faster."],
+  [Store,"Multi-location Support","Manage multiple branches easily."],
+  [Palette,"Custom Branding","Use your logo, colors, and style."],
 ];
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Button
-              aria-label="Open menu"
-              className="md:hidden"
-              size="icon"
-              variant="ghost"
-            >
-              <Menu className="size-5" />
-            </Button>
-            <div className="relative flex size-16 items-center justify-center rounded-xl border bg-card shadow-sm">
-              <Image
-                alt="LOYVANCE logo"
-                className="object-contain p-0.5"
-                fill
-                priority
-                sizes="64px"
-                src="/brand/logo.png"
-              />
-            </div>
-            <div>
-              <p className="text-sm font-semibold leading-none">LOYVANCE</p>
-              <p className="text-xs text-muted-foreground">Loyalty platform</p>
-            </div>
-          </div>
-
-          <nav className="hidden items-center gap-1 md:flex">
-            <Button asChild variant="ghost">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-            {["Customers", "Rewards", "Billing"].map((item) => (
-              <Button key={item} variant="ghost">
-                {item}
-              </Button>
-            ))}
+    <main className="min-h-screen overflow-hidden bg-[#070807] text-white">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#080907]/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="relative size-12 overflow-hidden rounded-xl border border-[#e7b354]/30 bg-black"><Image src="/brand/logo.png" alt="LOYVANCE" fill className="object-contain" /></div>
+            <div><div className="font-bold tracking-wide">LOYVANCE</div><div className="text-xs text-white/45">Loyalty Platform</div></div>
+          </Link>
+          <nav className="hidden items-center gap-8 text-sm text-white/70 md:flex">
+            <a href="#home" className="text-[#f3bd55]">Home</a><a href="#features">Features</a><a href="#how">How it works</a><a href="#businesses">Businesses</a>
           </nav>
-
           <div className="flex items-center gap-2">
-            <Button asChild className="hidden sm:inline-flex" variant="ghost">
-              <Link href="/login">Sign in</Link>
-            </Button>
-            <Button asChild className="hidden sm:inline-flex">
-              <Link href="/register">Create account</Link>
-            </Button>
-            <Button aria-label="Search" size="icon" variant="ghost">
-              <Search className="size-4" />
-            </Button>
-            <Button aria-label="Notifications" size="icon" variant="ghost">
-              <Bell className="size-4" />
-            </Button>
-            <ThemeToggle />
+            <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link href="/login">Sign in</Link></Button>
+            <Button asChild className="bg-[#f3bd55] text-black hover:bg-[#ffd16f]"><Link href="/register">Create account <ArrowRight className="size-4"/></Link></Button>
+            <Button variant="ghost" size="icon" className="md:hidden"><Menu className="size-5"/></Button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
-        <aside className="hidden lg:block">
-          <div className="sticky top-24 space-y-2">
-            {navigation.map((item, index) => {
-              const Icon = item.icon;
-
-              return (
-                <Button
-                  key={item.label}
-                  className="w-full justify-start"
-                  variant={index === 0 ? "secondary" : "ghost"}
-                >
-                  <Icon className="size-4" />
-                  {item.label}
-                </Button>
-              );
-            })}
-          </div>
-        </aside>
-
-        <section className="space-y-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <Badge className="w-fit border-success/30 bg-secondary text-secondary-foreground">
-                <Sparkles className="mr-1 size-3" />
-                Starter workspace
-              </Badge>
-              <div>
-                <h1 className="max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl">
-                  Star Coffee loyalty overview
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  Customers, QR visits, stamp progress, and reward activity in
-                  one focused operator console.
-                </p>
-              </div>
+      <section id="home" className="relative min-h-[760px] pt-20">
+        <div className="absolute inset-0">
+          <Image src="/brand/Application de fidélité dorée et élégante.png" alt="" fill priority className="object-cover object-center opacity-65"/>
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,#070807_0%,rgba(7,8,7,.82)_35%,rgba(7,8,7,.25)_68%,rgba(7,8,7,.62)_100%)]"/>
+          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#070807] to-transparent"/>
+        </div>
+        <div className="relative mx-auto flex min-h-[680px] max-w-7xl items-center px-5 lg:px-8">
+          <div className="max-w-[610px]">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#e7b354]/30 bg-black/45 px-4 py-2 text-xs font-semibold text-[#f3bd55] backdrop-blur"><Sparkles className="size-4"/> Modern Loyalty Platform</div>
+            <h1 className="text-5xl font-black leading-[.98] tracking-[-.045em] sm:text-6xl lg:text-7xl">Turn your customers into <span className="text-[#f3bd55]">loyal fans.</span></h1>
+            <p className="mt-7 max-w-xl text-base leading-7 text-white/70 sm:text-lg">Create digital loyalty cards, rewards, and personalized experiences for your business. Easy, fast, and professional.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild size="lg" className="h-13 bg-[#f3bd55] px-7 font-bold text-black shadow-[0_0_35px_rgba(243,189,85,.25)] hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button>
+              <Button asChild size="lg" variant="outline" className="h-13 border-white/15 bg-black/30 px-7 backdrop-blur"><a href="#how">See how it works</a></Button>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button variant="outline">
-                <QrCode className="size-4" />
-                Preview card
-              </Button>
-              <Button asChild>
-                <Link href="/dashboard">
-                  <ScanLine className="size-4" />
-                  Open scanner
-                </Link>
-              </Button>
+            <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
+              {["No technical skills required","Quick setup in minutes","Everything in one platform"].map((x,i)=><div key={x} className="rounded-xl border border-[#e7b354]/20 bg-black/45 p-3 text-xs font-medium backdrop-blur-md"><Check className="mb-2 size-4 text-[#f3bd55]"/>{x}</div>)}
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => {
-              const Icon = metric.icon;
-
-              return (
-                <Card key={metric.label}>
-                  <CardHeader className="flex-row items-center justify-between space-y-0">
-                    <CardDescription>{metric.label}</CardDescription>
-                    <Icon className="size-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-end justify-between gap-3">
-                      <p className="text-2xl font-semibold">{metric.value}</p>
-                      <span className="rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
-                        {metric.change}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+      <section id="businesses" className="border-y border-white/10 bg-[#090a09] py-16">
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <p className="mb-8 text-center text-sm text-white/45">Perfect for any type of business</p>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            {businesses.map(([name,desc,img],i)=><div key={name} className="group relative h-52 overflow-hidden rounded-2xl border border-[#e7b354]/20 bg-[#111]">
+              <Image src={img} alt="" fill className="object-cover transition duration-500 group-hover:scale-105" style={{objectPosition:`${12+i*15}% center`}}/>
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent"/>
+              <div className="absolute inset-x-0 bottom-0 p-4"><p className="font-bold">{name}</p><p className="mt-1 text-[11px] text-white/55">{desc}</p></div>
+            </div>)}
           </div>
+        </div>
+      </section>
 
-          <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <CardTitle>Customer activity</CardTitle>
-                    <CardDescription>
-                      Live visit and reward events for this business.
-                    </CardDescription>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    View all
-                    <ArrowUpRight className="size-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {visits.map((visit) => (
-                  <div
-                    key={`${visit.name}-${visit.status}`}
-                    className="flex items-center justify-between rounded-lg border bg-background p-3"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-semibold">
-                        {visit.name
-                          .split(" ")
-                          .map((part) => part[0])
-                          .join("")}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {visit.name}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {visit.status}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {visit.time}
-                    </span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden">
-              <CardHeader>
-                <CardTitle>Loyalty card</CardTitle>
-                <CardDescription>Free Coffee after 10 stamps</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="rounded-lg border bg-primary p-4 text-primary-foreground">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Star Coffee</p>
-                      <p className="text-xs opacity-70">Member card</p>
-                    </div>
-                    <QrCode className="size-7" />
-                  </div>
-                  <div className="mt-6 grid grid-cols-5 gap-2">
-                    {Array.from({ length: 10 }).map((_, index) => (
-                      <div
-                        key={index}
-                        className="flex aspect-square items-center justify-center rounded-md bg-primary-foreground/12"
-                      >
-                        {index < 7 ? <Check className="size-4" /> : null}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium">7 of 10 stamps</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full w-[70%] rounded-full bg-success" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-[96px_1fr] gap-4">
-                  <div className="flex aspect-square items-center justify-center rounded-lg border bg-background">
-                    <QrCode className="size-12" />
-                  </div>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-4/5" />
-                    <Skeleton className="h-4 w-3/5" />
-                    <Skeleton className="h-9 w-full" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      <section id="how" className="relative py-24">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(213,155,55,.09),transparent_35%)]"/>
+        <div className="relative mx-auto max-w-6xl px-5">
+          <div className="text-center"><div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">How it works</div><h2 className="mt-4 text-4xl font-bold">Get started in <span className="text-[#f3bd55]">3 simple steps</span></h2><p className="mt-3 text-white/50">Launch your digital loyalty program in minutes.</p></div>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {[[1,Building2,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,QrCode,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]].map(([n,I,t,d]:any)=><div key={n} className="relative rounded-3xl border border-[#e7b354]/20 bg-[#10110f] p-8 text-center shadow-[0_20px_70px_rgba(0,0,0,.3)]"><div className="absolute left-5 top-5 flex size-9 items-center justify-center rounded-full border border-[#f3bd55]/50 bg-[#30240f] font-bold text-[#f3bd55]">{n}</div><div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-7"/></div><h3 className="mt-6 font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-white/50">{d}</p></div>)}
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      <section id="features" className="border-y border-white/10 bg-[#090a09] py-24">
+        <div className="mx-auto grid max-w-7xl gap-14 px-5 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
+          <div className="relative min-h-[520px] overflow-hidden rounded-[32px] border border-[#e7b354]/20">
+            <Image src="/brand/Application de fidélité dorée et élégante.png" alt="LOYVANCE loyalty experience" fill className="object-cover" style={{objectPosition:"26% center"}}/>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/15"/>
+            <div className="absolute bottom-6 left-6 flex flex-wrap gap-2">{["Stamps & Rewards","Analytics Dashboard","Custom Branding"].map(x=><span key={x} className="rounded-xl border border-[#f3bd55]/30 bg-black/65 px-4 py-2 text-xs font-semibold text-[#f3bd55] backdrop-blur">{x}</span>)}</div>
+          </div>
+          <div className="flex flex-col justify-center">
+            <div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">Powerful features</div>
+            <h2 className="mt-4 max-w-xl text-4xl font-bold leading-tight">Everything you need to <span className="text-[#f3bd55]">grow your business.</span></h2>
+            <p className="mt-4 text-white/50">A complete loyalty solution designed for modern businesses.</p>
+            <div className="mt-9 grid gap-3 sm:grid-cols-2">{features.map(([I,t,d]:any)=><div key={t} className="rounded-2xl border border-white/10 bg-[#111210] p-5"><div className="flex size-11 items-center justify-center rounded-xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-5"/></div><h3 className="mt-4 text-sm font-bold">{t}</h3><p className="mt-2 text-xs leading-5 text-white/45">{d}</p></div>)}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-24">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 overflow-hidden rounded-[32px] border border-[#f3bd55]/40 bg-[radial-gradient(circle_at_15%_50%,rgba(243,189,85,.17),transparent_30%),#11100d] p-8 shadow-[0_0_70px_rgba(243,189,85,.08)] md:flex-row md:p-12">
+          <div><div className="flex size-14 items-center justify-center rounded-2xl bg-[#f3bd55]/15 text-[#f3bd55]"><BarChart3/></div><h2 className="mt-5 text-3xl font-bold">Ready to grow your business <span className="text-[#f3bd55]">with loyalty?</span></h2><p className="mt-3 max-w-xl text-white/50">Create your account today and start building stronger customer relationships.</p></div>
+          <div className="shrink-0 text-center"><Button asChild size="lg" className="h-14 bg-[#f3bd55] px-8 font-bold text-black hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button><p className="mt-3 text-xs text-white/35">Setup in minutes</p></div>
+        </div>
+      </section>
+
+      <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>© LOYVANCE. Digital loyalty, made simple.</span><div className="flex gap-6"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link></div></div></footer>
     </main>
   );
 }
