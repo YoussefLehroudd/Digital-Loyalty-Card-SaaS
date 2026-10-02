@@ -86,6 +86,24 @@ export default function Home() {
         </div>
       </section>
 
+      <style>{`
+        @property --how-border-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+        .how-step-card {
+          border: 1px solid transparent;
+          background: linear-gradient(rgba(0,0,0,.58),rgba(0,0,0,.58)) padding-box,
+            conic-gradient(from var(--how-border-angle),rgba(243,189,85,.18),rgba(243,189,85,.34) 70deg,#fff0a8 92deg,#ffc94f 105deg,rgba(243,189,85,.34) 126deg,rgba(243,189,85,.18) 190deg,rgba(243,189,85,.30)) border-box;
+          animation: howBorderTravel 4.2s linear infinite;
+        }
+        .how-step-card::before {
+          content:""; position:absolute; inset:-2px; z-index:-1; border-radius:inherit; padding:2px;
+          background:conic-gradient(from var(--how-border-angle),transparent 0deg 70deg,rgba(255,214,105,.08) 78deg,rgba(255,213,92,.95) 96deg,rgba(255,190,50,.38) 118deg,transparent 138deg 360deg);
+          -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
+          filter:drop-shadow(0 0 5px rgba(255,199,69,.72)) drop-shadow(0 0 12px rgba(243,189,85,.35));
+          animation:howBorderTravel 4.2s linear infinite; pointer-events:none;
+        }
+        @keyframes howBorderTravel { to { --how-border-angle:360deg; } }
+        @media (prefers-reduced-motion:reduce){.how-step-card,.how-step-card::before{animation:none}}
+      `}</style>
       <section id="how" className="relative isolate overflow-hidden py-24">
         <Image src="/brand/Arrière-plan doré futuriste avec cartes élégantes.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/35"/>
@@ -96,7 +114,7 @@ export default function Home() {
             <p className="mt-3 text-base text-white/65 sm:text-lg">Launch your digital loyalty program in minutes.</p>
           </div>
           <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-11">
-            {([[1,Users,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,Send,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d],idx)=><div key={n} className="group relative flex min-h-[250px] flex-col items-center justify-center overflow-visible rounded-2xl border border-[#f3bd55]/70 bg-black/55 px-7 py-8 text-center shadow-[inset_0_0_42px_rgba(243,189,85,.075),0_0_18px_rgba(243,189,85,.12),0_15px_50px_rgba(0,0,0,.3)] backdrop-blur-sm before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-[#ffd56f] before:to-transparent before:shadow-[0_0_14px_3px_rgba(243,189,85,.48)] before:animate-pulse after:absolute after:-left-10 after:-top-10 after:h-28 after:w-28 after:rounded-full after:bg-[#f3bd55]/10 after:blur-2xl">
+            {([[1,Users,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,Send,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d],idx)=><div key={n} className="how-step-card group relative flex min-h-[250px] flex-col items-center justify-center overflow-visible rounded-2xl bg-black/55 px-7 py-8 text-center shadow-[inset_0_0_42px_rgba(243,189,85,.075),0_15px_50px_rgba(0,0,0,.3)] backdrop-blur-sm after:absolute after:-left-10 after:-top-10 after:h-28 after:w-28 after:rounded-full after:bg-[#f3bd55]/10 after:blur-2xl">
               <div className="absolute left-4 top-4 z-10 flex size-11 items-center justify-center rounded-full border border-[#ffd15c]/80 bg-[radial-gradient(circle_at_38%_32%,#8a621b_0%,#4a340d_46%,#241805_100%)] text-lg font-bold text-[#ffd15c] shadow-[0_0_10px_2px_rgba(243,189,85,.48),0_0_28px_rgba(243,189,85,.32),inset_0_0_12px_rgba(255,211,100,.16)] before:absolute before:-inset-2 before:-z-10 before:rounded-full before:bg-[#f3bd55]/15 before:blur-md before:animate-pulse">{n}</div>
               <div className="flex size-20 items-center justify-center rounded-full border border-[#f3bd55]/55 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[inset_0_0_18px_rgba(243,189,85,.08),0_0_20px_rgba(243,189,85,.18)] transition-all duration-700 group-hover:border-[#ffd66f]/90 group-hover:shadow-[inset_0_0_20px_rgba(243,189,85,.12),0_0_30px_rgba(243,189,85,.38)]"><I className="size-9 stroke-[1.8]"/></div>
               <h3 className="mt-6 text-lg font-bold">{t}</h3>
