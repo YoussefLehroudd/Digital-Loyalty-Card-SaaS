@@ -96,7 +96,7 @@ export function LoginForm() {
         <Input
           autoComplete="email"
           id="email"
-          placeholder="owner@business.com"
+          placeholder="you@example.com"
           {...register("email")}
         />
         {errors.email ? (
@@ -115,7 +115,7 @@ export function LoginForm() {
           <p className="text-xs text-red-600">{errors.password.message}</p>
         ) : null}
       </div>
-      <Button className="w-full" disabled={isSubmitting} type="submit">
+      <Button className="w-full border-0 bg-[#efbd5d] text-black shadow-[0_10px_30px_rgba(239,189,93,.16)] hover:bg-[#f4c86f]" disabled={isSubmitting} type="submit">
         {isSubmitting ? "Signing in..." : "Sign in"}
         <ArrowRight className="size-4" />
       </Button>
