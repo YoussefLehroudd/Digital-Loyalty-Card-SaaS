@@ -88,11 +88,21 @@ export default function Home() {
 
       <section id="how" className="relative isolate overflow-hidden py-24">
         <Image src="/brand/Arrière-plan doré futuriste avec cartes élégantes.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
-        <div className="absolute inset-0 -z-10 bg-black/25"/>
-        <div className="relative mx-auto max-w-6xl px-5">
-          <div className="text-center"><div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">How it works</div><h2 className="mt-4 text-4xl font-bold">Get started in <span className="text-[#f3bd55]">3 simple steps</span></h2><p className="mt-3 text-white/50">Launch your digital loyalty program in minutes.</p></div>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {([[1,Building2,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,QrCode,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d])=><div key={n} className="relative rounded-3xl border border-[#e7b354]/20 bg-[#10110f] p-8 text-center shadow-[0_20px_70px_rgba(0,0,0,.3)]"><div className="absolute left-5 top-5 flex size-9 items-center justify-center rounded-full border border-[#f3bd55]/50 bg-[#30240f] font-bold text-[#f3bd55]">{n}</div><div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-7"/></div><h3 className="mt-6 font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-white/50">{d}</p></div>)}
+        <div className="absolute inset-0 -z-10 bg-black/35"/>
+        <div className="relative mx-auto max-w-7xl px-5 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#f3bd55]/45 bg-black/55 px-4 py-2 text-xs font-bold uppercase tracking-[.12em] text-[#f3bd55] shadow-[0_0_18px_rgba(243,189,85,.14)] backdrop-blur"><QrCode className="size-4"/> How it works</div>
+            <h2 className="mt-5 text-4xl font-black tracking-[-.035em] sm:text-5xl">Get started in <span className="text-[#f3bd55]">3 simple steps</span></h2>
+            <p className="mt-3 text-base text-white/65 sm:text-lg">Launch your digital loyalty program in minutes.</p>
+          </div>
+          <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-11">
+            {([[1,Users,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,ArrowRight,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d],idx)=><div key={n} className="relative flex min-h-[250px] flex-col items-center justify-center rounded-2xl border border-[#f3bd55]/45 bg-black/55 px-7 py-8 text-center shadow-[inset_0_0_35px_rgba(243,189,85,.045),0_15px_50px_rgba(0,0,0,.3)] backdrop-blur-sm">
+              <div className="absolute left-4 top-4 flex size-11 items-center justify-center rounded-full border border-[#f3bd55]/55 bg-[#3a2a0e]/90 text-lg font-bold text-[#f3bd55] shadow-[0_0_16px_rgba(243,189,85,.18)]">{n}</div>
+              <div className="flex size-20 items-center justify-center rounded-full border border-[#f3bd55]/45 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[inset_0_0_18px_rgba(243,189,85,.08),0_0_20px_rgba(243,189,85,.10)]"><I className="size-9 stroke-[1.8]"/></div>
+              <h3 className="mt-6 text-lg font-bold">{t}</h3>
+              <p className="mt-2 max-w-[280px] text-sm leading-6 text-white/65">{d}</p>
+              {idx < 2 && <ArrowRight className="absolute -right-8 top-1/2 hidden size-6 -translate-y-1/2 text-[#f3bd55] md:block"/>}
+            </div>)}
           </div>
         </div>
       </section>
