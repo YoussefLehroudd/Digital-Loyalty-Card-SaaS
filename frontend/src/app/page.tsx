@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Building2, Check, CreditCard, Gift, Menu, Palette, QrCode, Sparkles, Store, Users } from "lucide-react";
+import { ArrowRight, BarChart3, Building2, Check, CreditCard, Gift, Menu, Palette, QrCode, Sparkles, Store, Users, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const businesses = [
@@ -12,7 +12,7 @@ const businesses = [
   ["Gyms & Fitness","Build stronger member loyalty","/brand/Application de fidélité dorée et élégante.png"],
 ];
 
-const features = [
+const features: Array<[LucideIcon, string, string]> = [
   [CreditCard,"Digital Loyalty Cards","Create branded digital cards with QR codes."],
   [Gift,"Stamps & Rewards","Set custom rewards and incentives."],
   [Users,"Customer Management","Track customers and their activity."],
@@ -81,7 +81,7 @@ export default function Home() {
         <div className="relative mx-auto max-w-6xl px-5">
           <div className="text-center"><div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">How it works</div><h2 className="mt-4 text-4xl font-bold">Get started in <span className="text-[#f3bd55]">3 simple steps</span></h2><p className="mt-3 text-white/50">Launch your digital loyalty program in minutes.</p></div>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {[[1,Building2,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,QrCode,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]].map(([n,I,t,d]:any)=><div key={n} className="relative rounded-3xl border border-[#e7b354]/20 bg-[#10110f] p-8 text-center shadow-[0_20px_70px_rgba(0,0,0,.3)]"><div className="absolute left-5 top-5 flex size-9 items-center justify-center rounded-full border border-[#f3bd55]/50 bg-[#30240f] font-bold text-[#f3bd55]">{n}</div><div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-7"/></div><h3 className="mt-6 font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-white/50">{d}</p></div>)}
+            {([[1,Building2,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,QrCode,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d])=><div key={n} className="relative rounded-3xl border border-[#e7b354]/20 bg-[#10110f] p-8 text-center shadow-[0_20px_70px_rgba(0,0,0,.3)]"><div className="absolute left-5 top-5 flex size-9 items-center justify-center rounded-full border border-[#f3bd55]/50 bg-[#30240f] font-bold text-[#f3bd55]">{n}</div><div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-7"/></div><h3 className="mt-6 font-bold">{t}</h3><p className="mt-2 text-sm leading-6 text-white/50">{d}</p></div>)}
           </div>
         </div>
       </section>
@@ -97,7 +97,7 @@ export default function Home() {
             <div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">Powerful features</div>
             <h2 className="mt-4 max-w-xl text-4xl font-bold leading-tight">Everything you need to <span className="text-[#f3bd55]">grow your business.</span></h2>
             <p className="mt-4 text-white/50">A complete loyalty solution designed for modern businesses.</p>
-            <div className="mt-9 grid gap-3 sm:grid-cols-2">{features.map(([I,t,d]:any)=><div key={t} className="rounded-2xl border border-white/10 bg-[#111210] p-5"><div className="flex size-11 items-center justify-center rounded-xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-5"/></div><h3 className="mt-4 text-sm font-bold">{t}</h3><p className="mt-2 text-xs leading-5 text-white/45">{d}</p></div>)}</div>
+            <div className="mt-9 grid gap-3 sm:grid-cols-2">{features.map(([I,t,d])=><div key={t} className="rounded-2xl border border-white/10 bg-[#111210] p-5"><div className="flex size-11 items-center justify-center rounded-xl bg-[#f3bd55]/10 text-[#f3bd55]"><I className="size-5"/></div><h3 className="mt-4 text-sm font-bold">{t}</h3><p className="mt-2 text-xs leading-5 text-white/45">{d}</p></div>)}</div>
           </div>
         </div>
       </section>
