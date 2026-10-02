@@ -18,13 +18,13 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#080a0b] text-white">
       <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-[position:42%_center] bg-no-repeat opacity-[0.58] sm:bg-[position:40%_center] lg:bg-[position:38%_center]"
+        className="pointer-events-none absolute inset-0 bg-cover bg-[position:42%_center] bg-no-repeat opacity-[0.72] sm:bg-[position:40%_center] lg:bg-[position:38%_center]"
         style={{ backgroundImage: "url('/brand/Application%20de%20fid%C3%A9lit%C3%A9%20dor%C3%A9e%20et%20%C3%A9l%C3%A9gante.png')" }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,10,11,.66)_0%,rgba(8,10,11,.48)_43%,rgba(8,10,11,.68)_100%)] max-lg:bg-[rgba(8,10,11,.66)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,10,11,.48)_0%,rgba(8,10,11,.34)_45%,rgba(8,10,11,.46)_100%)] max-lg:bg-[rgba(8,10,11,.52)]" />
       <div className="relative mx-auto w-full max-w-6xl px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pt-10">
         <section className="grid min-h-[calc(100vh-5rem)] items-center gap-10 py-8 lg:grid-cols-[1.05fr_.95fr] lg:py-6">
-          <div className="max-w-[600px] lg:-translate-x-3">
+          <div className="max-w-[600px] lg:-translate-x-3 lg:rounded-[28px] lg:border lg:border-white/[0.07] lg:bg-black/25 lg:p-6 lg:shadow-[0_24px_70px_rgba(0,0,0,.20)] lg:backdrop-blur-[2px]">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
               <Sparkles className="size-3.5" /> Multi-tenant loyalty SaaS
             </div>
@@ -37,7 +37,7 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
 
             <div className="mt-9 grid gap-3">
               {features.map(({ icon: Icon, title: itemTitle, text }) => (
-                <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3.5 shadow-[0_12px_35px_rgba(0,0,0,.18)] backdrop-blur-md" key={itemTitle}>
+                <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/30 p-3.5 shadow-[0_12px_35px_rgba(0,0,0,.14)] backdrop-blur-[3px]" key={itemTitle}>
                   <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/15 bg-[#d8a342]/15 text-[#f0bd5a]">
                     <Icon className="size-5" />
                   </div>
@@ -52,7 +52,7 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
 
           <div className="relative lg:translate-x-3">
             <div className="pointer-events-none absolute -inset-10 rounded-full bg-[#d29b3d]/10 blur-3xl" />
-            <div className="relative w-full rounded-[24px] border border-[#d4a24a]/25 bg-[#111315]/85 p-6 shadow-[0_30px_90px_rgba(0,0,0,.55)] backdrop-blur-xl sm:p-8">
+            <div className="relative w-full rounded-[24px] border border-[#d4a24a]/30 bg-[#0d0f10]/60 p-6 shadow-[0_30px_90px_rgba(0,0,0,.38)] backdrop-blur-md sm:p-8">
               <div className="mb-7 space-y-2">
                 <p className="text-sm font-semibold text-[#efbd5d]">{eyebrow}</p>
                 <h2 className="text-3xl font-bold tracking-[-.025em]">{title}</h2>
