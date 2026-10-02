@@ -43,7 +43,7 @@ export default function Home() {
 
       <section id="home" className="relative min-h-[760px] pt-20">
         <div className="absolute inset-0">
-          <Image src="/brand/Application de fidélité dorée et élégante.png" alt="" fill priority className="object-cover object-center opacity-65"/>
+          <Image src="/brand/Expérience café de luxe dorée.png" alt="" fill priority quality={100} className="object-cover object-center opacity-75"/>
           <div className="absolute inset-0 bg-[linear-gradient(90deg,#070807_0%,rgba(7,8,7,.82)_35%,rgba(7,8,7,.25)_68%,rgba(7,8,7,.62)_100%)]"/>
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#070807] to-transparent"/>
         </div>
@@ -63,7 +63,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="businesses" className="border-y border-white/10 bg-[#090a09] py-16">
+      <section id="businesses" className="relative isolate overflow-hidden border-y border-white/10 bg-[#090a09] py-16">
+        <Image src="/brand/Lobbу futuriste noir et or.png" alt="" fill quality={100} className="-z-20 object-cover object-center opacity-70"/>
+        <div className="absolute inset-0 -z-10 bg-black/45"/>
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <p className="mb-8 text-center text-sm text-white/45">Perfect for any type of business</p>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
