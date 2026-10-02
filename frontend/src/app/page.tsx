@@ -43,7 +43,7 @@ export default function Home() {
 
       <section id="home" className="relative min-h-[760px] pt-20">
         <div className="absolute inset-0">
-          <Image src="/brand/Expérience café de luxe dorée.png" alt="" fill priority quality={100} className="object-contain object-top opacity-80"/>
+          <Image src="/brand/Expérience café et fidélité dorée.png" alt="" fill priority quality={100} className="object-contain object-top opacity-80"/>
           <div className="absolute inset-0 bg-[linear-gradient(90deg,#070807_0%,rgba(7,8,7,.82)_35%,rgba(7,8,7,.25)_68%,rgba(7,8,7,.62)_100%)]"/>
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#070807] to-transparent"/>
         </div>
@@ -92,13 +92,11 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="border-y border-white/10 bg-[#090a09] py-24">
+      <section id="features" className="relative isolate overflow-hidden border-y border-white/10 bg-[#090a09] py-24">
+        <Image src="/brand/Café de luxe et fidélité dorée.png" alt="" fill quality={100} className="-z-20 object-cover object-center"/>
+        <div className="absolute inset-0 -z-10 bg-black/50"/>
         <div className="mx-auto grid max-w-7xl gap-14 px-5 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
-          <div className="relative min-h-[520px] overflow-hidden rounded-[32px] border border-[#e7b354]/20">
-            <Image src="/brand/Application de fidélité dorée et élégante.png" alt="LOYVANCE loyalty experience" fill className="object-cover" style={{objectPosition:"26% center"}}/>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/15"/>
-            <div className="absolute bottom-6 left-6 flex flex-wrap gap-2">{["Stamps & Rewards","Analytics Dashboard","Custom Branding"].map(x=><span key={x} className="rounded-xl border border-[#f3bd55]/30 bg-black/65 px-4 py-2 text-xs font-semibold text-[#f3bd55] backdrop-blur">{x}</span>)}</div>
-          </div>
+          <div className="hidden lg:block" />
           <div className="flex flex-col justify-center">
             <div className="text-xs font-bold uppercase tracking-[.2em] text-[#f3bd55]">Powerful features</div>
             <h2 className="mt-4 max-w-xl text-4xl font-bold leading-tight">Everything you need to <span className="text-[#f3bd55]">grow your business.</span></h2>
