@@ -41,13 +41,13 @@ export default function Home() {
         </div>
       </header>
 
-      <section id="home" className="relative min-h-[760px] pt-20">
+      <section id="home" className="relative min-h-[720px] pt-20 sm:min-h-[740px] lg:min-h-[700px]">
         <div className="absolute inset-0">
-          <Image src="/brand/Expérience café et fidélité dorée.png" alt="" fill priority quality={100} className="object-contain object-top opacity-80"/>
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,#070807_0%,rgba(7,8,7,.82)_35%,rgba(7,8,7,.25)_68%,rgba(7,8,7,.62)_100%)]"/>
-          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#070807] to-transparent"/>
+          <Image src="/brand/Expérience café et fidélité dorée.png" alt="" fill priority quality={100} sizes="100vw" className="object-cover object-top opacity-80 sm:object-[62%_top] lg:object-center"/>
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,7,.18)_0%,rgba(7,8,7,.28)_42%,#070807_78%,#070807_100%)] sm:bg-[linear-gradient(90deg,#070807_0%,rgba(7,8,7,.82)_35%,rgba(7,8,7,.25)_68%,rgba(7,8,7,.62)_100%)]"/>
+          <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[#070807] via-[#070807]/80 to-transparent sm:h-48"/>
         </div>
-        <div className="relative mx-auto flex min-h-[680px] max-w-7xl items-center px-5 lg:px-8">
+        <div className="relative mx-auto flex min-h-[640px] max-w-7xl items-end px-5 pb-12 pt-20 sm:min-h-[660px] sm:items-center sm:pb-0 sm:pt-0 lg:min-h-[620px] lg:px-8">
           <div className="max-w-[610px]">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#e7b354]/30 bg-black/45 px-4 py-2 text-xs font-semibold text-[#f3bd55] backdrop-blur"><Sparkles className="size-4"/> Modern Loyalty Platform</div>
             <h1 className="text-5xl font-black leading-[.98] tracking-[-.045em] sm:text-6xl lg:text-7xl">Turn your customers into <span className="text-[#f3bd55]">loyal fans.</span></h1>
