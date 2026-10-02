@@ -70,7 +70,7 @@ export default function Home() {
       <section id="businesses" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden border-y border-white/10 bg-[#090a09] py-20">
         <Image src="/brand/Lobbу futuriste noir et or.png" alt="" fill quality={100} className="-z-20 object-cover object-center opacity-70"/>
         <div className="absolute inset-0 -z-10 bg-black/45"/>
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl px-5 lg:px-8">
           <p className="mb-8 text-center text-sm text-white/45">Perfect for any type of business</p>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {businesses.map(([name,img])=><div key={name} className="group relative aspect-[16/10] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#111] shadow-[0_18px_50px_rgba(0,0,0,.32)]">
