@@ -18,13 +18,13 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#080a0b] text-white">
       <div
-        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-45"
+        className="pointer-events-none absolute inset-0 bg-cover bg-[position:42%_center] bg-no-repeat opacity-[0.58] sm:bg-[position:40%_center] lg:bg-[position:38%_center]"
         style={{ backgroundImage: "url('/brand/Application%20de%20fid%C3%A9lit%C3%A9%20dor%C3%A9e%20et%20%C3%A9l%C3%A9gante.png')" }}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,10,11,.80)_0%,rgba(8,10,11,.62)_45%,rgba(8,10,11,.76)_100%)]" />
-      <div className="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-12 sm:px-6 lg:px-8 lg:pt-16">
-        <section className="grid min-h-[calc(100vh-10rem)] items-center gap-12 py-12 lg:grid-cols-[1.08fr_.92fr]">
-          <div className="max-w-[620px]">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,10,11,.66)_0%,rgba(8,10,11,.48)_43%,rgba(8,10,11,.68)_100%)] max-lg:bg-[rgba(8,10,11,.66)]" />
+      <div className="relative mx-auto w-full max-w-6xl px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pt-10">
+        <section className="grid min-h-[calc(100vh-5rem)] items-center gap-10 py-8 lg:grid-cols-[1.05fr_.95fr] lg:py-6">
+          <div className="max-w-[600px] lg:-translate-x-3">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
               <Sparkles className="size-3.5" /> Multi-tenant loyalty SaaS
             </div>
@@ -50,7 +50,7 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative lg:translate-x-3">
             <div className="pointer-events-none absolute -inset-10 rounded-full bg-[#d29b3d]/10 blur-3xl" />
             <div className="relative w-full rounded-[24px] border border-[#d4a24a]/25 bg-[#111315]/85 p-6 shadow-[0_30px_90px_rgba(0,0,0,.55)] backdrop-blur-xl sm:p-8">
               <div className="mb-7 space-y-2">
