@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Building2, Check, CreditCard, Gift, Menu, Palette, QrCode, Sparkles, Store, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, BarChart3, Building2, CreditCard, Gift, Layers3, Menu, Palette, Play, QrCode, Sparkles, Store, Users, Zap, Settings, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const businesses = [
@@ -52,15 +52,15 @@ export default function Home() {
         </div>
         <div className="relative mx-auto flex min-h-[640px] max-w-7xl items-end px-5 pb-12 pt-20 sm:min-h-[660px] sm:items-center sm:pb-0 sm:pt-0 lg:min-h-[620px] lg:px-8">
           <div className="max-w-[610px]">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#e7b354]/30 bg-black/45 px-4 py-2 text-xs font-semibold text-[#f3bd55] backdrop-blur"><Sparkles className="size-4"/> Modern Loyalty Platform</div>
-            <h1 className="text-5xl font-black leading-[.98] tracking-[-.045em] sm:text-6xl lg:text-7xl">Turn your customers into <span className="text-[#f3bd55]">loyal fans.</span></h1>
-            <p className="mt-7 max-w-xl text-base leading-7 text-white/70 sm:text-lg">Create digital loyalty cards, rewards, and personalized experiences for your business. Easy, fast, and professional.</p>
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#f3bd55]/45 bg-black/55 px-4 py-2 text-xs font-bold text-[#f3bd55] shadow-[0_0_20px_rgba(243,189,85,.12)] backdrop-blur"><Sparkles className="size-4"/> Modern Loyalty Platform</div>
+            <h1 className="text-5xl font-black leading-[1.02] tracking-[-.045em] drop-shadow-[0_3px_14px_rgba(0,0,0,.65)] sm:text-6xl lg:text-7xl">Turn your customers into <span className="text-[#f3bd55]">loyal fans.</span></h1>
+            <p className="mt-6 max-w-xl text-base leading-7 text-white/80 drop-shadow-[0_2px_8px_rgba(0,0,0,.8)] sm:text-lg">Create digital loyalty cards, rewards, and personalized experiences for your business. Easy, fast, and professional.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="h-[52px] bg-[#f3bd55] px-7 font-bold text-black shadow-[0_0_35px_rgba(243,189,85,.25)] hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button>
-              <Button asChild size="lg" variant="outline" className="h-[52px] border-white/15 bg-black/30 px-7 backdrop-blur"><a href="#how">See how it works</a></Button>
+              <Button asChild size="lg" className="h-14 rounded-xl border border-[#ffd36d] bg-[#f3bd55] px-8 font-bold text-black shadow-[0_0_24px_rgba(243,189,85,.34),inset_0_1px_0_rgba(255,255,255,.4)] hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button>
+              <Button asChild size="lg" variant="outline" className="h-14 rounded-xl border-[#f3bd55]/25 bg-black/55 px-7 font-semibold text-white shadow-[0_0_20px_rgba(0,0,0,.25)] backdrop-blur hover:border-[#f3bd55]/55 hover:bg-black/70"><a href="#how"><Play className="mr-2 size-5 rounded-full border border-[#f3bd55] p-1 text-[#f3bd55]"/>See how it works</a></Button>
             </div>
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
-              {["No technical skills required","Quick setup in minutes","Everything in one platform"].map((x)=><div key={x} className="rounded-xl border border-[#e7b354]/20 bg-black/45 p-3 text-xs font-medium backdrop-blur-md"><Check className="mb-2 size-4 text-[#f3bd55]"/>{x}</div>)}
+              {([[Settings,"No technical skills required"],[Zap,"Quick setup in minutes"],[Layers3,"Everything in one platform"]] as Array<[LucideIcon,string]>).map(([Icon,label])=><div key={label} className="flex min-h-[68px] items-center gap-3 rounded-xl border border-[#e7b354]/20 bg-black/55 px-3 py-3 text-xs font-semibold shadow-[0_8px_24px_rgba(0,0,0,.25)] backdrop-blur-md"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#f3bd55]/35 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[0_0_14px_rgba(243,189,85,.12)]"><Icon className="size-5"/></span><span className="leading-4">{label}</span></div>)}
             </div>
           </div>
         </div>
