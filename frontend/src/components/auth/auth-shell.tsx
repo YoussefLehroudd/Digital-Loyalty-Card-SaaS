@@ -19,6 +19,11 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#080a0b] text-white">
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-45"
+        style={{ backgroundImage: "url('/brand/Application%20de%20fid%C3%A9lit%C3%A9%20dor%C3%A9e%20et%20%C3%A9l%C3%A9gante.png')" }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,10,11,.80)_0%,rgba(8,10,11,.62)_45%,rgba(8,10,11,.76)_100%)]" />
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-32 -top-40 size-[560px] rounded-full bg-[#c68a2b]/20 blur-[110px]" />
         <div className="absolute -bottom-56 right-[-80px] size-[620px] rounded-full bg-[#f1b84a]/15 blur-[120px]" />
