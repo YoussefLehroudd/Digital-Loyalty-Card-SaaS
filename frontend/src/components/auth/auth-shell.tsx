@@ -1,5 +1,3 @@
-import Image from "next/image";
-import Link from "next/link";
 import { CreditCard, ShieldCheck, Sparkles, Stamp } from "lucide-react";
 
 type AuthShellProps = {
@@ -25,16 +23,6 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
       />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(8,10,11,.80)_0%,rgba(8,10,11,.62)_45%,rgba(8,10,11,.76)_100%)]" />
       <div className="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-12 sm:px-6 lg:px-8 lg:pt-16">
-        <Link className="inline-flex items-center gap-4" href="/">
-          <div className="relative flex size-[74px] items-center justify-center rounded-2xl border border-[#d4a24a]/25 bg-white/[0.04] shadow-[0_18px_50px_rgba(0,0,0,.35)]">
-            <Image alt="LOYVANCE logo" className="object-contain p-1" fill priority sizes="74px" src="/brand/logo.png" />
-          </div>
-          <div>
-            <p className="text-base font-bold tracking-tight">LOYVANCE</p>
-            <p className="text-sm text-white/60">Loyalty for everyone</p>
-          </div>
-        </Link>
-
         <section className="grid min-h-[calc(100vh-10rem)] items-center gap-12 py-12 lg:grid-cols-[1.08fr_.92fr]">
           <div className="max-w-[620px]">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
