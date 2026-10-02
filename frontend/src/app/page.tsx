@@ -1,10 +1,7 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Building2, Check, CreditCard, Gift, Menu, Palette, QrCode, Sparkles, Store, Users, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef } from "react";
 
 const businesses = [
   ["Restaurants","/brand/Restaurant chic aux accents dorés.png"],
@@ -25,44 +22,8 @@ const features: Array<[LucideIcon, string, string]> = [
 ];
 
 export default function Home() {
-  const presentationRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const root = presentationRef.current;
-    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let locked = false;
-    const sections = () => Array.from(root.querySelectorAll<HTMLElement>("section[id]"));
-    const ease = (t: number) => 1 - Math.pow(1 - t, 4);
-    const glideTo = (target: HTMLElement) => {
-      const start = root.scrollTop;
-      const end = target.offsetTop;
-      const distance = end - start;
-      const duration = 950;
-      const began = performance.now();
-      locked = true;
-      const frame = (now: number) => {
-        const p = Math.min((now - began) / duration, 1);
-        root.scrollTop = start + distance * ease(p);
-        if (p < 1) requestAnimationFrame(frame);
-        else { locked = false; history.replaceState(null, "", `#${target.id}`); }
-      };
-      requestAnimationFrame(frame);
-    };
-    const onWheel = (event: WheelEvent) => {
-      if (locked || Math.abs(event.deltaY) < 12) { event.preventDefault(); return; }
-      const list = sections();
-      const y = root.scrollTop;
-      let current = 0;
-      list.forEach((section, i) => { if (Math.abs(section.offsetTop - y) < Math.abs(list[current].offsetTop - y)) current = i; });
-      const next = Math.max(0, Math.min(list.length - 1, current + (event.deltaY > 0 ? 1 : -1)));
-      if (next !== current) { event.preventDefault(); glideTo(list[next]); }
-    };
-    root.addEventListener("wheel", onWheel, { passive: false });
-    return () => root.removeEventListener("wheel", onWheel);
-  }, []);
-
   return (
-    <main ref={presentationRef} className="h-[100dvh] snap-y snap-mandatory overflow-x-hidden overflow-y-auto bg-[#070807] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#070807] text-white">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
@@ -83,7 +44,7 @@ export default function Home() {
         </div>
       </header>
 
-      <section id="home" className="relative min-h-[100dvh] snap-start snap-always scroll-mt-0 pt-20">
+      <section id="home" className="relative min-h-[100dvh] pt-20">
         <div className="absolute inset-0">
           <Image src="/brand/Expérience café et fidélité dorée.png" alt="" fill priority quality={100} sizes="100vw" className="object-contain object-center opacity-80"/>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,7,.18)_0%,rgba(7,8,7,.28)_42%,#070807_78%,#070807_100%)] sm:bg-[linear-gradient(90deg,#070807_0%,rgba(7,8,7,.82)_35%,rgba(7,8,7,.25)_68%,rgba(7,8,7,.62)_100%)]"/>
@@ -106,7 +67,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="businesses" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden border-y border-white/10 bg-[#090a09] py-20">
+      <section id="businesses" className="relative isolate flex min-h-[100dvh] items-center overflow-hidden border-y border-white/10 bg-[#090a09] py-20">
         <Image src="/brand/Lobbу futuriste noir et or.png" alt="" fill quality={100} className="-z-20 object-contain object-center opacity-70"/>
         <div className="absolute inset-0 -z-10 bg-black/45"/>
         <div className="mx-auto w-full max-w-7xl px-5 lg:px-8">
@@ -126,7 +87,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden py-20">
+      <section id="how" className="relative isolate flex min-h-[100dvh] items-center overflow-hidden py-20">
         <Image src="/brand/Arrière-plan doré futuriste avec cartes élégantes.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-contain object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/25"/>
         <div className="relative mx-auto max-w-6xl px-5">
@@ -137,7 +98,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden border-y border-white/10 bg-[#090a09] py-20">
+      <section id="features" className="relative isolate flex min-h-[100dvh] items-center overflow-hidden border-y border-white/10 bg-[#090a09] py-20">
         <Image src="/brand/Café de luxe et fidélité dorée.png" alt="" fill quality={100} className="-z-20 object-contain object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/50"/>
         <div className="mx-auto grid max-w-7xl gap-14 px-5 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
@@ -151,7 +112,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="get-started" className="relative isolate flex min-h-[100dvh] snap-start snap-always scroll-mt-0 items-center overflow-hidden px-5 py-20">
+      <section id="get-started" className="relative isolate flex min-h-[100dvh] items-center overflow-hidden px-5 py-20">
         <Image src="/brand/Rubans dorés sur fond noir luxueux.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-contain object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/20"/>
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 overflow-hidden rounded-[32px] border border-[#f3bd55]/40 bg-black/25 p-8 shadow-[0_0_70px_rgba(243,189,85,.08)] backdrop-blur-[2px] md:flex-row md:p-12">
@@ -160,7 +121,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="snap-start border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>© LOYVANCE. Digital loyalty, made simple.</span><div className="flex gap-6"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link></div></div></footer>
+      <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>© LOYVANCE. Digital loyalty, made simple.</span><div className="flex gap-6"><Link href="/login">Sign in</Link><Link href="/register">Create account</Link></div></div></footer>
     </main>
   );
 }
