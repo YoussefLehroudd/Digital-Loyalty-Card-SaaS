@@ -92,7 +92,7 @@ export default function Home() {
         <div className="absolute inset-0 -z-10 bg-black/35"/>
         <div className="relative mx-auto max-w-7xl px-5 lg:px-8">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#f3bd55]/45 bg-black/55 px-4 py-2 text-xs font-bold uppercase tracking-[.12em] text-[#f3bd55] shadow-[0_0_18px_rgba(243,189,85,.14)] backdrop-blur"><QrCode className="size-4"/> How it works</div>
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-[#d99b2b]/65 bg-[linear-gradient(180deg,rgba(31,24,10,.88),rgba(8,8,7,.92))] px-5 py-2.5 text-xs font-extrabold uppercase tracking-[.08em] text-[#f5c34f] shadow-[inset_0_0_0_1px_rgba(255,211,91,.08),0_0_7px_rgba(240,170,35,.28),0_0_18px_rgba(240,170,35,.14)] backdrop-blur"><QrCode className="size-4 stroke-[2.4] text-[#f5bd3e] drop-shadow-[0_0_5px_rgba(245,189,62,.55)]"/> How it works</div>
             <h2 className="mt-5 text-4xl font-black tracking-[-.035em] sm:text-5xl">Get started in <span className="text-[#f3bd55]">3 simple steps</span></h2>
             <p className="mt-3 text-base text-white/65 sm:text-lg">Launch your digital loyalty program in minutes.</p>
           </div>
