@@ -24,7 +24,7 @@ const features: Array<[LucideIcon, string, string]> = [
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#070807] text-white">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#080907]/80 backdrop-blur-xl">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative size-12 overflow-hidden rounded-xl border border-[#e7b354]/30 bg-black"><Image src="/brand/logo.png" alt="LOYVANCE" fill className="object-contain" /></div>
@@ -43,7 +43,7 @@ export default function Home() {
 
       <section id="home" className="relative min-h-[760px] pt-20">
         <div className="absolute inset-0">
-          <Image src="/brand/Expérience café de luxe dorée.png" alt="" fill priority quality={100} className="object-cover object-center opacity-75"/>
+          <Image src="/brand/Expérience café de luxe dorée.png" alt="" fill priority quality={100} className="object-contain object-top opacity-80"/>
           <div className="absolute inset-0 bg-[linear-gradient(90deg,#070807_0%,rgba(7,8,7,.82)_35%,rgba(7,8,7,.25)_68%,rgba(7,8,7,.62)_100%)]"/>
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#070807] to-transparent"/>
         </div>
