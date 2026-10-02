@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Building2, Check, CreditCard, Gift, Menu, Palette, QrCode, ScanLine, Sparkles, Stamp, Store, Users } from "lucide-react";
+import { ArrowRight, BarChart3, Building2, Check, CreditCard, Gift, Menu, Palette, QrCode, Sparkles, Store, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const businesses = [
@@ -53,11 +53,11 @@ export default function Home() {
             <h1 className="text-5xl font-black leading-[.98] tracking-[-.045em] sm:text-6xl lg:text-7xl">Turn your customers into <span className="text-[#f3bd55]">loyal fans.</span></h1>
             <p className="mt-7 max-w-xl text-base leading-7 text-white/70 sm:text-lg">Create digital loyalty cards, rewards, and personalized experiences for your business. Easy, fast, and professional.</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg" className="h-13 bg-[#f3bd55] px-7 font-bold text-black shadow-[0_0_35px_rgba(243,189,85,.25)] hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button>
-              <Button asChild size="lg" variant="outline" className="h-13 border-white/15 bg-black/30 px-7 backdrop-blur"><a href="#how">See how it works</a></Button>
+              <Button asChild size="lg" className="h-[52px] bg-[#f3bd55] px-7 font-bold text-black shadow-[0_0_35px_rgba(243,189,85,.25)] hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button>
+              <Button asChild size="lg" variant="outline" className="h-[52px] border-white/15 bg-black/30 px-7 backdrop-blur"><a href="#how">See how it works</a></Button>
             </div>
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
-              {["No technical skills required","Quick setup in minutes","Everything in one platform"].map((x,i)=><div key={x} className="rounded-xl border border-[#e7b354]/20 bg-black/45 p-3 text-xs font-medium backdrop-blur-md"><Check className="mb-2 size-4 text-[#f3bd55]"/>{x}</div>)}
+              {["No technical skills required","Quick setup in minutes","Everything in one platform"].map((x)=><div key={x} className="rounded-xl border border-[#e7b354]/20 bg-black/45 p-3 text-xs font-medium backdrop-blur-md"><Check className="mb-2 size-4 text-[#f3bd55]"/>{x}</div>)}
             </div>
           </div>
         </div>
