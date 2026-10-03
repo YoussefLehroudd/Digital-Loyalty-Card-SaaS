@@ -413,12 +413,12 @@ export function BusinessProfileSettings() {
   return (
     <DashboardShell activeItem="settings">
       <div className="mx-auto w-full max-w-[1600px] space-y-4 overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4 rounded-2xl border border-[#d8a63f]/10 bg-black/10 px-4 py-3">
+        <div className="flex items-start gap-3 rounded-2xl sm:items-center sm:gap-4 border border-[#d8a63f]/10 bg-black/10 px-4 py-3">
           <div className="flex size-11 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[#8b5d12]/25 text-[#ffc857] shadow-[0_8px_24px_rgba(231,179,84,.08)]">
             <Building2 className="size-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold leading-tight text-white">
+            <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
               Business profile
             </h1>
             <p className="mt-1 max-w-3xl text-sm leading-5 text-muted-foreground">
@@ -472,7 +472,7 @@ export function BusinessProfileSettings() {
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 flex-wrap gap-2">
+                  <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:shrink-0">
                     <input
                       ref={avatarInputRef}
                       accept="image/jpeg,image/png,image/webp,image/gif"
@@ -895,7 +895,7 @@ function HeroImageUploader({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
           <input
             ref={fileInputRef}
             type="file"
