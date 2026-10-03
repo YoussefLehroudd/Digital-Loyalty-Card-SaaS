@@ -116,6 +116,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
 
         <section className="min-w-0 bg-[#070806] lg:col-start-2" style={{ backgroundImage: "url('/brand/Rubans dorés sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "top center", backgroundAttachment: "fixed", backgroundRepeat: "no-repeat" }}>
           <TopNav
+            activeItem={activeItem}
             userName={user.name ?? businessName}
             avatarUrl={user.avatar_url ?? null}
             onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
@@ -293,15 +294,25 @@ function MobileDrawerItem({
 }
 
 function TopNav({
+  activeItem,
   userName,
   avatarUrl,
   onOpenMobileMenu,
 }: {
+  activeItem: DashboardShellProps["activeItem"];
   userName: string;
   avatarUrl: string | null;
   onOpenMobileMenu: () => void;
 }) {
   const initial = userName.trim().charAt(0).toUpperCase() || "Y";
+  const pageTitle: Record<DashboardShellProps["activeItem"], string> = {
+    overview: "Dashboard",
+    customers: "Customers",
+    loyalty: "Loyalty Card",
+    scanner: "QR Scanner",
+    rewards: "Rewards",
+    settings: "Settings",
+  };
 
   return (
     <header className="sticky top-0 z-20 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl">
@@ -317,7 +328,7 @@ function TopNav({
           >
             <Menu className="size-5" />
           </Button>
-          <h1 className="hidden text-xl font-bold tracking-tight lg:block">Dashboard</h1>
+          <h1 className="hidden text-xl font-bold tracking-tight lg:block">{pageTitle[activeItem]}</h1>
           <div className="flex min-w-0 items-center gap-2 lg:hidden">
             <Image alt="LOYVANCE" className="size-8 object-contain" height={32} priority src="/brand/icon.png" width={48}/>
             <p className="truncate text-sm font-semibold">LOYVANCE</p>
