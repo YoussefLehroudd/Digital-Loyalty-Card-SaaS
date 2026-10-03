@@ -330,7 +330,7 @@ function TopNav({
           </Button>
           <div className="h-8 w-px bg-white/10" />
           <div className="flex items-center gap-3">
-            <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e7b354]/20 bg-[#5b451b] font-bold text-white">{avatarUrl ? <Image alt={userName} fill sizes="40px" src={avatarUrl} className="object-cover" /> : initial}</div>
+            <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e7b354]/25 bg-[#5b451b] font-bold text-white shadow-[0_0_14px_rgba(231,179,84,.10)]">{avatarUrl ? <img alt={userName} src={avatarUrl} className="h-full w-full object-cover object-center" /> : initial}</div>
             <div className="hidden min-w-0 sm:block">
               <p className="max-w-44 truncate text-sm font-semibold text-white">{userName}</p>
               <p className="text-xs text-white/40">Business Owner</p>
