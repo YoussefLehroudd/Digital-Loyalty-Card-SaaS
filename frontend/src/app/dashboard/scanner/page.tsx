@@ -224,9 +224,17 @@ export default function ScannerPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex flex-col justify-center text-sm text-muted-foreground">
-                    <div className="font-medium">Your customer QR</div>
-                    <div className="mt-1">Scan this QR to receive stamps</div>
+                  <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 text-center">
+                    <div className="flex size-14 items-center justify-center rounded-2xl border border-[#d69b2d]/25 bg-[#8b5d12]/20 text-[#ffc857] shadow-[0_0_24px_rgba(225,163,44,.08)]">
+                      <QrCode className="size-7" />
+                    </div>
+                    <div className="mt-4 text-[15px] font-bold text-white">Customer QR preview</div>
+                    <div className="mt-1 max-w-[280px] text-xs leading-5 text-white/45">
+                      Scan a customer loyalty card to display its QR code here.
+                    </div>
+                    <div className="mt-4 rounded-full border border-[#e7b354]/15 bg-[#e7b354]/[.05] px-3 py-1 text-[10px] font-medium uppercase tracking-[.12em] text-[#ffc857]/75">
+                      Waiting for scan
+                    </div>
                   </div>
                 )}
               </div>
