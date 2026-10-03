@@ -899,6 +899,16 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
   `) as Array<{ customers:number; active:number; visits:number; rewards:number; prev_customers:number; prev_active:number; prev_visits:number; prev_rewards:number }>;
   const row = counts[0] ?? { customers:0, active:0, visits:0, rewards:0, prev_customers:0, prev_active:0, prev_visits:0, prev_rewards:0 };
   const percentChange = (current: number, previous: number) => previous > 0 ? Math.round(((current - previous) / previous) * 100) : current > 0 ? 100 : 0;
+  const activityRows = (await sql`
+    WITH days AS (
+      SELECT generate_series(date_trunc('day', ${startIso}::timestamptz), date_trunc('day', ${endIso}::timestamptz), interval '1 day') AS day
+    )
+    SELECT d.day::date::text AS date,
+      (SELECT count(*)::int FROM customers c WHERE c.business_id=${businessId} AND c.created_at >= d.day AND c.created_at < d.day + interval '1 day') AS new_customers,
+      (SELECT count(*)::int FROM visits v WHERE v.business_id=${businessId} AND v.created_at >= d.day AND v.created_at < d.day + interval '1 day') AS stamps_issued,
+      (SELECT count(*)::int FROM reward_redemptions r WHERE r.business_id=${businessId} AND r.status='redeemed' AND r.redeemed_at >= d.day AND r.redeemed_at < d.day + interval '1 day') AS rewards_redeemed
+    FROM days d ORDER BY d.day
+  `) as Array<{date:string;new_customers:number;stamps_issued:number;rewards_redeemed:number}>;
   return json({
     business: publicBusiness(auth.business),
     metrics: {
@@ -914,6 +924,7 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
       },
     },
     period: { key: period, start: startIso, end: endIso },
+    activity: activityRows,
     generated_at: new Date().toISOString(),
   });
 }
