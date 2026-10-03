@@ -15,6 +15,7 @@ export type StampResultProps = {
    * (modal stays open; actions are Close + Scan another).
    */
   rewardRedeemed?: boolean;
+  rewardAlreadyReady?: boolean;
   onRedeemReward?: () => void;
   redeeming?: boolean;
   onClose?: () => void;
@@ -26,6 +27,7 @@ export function StampResult({
   requiredStamps,
   rewardUnlocked,
   rewardRedeemed,
+  rewardAlreadyReady,
   onRedeemReward,
   redeeming,
   onClose,
@@ -83,7 +85,7 @@ export function StampResult({
                 </>
               ) : (
                 <>
-                  <div className="mt-0.5 text-lg font-semibold">Stamp added 🎉</div>
+                  <div className="mt-0.5 text-lg font-semibold">{rewardAlreadyReady ? "Reward is ready" : "Stamp added 🎉"}</div>
                   <div className="mt-1 flex items-center gap-2">
                     {rewardUnlocked ? (
                       <Badge className="bg-success/10 text-success hover:bg-success/10">
@@ -119,8 +121,10 @@ export function StampResult({
 
               <p className="mt-3 text-xs text-muted-foreground">
                 {rewardRedeemed
-                  ? "Customer completed the loyalty card. Redeem is ready for the next cycle."
-                  : rewardUnlocked
+                  ? "Reward redeemed. A new loyalty cycle has started."
+                  : rewardAlreadyReady
+                    ? "This card is already complete. Redeem the reward before adding another stamp."
+                    : rewardUnlocked
                     ? "Reward unlocked 🎉 This customer is ready to redeem."
                     : remaining === 1
                       ? "1 more stamp to unlock your reward"
@@ -133,8 +137,8 @@ export function StampResult({
                 <Gift className="size-4 text-success" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">Reward is ready</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    This customer can redeem the reward now.
+                  <p className="text-xs text-muted-foreground">
+                    {rewardAlreadyReady ? "No extra stamp was added. Redeem this reward to start the next cycle." : "This customer can redeem the reward now."}
                   </p>
                 </div>
               </div>
