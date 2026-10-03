@@ -58,6 +58,8 @@ export type DashboardOverview = {
     "id" | "name" | "email" | "logo_url" | "logo_public_id" | "primary_color" | "created_at"
   >;
   metrics: DashboardMetrics;
+  period?: { key: string; start: string; end: string };
+  activity?: Array<{ date: string; new_customers: number; stamps_issued: number; rewards_redeemed: number }>;
   generated_at: string;
 };
 
