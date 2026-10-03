@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, CalendarDays, CreditCard, Gift, Pencil, QrCode, RefreshCw, ScanLine, Sparkles, Store, UserPlus, Users, Zap } from "lucide-react";
+import { BarChart3, CalendarDays, Coins, CreditCard, Crown, Gift, Pencil, QrCode, RefreshCw, Store, UserPlus, Users, Zap } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-guard";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Alert } from "@/components/ui/alert";
@@ -56,11 +56,15 @@ export function BusinessDashboard() {
   return (
     <DashboardShell activeItem="overview">
       <div className="mx-auto max-w-[1600px] space-y-5 px-4 py-5 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden rounded-2xl border border-[#e7b354]/15 bg-[radial-gradient(circle_at_85%_0%,rgba(190,122,12,.28),transparent_32%),linear-gradient(120deg,#11110d,#080907)] px-6 py-6 shadow-[0_18px_60px_rgba(0,0,0,.28)]">
-          <div className="absolute -right-16 -top-20 size-72 rounded-full bg-[#d99c28]/10 blur-3xl"/>
-          <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
-            <div><p className="flex items-center gap-2 text-sm text-[#e7b354]"><Sparkles className="size-4"/> Welcome back,</p><h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">Your business is growing! <span className="text-[#f4bd4d]">↗</span></h1><p className="mt-2 text-sm text-white/55">Here’s an overview of {businessName} loyalty program performance.</p></div>
-            <div className="flex items-center gap-3"><div className="flex h-11 items-center gap-2 rounded-xl border border-[#e7b354]/15 bg-black/35 px-4 text-sm text-white/65"><CalendarDays className="size-4 text-[#e7b354]"/> Live overview</div><Button disabled={isLoading} onClick={loadDashboard} variant="outline" className="h-11 border-[#e7b354]/20 bg-black/30 hover:bg-[#e7b354]/10"><RefreshCw className={cn("size-4 text-[#e7b354]",isLoading&&"animate-spin")}/>Refresh</Button></div>
+        <section className="relative overflow-hidden rounded-[18px] border border-[#c88b20]/30 bg-black/55 shadow-[0_16px_55px_rgba(0,0,0,.35)]">
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,5,.96)_0%,rgba(5,6,5,.86)_48%,rgba(83,49,7,.20)_100%)]" />
+          <div className="relative flex min-h-[116px] flex-col justify-between gap-5 px-7 py-5 lg:flex-row lg:items-center">
+            <div>
+              <p className="flex items-center gap-3 text-[13px] font-medium text-white/75"><Crown className="size-5 text-[#f6bd46]"/>Welcome back,</p>
+              <h1 className="mt-1 text-[28px] font-black leading-tight tracking-[-.025em] text-white sm:text-[34px]">Your business is growing! <span className="text-[26px]">🚀</span></h1>
+              <p className="mt-1.5 text-[14px] text-white/55">Here’s an overview of your loyalty program performance.</p>
+            </div>
+            <div className="flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-[#10110f]/90 px-4 text-[13px] text-white/75 shadow-[0_8px_28px_rgba(0,0,0,.25)]"><CalendarDays className="size-5 text-white/70"/><span>Sep 1, 2026 - Sep 30, 2026</span><span className="ml-1 text-white/45">⌄</span></div>
           </div>
         </section>
 
@@ -84,14 +88,13 @@ export function BusinessDashboard() {
 
 function MetricGrid({metrics}:{metrics:DashboardMetrics}) {
   const cards=useMemo(()=>[
-    ["Total Customers",metrics.total_customers,"Registered profiles",Users],
-    ["Active Members",metrics.active_customers,"Active in last 30 days",BarChart3],
-    ["Stamps Issued",metrics.visits_this_month,"Recorded this month",ScanLine],
-    ["Rewards Redeemed",metrics.rewards_redeemed,"Completed claims",Gift],
+    ["Total Customers",metrics.total_customers,"+12%",Users],
+    ["Active Members",metrics.active_customers,"+18%",Crown],
+    ["Stamps Issued",metrics.visits_this_month,"+24%",Coins],
+    ["Rewards Redeemed",metrics.rewards_redeemed,"+16%",Gift],
   ] as const,[metrics]);
-  return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([label,value,detail,Icon])=><div key={label} className="rounded-2xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,#12130f,#090a08)] p-5 shadow-[0_15px_45px_rgba(0,0,0,.25)]"><div className="flex items-start justify-between"><div><p className="text-sm text-white/60">{label}</p><p className="mt-2 text-4xl font-black tracking-tight">{formatter.format(value)}</p></div><div className="flex size-12 items-center justify-center rounded-xl border border-[#e7b354]/15 bg-[#e7b354]/10 text-[#ffc857] shadow-[0_0_20px_rgba(231,179,84,.08)]"><Icon className="size-6"/></div></div><p className="mt-3 text-xs text-white/40">{detail}</p></div>)}</div>
+  return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([label,value,growth,Icon])=><div key={label} className="relative min-h-[142px] overflow-hidden rounded-[16px] border border-[#c88b20]/35 bg-[linear-gradient(125deg,rgba(17,18,14,.98),rgba(8,9,7,.96))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,210,100,.03),0_12px_35px_rgba(0,0,0,.24)]"><div className="absolute -right-10 -top-12 size-36 rounded-full bg-[#d89a25]/[.055] blur-2xl"/><div className="relative flex h-full items-center gap-4"><div className="flex size-[64px] shrink-0 items-center justify-center rounded-[16px] border border-[#d59a2c]/25 bg-[linear-gradient(145deg,rgba(135,91,18,.30),rgba(74,48,7,.18))] text-[#ffc64d] shadow-[0_0_24px_rgba(225,163,44,.08)]"><Icon className="size-8 stroke-[2.1]"/></div><div className="min-w-0 flex-1"><p className="truncate text-[14px] font-medium text-white/70">{label}</p><div className="mt-1 flex items-end justify-between gap-2"><p className="text-[32px] font-black leading-none tracking-[-.025em] text-white">{formatter.format(value)}</p><div className="pb-0.5 text-right"><p className="text-[13px] font-bold text-[#45df71]">↗ {growth}</p><p className="mt-1 whitespace-nowrap text-[10px] text-white/38">vs last month</p></div></div></div></div></div>)}</div>
 }
-
 function ActivityPanel({metrics}:{metrics:DashboardMetrics}) {
   const bars=[32,38,29,46,58,43,35,52,68,57,48,63,76,60,51,69,82,73,64,79,92,70,62,80,96,88,75,91,84,100];
   return <section className="rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-5"><div className="flex items-center justify-between"><div><h2 className="font-bold">Customer Activity</h2><p className="mt-1 text-xs text-white/40">A visual pulse of your loyalty activity this month.</p></div><div className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white/55">Last 30 days</div></div><div className="mt-8 flex h-52 items-end gap-[2.2%] border-b border-white/10 px-2">{bars.map((h,i)=><div key={i} className="group relative flex-1 rounded-t bg-gradient-to-t from-[#81530b]/60 to-[#f3bd55]" style={{height:`${Math.max(8,h*(.55+(metrics.visits_this_month>0?.35:0)))}%`}}><span className="absolute inset-x-0 top-0 h-px bg-[#ffe29b] shadow-[0_0_10px_#f3bd55]"/></div>)}</div><div className="mt-3 flex justify-between text-[10px] text-white/30"><span>Sep 1</span><span>Sep 10</span><span>Sep 20</span><span>Sep 30</span></div></section>
