@@ -87,8 +87,8 @@ export default function Home() {
       </section>
 
       
-      <section id="how" className="relative isolate overflow-hidden py-24">
-        <Image src="/brand/Arrière-plan doré futuriste avec cartes élégantes.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
+      <section id="how" className="relative isolate overflow-hidden py-16 sm:py-24 mobile-lite-section">
+        <Image src="/brand/Arrière-plan doré futuriste avec cartes élégantes.png" alt="" fill quality={75} sizes="100vw" className="-z-20 object-cover object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/35"/>
         <div className="relative mx-auto max-w-7xl px-5 lg:px-8">
           <div className="text-center">
@@ -97,7 +97,7 @@ export default function Home() {
             <p className="mt-3 text-base text-white/65 sm:text-lg">Launch your digital loyalty program in minutes.</p>
           </div>
           <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-11">
-            {([[1,Users,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,Send,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d],idx)=><div key={n} className="how-step-card gold-flow-border group relative flex min-h-[250px] flex-col items-center justify-center overflow-visible rounded-2xl bg-black/55 px-7 py-8 text-center shadow-[inset_0_0_42px_rgba(243,189,85,.075),0_15px_50px_rgba(0,0,0,.3)] backdrop-blur-sm after:absolute after:-left-10 after:-top-10 after:h-28 after:w-28 after:rounded-full after:bg-[#f3bd55]/10 after:blur-2xl">
+            {([[1,Users,"Create your account","Sign up and set up your business in a few clicks."],[2,Palette,"Customize your loyalty card","Add your logo, colors, and rewards that fit your business."],[3,Send,"Share with your customers","Let customers scan, collect stamps, and get rewarded."]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d],idx)=><div key={n} className="how-step-card gold-flow-border group relative flex min-h-[220px] sm:min-h-[250px] flex-col items-center justify-center overflow-visible rounded-2xl bg-black/70 px-6 py-6 sm:px-7 sm:py-8 text-center shadow-[inset_0_0_42px_rgba(243,189,85,.075),0_15px_50px_rgba(0,0,0,.3)] sm:backdrop-blur-sm after:absolute after:-left-10 after:-top-10 after:h-28 after:w-28 after:rounded-full after:bg-[#f3bd55]/10 after:blur-2xl">
               <div className="absolute left-4 top-4 z-10 flex size-11 items-center justify-center rounded-full border border-[#ffd15c]/80 bg-[radial-gradient(circle_at_38%_32%,#8a621b_0%,#4a340d_46%,#241805_100%)] text-lg font-bold text-[#ffd15c] shadow-[0_0_10px_2px_rgba(243,189,85,.48),0_0_28px_rgba(243,189,85,.32),inset_0_0_12px_rgba(255,211,100,.16)] before:absolute before:-inset-2 before:-z-10 before:rounded-full before:bg-[#f3bd55]/15 before:blur-md before:animate-pulse">{n}</div>
               <div className="flex size-20 items-center justify-center rounded-full border border-[#f3bd55]/55 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[inset_0_0_18px_rgba(243,189,85,.08),0_0_20px_rgba(243,189,85,.18)] transition-all duration-700 group-hover:border-[#ffd66f]/90 group-hover:shadow-[inset_0_0_20px_rgba(243,189,85,.12),0_0_30px_rgba(243,189,85,.38)]"><I className="size-9 stroke-[1.8]"/></div>
               <h3 className="mt-6 text-lg font-bold">{t}</h3>
@@ -108,8 +108,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="relative isolate overflow-hidden border-y border-white/10 bg-[#090a09] py-24">
-        <Image src="/brand/Café de luxe et fidélité dorée.png" alt="" fill quality={100} className="-z-20 object-cover object-center"/>
+      <section id="features" className="relative isolate overflow-hidden border-y border-white/10 bg-[#090a09] py-16 sm:py-24 mobile-lite-section">
+        <Image src="/brand/Café de luxe et fidélité dorée.png" alt="" fill quality={75} sizes="100vw" className="-z-20 object-cover object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/50"/>
         <div className="mx-auto grid max-w-7xl gap-14 px-5 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
           <div className="hidden lg:block" />
@@ -117,18 +117,18 @@ export default function Home() {
             <div className="gold-flow-border inline-flex items-center gap-2.5 rounded-full bg-[linear-gradient(180deg,rgba(31,24,10,.88),rgba(8,8,7,.92))] px-5 py-2.5 text-xs font-extrabold uppercase tracking-[.08em] text-[#f5c34f] backdrop-blur self-start"><Sparkles className="size-4 stroke-[2.4] text-[#f5bd3e] drop-shadow-[0_0_5px_rgba(245,189,62,.55)]"/> Powerful features</div>
             <h2 className="mt-4 max-w-xl text-4xl font-bold leading-tight">Everything you need to <span className="text-[#f3bd55]">grow your business.</span></h2>
             <p className="mt-4 text-white/50">A complete loyalty solution designed for modern businesses.</p>
-            <div className="mt-9 grid gap-3 sm:grid-cols-2">{features.map(([I,t,d])=><div key={t} className="gold-flow-border flex min-h-[112px] items-center gap-4 rounded-xl bg-[#111210]/95 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,.025),0_8px_24px_rgba(0,0,0,.18)]"><div className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-[#f3bd55]/20 bg-[linear-gradient(145deg,rgba(243,189,85,.13),rgba(243,189,85,.045))] text-[#f5bd3e] shadow-[inset_0_0_18px_rgba(243,189,85,.04),0_0_12px_rgba(243,189,85,.05)]"><I className="size-9 stroke-[1.8] drop-shadow-[0_0_4px_rgba(243,189,85,.3)]"/></div><div className="min-w-0"><h3 className="text-[15px] font-bold leading-tight text-white">{t}</h3><p className="mt-2 text-[13px] leading-[1.45] text-white/55">{d}</p></div></div>)}</div>
+            <div className="mt-9 grid gap-3 sm:grid-cols-2">{features.map(([I,t,d])=><div key={t} className="gold-flow-border flex min-h-[96px] sm:min-h-[112px] items-center gap-3 sm:gap-4 rounded-xl bg-[#111210]/95 px-3 py-3 sm:px-4 sm:py-4 shadow-[inset_0_1px_0_rgba(255,255,255,.025),0_8px_24px_rgba(0,0,0,.18)]"><div className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-[#f3bd55]/20 bg-[linear-gradient(145deg,rgba(243,189,85,.13),rgba(243,189,85,.045))] text-[#f5bd3e] shadow-[inset_0_0_18px_rgba(243,189,85,.04),0_0_12px_rgba(243,189,85,.05)]"><I className="size-9 stroke-[1.8] drop-shadow-[0_0_4px_rgba(243,189,85,.3)]"/></div><div className="min-w-0"><h3 className="text-[15px] font-bold leading-tight text-white">{t}</h3><p className="mt-2 text-[13px] leading-[1.45] text-white/55">{d}</p></div></div>)}</div>
           </div>
         </div>
       </section>
 
-      <section className="relative isolate overflow-hidden px-5 py-24">
-        <Image src="/brand/Rubans dorés sur fond noir luxueux.png" alt="" fill quality={100} sizes="100vw" className="-z-20 object-cover object-center"/>
+      <section className="relative isolate overflow-hidden px-5 py-14 sm:py-24 mobile-lite-section">
+        <Image src="/brand/Rubans dorés sur fond noir luxueux.png" alt="" fill quality={75} sizes="100vw" className="-z-20 object-cover object-center"/>
         <div className="absolute inset-0 -z-10 bg-black/20"/>
-        <div className="gold-flow-border mx-auto grid max-w-6xl items-center gap-7 overflow-hidden rounded-[24px] bg-black/55 px-7 py-7 shadow-[inset_0_0_35px_rgba(243,189,85,.06),0_0_18px_rgba(243,189,85,.20)] backdrop-blur-sm md:grid-cols-[128px_1fr_auto] md:px-8 md:py-8">
-          <div className="relative flex size-28 items-center justify-center rounded-2xl border border-[#f3bd55]/25 bg-[linear-gradient(145deg,rgba(243,189,85,.11),rgba(0,0,0,.55))] text-[#ffc64d] shadow-[inset_0_0_22px_rgba(243,189,85,.07),0_0_16px_rgba(243,189,85,.10)]"><div className="relative mt-3"><BarChart3 className="size-[62px] stroke-[3] drop-shadow-[0_0_7px_rgba(255,196,65,.55)]"/><ArrowRight className="absolute -right-3 -top-3 size-9 -rotate-45 stroke-[3] text-[#ffd36a] drop-shadow-[0_0_6px_rgba(255,196,65,.5)]"/></div></div>
+        <div className="gold-flow-border mx-auto grid max-w-6xl items-center gap-5 sm:gap-7 overflow-hidden rounded-[24px] bg-black/75 px-5 py-6 sm:px-7 sm:py-7 shadow-[inset_0_0_35px_rgba(243,189,85,.06),0_0_18px_rgba(243,189,85,.20)] backdrop-blur-sm md:grid-cols-[128px_1fr_auto] md:px-8 md:py-8">
+          <div className="relative flex size-20 sm:size-28 items-center justify-center rounded-2xl border border-[#f3bd55]/25 bg-[linear-gradient(145deg,rgba(243,189,85,.11),rgba(0,0,0,.55))] text-[#ffc64d] shadow-[inset_0_0_22px_rgba(243,189,85,.07),0_0_16px_rgba(243,189,85,.10)]"><div className="relative mt-3"><BarChart3 className="size-12 sm:size-[62px] stroke-[3] drop-shadow-[0_0_7px_rgba(255,196,65,.55)]"/><ArrowRight className="absolute -right-3 -top-3 size-9 -rotate-45 stroke-[3] text-[#ffd36a] drop-shadow-[0_0_6px_rgba(255,196,65,.5)]"/></div></div>
           <div><h2 className="text-3xl font-bold leading-tight md:text-[32px]">Ready to grow your business<br className="hidden lg:block"/> with <span className="text-[#f3bd55]">loyalty?</span></h2><p className="mt-3 max-w-xl text-base leading-7 text-white/65">Create your free account today and start building<br className="hidden lg:block"/> stronger customer relationships.</p></div>
-          <div className="shrink-0 text-center"><Button asChild size="lg" className="h-16 min-w-[310px] bg-[#f3bd55] px-8 font-bold text-black shadow-[0_0_16px_rgba(243,189,85,.35),0_10px_35px_rgba(243,189,85,.2)] hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button><p className="mt-4 text-sm text-white/55">No credit card required <span className="mx-2 text-[#f3bd55]">•</span> Setup in minutes</p></div>
+          <div className="shrink-0 text-center"><Button asChild size="lg" className="h-14 w-full sm:h-16 sm:min-w-[310px] bg-[#f3bd55] px-8 font-bold text-black shadow-[0_0_16px_rgba(243,189,85,.35),0_10px_35px_rgba(243,189,85,.2)] hover:bg-[#ffd16f]"><Link href="/register">Create your free account <ArrowRight className="size-4"/></Link></Button><p className="mt-4 text-sm text-white/55">No credit card required <span className="mx-2 text-[#f3bd55]">•</span> Setup in minutes</p></div>
         </div>
       </section>
 
