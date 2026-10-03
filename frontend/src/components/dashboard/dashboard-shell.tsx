@@ -116,6 +116,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
         <section className="min-w-0">
           <TopNav
             userName={user.name ?? businessName}
+            avatarUrl={user.avatar_url ?? null}
             onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           />
 
@@ -292,9 +293,11 @@ function MobileDrawerItem({
 
 function TopNav({
   userName,
+  avatarUrl,
   onOpenMobileMenu,
 }: {
   userName: string;
+  avatarUrl: string | null;
   onOpenMobileMenu: () => void;
 }) {
   const initial = userName.trim().charAt(0).toUpperCase() || "Y";
@@ -327,12 +330,11 @@ function TopNav({
           </Button>
           <div className="h-8 w-px bg-white/10" />
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-full border border-[#e7b354]/15 bg-[#5b451b] font-bold text-white">{initial}</div>
+            <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e7b354]/20 bg-[#5b451b] font-bold text-white">{avatarUrl ? <Image alt={userName} fill sizes="40px" src={avatarUrl} className="object-cover" /> : initial}</div>
             <div className="hidden min-w-0 sm:block">
               <p className="max-w-44 truncate text-sm font-semibold text-white">{userName}</p>
               <p className="text-xs text-white/40">Business Owner</p>
             </div>
-            <span className="ml-1 text-white/45">⌄</span>
           </div>
         </div>
       </div>
