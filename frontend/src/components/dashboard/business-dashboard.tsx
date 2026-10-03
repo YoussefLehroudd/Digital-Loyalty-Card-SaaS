@@ -79,11 +79,11 @@ export function BusinessDashboard() {
             <div className="space-y-5">
               <ActivityPanel activity={overview?.activity ?? []} period={period} setPeriod={setPeriod}/>
               <RecentCustomers customers={overview?.recent_customers ?? []}/>
+              <BusinessInfo name={businessName} logoUrl={overview?.business.logo_url ?? user.business?.logo_url ?? null} createdAt={overview?.business.created_at ?? user.business?.created_at ?? null}/>
             </div>
             <div className="space-y-5">
               <LoyaltyPreview business={overview?.business ?? user.business ?? null} card={loyaltyCard}/>
               <QuickActions/>
-              <BusinessInfo name={businessName} logoUrl={overview?.business.logo_url ?? user.business?.logo_url ?? null} createdAt={overview?.business.created_at ?? user.business?.created_at ?? null}/>
             </div>
           </div>
         </> : null}
