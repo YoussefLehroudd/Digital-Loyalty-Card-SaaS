@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Search } from "lucide-react";
+import { Award, BadgeCheck, CheckCircle2, Gift, Search, Sparkles } from "lucide-react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Alert } from "@/components/ui/alert";
@@ -174,14 +174,14 @@ export default function RewardsPage() {
 
   return (
     <DashboardShell activeItem="rewards">
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Rewards</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
-              <Card className="shadow-none">
+              <Card className="border-[#e7b354]/15 bg-black/25 shadow-none">
                 <CardHeader className="px-4 py-3">
                   <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
                     <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-border" />
@@ -193,10 +193,10 @@ export default function RewardsPage() {
                 </CardHeader>
               </Card>
 
-              <Card className="shadow-none">
+              <Card className="border-[#e7b354]/15 bg-black/25 shadow-none">
                 <CardHeader className="px-4 py-3">
                   <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                    <BadgeCheck className="h-4 w-4" />
+                    <BadgeCheck className="h-4 w-4 text-emerald-400" />
                     Ready to Redeem
                   </CardTitle>
                   <div className="text-2xl font-semibold">
@@ -205,7 +205,7 @@ export default function RewardsPage() {
                 </CardHeader>
               </Card>
 
-              <Card className="shadow-none">
+              <Card className="border-[#e7b354]/15 bg-black/25 shadow-none">
                 <CardHeader className="px-4 py-3">
                   <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
                     <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-blue-500/15 text-blue-200" />
@@ -225,7 +225,7 @@ export default function RewardsPage() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Search rewards by customer name/email/phone..."
-                  className="pl-9"
+                  className="border-[#e7b354]/15 bg-black/30 pl-9 focus-visible:ring-[#e7b354]/30"
                 />
               </div>
             </div>
@@ -254,7 +254,7 @@ export default function RewardsPage() {
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="min-w-[860px] w-full">
-                <thead className="text-left text-xs text-muted-foreground">
+                <thead className="border-b border-white/10 bg-white/[.025] text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="py-4 px-4 font-medium">Customer</th>
                     <th className="py-4 px-4 font-medium">Reward</th>
@@ -264,7 +264,7 @@ export default function RewardsPage() {
                   </tr>
                 </thead>
 
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-white/10">
                   {isLoading ? (
                     Array.from({ length: 6 }).map((_, idx) => (
                       <tr key={idx} className="h-16">
@@ -283,9 +283,9 @@ export default function RewardsPage() {
                     </tr>
                   ) : (
                     rewards.map((r, idx) => (
-                      <tr key={`${r.customer?.id ?? "null"}-${r.reward_name ?? "null"}-${idx}`} className="align-middle">
+                      <tr key={`${r.customer?.id ?? "null"}-${r.reward_name ?? "null"}-${idx}`} className="align-middle transition-colors hover:bg-[#e7b354]/[.035]">
                         <td className="px-4 py-4">
-                          <div className="font-medium">{customerName(r)}</div>
+                          <div className="flex items-center gap-3"><div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e7b354]/25 bg-[#8b5d12]/30 text-xs font-bold text-[#ffc857]">{customerName(r).split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</div><div><div className="font-semibold text-white">{customerName(r)}</div>
                           <div className="text-sm text-muted-foreground">
                             {r.customer?.email || r.customer?.phone || "—"}
                           </div>
