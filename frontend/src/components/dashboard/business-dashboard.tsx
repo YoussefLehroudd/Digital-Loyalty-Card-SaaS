@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardOverview, getLoyaltyCard, type DashboardMetrics, type DashboardOverview, type LoyaltyCard } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { useEcho } from "@/components/echo/echo-provider";
+import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
 
 const formatter = new Intl.NumberFormat("en");
 type DashboardPeriod = "current_month" | "previous_month" | "last_30_days";
@@ -76,7 +77,7 @@ export function BusinessDashboard() {
           <MetricGrid metrics={metrics}/>
           <div className="grid gap-5 xl:grid-cols-[1.7fr_.95fr]">
             <ActivityPanel activity={overview?.activity ?? []} period={period} setPeriod={setPeriod}/>
-            <LoyaltyPreview businessName={businessName} card={loyaltyCard}/>
+            <LoyaltyPreview business={overview?.business ?? user.business ?? null} card={loyaltyCard}/>
           </div>
           <div className="grid gap-5 xl:grid-cols-[1.7fr_.95fr]">
             <RecentCustomers customers={overview?.recent_customers ?? []}/>
@@ -130,11 +131,37 @@ function ActivityPanel({activity,period,setPeriod}:{activity:Array<{date:string;
     <div className="mt-1 flex flex-wrap justify-center gap-x-8 gap-y-2 text-xs text-white/55"><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-[#f6c34f]"/>New Customers</span><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-[#a86f12]"/>Stamps Issued</span><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-white/25"/>Rewards Redeemed</span></div>
   </section>
 }
-function LoyaltyPreview({businessName,card}:{businessName:string;card:LoyaltyCard|null}) {
-  const required=card?.required_stamps??5;
-  return <section className="rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-5"><div className="flex items-center justify-between"><div><h2 className="font-bold">Your Loyalty Card</h2><p className="mt-1 text-xs text-white/40">This is how your card looks to customers.</p></div><Button asChild size="sm" variant="outline" className="border-[#e7b354]/40 text-[#ffc857]"><Link href="/dashboard/loyalty-card"><Pencil className="size-3"/>Edit Card</Link></Button></div><div className="relative mt-6 overflow-hidden rounded-2xl border border-[#e7b354]/55 bg-[radial-gradient(circle_at_100%_100%,rgba(213,145,25,.28),transparent_36%),linear-gradient(135deg,#171309,#080907)] p-5 shadow-[0_0_28px_rgba(231,179,84,.12)]"><div className="flex items-center justify-between"><div><p className="text-lg font-black text-[#f5c85f]">{businessName}</p><p className="text-xs text-white/45">Digital Loyalty Card</p></div><QrCode className="size-16 rounded-lg bg-white p-2 text-black"/></div><div className="mt-6 flex gap-2">{Array.from({length:Math.min(required,7)}).map((_,i)=><span key={i} className={cn("flex size-9 items-center justify-center rounded-full border",i<Math.min(3,required)?"border-[#ffd36a] bg-[#f3bd55] text-black":"border-white/25 bg-black/30 text-white/20")}>{i<3?"✓":""}</span>)}</div><p className="mt-4 text-xs text-white/65">{card?.reward_name??"Collect stamps & get a reward!"}</p></div></section>
+function LoyaltyPreview({business,card}:{business:DashboardOverview["business"]|null;card:LoyaltyCard|null}) {
+  const required=Math.max(1,card?.required_stamps??5);
+  return <section className="rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-5">
+    <div className="flex items-center justify-between gap-3">
+      <div><h2 className="font-bold">Your Loyalty Card</h2><p className="mt-1 text-xs text-white/40">This is how your card looks to customers.</p></div>
+      <Button asChild size="sm" variant="outline" className="border-[#e7b354]/40 text-[#ffc857]"><Link href="/dashboard/loyalty-card"><Pencil className="size-3"/>Edit Card</Link></Button>
+    </div>
+    <div className="mt-5">
+      <LoyaltyCardVisual
+        businessName={business?.name ?? "Business"}
+        businessLogoUrl={business?.logo_url ?? null}
+        heroImageUrl={business?.hero_image_url ?? null}
+        heroImageZoom={business?.hero_image_zoom ?? null}
+        heroImagePositionX={business?.hero_image_position_x ?? null}
+        heroImagePositionY={business?.hero_image_position_y ?? null}
+        brandPrimaryColor={business?.primary_color ?? null}
+        memberName="Customer name"
+        rewardName={card?.reward_name ?? null}
+        rewardDescription={card?.reward_description ?? null}
+        cardNumber="dashboard-preview"
+        qrToken={null}
+        showQrPayloadText={false}
+        stampUiVariant="customer"
+        progressPercent={0}
+        currentStamps={0}
+        requiredStamps={required}
+      />
+    </div>
+    <p className="mt-3 text-[11px] leading-5 text-white/35">Preview starts at 0 stamps. Customer name, progress and QR are personalized for each member.</p>
+  </section>
 }
-
 function RecentCustomers({customers}:{customers:Array<{id:string;name:string;email:string|null;activity:{type:string;date:string}}>}){
   const initials=(name:string)=>name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join("")||"C";
   const badge=(type:string)=>type==="reward"?["Redeemed reward","bg-[#253d92]/45 text-[#6d8cff]"]:type==="stamp"?["+1 stamp","bg-[#123c1c]/65 text-[#55dc72]"]:["Joined","bg-[#5a3d08]/55 text-[#ffc54c]"];
