@@ -872,6 +872,31 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
     SELECT count(*)::int AS count FROM reward_redemptions WHERE business_id = ${businessId} AND status = 'redeemed'
   `) as Array<{ count: number }>)[0]?.count ?? 0;
 
+  const growthRows = (await sql`
+    SELECT
+      count(*) FILTER (WHERE c.created_at >= date_trunc('month', now()))::int AS customers_current,
+      count(*) FILTER (WHERE c.created_at >= date_trunc('month', now()) - interval '1 month' AND c.created_at < date_trunc('month', now()))::int AS customers_previous
+    FROM customers c WHERE c.business_id = ${businessId}
+  `) as Array<{ customers_current: number; customers_previous: number }>;
+  const visitGrowthRows = (await sql`
+    SELECT
+      count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS current,
+      count(*) FILTER (WHERE created_at >= date_trunc('month', now()) - interval '1 month' AND created_at < date_trunc('month', now()))::int AS previous
+    FROM visits WHERE business_id = ${businessId}
+  `) as Array<{ current: number; previous: number }>;
+  const rewardGrowthRows = (await sql`
+    SELECT
+      count(*) FILTER (WHERE status = 'redeemed' AND redeemed_at >= date_trunc('month', now()))::int AS current,
+      count(*) FILTER (WHERE status = 'redeemed' AND redeemed_at >= date_trunc('month', now()) - interval '1 month' AND redeemed_at < date_trunc('month', now()))::int AS previous
+    FROM reward_redemptions WHERE business_id = ${businessId}
+  `) as Array<{ current: number; previous: number }>;
+
+  const percentChange = (current: number, previous: number) =>
+    previous > 0 ? Math.round(((current - previous) / previous) * 100) : current > 0 ? 100 : 0;
+  const customerGrowth = growthRows[0] ?? { customers_current: 0, customers_previous: 0 };
+  const visitGrowth = visitGrowthRows[0] ?? { current: 0, previous: 0 };
+  const rewardGrowth = rewardGrowthRows[0] ?? { current: 0, previous: 0 };
+
   return json({
     business: publicBusiness(auth.business),
     metrics: {
@@ -879,6 +904,12 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
       active_customers: totalCustomers,
       visits_this_month: visitsThisMonth,
       rewards_redeemed: rewardsRedeemed,
+      growth: {
+        total_customers: percentChange(customerGrowth.customers_current, customerGrowth.customers_previous),
+        active_customers: percentChange(customerGrowth.customers_current, customerGrowth.customers_previous),
+        visits_this_month: percentChange(visitGrowth.current, visitGrowth.previous),
+        rewards_redeemed: percentChange(rewardGrowth.current, rewardGrowth.previous),
+      },
     },
     generated_at: new Date().toISOString(),
   });
