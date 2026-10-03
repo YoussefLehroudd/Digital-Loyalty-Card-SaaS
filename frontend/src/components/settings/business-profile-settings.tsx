@@ -50,6 +50,7 @@ import {
 } from "@/lib/auth";
 import { useAutoDismiss } from "@/lib/use-auto-dismiss";
 import { cn } from "@/lib/utils";
+import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
 
 const schema = z.object({
   name: z.string().min(2, "Enter a business name.").max(255),
@@ -1032,93 +1033,42 @@ function BrandingPreview({
   business: Business | null;
   heroImage: BrandingImageState | null;
 }) {
-  const brandColor = business?.primary_color ?? "#171717";
   const businessName = business?.name ?? "Business";
-  const showHero = Boolean(heroImage?.dataUrl);
 
   return (
     <Card className="h-fit overflow-hidden border-white/15 bg-[linear-gradient(135deg,rgba(13,14,11,.94),rgba(8,9,7,.88))] shadow-[0_16px_45px_rgba(0,0,0,.22)] backdrop-blur-md">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle>Branding preview</CardTitle>
         <CardDescription>
-          A lightweight preview of the customer-facing brand style.
+          Exact preview of the loyalty card customers will see.
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-5">
-        <div
-          className="relative min-h-[260px] overflow-hidden rounded-lg border p-4 text-white"
-          style={{ backgroundColor: showHero ? "transparent" : brandColor }}
-        >
-          {showHero ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroImage!.dataUrl}
-              alt="Branding background preview"
-              className="absolute inset-0 h-full w-full select-none"
-              style={{
-                objectFit: "cover",
-                transform: `scale(${heroImage!.zoom})`,
-                transformOrigin: "center",
-                objectPosition: `${heroImage!.offsetXPercent + 50}% ${heroImage!.offsetYPercent + 50}%`,
-                zIndex: 0,
-              }}
-            />
-          ) : null}
-
-          <div
-            className="absolute inset-0"
-            style={{
-              background: showHero
-                ? "linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25))"
-                : "transparent",
-              zIndex: 1,
-            }}
+      <CardContent>
+        <div className="mx-auto w-full max-w-[560px]">
+          <LoyaltyCardVisual
+            businessName={businessName}
+            businessLogoUrl={business?.logo_url}
+            heroImageUrl={heroImage?.dataUrl ?? null}
+            heroImageZoom={heroImage?.zoom ?? business?.hero_image_zoom}
+            heroImagePositionX={heroImage?.offsetXPercent ?? business?.hero_image_position_x}
+            heroImagePositionY={heroImage?.offsetYPercent ?? business?.hero_image_position_y}
+            brandPrimaryColor={business?.primary_color}
+            memberName="Preview member"
+            rewardName="Loyalty reward"
+            rewardDescription="Collect stamps to unlock your reward."
+            cardNumber="preview"
+            qrToken={null}
+            showQrPayloadText={false}
+            stampUiVariant="customer"
+            progressPercent={0}
+            currentStamps={0}
+            requiredStamps={10}
           />
-
-          <div className="relative" style={{ zIndex: 2 }}>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/15">
-                  {business?.logo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt={`${business.name} logo`}
-                      className="size-full object-cover"
-                      src={business.logo_url}
-                    />
-                  ) : (
-                    <span className="text-sm font-semibold">
-                      {getInitials(businessName)}
-                    </span>
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">
-                    {businessName}
-                  </p>
-                  <p className="text-xs opacity-75">Member experience</p>
-                </div>
-              </div>
-
-              <BadgeCheck className="size-5 shrink-0" />
-            </div>
-
-            <div className="mt-6 grid grid-cols-5 gap-2">
-              {Array.from({ length: 10 }).map((_, index) => (
-                <div
-                  className={cn(
-                    "aspect-square rounded-md border border-white/20",
-                    index < 4 ? "bg-white/90" : "bg-white/10",
-                  )}
-                  key={index}
-                />
-              ))}
-            </div>
-          </div>
         </div>
-
+        <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
+          Preview only. Member name, stamp progress, reward and QR code are personalized for each customer.
+        </p>
       </CardContent>
     </Card>
   );
