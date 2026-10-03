@@ -99,16 +99,16 @@ export function BusinessDashboard() {
 
   return (
     <DashboardShell activeItem="overview">
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="space-y-3">
-                <Badge className="w-fit border-success/30 bg-secondary text-secondary-foreground">
+                <Badge className="w-fit border-[#e7b354]/25 bg-[#e7b354]/10 text-[#ffc857]">
                   <ChartNoAxesColumnIncreasing className="mr-1 size-3" />
                   Business overview
                 </Badge>
                 <div>
                   <h1 className="text-3xl font-semibold leading-tight">
-                    {businessName} dashboard
+                    Your business is growing!
                   </h1>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
                     Customer growth, visit activity, and reward performance for
@@ -174,13 +174,13 @@ function MetricGrid({ metrics }: { metrics: DashboardMetrics }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.label}>
+        <Card className="border-[#e7b354]/20 bg-gradient-to-br from-[#12130f] to-[#090a08] shadow-[0_12px_40px_rgba(0,0,0,.28)]" key={card.label}>
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardDescription>{card.label}</CardDescription>
-            <card.icon className="size-4 text-muted-foreground" />
+            <div className="flex size-11 items-center justify-center rounded-xl border border-[#e7b354]/15 bg-[#e7b354]/10"><card.icon className="size-5 text-[#ffc857]" /></div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">{formatter.format(card.value)}</p>
+            <p className="text-4xl font-bold tracking-tight text-white">{formatter.format(card.value)}</p>
             <p className="mt-2 text-xs text-muted-foreground">{card.detail}</p>
           </CardContent>
         </Card>
@@ -212,7 +212,7 @@ function DashboardSummary({ metrics }: { metrics: DashboardMetrics }) {
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full bg-success"
+                className="h-full rounded-full bg-gradient-to-r from-[#b87913] to-[#ffc857] shadow-[0_0_12px_rgba(255,200,87,.35)]"
                 style={{ width: `${Math.min(repeatSignal, 100)}%` }}
               />
             </div>
@@ -231,7 +231,7 @@ function DashboardSummary({ metrics }: { metrics: DashboardMetrics }) {
 
 function SummaryTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border bg-background p-4">
+    <div className="rounded-xl border border-[#e7b354]/15 bg-black/25 p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-2 text-xl font-semibold">{formatter.format(value)}</p>
     </div>
