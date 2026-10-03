@@ -79,11 +79,11 @@ export function BusinessDashboard() {
             <div className="space-y-5">
               <ActivityPanel activity={overview?.activity ?? []} period={period} setPeriod={setPeriod}/>
               <RecentCustomers customers={overview?.recent_customers ?? []}/>
-              <BusinessInfo name={businessName} logoUrl={overview?.business.logo_url ?? user.business?.logo_url ?? null} createdAt={overview?.business.created_at ?? user.business?.created_at ?? null}/>
             </div>
             <div className="space-y-5">
               <LoyaltyPreview business={overview?.business ?? user.business ?? null} card={loyaltyCard}/>
               <QuickActions/>
+              <BusinessInfo name={businessName} logoUrl={overview?.business.logo_url ?? user.business?.logo_url ?? null} createdAt={overview?.business.created_at ?? user.business?.created_at ?? null}/>
             </div>
           </div>
         </> : null}
@@ -141,8 +141,8 @@ function LoyaltyPreview({business,card}:{business:DashboardOverview["business"]|
       <div><h2 className="font-bold">Your Loyalty Card</h2><p className="mt-0.5 text-[11px] text-white/40">Customer-facing card preview.</p></div>
       <Button asChild size="sm" variant="outline" className="border-[#e7b354]/40 text-[#ffc857]"><Link href="/dashboard/loyalty-card"><Pencil className="size-3"/>Edit Card</Link></Button>
     </div>
-    <div className="mt-2 flex items-center justify-center overflow-hidden">
-      <div className="w-full max-w-[300px]">
+    <div className="mt-1.5 flex items-center justify-center overflow-hidden">
+      <div className="w-full max-w-[245px]">
         <LoyaltyCardVisual
           businessName={business?.name ?? "Business"}
           businessLogoUrl={business?.logo_url ?? null}
@@ -164,7 +164,7 @@ function LoyaltyPreview({business,card}:{business:DashboardOverview["business"]|
         />
       </div>
     </div>
-    <div className="mt-2 rounded-lg border border-[#e7b354]/10 bg-black/20 px-3 py-1.5">
+    <div className="mt-1.5 rounded-lg border border-[#e7b354]/10 bg-black/20 px-3 py-1">
       <p className="text-[10px] leading-4 text-white/40">Preview only: real members see their own name, stamp progress and personal QR code.</p>
     </div>
   </section>
