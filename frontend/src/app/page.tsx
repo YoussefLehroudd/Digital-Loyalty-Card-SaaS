@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { ArrowRight, BarChart3, Building2, CreditCard, Gift, Layers3, Menu, Palette, Play, QrCode, Send, Sparkles, Store, Users, Zap, Settings, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -22,13 +25,14 @@ const features: Array<[LucideIcon, string, string]> = [
 ];
 
 export default function Home() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <main className="min-h-screen overflow-hidden bg-[#070807] text-white">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-md">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative size-12"><Image src="/brand/logo.png" alt="LOYVANCE" fill className="object-contain" /></div>
-            <div><div className="font-bold tracking-wide">LOYVANCE</div><div className="text-xs text-white/45">Loyalty Platform</div></div>
+        <div className="relative mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:px-5 lg:px-8">
+          <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="relative size-10 shrink-0 sm:size-12"><Image src="/brand/logo.png" alt="LOYVANCE" fill className="object-contain" /></div>
+            <div className="min-w-0"><div className="truncate text-sm font-bold tracking-wide sm:text-base">LOYVANCE</div><div className="hidden text-xs text-white/45 min-[390px]:block">Loyalty Platform</div></div>
           </Link>
           <nav className="hidden items-center gap-3 text-sm text-white/70 md:flex">
             <a href="#home" className="rounded-full border-2 border-[#f3bd55] bg-[#f3bd55]/[.04] px-4 py-2 text-[#f3bd55] shadow-[0_0_10px_rgba(243,189,85,.18)] transition-all duration-300">Home</a>
@@ -36,11 +40,35 @@ export default function Home() {
             <a href="#how" className="rounded-full border-2 border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55] hover:bg-[#f3bd55]/[.04] hover:text-[#f3bd55] hover:shadow-[0_0_10px_rgba(243,189,85,.18)]">How it works</a>
             <a href="#businesses" className="rounded-full border-2 border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55] hover:bg-[#f3bd55]/[.04] hover:text-[#f3bd55] hover:shadow-[0_0_10px_rgba(243,189,85,.18)]">Businesses</a>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link href="/login">Sign in</Link></Button>
-            <Button asChild className="bg-[#f3bd55] text-black hover:bg-[#ffd16f]"><Link href="/register">Create account <ArrowRight className="size-4"/></Link></Button>
-            <Button variant="ghost" size="icon" className="md:hidden"><Menu className="size-5"/></Button>
+            <Button asChild className="hidden bg-[#f3bd55] text-black hover:bg-[#ffd16f] min-[390px]:inline-flex sm:px-4"><Link href="/register"><span className="hidden min-[430px]:inline">Create account</span><span className="min-[430px]:hidden">Join</span> <ArrowRight className="size-4"/></Link></Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileMenuOpen}
+              className="size-11 shrink-0 md:hidden"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+            >
+              <Menu className="size-6"/>
+            </Button>
           </div>
+          {mobileMenuOpen ? (
+            <div className="absolute left-4 right-4 top-[68px] z-[60] overflow-hidden rounded-2xl border border-[#f3bd55]/25 bg-[#090a08]/[.98] p-2 shadow-[0_18px_55px_rgba(0,0,0,.6)] backdrop-blur-xl md:hidden">
+              <nav className="grid gap-1 text-sm font-semibold text-white/80">
+                <a href="#home" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">Home</a>
+                <a href="#features" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">Features</a>
+                <a href="#how" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">How it works</a>
+                <a href="#businesses" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">Businesses</a>
+                <div className="mt-1 grid grid-cols-2 gap-2 border-t border-white/10 pt-2">
+                  <Button asChild variant="outline" className="border-white/15 bg-transparent"><Link href="/login" onClick={() => setMobileMenuOpen(false)}>Sign in</Link></Button>
+                  <Button asChild className="bg-[#f3bd55] text-black hover:bg-[#ffd16f]"><Link href="/register" onClick={() => setMobileMenuOpen(false)}>Create account</Link></Button>
+                </div>
+              </nav>
+            </div>
+          ) : null}
         </div>
       </header>
 
