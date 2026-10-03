@@ -83,91 +83,85 @@ a[href]:not([aria-disabled="true"]) {
   background: color-mix(in srgb, var(--ring) 24%, transparent);
 }
 
-/* Hero background positioning sliders (visual-only styling) */
+/* Hero background positioning sliders — LOYVANCE gold */
 #hero-zoom,
 #hero-position-x,
 #hero-position-y {
-  /* ensure track/thumb styling works consistently */
   -webkit-appearance: none;
   appearance: none;
-  height: 24px; /* provides room for thumb */
+  width: 100%;
+  height: 18px;
+  cursor: pointer;
   background: transparent;
-
-  /* Makes the default "filled" portion match the design token in browsers
-     that use accent-color (Chrome/WebKit) for the active range portion. */
-  accent-color: var(--ring);
-}
-
-#hero-zoom:focus,
-#hero-position-x:focus,
-#hero-position-y:focus {
   outline: none;
 }
 
-/* Track */
 #hero-zoom::-webkit-slider-runnable-track,
 #hero-position-x::-webkit-slider-runnable-track,
 #hero-position-y::-webkit-slider-runnable-track {
-  height: 6px;
+  height: 5px;
+  border: 1px solid rgba(231,179,84,.16);
   border-radius: 9999px;
-  background: rgba(222, 222, 216, 0.8);
+  background: linear-gradient(90deg, #d89b18 0%, #f5bd3d 45%, #ffd568 100%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.7), 0 0 5px rgba(239,189,93,.12);
 }
 
-.dark #hero-zoom::-webkit-slider-runnable-track,
-.dark #hero-position-x::-webkit-slider-runnable-track,
-.dark #hero-position-y::-webkit-slider-runnable-track {
-  background: rgba(49, 49, 45, 0.9);
-}
-
-/* Thumb */
 #hero-zoom::-webkit-slider-thumb,
 #hero-position-x::-webkit-slider-thumb,
 #hero-position-y::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
   border-radius: 9999px;
-  background: var(--ring);
-  border: 2px solid var(--foreground);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
-  margin-top: -6px; /* centers thumb on 6px track */
+  border: 2px solid #ffe08a;
+  background: #f1b93e;
+  box-shadow: 0 0 0 2px rgba(239,189,93,.16), 0 0 8px rgba(239,189,93,.48);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+#hero-zoom:hover::-webkit-slider-thumb,
+#hero-position-x:hover::-webkit-slider-thumb,
+#hero-position-y:hover::-webkit-slider-thumb {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px rgba(239,189,93,.2), 0 0 10px rgba(239,189,93,.6);
 }
 
 #hero-zoom::-moz-range-track,
 #hero-position-x::-moz-range-track,
 #hero-position-y::-moz-range-track {
-  height: 6px;
+  height: 5px;
+  border: 1px solid rgba(231,179,84,.16);
   border-radius: 9999px;
-  background: rgba(222, 222, 216, 0.8);
+  background: #25241f;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.7);
 }
 
-.dark #hero-zoom::-moz-range-track,
-.dark #hero-position-x::-moz-range-track,
-.dark #hero-position-y::-moz-range-track {
-  background: rgba(49, 49, 45, 0.9);
-}
-
-/* Firefox filled/active portion */
 #hero-zoom::-moz-range-progress,
 #hero-position-x::-moz-range-progress,
 #hero-position-y::-moz-range-progress {
-  height: 6px;
+  height: 5px;
   border-radius: 9999px;
-  background: var(--ring);
+  background: linear-gradient(90deg, #d89b18, #ffd568);
 }
 
 #hero-zoom::-moz-range-thumb,
 #hero-position-x::-moz-range-thumb,
 #hero-position-y::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   border-radius: 9999px;
-  background: var(--ring);
-  border: 2px solid var(--foreground);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent);
+  border: 2px solid #ffe08a;
+  background: #f1b93e;
+  box-shadow: 0 0 0 2px rgba(239,189,93,.16), 0 0 8px rgba(239,189,93,.48);
 }
 
+#hero-zoom:focus-visible::-webkit-slider-thumb,
+#hero-position-x:focus-visible::-webkit-slider-thumb,
+#hero-position-y:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(255,224,138,.25), 0 0 10px rgba(239,189,93,.6);
+}
 
 /* LOYVANCE continuously travelling gold border */
 .gold-flow-border {
