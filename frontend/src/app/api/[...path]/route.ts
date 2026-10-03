@@ -863,54 +863,55 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
   }
 
   const businessId = auth.business.id;
-  const totalCustomers = ((await sql`SELECT count(*)::int AS count FROM customers WHERE business_id = ${businessId}`) as Array<{ count: number }>)[0]?.count ?? 0;
-  const visitsThisMonth = ((await sql`
-    SELECT count(*)::int AS count FROM visits
-    WHERE business_id = ${businessId} AND created_at >= date_trunc('month', now())
-  `) as Array<{ count: number }>)[0]?.count ?? 0;
-  const rewardsRedeemed = ((await sql`
-    SELECT count(*)::int AS count FROM reward_redemptions WHERE business_id = ${businessId} AND status = 'redeemed'
-  `) as Array<{ count: number }>)[0]?.count ?? 0;
+  const url = new URL(req.url);
+  const period = url.searchParams.get("period") ?? "current_month";
+  const now = new Date();
+  let periodStart: Date;
+  let periodEnd: Date;
+  if (period === "previous_month") {
+    periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+    periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  } else if (period === "last_30_days") {
+    periodEnd = now;
+    periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  } else {
+    periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    periodEnd = now;
+  }
+  const durationMs = Math.max(1, periodEnd.getTime() - periodStart.getTime());
+  const previousStart = new Date(periodStart.getTime() - durationMs);
+  const startIso = periodStart.toISOString();
+  const endIso = periodEnd.toISOString();
+  const previousStartIso = previousStart.toISOString();
 
-  const growthRows = (await sql`
+  const counts = (await sql`
     SELECT
-      count(*) FILTER (WHERE c.created_at >= date_trunc('month', now()))::int AS customers_current,
-      count(*) FILTER (WHERE c.created_at >= date_trunc('month', now()) - interval '1 month' AND c.created_at < date_trunc('month', now()))::int AS customers_previous
-    FROM customers c WHERE c.business_id = ${businessId}
-  `) as Array<{ customers_current: number; customers_previous: number }>;
-  const visitGrowthRows = (await sql`
-    SELECT
-      count(*) FILTER (WHERE created_at >= date_trunc('month', now()))::int AS current,
-      count(*) FILTER (WHERE created_at >= date_trunc('month', now()) - interval '1 month' AND created_at < date_trunc('month', now()))::int AS previous
-    FROM visits WHERE business_id = ${businessId}
-  `) as Array<{ current: number; previous: number }>;
-  const rewardGrowthRows = (await sql`
-    SELECT
-      count(*) FILTER (WHERE status = 'redeemed' AND redeemed_at >= date_trunc('month', now()))::int AS current,
-      count(*) FILTER (WHERE status = 'redeemed' AND redeemed_at >= date_trunc('month', now()) - interval '1 month' AND redeemed_at < date_trunc('month', now()))::int AS previous
-    FROM reward_redemptions WHERE business_id = ${businessId}
-  `) as Array<{ current: number; previous: number }>;
-
-  const percentChange = (current: number, previous: number) =>
-    previous > 0 ? Math.round(((current - previous) / previous) * 100) : current > 0 ? 100 : 0;
-  const customerGrowth = growthRows[0] ?? { customers_current: 0, customers_previous: 0 };
-  const visitGrowth = visitGrowthRows[0] ?? { current: 0, previous: 0 };
-  const rewardGrowth = rewardGrowthRows[0] ?? { current: 0, previous: 0 };
-
+      (SELECT count(*)::int FROM customers WHERE business_id = ${businessId} AND created_at >= ${startIso}::timestamptz AND created_at < ${endIso}::timestamptz) AS customers,
+      (SELECT count(DISTINCT customer_id)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${startIso}::timestamptz AND created_at < ${endIso}::timestamptz) AS active,
+      (SELECT count(*)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${startIso}::timestamptz AND created_at < ${endIso}::timestamptz) AS visits,
+      (SELECT count(*)::int FROM reward_redemptions WHERE business_id = ${businessId} AND status = 'redeemed' AND redeemed_at >= ${startIso}::timestamptz AND redeemed_at < ${endIso}::timestamptz) AS rewards,
+      (SELECT count(*)::int FROM customers WHERE business_id = ${businessId} AND created_at >= ${previousStartIso}::timestamptz AND created_at < ${startIso}::timestamptz) AS prev_customers,
+      (SELECT count(DISTINCT customer_id)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${previousStartIso}::timestamptz AND created_at < ${startIso}::timestamptz) AS prev_active,
+      (SELECT count(*)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${previousStartIso}::timestamptz AND created_at < ${startIso}::timestamptz) AS prev_visits,
+      (SELECT count(*)::int FROM reward_redemptions WHERE business_id = ${businessId} AND status = 'redeemed' AND redeemed_at >= ${previousStartIso}::timestamptz AND redeemed_at < ${startIso}::timestamptz) AS prev_rewards
+  `) as Array<{ customers:number; active:number; visits:number; rewards:number; prev_customers:number; prev_active:number; prev_visits:number; prev_rewards:number }>;
+  const row = counts[0] ?? { customers:0, active:0, visits:0, rewards:0, prev_customers:0, prev_active:0, prev_visits:0, prev_rewards:0 };
+  const percentChange = (current: number, previous: number) => previous > 0 ? Math.round(((current - previous) / previous) * 100) : current > 0 ? 100 : 0;
   return json({
     business: publicBusiness(auth.business),
     metrics: {
-      total_customers: totalCustomers,
-      active_customers: totalCustomers,
-      visits_this_month: visitsThisMonth,
-      rewards_redeemed: rewardsRedeemed,
+      total_customers: row.customers,
+      active_customers: row.active,
+      visits_this_month: row.visits,
+      rewards_redeemed: row.rewards,
       growth: {
-        total_customers: percentChange(customerGrowth.customers_current, customerGrowth.customers_previous),
-        active_customers: percentChange(customerGrowth.customers_current, customerGrowth.customers_previous),
-        visits_this_month: percentChange(visitGrowth.current, visitGrowth.previous),
-        rewards_redeemed: percentChange(rewardGrowth.current, rewardGrowth.previous),
+        total_customers: percentChange(row.customers, row.prev_customers),
+        active_customers: percentChange(row.active, row.prev_active),
+        visits_this_month: percentChange(row.visits, row.prev_visits),
+        rewards_redeemed: percentChange(row.rewards, row.prev_rewards),
       },
     },
+    period: { key: period, start: startIso, end: endIso },
     generated_at: new Date().toISOString(),
   });
 }
