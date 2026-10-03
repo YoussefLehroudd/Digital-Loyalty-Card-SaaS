@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Award, BadgeCheck, CheckCircle2, Gift, Search, Sparkles } from "lucide-react";
+import { Award, BadgeCheck, CheckCircle2, Gift, Search } from "lucide-react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Alert } from "@/components/ui/alert";
@@ -285,9 +285,16 @@ export default function RewardsPage() {
                     rewards.map((r, idx) => (
                       <tr key={`${r.customer?.id ?? "null"}-${r.reward_name ?? "null"}-${idx}`} className="align-middle transition-colors hover:bg-[#e7b354]/[.035]">
                         <td className="px-4 py-4">
-                          <div className="flex items-center gap-3"><div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e7b354]/25 bg-[#8b5d12]/30 text-xs font-bold text-[#ffc857]">{customerName(r).split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</div><div><div className="font-semibold text-white">{customerName(r)}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {r.customer?.email || r.customer?.phone || "—"}
+                          <div className="flex items-center gap-3">
+                            <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#e7b354]/25 bg-[#8b5d12]/30 text-xs font-bold text-[#ffc857]">
+                              {customerName(r).split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-white">{customerName(r)}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {r.customer?.email || r.customer?.phone || "—"}
+                              </div>
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-4 text-sm">{r.reward_name || "—"}</td>
