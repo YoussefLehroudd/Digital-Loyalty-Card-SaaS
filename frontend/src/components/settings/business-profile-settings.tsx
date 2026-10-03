@@ -404,13 +404,13 @@ export function BusinessProfileSettings() {
 
   return (
     <DashboardShell activeItem="settings">
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1500px] space-y-5 px-5 py-6 sm:px-7 lg:px-10">
         <div className="flex flex-col gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+          <div className="flex size-11 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[#8b5d12]/25 text-[#ffc857] shadow-[0_8px_24px_rgba(231,179,84,.08)]">
             <Building2 className="size-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-semibold leading-tight">
+            <h1 className="text-3xl font-bold leading-tight text-white">
               Business profile
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
@@ -427,8 +427,8 @@ export function BusinessProfileSettings() {
           <Alert className="border-red-500/30 text-red-600">{error}</Alert>
         ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <Card>
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Card className="border-white/15 bg-[linear-gradient(135deg,rgba(13,14,11,.94),rgba(8,9,7,.88))] shadow-[0_16px_45px_rgba(0,0,0,.22)] backdrop-blur-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserRound className="size-5 text-muted-foreground" />
@@ -440,7 +440,7 @@ export function BusinessProfileSettings() {
             </CardHeader>
             <CardContent>
               <form className="space-y-5" onSubmit={handleAccountSubmit(onAccountSubmit)}>
-                <div className="flex flex-col gap-4 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-black/25 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-sm font-semibold text-secondary-foreground ring-1 ring-border">
                       {user.avatar_url ? (
@@ -537,7 +537,7 @@ export function BusinessProfileSettings() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-white/15 bg-[linear-gradient(135deg,rgba(13,14,11,.94),rgba(8,9,7,.88))] shadow-[0_16px_45px_rgba(0,0,0,.22)] backdrop-blur-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShieldCheck className="size-5 text-muted-foreground" />
@@ -603,8 +603,8 @@ export function BusinessProfileSettings() {
         {isLoading ? (
           <SettingsSkeleton />
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-            <Card>
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <Card className="border-white/15 bg-[linear-gradient(135deg,rgba(13,14,11,.94),rgba(8,9,7,.88))] shadow-[0_16px_45px_rgba(0,0,0,.22)] backdrop-blur-md">
               <CardHeader>
                 <CardTitle>Business information</CardTitle>
                 <CardDescription>
@@ -633,14 +633,14 @@ export function BusinessProfileSettings() {
                     onError={setError}
                   />
 
-                  <div className="flex flex-col gap-3 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-black/25 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm font-medium">Google Wallet background</p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
                         Choose whether the card background image is shown on Google Wallet.
                       </p>
                     </div>
-                    <div className="inline-flex rounded-lg border bg-muted/40 p-1">
+                    <div className="inline-flex rounded-xl border border-[#e7b354]/20 bg-black/30 p-1">
                       <Button
                         className="h-8 px-4"
                         type="button"
@@ -755,7 +755,7 @@ function LogoUploader({
   const initials = getInitials(business?.name ?? "Business");
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-black/25 p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-4">
         <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-card">
           {business?.logo_url ? (
@@ -857,7 +857,7 @@ function HeroImageUploader({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border bg-background p-4">
+    <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-black/25 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium">Card background image</p>
@@ -1037,7 +1037,7 @@ function BrandingPreview({
   const showHero = Boolean(heroImage?.dataUrl);
 
   return (
-    <Card className="h-fit overflow-hidden">
+    <Card className="h-fit overflow-hidden border-white/15 bg-[linear-gradient(135deg,rgba(13,14,11,.94),rgba(8,9,7,.88))] shadow-[0_16px_45px_rgba(0,0,0,.22)] backdrop-blur-md">
       <CardHeader>
         <CardTitle>Branding preview</CardTitle>
         <CardDescription>
@@ -1127,7 +1127,7 @@ function BrandingPreview({
 function SettingsSkeleton() {
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <Card>
+      <Card className="border-white/15 bg-[linear-gradient(135deg,rgba(13,14,11,.94),rgba(8,9,7,.88))] shadow-[0_16px_45px_rgba(0,0,0,.22)] backdrop-blur-md">
         <CardContent className="space-y-5 p-5">
           <Skeleton className="h-20 w-full" />
           <div className="grid gap-4 md:grid-cols-2">
@@ -1139,7 +1139,7 @@ function SettingsSkeleton() {
           <Skeleton className="h-16" />
         </CardContent>
       </Card>
-      <Card>
+      <Card className="border-white/15 bg-[linear-gradient(135deg,rgba(13,14,11,.94),rgba(8,9,7,.88))] shadow-[0_16px_45px_rgba(0,0,0,.22)] backdrop-blur-md">
         <CardContent className="space-y-4 p-5">
           <Skeleton className="h-5 w-40" />
           <Skeleton className="h-52 w-full" />
