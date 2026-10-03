@@ -16,6 +16,13 @@ import {
   Save,
   ShieldCheck,
   UserRound,
+  ZoomIn,
+  MoveHorizontal,
+  MoveVertical,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -861,17 +868,34 @@ function HeroImageUploader({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-[#d8a63f]/15 bg-[linear-gradient(135deg,rgba(20,19,14,.78),rgba(9,10,8,.72))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.025)]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-medium">Card background image</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Upload an image, adjust zoom + horizontal position, then save from
-            the main button below.
-          </p>
+    <div className="rounded-xl border border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(12,13,10,.94),rgba(7,8,6,.9))] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.025)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          {heroImage ? (
+            <div className="h-11 w-16 shrink-0 overflow-hidden rounded-md border border-[#d8a63f]/20 bg-black/30">
+              <img
+                alt="Card background preview"
+                className="h-full w-full object-cover"
+                src={heroImage.dataUrl}
+                style={{
+                  transform: `scale(${heroImage.zoom}) translate(${heroImage.offsetXPercent / heroImage.zoom}%, ${heroImage.offsetYPercent / heroImage.zoom}%)`,
+                }}
+              />
+            </div>
+          ) : (
+            <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-md border border-[#d8a63f]/20 bg-black/30 text-[#f5bf3d]">
+              <ImageUp className="size-4" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-white">Card background image</p>
+            <p className="truncate text-[11px] text-muted-foreground">
+              Upload an image, adjust zoom + horizontal position, then save from the main button below.
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -880,16 +904,21 @@ function HeroImageUploader({
             onChange={(event) => handleHeroFile(event.target.files?.[0])}
           />
           <Button
+            className="h-9 border-[#d8a63f]/25 bg-black/20 px-4 text-xs font-semibold hover:border-[#f5bf3d]/60 hover:bg-[#d79b16]/10"
             type="button"
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
           >
-            <ImageUp className="size-4" />
+            <ImageUp className="size-3.5 text-[#f5bf3d]" />
             Upload image
           </Button>
-
           {heroImage ? (
-            <Button type="button" variant="outline" onClick={onClear}>
+            <Button
+              className="h-9 border-[#d8a63f]/20 bg-black/20 px-4 text-xs hover:border-[#f5bf3d]/50"
+              type="button"
+              variant="outline"
+              onClick={onClear}
+            >
               Clear
             </Button>
           ) : null}
@@ -897,50 +926,46 @@ function HeroImageUploader({
       </div>
 
       {heroImage ? (
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="space-y-2">
-            <div className="rounded-xl border border-white/10 bg-black/20 p-4 backdrop-blur-sm">
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="hero-zoom">Zoom</Label>
-                <span className="rounded-full px-3 py-1 text-xs font-semibold">
-                  {Math.round(heroImage.zoom * 100)}%
-                </span>
-              </div>
-
-              <Input
-                id="hero-zoom"
-                type="range"
-                min={1}
-                max={3}
-                step={0.1}
-                value={heroImage.zoom}
-                onChange={(event) =>
-                  onLiveUpdate({
-                    ...heroImage,
-                    zoom: clamp(Number(event.target.value), 1, 3),
-                  })
-                }
-              />
-
-              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>100%</span>
-                <span>300%</span>
-              </div>
+        <div className="mt-3 grid gap-2.5 md:grid-cols-3">
+          <div className="rounded-lg border border-[#d8a63f]/20 bg-black/25 px-3 py-2.5">
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <Label className="flex items-center gap-2 text-[11px] font-semibold text-white" htmlFor="hero-zoom">
+                <ZoomIn className="size-3.5 text-[#f5bf3d]" />
+                Zoom
+              </Label>
+              <span className="text-[11px] font-semibold text-white">{Math.round(heroImage.zoom * 100)}%</span>
+            </div>
+            <Input
+              className="loyvance-gold-range h-2 p-0"
+              id="hero-zoom"
+              type="range"
+              min={1}
+              max={3}
+              step={0.1}
+              value={heroImage.zoom}
+              onChange={(event) =>
+                onLiveUpdate({ ...heroImage, zoom: clamp(Number(event.target.value), 1, 3) })
+              }
+            />
+            <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>100%</span><span>300%</span>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="rounded-xl border border-white/10 bg-black/20 p-4 backdrop-blur-sm">
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="hero-position-x">Horizontal position</Label>
-                <span className="rounded-full px-3 py-1 text-xs font-semibold">
-                  {heroImage.offsetXPercent >= 0
-                    ? `+${heroImage.offsetXPercent}px`
-                    : `${heroImage.offsetXPercent}px`}
-                </span>
-              </div>
-
+          <div className="rounded-lg border border-[#d8a63f]/20 bg-black/25 px-3 py-2.5">
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <Label className="flex items-center gap-2 text-[11px] font-semibold text-white" htmlFor="hero-position-x">
+                <MoveHorizontal className="size-3.5 text-[#f5bf3d]" />
+                Horizontal position
+              </Label>
+              <span className="text-[11px] font-semibold text-white">
+                {heroImage.offsetXPercent >= 0 ? `+${heroImage.offsetXPercent}px` : `${heroImage.offsetXPercent}px`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ArrowLeft className="size-3 text-[#f5bf3d]" />
               <Input
+                className="loyvance-gold-range h-2 flex-1 p-0"
                 id="hero-position-x"
                 type="range"
                 min={-50}
@@ -948,32 +973,30 @@ function HeroImageUploader({
                 step={1}
                 value={heroImage.offsetXPercent}
                 onChange={(event) =>
-                  onLiveUpdate({
-                    ...heroImage,
-                    offsetXPercent: clamp(Number(event.target.value), -50, 50),
-                  })
+                  onLiveUpdate({ ...heroImage, offsetXPercent: clamp(Number(event.target.value), -50, 50) })
                 }
               />
-
-              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Left</span>
-                <span>Right</span>
-              </div>
+              <ArrowRight className="size-3 text-[#f5bf3d]" />
+            </div>
+            <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>Left</span><span>Right</span>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="rounded-xl border border-white/10 bg-black/20 p-4 backdrop-blur-sm">
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="hero-position-y">Vertical position</Label>
-                <span className="rounded-full px-3 py-1 text-xs font-semibold">
-                  {heroImage.offsetYPercent >= 0
-                    ? `+${heroImage.offsetYPercent}px`
-                    : `${heroImage.offsetYPercent}px`}
-                </span>
-              </div>
-
+          <div className="rounded-lg border border-[#d8a63f]/20 bg-black/25 px-3 py-2.5">
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <Label className="flex items-center gap-2 text-[11px] font-semibold text-white" htmlFor="hero-position-y">
+                <MoveVertical className="size-3.5 text-[#f5bf3d]" />
+                Vertical position
+              </Label>
+              <span className="text-[11px] font-semibold text-white">
+                {heroImage.offsetYPercent >= 0 ? `+${heroImage.offsetYPercent}px` : `${heroImage.offsetYPercent}px`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ArrowUp className="size-3 text-[#f5bf3d]" />
               <Input
+                className="loyvance-gold-range h-2 flex-1 p-0"
                 id="hero-position-y"
                 type="range"
                 min={-50}
@@ -981,22 +1004,18 @@ function HeroImageUploader({
                 step={1}
                 value={heroImage.offsetYPercent}
                 onChange={(event) =>
-                  onLiveUpdate({
-                    ...heroImage,
-                    offsetYPercent: clamp(Number(event.target.value), -50, 50),
-                  })
+                  onLiveUpdate({ ...heroImage, offsetYPercent: clamp(Number(event.target.value), -50, 50) })
                 }
               />
-
-              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Top</span>
-                <span>Bottom</span>
-              </div>
+              <ArrowDown className="size-3 text-[#f5bf3d]" />
+            </div>
+            <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>Top</span><span>Bottom</span>
             </div>
           </div>
         </div>
       ) : (
-        <div className="text-xs text-muted-foreground">
+        <div className="mt-3 rounded-lg border border-dashed border-[#d8a63f]/20 bg-black/20 px-3 py-2 text-[11px] text-muted-foreground">
           Upload an image to enable zoom + position controls.
         </div>
       )}
