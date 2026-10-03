@@ -39,6 +39,7 @@ type DbBusiness = {
   primary_color: string;
   phone: string | null;
   address: string | null;
+  created_at: string;
 };
 
 type DbLoyaltyCard = {
@@ -363,6 +364,7 @@ function publicBusiness(b: DbBusiness) {
     primary_color: b.primary_color,
     phone: b.phone,
     address: b.address,
+    created_at: b.created_at,
   };
 }
 
