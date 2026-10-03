@@ -114,7 +114,9 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
           </div>
         </aside>
 
-        <section className="min-w-0 bg-[#070806] lg:col-start-2" style={{ backgroundImage: "url('/brand/Rubans dorés sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "top center", backgroundAttachment: "fixed", backgroundRepeat: "no-repeat" }}>
+        <section className="relative min-h-screen min-w-0 bg-[#070806] lg:col-start-2">
+          <div aria-hidden="true" className="pointer-events-none fixed inset-0 left-0 z-0 bg-[#070806] bg-[url('/brand/Rubans_dorés_sur_fond_noir.png')] bg-cover bg-top bg-no-repeat lg:left-[264px]" style={{ backgroundImage: "linear-gradient(rgba(7,8,6,.18),rgba(7,8,6,.42)), url('/brand/Rubans dorés sur fond noir.png')" }} />
+          <div className="relative z-10 min-h-screen">
           <TopNav
             activeItem={activeItem}
             userName={user.name ?? businessName}
@@ -191,6 +193,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
           <EchoProvider token={token ?? null}>
             {children}
           </EchoProvider>
+          </div>
         </section>
       </div>
     </main>
