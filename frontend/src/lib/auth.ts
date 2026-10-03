@@ -43,6 +43,12 @@ export type DashboardMetrics = {
   active_customers: number;
   visits_this_month: number;
   rewards_redeemed: number;
+  growth: {
+    total_customers: number;
+    active_customers: number;
+    visits_this_month: number;
+    rewards_redeemed: number;
+  };
 };
 
 export type DashboardOverview = {
