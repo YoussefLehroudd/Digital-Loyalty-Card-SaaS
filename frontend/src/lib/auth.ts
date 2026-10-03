@@ -55,7 +55,7 @@ export type DashboardMetrics = {
 export type DashboardOverview = {
   business: Pick<
     Business,
-    "id" | "name" | "email" | "logo_url" | "logo_public_id" | "primary_color" | "created_at"
+    "id" | "name" | "email" | "logo_url" | "logo_public_id" | "primary_color" | "hero_image_url" | "hero_image_zoom" | "hero_image_position_x" | "hero_image_position_y" | "created_at"
   >;
   metrics: DashboardMetrics;
   period?: { key: string; start: string; end: string };
