@@ -81,9 +81,9 @@ export function BusinessDashboard() {
               <RecentCustomers customers={overview?.recent_customers ?? []}/>
             </div>
             <div className="space-y-5">
-              <LoyaltyPreview business={overview?.business ?? user.business ?? null} card={loyaltyCard}/>
               <QuickActions/>
               <BusinessInfo name={businessName} logoUrl={overview?.business.logo_url ?? user.business?.logo_url ?? null} createdAt={overview?.business.created_at ?? user.business?.created_at ?? null}/>
+              <PerformanceSnapshot metrics={metrics}/>
             </div>
           </div>
         </> : null}
@@ -134,41 +134,23 @@ function ActivityPanel({activity,period,setPeriod}:{activity:Array<{date:string;
     <div className="-mt-2 flex flex-wrap justify-center gap-x-8 gap-y-2 pb-1 text-xs text-white/55"><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-[#f6c34f]"/>New Customers</span><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-[#a86f12]"/>Stamps Issued</span><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-white/25"/>Rewards Redeemed</span></div>
   </section>
 }
-function LoyaltyPreview({business,card}:{business:DashboardOverview["business"]|null;card:LoyaltyCard|null}) {
-  const required=Math.max(1,card?.required_stamps??5);
-  return <section className="flex flex-col rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-3.5">
-    <div className="flex items-center justify-between gap-3">
-      <div><h2 className="font-bold">Your Loyalty Card</h2><p className="mt-0.5 text-[11px] text-white/40">Customer-facing card preview.</p></div>
-      <Button asChild size="sm" variant="outline" className="border-[#e7b354]/40 text-[#ffc857]"><Link href="/dashboard/loyalty-card"><Pencil className="size-3"/>Edit Card</Link></Button>
+function PerformanceSnapshot({metrics}:{metrics:DashboardMetrics}) {
+  const activeShare=metrics.total_customers>0?Math.min(100,Math.round((metrics.active_customers/metrics.total_customers)*100)):0;
+  return <section className="rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-5">
+    <div className="flex items-center gap-3">
+      <div className="flex size-11 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[#8b5d12]/20 text-[#ffc857]"><BarChart3 className="size-5"/></div>
+      <div><h2 className="font-bold">Performance Snapshot</h2><p className="mt-0.5 text-xs text-white/40">Live loyalty performance for this period.</p></div>
     </div>
-    <div className="mt-1.5 flex items-center justify-center overflow-hidden">
-      <div className="w-full max-w-[245px]">
-        <LoyaltyCardVisual
-          businessName={business?.name ?? "Business"}
-          businessLogoUrl={business?.logo_url ?? null}
-          heroImageUrl={business?.hero_image_url ?? null}
-          heroImageZoom={business?.hero_image_zoom ?? null}
-          heroImagePositionX={business?.hero_image_position_x ?? null}
-          heroImagePositionY={business?.hero_image_position_y ?? null}
-          brandPrimaryColor={business?.primary_color ?? null}
-          memberName="Preview member"
-          rewardName={card?.reward_name ?? null}
-          rewardDescription={card?.reward_description ?? null}
-          cardNumber="dashboard-preview"
-          qrToken={null}
-          showQrPayloadText={false}
-          stampUiVariant="customer"
-          progressPercent={0}
-          currentStamps={0}
-          requiredStamps={required}
-        />
-      </div>
-    </div>
-    <div className="mt-1.5 rounded-lg border border-[#e7b354]/10 bg-black/20 px-3 py-1">
-      <p className="text-[10px] leading-4 text-white/40">Preview only: real members see their own name, stamp progress and personal QR code.</p>
+    <div className="mt-5 flex items-end justify-between"><span className="text-xs text-white/50">Active customer share</span><strong className="text-lg text-[#ffc857]">{activeShare}%</strong></div>
+    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#e4a72d]" style={{width:`${activeShare}%`}}/></div>
+    <div className="mt-5 grid grid-cols-3 gap-2">
+      <div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-[10px] text-white/40">Customers</p><p className="mt-1 text-xl font-bold">{metrics.total_customers}</p></div>
+      <div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-[10px] text-white/40">Stamps</p><p className="mt-1 text-xl font-bold">{metrics.visits_this_month}</p></div>
+      <div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-[10px] text-white/40">Rewards</p><p className="mt-1 text-xl font-bold">{metrics.rewards_redeemed}</p></div>
     </div>
   </section>
 }
+
 function RecentCustomers({customers}:{customers:Array<{id:string;name:string;email:string|null;activity:{type:string;date:string}}>}){
   const initials=(name:string)=>name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join("")||"C";
   const badge=(type:string)=>type==="reward"?["Redeemed reward","bg-[#253d92]/45 text-[#6d8cff]"]:type==="stamp"?["+1 stamp","bg-[#123c1c]/65 text-[#55dc72]"]:["Joined","bg-[#5a3d08]/55 text-[#ffc54c]"];
