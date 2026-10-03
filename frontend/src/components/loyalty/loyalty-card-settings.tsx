@@ -33,6 +33,7 @@ import {
   type LoyaltyCard,
 } from "@/lib/auth";
 import { useAutoDismiss } from "@/lib/use-auto-dismiss";
+import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
 
 const schema = z.object({
   reward_name: z.string().min(2, "Enter a reward name.").max(255),
@@ -465,150 +466,49 @@ function PremiumLoyaltyCardPreview({
   preview: { reward_name: string; required_stamps: number; reward_description: string };
   onOpenJoinQr: () => void;
 }) {
-  const brandColor = business?.primary_color ?? "#171717";
-  const businessName = business?.name ?? "Business";
-  const heroImageUrl = business?.hero_image_url ?? null;
-  const heroZoom = clamp(Number(business?.hero_image_zoom ?? 1.2), 1, 3);
-  const heroPositionX = clamp(Number(business?.hero_image_position_x ?? 0), -50, 50);
-  const heroPositionY = clamp(Number(business?.hero_image_position_y ?? 0), -50, 50);
-  const showHero = Boolean(heroImageUrl);
-
-  const stampGoal = Math.max(1, Math.floor(preview.required_stamps || 1));
-  const maxSlots = 10;
-  const filled = Math.min(stampGoal, maxSlots);
-
-  const remaining = Math.max(0, stampGoal - filled);
+  const requiredStamps = Math.max(1, Math.floor(preview.required_stamps || 1));
 
   return (
     <Card className="h-fit overflow-hidden rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
       <CardHeader>
-        <CardTitle>Premium card preview</CardTitle>
-        <CardDescription>Live preview based on your configuration.</CardDescription>
+        <CardTitle>Customer card preview</CardTitle>
+        <CardDescription>
+          Same card layout your customers see. Member data and QR are customer-specific.
+        </CardDescription>
       </CardHeader>
-
       <CardContent className="space-y-5">
-        <div
-          className="relative overflow-hidden rounded-2xl border border-[#d6a33d]/25 p-4 text-white shadow-[0_15px_40px_rgba(0,0,0,.3)]"
-          style={{ backgroundColor: showHero ? "transparent" : brandColor }}
-        >
-          {showHero ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroImageUrl!}
-              alt="Loyalty card background preview"
-              className="absolute inset-0 h-full w-full select-none"
-              style={{
-                objectFit: "cover",
-                transform: `scale(${heroZoom})`,
-                transformOrigin: "center",
-                objectPosition: `${heroPositionX + 50}% ${heroPositionY + 50}%`,
-                zIndex: 0,
-              }}
-            />
-          ) : null}
-
-          <div
-            className="absolute inset-0"
-            style={{
-              background: showHero
-                ? "linear-gradient(90deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25))"
-                : "transparent",
-              zIndex: 1,
-            }}
+        <div className="mx-auto w-full">
+          <LoyaltyCardVisual
+            businessName={business?.name ?? "Business"}
+            businessLogoUrl={business?.logo_url}
+            heroImageUrl={business?.hero_image_url}
+            heroImageZoom={business?.hero_image_zoom}
+            heroImagePositionX={business?.hero_image_position_x}
+            heroImagePositionY={business?.hero_image_position_y}
+            brandPrimaryColor={business?.primary_color}
+            memberName="Customer name"
+            rewardName={preview.reward_name || "Reward"}
+            rewardDescription={preview.reward_description || null}
+            cardNumber="preview"
+            qrToken={null}
+            showQrPayloadText={false}
+            stampUiVariant="customer"
+            progressPercent={0}
+            currentStamps={0}
+            requiredStamps={requiredStamps}
           />
-          <div className="relative" style={{ zIndex: 2 }}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/15">
-                {business?.logo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt={`${businessName} logo`}
-                    className="size-full object-cover"
-                    src={business.logo_url}
-                  />
-                ) : (
-                  <span className="text-sm font-semibold">
-                    {getInitials(businessName)}
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{businessName}</p>
-                <p className="text-xs opacity-75">Reward unlock card</p>
-              </div>
-            </div>
-            <Badge className="bg-white/10 text-white">
-              <BadgeCheck className="size-4" />
-              {stampGoal} stamps
-            </Badge>
-          </div>
-
-          <div className="mt-6 space-y-3">
-            <div className="space-y-1">
-              <p className="text-xs opacity-80">Reward</p>
-              <p className="truncate text-lg font-semibold">
-                {preview.reward_name || "Reward"}
-              </p>
-              {preview.reward_description ? (
-                <p className="text-xs opacity-90">
-                  {preview.reward_description}
-                </p>
-              ) : (
-                <p className="text-xs opacity-70">Add a description to personalize the card.</p>
-              )}
-            </div>
-
-            <div className="rounded-lg bg-black/10 p-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="opacity-90">Stamp progress</span>
-                <span className="opacity-90">
-                  {filled}/{stampGoal}
-                </span>
-              </div>
-
-              <div className="mt-3 grid grid-cols-5 gap-2">
-                {Array.from({ length: maxSlots }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="aspect-square rounded-md border border-white/20"
-                    style={{
-                      backgroundColor:
-                        index < filled ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.10)",
-                    }}
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-
-              <div className="mt-3 text-xs opacity-90">
-                {stampGoal <= maxSlots ? (
-                  remaining === 0 ? (
-                    "Reward ready to unlock"
-                  ) : (
-                    `${remaining} more stamp${remaining === 1 ? "" : "s"} to unlock`
-                  )
-                ) : (
-                  `Goal: ${stampGoal} stamps`
-                )}
-              </div>
-            </div>
-          </div>
-          </div>
         </div>
-
-        <div className="flex justify-start">
-          <Button type="button" variant="outline" onClick={onOpenJoinQr} className="border-[#d6a33d]/30 bg-[#d6a33d]/10 text-[#ffd067] hover:bg-[#d6a33d]/20 hover:text-[#ffe09a]">
-            <QrCode className="size-4" />
-            Customer Join QR
-          </Button>
-        </div>
-
+        <p className="text-xs leading-5 text-white/35">
+          Preview starts at 0 stamps. Each customer sees their real name, progress and personal QR code.
+        </p>
+        <Button type="button" variant="outline" onClick={onOpenJoinQr} className="border-[#d6a33d]/30 bg-[#d6a33d]/10 text-[#ffd067] hover:bg-[#d6a33d]/20 hover:text-[#ffe09a]">
+          <QrCode className="size-4" />
+          Customer Join QR
+        </Button>
       </CardContent>
     </Card>
   );
 }
-
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
