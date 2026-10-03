@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, Search, Sparkles, User, Users } from "lucide-react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
@@ -309,8 +310,8 @@ export default function CustomersPage() {
                   </div>
                   <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5">
                     <div className="mb-5 flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl border border-[#d6a33d]/20 bg-[#8b5d12]/20 text-[#ffc857]"><BadgeCheck className="size-5"/></div><div><p className="font-semibold text-white">QR code</p><p className="text-xs text-white/35">Customer loyalty identifier</p></div></div>
-                    <div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-[#d6a33d]/20 bg-white/[.025] text-xs text-white/40">{details.customer.qr_code?"QR available":"No QR available"}</div>
-                    <p className="mt-3 text-xs text-white/30">QR rendering is handled in the scanner and wallet flow.</p>
+                    <div className="flex min-h-[190px] items-center justify-center rounded-xl border border-dashed border-[#d6a33d]/20 bg-white/[.025] p-4">{details.customer.qr_code?<div className="rounded-2xl bg-white p-3 shadow-[0_0_30px_rgba(243,189,85,.12)]"><QRCodeSVG value={details.customer.qr_code} size={150} level="M" includeMargin={false}/></div>:<span className="text-xs text-white/40">No QR available</span>}</div>
+                    <p className="mt-3 text-center text-xs text-white/30">{details.customer.qr_code?"Scan this code with the LOYVANCE scanner.":"This customer does not have a QR code yet."}</p>
                   </div>
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
