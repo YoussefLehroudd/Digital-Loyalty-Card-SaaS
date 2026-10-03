@@ -74,7 +74,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-[264px] overflow-hidden border-r border-[#d9a52f]/15 bg-[#090a08] lg:block" style={{ backgroundImage: "url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
           <div className="absolute inset-0 bg-black/25" aria-hidden="true" />
           <div className="relative z-10 flex h-dvh flex-col">
-            <div className="flex h-20 items-center gap-3 border-b border-[#d9a52f]/15 px-5">
+            <div className="flex h-20 items-center gap-3 px-5">
               <div className="flex size-14 items-center justify-center">
                 <Image
                   alt="LOYVANCE"
@@ -105,8 +105,8 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
               ))}
             </nav>
 
-            <div className="border-t border-[#d9a52f]/15 p-3">
-              <Button className="w-full justify-start" onClick={signOut} variant="ghost">
+            <div className="p-3">
+              <Button className="h-12 w-full justify-start gap-3 rounded-xl border border-transparent text-white/55 transition-all hover:border-[#d9a52f]/20 hover:bg-[#d9a52f]/5 hover:text-white" onClick={signOut} variant="ghost">
                 <LogOut className="size-4" />
                 Log out
               </Button>
