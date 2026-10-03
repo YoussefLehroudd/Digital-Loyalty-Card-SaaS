@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, BarChart3, Building2, CreditCard, Gift, Layers3, Menu, Palette, Play, QrCode, Send, Sparkles, Store, Users, Zap, Settings, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +26,18 @@ const features: Array<[LucideIcon, string, string]> = [
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const closeMenu = () => setMobileMenuOpen(false);
+    window.addEventListener("scroll", closeMenu, { passive: true });
+    window.addEventListener("touchmove", closeMenu, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", closeMenu);
+      window.removeEventListener("touchmove", closeMenu);
+    };
+  }, [mobileMenuOpen]);
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#070807] text-white">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-md">
@@ -56,7 +68,7 @@ export default function Home() {
             </Button>
           </div>
           {mobileMenuOpen ? (
-            <div className="absolute left-4 right-4 top-[68px] z-[60] overflow-hidden rounded-2xl border border-[#f3bd55]/25 bg-[#090a08]/[.98] p-2 shadow-[0_18px_55px_rgba(0,0,0,.6)] backdrop-blur-xl md:hidden">
+            <div className="absolute left-4 right-4 top-[78px] z-[60] overflow-hidden rounded-2xl border border-[#f3bd55]/25 bg-[#090a08]/[.98] p-2 shadow-[0_18px_55px_rgba(0,0,0,.6)] backdrop-blur-xl md:hidden">
               <nav className="grid gap-1 text-sm font-semibold text-white/80">
                 <a href="#home" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">Home</a>
                 <a href="#features" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">Features</a>
