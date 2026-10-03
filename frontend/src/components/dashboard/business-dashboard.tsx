@@ -22,7 +22,7 @@ export function BusinessDashboard() {
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState("current_month");
+  const [period, setPeriod] = useState<DashboardPeriod>("current_month");
 
   async function loadDashboard() {
     setIsLoading(true); setError(null);
