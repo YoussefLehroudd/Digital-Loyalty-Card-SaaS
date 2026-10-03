@@ -111,16 +111,16 @@ function DateRangePicker({value,onChange}:{value:DashboardPeriod;onChange:(value
 }
 function ActivityPanel({activity,period,setPeriod}:{activity:Array<{date:string;new_customers:number;stamps_issued:number;rewards_redeemed:number}>;period:DashboardPeriod;setPeriod:(p:DashboardPeriod)=>void}) {
   const [hovered,setHovered]=useState<number|null>(null);
-  const width=820,height=250,left=48,right=18,top=18,bottom=42;
+  const width=820,height=205,left=48,right=18,top=14,bottom=36;
   const max=Math.max(1,...activity.flatMap(d=>[d.new_customers,d.stamps_issued,d.rewards_redeemed]));
   const y=(v:number)=>top+(height-top-bottom)*(1-v/max);
   const x=(i:number)=>left+(activity.length<=1?0:i*(width-left-right)/(activity.length-1));
   const customerPoints=activity.map((d,i)=>`${x(i)},${y(d.new_customers)}`).join(" ");
   const grid=[0,.25,.5,.75,1];
   const labels=activity.filter((_,i)=>i===0||i===activity.length-1||i%Math.max(1,Math.floor(activity.length/6))===0);
-  return <section className="rounded-[18px] border border-[#b67a18]/35 bg-[linear-gradient(145deg,rgba(15,15,12,.94),rgba(8,9,7,.90))] p-5 shadow-[0_15px_45px_rgba(0,0,0,.26)]">
+  return <section className="self-start rounded-[18px] border border-[#b67a18]/35 bg-[linear-gradient(145deg,rgba(15,15,12,.94),rgba(8,9,7,.90))] p-5 shadow-[0_15px_45px_rgba(0,0,0,.26)]">
     <div className="flex items-start justify-between gap-4"><div className="flex items-center gap-3"><div className="flex size-12 items-center justify-center rounded-xl border border-[#d69b2d]/20 bg-[#8b5d12]/25 text-[#ffc857]"><Users className="size-6"/></div><div><h2 className="text-base font-bold text-white">Customer Activity</h2><p className="mt-0.5 text-sm text-white/50">New customers, stamps and rewards over time.</p></div></div><DateRangePicker value={period} onChange={setPeriod}/></div>
-    <div className="relative mt-4 overflow-x-auto"><svg viewBox={`0 0 ${width} ${height}`} className="block min-w-[680px] w-full" role="img" aria-label="Customer activity chart">
+    <div className="relative mt-3 overflow-x-auto"><svg viewBox={`0 0 ${width} ${height}`} className="block min-w-[680px] w-full" role="img" aria-label="Customer activity chart">
       <defs><linearGradient id="barGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#d99c2b" stopOpacity=".72"/><stop offset="100%" stopColor="#7a4b08" stopOpacity=".25"/></linearGradient><filter id="lineGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
       {grid.map((g,i)=>{const yy=top+(height-top-bottom)*g;return <g key={i}><line x1={left} x2={width-right} y1={yy} y2={yy} stroke="rgba(255,255,255,.10)" strokeDasharray="3 3"/><text x="8" y={yy+4} fill="rgba(255,255,255,.55)" fontSize="11">{Math.round(max*(1-g))}</text></g>})}
       {activity.map((d,i)=>{const bw=Math.max(5,Math.min(15,(width-left-right)/Math.max(activity.length,1)*.55));const xx=x(i)-bw/2;return <g key={d.date}><rect x={xx} y={y(d.stamps_issued)} width={bw} height={height-bottom-y(d.stamps_issued)} rx="2" fill="url(#barGold)"/><rect x={x(i)-Math.max(12,bw)} y={top} width={Math.max(24,bw*2)} height={height-top-bottom} fill="transparent" className="cursor-crosshair" onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}/></g>})}
@@ -128,7 +128,7 @@ function ActivityPanel({activity,period,setPeriod}:{activity:Array<{date:string;
       {activity.map((d,i)=><circle key={d.date+"p"} cx={x(i)} cy={y(d.new_customers)} r="3.5" fill="#ffd66d"/>)}
       {labels.map((d)=>{const i=activity.indexOf(d);const dt=new Date(d.date+"T00:00:00");return <text key={d.date+"l"} x={x(i)} y={height-14} textAnchor={i===0?"start":i===activity.length-1?"end":"middle"} fill="rgba(255,255,255,.55)" fontSize="10">{dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</text>})}
     </svg>{hovered!==null&&activity[hovered]?<div className="pointer-events-none absolute right-3 top-3 z-10 min-w-[170px] rounded-xl border border-[#d69b2d]/35 bg-[#090a08]/95 p-3 text-xs shadow-2xl backdrop-blur-md"><p className="mb-2 font-semibold text-white">{new Date(activity[hovered].date+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</p><p className="flex justify-between gap-5 text-white/65"><span>New Customers</span><b className="text-[#ffd66d]">{activity[hovered].new_customers}</b></p><p className="mt-1 flex justify-between gap-5 text-white/65"><span>Stamps Issued</span><b className="text-[#c58a22]">{activity[hovered].stamps_issued}</b></p><p className="mt-1 flex justify-between gap-5 text-white/65"><span>Rewards Redeemed</span><b className="text-white/80">{activity[hovered].rewards_redeemed}</b></p></div>:null}</div>
-    <div className="-mt-1 flex flex-wrap justify-center gap-x-8 gap-y-2 text-xs text-white/55"><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-[#f6c34f]"/>New Customers</span><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-[#a86f12]"/>Stamps Issued</span><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-white/25"/>Rewards Redeemed</span></div>
+    <div className="-mt-2 flex flex-wrap justify-center gap-x-8 gap-y-2 pb-1 text-xs text-white/55"><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-[#f6c34f]"/>New Customers</span><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-[#a86f12]"/>Stamps Issued</span><span className="flex items-center gap-2"><i className="size-3 rounded-full bg-white/25"/>Rewards Redeemed</span></div>
   </section>
 }
 function LoyaltyPreview({business,card}:{business:DashboardOverview["business"]|null;card:LoyaltyCard|null}) {
