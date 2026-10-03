@@ -899,6 +899,19 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
   `) as Array<{ customers:number; active:number; visits:number; rewards:number; prev_customers:number; prev_active:number; prev_visits:number; prev_rewards:number }>;
   const row = counts[0] ?? { customers:0, active:0, visits:0, rewards:0, prev_customers:0, prev_active:0, prev_visits:0, prev_rewards:0 };
   const percentChange = (current: number, previous: number) => previous > 0 ? Math.round(((current - previous) / previous) * 100) : current > 0 ? 100 : 0;
+  const recentCustomers = (await sql`
+    SELECT c.id, trim(concat(coalesce(c.first_name,''), ' ', coalesce(c.last_name,''))) AS name, c.email,
+      COALESCE(
+        (SELECT json_build_object('type','reward','date',r.redeemed_at) FROM reward_redemptions r WHERE r.business_id=${businessId} AND r.customer_id=c.id AND r.status='redeemed' ORDER BY r.redeemed_at DESC NULLS LAST LIMIT 1),
+        (SELECT json_build_object('type','stamp','date',v.created_at) FROM visits v WHERE v.business_id=${businessId} AND v.customer_id=c.id ORDER BY v.created_at DESC LIMIT 1),
+        json_build_object('type','joined','date',c.created_at)
+      ) AS activity
+    FROM customers c WHERE c.business_id=${businessId}
+    ORDER BY GREATEST(c.created_at,
+      COALESCE((SELECT max(v.created_at) FROM visits v WHERE v.business_id=${businessId} AND v.customer_id=c.id), c.created_at),
+      COALESCE((SELECT max(r.redeemed_at) FROM reward_redemptions r WHERE r.business_id=${businessId} AND r.customer_id=c.id AND r.status='redeemed'), c.created_at)
+    ) DESC LIMIT 5
+  `) as Array<{id:string;name:string;email:string|null;activity:{type:string;date:string}}>;
   const activityRows = (await sql`
     WITH days AS (
       SELECT generate_series(date_trunc('day', ${startIso}::timestamptz), date_trunc('day', ${endIso}::timestamptz), interval '1 day') AS day
@@ -925,6 +938,7 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
     },
     period: { key: period, start: startIso, end: endIso },
     activity: activityRows,
+    recent_customers: recentCustomers,
     generated_at: new Date().toISOString(),
   });
 }
