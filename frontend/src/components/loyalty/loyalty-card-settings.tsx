@@ -270,16 +270,16 @@ export function LoyaltyCardSettings() {
 
   return (
     <DashboardShell activeItem="loyalty">
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+      <div className="mx-auto max-w-[1450px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-[20px] border border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(16,17,14,.94),rgba(8,9,7,.88))] p-5 shadow-[0_18px_55px_rgba(0,0,0,.25)] sm:p-6">
+          <div className="flex size-11 items-center justify-center rounded-xl border border-[#d6a33d]/25 bg-[#8b5d12]/20 text-[#ffc857]">
             <CreditCard className="size-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-semibold leading-tight">
+            <h1 className="mt-4 text-2xl font-bold leading-tight text-white">
               Loyalty card settings
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-white/45">
               Configure the reward users see on your premium digital loyalty
               card experience.
             </p>
@@ -296,8 +296,8 @@ export function LoyaltyCardSettings() {
         {isLoading ? (
           <LoyaltyCardSettingsSkeleton />
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-            <Card>
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <Card className="rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
               <CardHeader>
                 <CardTitle>{loyaltyCard ? "Edit loyalty card" : "Create loyalty card"}</CardTitle>
                 <CardDescription>
@@ -306,11 +306,11 @@ export function LoyaltyCardSettings() {
               </CardHeader>
 
               <CardContent>
-                <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+                <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
                   {!loyaltyCard ? (
                     <EmptyCreateHint />
                   ) : (
-                    <div className="flex items-center gap-2 rounded-lg border bg-background p-3 text-sm">
+                    <div className="flex items-center gap-2 rounded-xl border border-[#d6a33d]/20 bg-[#d6a33d]/[.06] p-3 text-sm text-white/80">
                       <BadgeCheck className="size-4 text-success" />
                       <span>Current loyalty card is configured.</span>
                     </div>
@@ -351,7 +351,7 @@ export function LoyaltyCardSettings() {
                   </div>
 
                   <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                    <Button disabled={!isDirty || isSubmitting} type="submit">
+                    <Button disabled={!isDirty || isSubmitting} type="submit" className="min-w-28 border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f] disabled:bg-white/15 disabled:text-white/35">
                       {isSubmitting ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : (
@@ -441,8 +441,8 @@ function Field({
   const id = label.toLowerCase().replaceAll(" ", "-");
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
+      <Label htmlFor={id} className="text-sm font-medium text-white/80">{label}</Label>
+      <div className="[&_input]:h-11 [&_input]:rounded-xl [&_input]:border-[#d6a33d]/20 [&_input]:bg-black/35 [&_input]:text-white [&_input]:focus-visible:ring-[#e7b354]/30">{children}</div>
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>
   );
@@ -480,7 +480,7 @@ function PremiumLoyaltyCardPreview({
   const remaining = Math.max(0, stampGoal - filled);
 
   return (
-    <Card className="h-fit overflow-hidden">
+    <Card className="h-fit overflow-hidden rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
       <CardHeader>
         <CardTitle>Premium card preview</CardTitle>
         <CardDescription>Live preview based on your configuration.</CardDescription>
@@ -488,7 +488,7 @@ function PremiumLoyaltyCardPreview({
 
       <CardContent className="space-y-5">
         <div
-          className="relative rounded-lg border p-4 text-white overflow-hidden"
+          className="relative overflow-hidden rounded-2xl border border-[#d6a33d]/25 p-4 text-white shadow-[0_15px_40px_rgba(0,0,0,.3)]"
           style={{ backgroundColor: showHero ? "transparent" : brandColor }}
         >
           {showHero ? (
@@ -598,7 +598,7 @@ function PremiumLoyaltyCardPreview({
         </div>
 
         <div className="flex justify-start">
-          <Button type="button" variant="outline" onClick={onOpenJoinQr}>
+          <Button type="button" variant="outline" onClick={onOpenJoinQr} className="border-[#d6a33d]/30 bg-[#d6a33d]/10 text-[#ffd067] hover:bg-[#d6a33d]/20 hover:text-[#ffe09a]">
             <QrCode className="size-4" />
             Customer Join QR
           </Button>
