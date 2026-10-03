@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Search, User, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, CalendarDays, Search, Sparkles, User, Users } from "lucide-react";
 
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { Alert } from "@/components/ui/alert";
@@ -239,188 +239,55 @@ export default function CustomersPage() {
 
   return (
     <DashboardShell activeItem="customers">
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Customers</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="shadow-none">
-                <CardHeader className="px-4 py-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    Total Customers
-                  </CardTitle>
-                  <div className="text-2xl font-semibold">
-                    {summary ? summary.total_customers : "—"}
-                  </div>
-                </CardHeader>
-              </Card>
-
-              <Card className="shadow-none">
-                <CardHeader className="px-4 py-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    Active Customers
-                  </CardTitle>
-                  <div className="text-2xl font-semibold">
-                    {summary ? summary.active_customers : "—"}
-                  </div>
-                </CardHeader>
-              </Card>
-
-              <Card className="shadow-none">
-                <CardHeader className="px-4 py-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                    <BadgeCheck className="h-4 w-4" />
-                    Rewards Ready
-                  </CardTitle>
-                  <div className="text-2xl font-semibold">
-                    {summary ? summary.rewards_ready : "—"}
-                  </div>
-                </CardHeader>
-              </Card>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="relative w-full sm:max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search by name, email, or phone..."
-                  className="pl-9"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mx-auto max-w-[1450px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <section className="overflow-hidden rounded-[20px] border border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(16,17,14,.94),rgba(8,9,7,.9))] p-5 shadow-[0_18px_55px_rgba(0,0,0,.28)] sm:p-6">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-[.18em] text-[#e8b74f]">Customer management</p><h1 className="mt-1 text-2xl font-bold text-white">Customers</h1><p className="mt-1 text-sm text-white/45">Track members, loyalty progress, visits and rewards.</p></div>
+            <div className="hidden size-12 items-center justify-center rounded-xl border border-[#d6a33d]/25 bg-[#8b5d12]/20 text-[#ffc857] sm:flex"><Users className="size-6"/></div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {[
+              {label:"Total Customers",value:summary?.total_customers,icon:Users},
+              {label:"Active Customers",value:summary?.active_customers,icon:User},
+              {label:"Rewards Ready",value:summary?.rewards_ready,icon:BadgeCheck},
+            ].map(({label,value,icon:Icon})=><div key={label} className="flex min-h-[105px] items-center gap-4 rounded-2xl border border-[#d6a33d]/20 bg-black/35 px-4 shadow-[inset_0_0_28px_rgba(243,189,85,.035)]"><div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-[#d6a33d]/20 bg-[#8b5d12]/20 text-[#ffc857]"><Icon className="size-6"/></div><div><p className="text-xs text-white/45">{label}</p><p className="mt-1 text-2xl font-bold text-white">{value ?? "—"}</p></div></div>)}
+          </div>
+          <div className="relative mt-4 max-w-xl">
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#e6b64e]/70"/>
+            <Input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search by name, email, or phone..." className="h-12 rounded-xl border-[#d6a33d]/20 bg-black/35 pl-11 text-white placeholder:text-white/35 focus-visible:ring-[#e7b354]/30"/>
+          </div>
+        </section>
 
         {error ? <Alert>{error}</Alert> : null}
 
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="min-w-[880px] w-full">
-                <thead className="text-left text-xs text-muted-foreground">
-                  <tr>
-                    <th className="py-4 px-4 font-medium">Customer</th>
-                    <th className="py-4 px-4 font-medium">Progress</th>
-                    <th className="py-4 px-4 font-medium">Reward Status</th>
-                    <th className="py-4 px-4 font-medium">Visits</th>
-                    <th className="py-4 px-4 font-medium">Last Visit</th>
-                    <th className="py-4 px-4 font-medium">Joined</th>
-                    <th className="py-4 px-4 font-medium text-right">Action</th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y">
-                  {isLoading ? (
-                    Array.from({ length: 6 }).map((_, idx) => (
-                      <tr key={idx} className="h-16">
-                        <td colSpan={7} className="px-4 py-4">
-                          <Skeleton className="h-4 w-2/3" />
-                        </td>
-                      </tr>
-                    ))
-                  ) : isEmpty ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-10">
-                        <div className="text-center text-sm text-muted-foreground">
-                          No customers found.
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    customers.map((c) => (
-                      <tr key={c.id} className="align-middle">
-                        <td className="px-4 py-4">
-                          <div className="font-medium">{formatName(c) || "—"}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {(c.email ?? c.phone) ? (
-                              <span>
-                                {c.email ? c.email : c.phone}
-                              </span>
-                            ) : (
-                              "—"
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="px-4 py-4">
-                          <div className="text-sm font-medium">{progressText(c)}</div>
-                          <div className="mt-2 h-2 w-44 max-w-full overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full rounded-full bg-ring"
-                              style={{ width: `${progressPercent(c)}%` }}
-                            />
-                          </div>
-                        </td>
-
-                        <td className="px-4 py-4">
-                          <Badge className={cn("px-2 py-1", statusBadgeClass(c.reward_status))}>
-                            {rewardStatusLabel(c.reward_status)}
-                          </Badge>
-                        </td>
-
-                        <td className="px-4 py-4 text-sm">{c.total_visits}</td>
-                        <td className="px-4 py-4 text-sm">{formatDate(c.last_visit)}</td>
-                        <td className="px-4 py-4 text-sm">{formatDate(c.joined_at)}</td>
-
-<td className="px-4 py-4 text-right">
-  <Button variant="secondary" className="cursor-pointer" onClick={() => openDetails(c)}>
-    View Details
-  </Button>
-</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {response ? (
-              <div className="flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Showing{" "}
-                  <span className="font-medium text-foreground">
-                    {response.meta.from ?? 0}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium text-foreground">
-                    {response.meta.to ?? 0}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium text-foreground">
-                    {response.meta.total}
-                  </span>
-                </div>
-
-<div className="flex items-center gap-2">
-  <Button
-    variant="outline"
-    className="cursor-pointer"
-    onClick={() => setPage((p) => Math.max(1, p - 1))}
-    disabled={!canPrev || isLoading}
-  >
-    Previous
-  </Button>
-  <Button
-    variant="outline"
-    className="cursor-pointer"
-    onClick={() => setPage((p) => Math.min(response.meta.last_page, p + 1))}
-    disabled={!canNext || isLoading}
-  >
-    Next
-  </Button>
-</div>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+        <section className="overflow-hidden rounded-[20px] border border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.95),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
+          <div className="flex items-center justify-between border-b border-white/[.07] px-5 py-4">
+            <div><h2 className="font-semibold text-white">Customer directory</h2><p className="mt-0.5 text-xs text-white/40">{response ? `${response.meta.total} members in your loyalty program` : "Loading members..."}</p></div>
+            <Sparkles className="size-5 text-[#e8b74f]"/>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px]">
+              <thead><tr className="border-b border-white/[.07] bg-white/[.025] text-left text-[11px] uppercase tracking-[.08em] text-white/38">
+                <th className="px-5 py-3 font-medium">Customer</th><th className="px-5 py-3 font-medium">Progress</th><th className="px-5 py-3 font-medium">Reward Status</th><th className="px-5 py-3 font-medium">Visits</th><th className="px-5 py-3 font-medium">Last Visit</th><th className="px-5 py-3 font-medium">Joined</th><th className="px-5 py-3 text-right font-medium">Action</th>
+              </tr></thead>
+              <tbody className="divide-y divide-white/[.06]">
+                {isLoading ? Array.from({length:6}).map((_,idx)=><tr key={idx}><td colSpan={7} className="px-5 py-5"><Skeleton className="h-5 w-2/3 bg-white/10"/></td></tr>)
+                : isEmpty ? <tr><td colSpan={7} className="px-5 py-14 text-center text-sm text-white/40">No customers found.</td></tr>
+                : customers.map((c)=>{const name=formatName(c)||"Customer";const initials=name.split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();return <tr key={c.id} className="transition hover:bg-[#e7b354]/[.035]">
+                  <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-[#f2b93f]/30 bg-[linear-gradient(145deg,#a97418,#5f3d08)] text-xs font-bold text-white">{initials}</span><div><p className="font-medium text-white/90">{name}</p><p className="mt-0.5 text-xs text-white/40">{c.email||c.phone||"—"}</p></div></div></td>
+                  <td className="px-5 py-4"><div className="flex w-44 items-center justify-between text-xs"><span className="font-semibold text-white/75">{progressText(c)}</span><span className="text-white/35">{Math.round(progressPercent(c))}%</span></div><div className="mt-2 h-1.5 w-44 overflow-hidden rounded-full bg-white/[.07]"><div className="h-full rounded-full bg-[linear-gradient(90deg,#9d6813,#f3bd55)]" style={{width:`${progressPercent(c)}%`}}/></div></td>
+                  <td className="px-5 py-4"><Badge className={cn("rounded-full border px-3 py-1 text-xs",statusBadgeClass(c.reward_status))}>{rewardStatusLabel(c.reward_status)}</Badge></td>
+                  <td className="px-5 py-4 text-sm font-medium text-white/70">{c.total_visits}</td>
+                  <td className="px-5 py-4 text-sm text-white/50">{formatDate(c.last_visit)}</td>
+                  <td className="px-5 py-4 text-sm text-white/50">{formatDate(c.joined_at)}</td>
+                  <td className="px-5 py-4 text-right"><Button variant="outline" className="h-9 cursor-pointer rounded-lg border-[#d6a33d]/35 bg-[#d6a33d]/10 px-4 text-xs font-semibold text-[#ffd067] hover:bg-[#d6a33d]/20 hover:text-[#ffe09a]" onClick={()=>openDetails(c)}>View Details</Button></td>
+                </tr>})}
+              </tbody>
+            </table>
+          </div>
+          {response?<div className="flex flex-col gap-3 border-t border-white/[.07] px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-white/40">Showing <span className="font-semibold text-white/70">{response.meta.from??0}</span> to <span className="font-semibold text-white/70">{response.meta.to??0}</span> of <span className="font-semibold text-white/70">{response.meta.total}</span></p><div className="flex items-center gap-2"><Button variant="outline" className="h-9 cursor-pointer border-white/10 bg-black/25 text-white/65 hover:border-[#d6a33d]/30 hover:bg-[#d6a33d]/10" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={!canPrev||isLoading}><ArrowLeft className="mr-1 size-4"/>Previous</Button><span className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-[#d6a33d]/25 bg-[#d6a33d]/10 px-3 text-xs font-semibold text-[#ffd067]">{page} / {Math.max(response.meta.last_page,1)}</span><Button variant="outline" className="h-9 cursor-pointer border-white/10 bg-black/25 text-white/65 hover:border-[#d6a33d]/30 hover:bg-[#d6a33d]/10" onClick={()=>setPage(p=>Math.min(response.meta.last_page,p+1))} disabled={!canNext||isLoading}>Next<ArrowRight className="ml-1 size-4"/></Button></div></div>:null}
+        </section>
       </div>
-
       {/* Modal */}
       {isModalOpen ? (
         <div
