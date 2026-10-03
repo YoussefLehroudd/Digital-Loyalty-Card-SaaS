@@ -288,128 +288,36 @@ export default function CustomersPage() {
           {response?<div className="flex flex-col gap-3 border-t border-white/[.07] px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-white/40">Showing <span className="font-semibold text-white/70">{response.meta.from??0}</span> to <span className="font-semibold text-white/70">{response.meta.to??0}</span> of <span className="font-semibold text-white/70">{response.meta.total}</span></p><div className="flex items-center gap-2"><Button variant="outline" className="h-9 cursor-pointer border-white/10 bg-black/25 text-white/65 hover:border-[#d6a33d]/30 hover:bg-[#d6a33d]/10" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={!canPrev||isLoading}><ArrowLeft className="mr-1 size-4"/>Previous</Button><span className="flex h-9 min-w-9 items-center justify-center rounded-lg border border-[#d6a33d]/25 bg-[#d6a33d]/10 px-3 text-xs font-semibold text-[#ffd067]">{page} / {Math.max(response.meta.last_page,1)}</span><Button variant="outline" className="h-9 cursor-pointer border-white/10 bg-black/25 text-white/65 hover:border-[#d6a33d]/30 hover:bg-[#d6a33d]/10" onClick={()=>setPage(p=>Math.min(response.meta.last_page,p+1))} disabled={!canNext||isLoading}>Next<ArrowRight className="ml-1 size-4"/></Button></div></div>:null}
         </section>
       </div>
-      {/* Modal */}
+      {/* Customer details modal */}
       {isModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) closeModal();
-          }}
-        >
-          <div className="w-full max-w-3xl overflow-hidden rounded-xl border bg-background shadow-lg">
-<div className="flex items-center justify-between border-b px-5 py-4">
-  <div>
-    <div className="text-base font-semibold">
-      {selectedCustomer ? formatName(selectedCustomer) : "Customer"}
-    </div>
-    <div className="text-sm text-muted-foreground">
-      {selectedCustomer?.email || selectedCustomer?.phone || "—"}
-    </div>
-  </div>
-  <Button variant="ghost" className="cursor-pointer" onClick={closeModal}>
-    Close
-  </Button>
-</div>
-
-            <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
-              {isFetchingDetails || !details ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-5 w-2/3" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" onMouseDown={(e)=>{if(e.target===e.currentTarget)closeModal();}}>
+          <div className="w-full max-w-4xl overflow-hidden rounded-[22px] border border-[#d6a33d]/30 bg-[linear-gradient(145deg,#11120f,#090a08)] shadow-[0_30px_100px_rgba(0,0,0,.65),0_0_40px_rgba(214,163,61,.06)]">
+            <div className="flex items-center justify-between border-b border-white/[.07] px-5 py-5 sm:px-7">
+              <div className="flex items-center gap-4">
+                <div className="flex size-12 items-center justify-center rounded-full border border-[#f2b93f]/30 bg-[linear-gradient(145deg,#a97418,#5f3d08)] font-bold text-white">{selectedCustomer?formatName(selectedCustomer).split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase():"CU"}</div>
+                <div><div className="text-base font-semibold text-white">{selectedCustomer?formatName(selectedCustomer):"Customer"}</div><div className="mt-0.5 text-xs text-white/40">{selectedCustomer?.email||selectedCustomer?.phone||"—"}</div></div>
+              </div>
+              <Button variant="ghost" className="cursor-pointer rounded-lg text-white/55 hover:bg-[#d6a33d]/10 hover:text-[#ffd067]" onClick={closeModal}>Close</Button>
+            </div>
+            <div className="max-h-[75vh] overflow-y-auto p-5 sm:p-7">
+              {isFetchingDetails||!details?<div className="space-y-3"><Skeleton className="h-24 w-full bg-white/10"/><Skeleton className="h-24 w-full bg-white/10"/></div>:<>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5">
+                    <div className="mb-5 flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl border border-[#d6a33d]/20 bg-[#8b5d12]/20 text-[#ffc857]"><Sparkles className="size-5"/></div><div><p className="font-semibold text-white">Loyalty progress</p><p className="text-xs text-white/35">Current customer progress</p></div></div>
+                    <div className="grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Stamps</p><p className="mt-1 text-xl font-bold text-[#ffd067]">{details.customer.current_stamps}</p></div><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Target</p><p className="mt-1 text-xl font-bold text-white">{details.customer.required_stamps}</p></div><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Status</p><p className="mt-2 text-xs font-semibold text-[#ffd067]">{rewardStatusLabel(details.customer.reward_status)}</p></div></div>
+                    <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[.07]"><div className="h-full rounded-full bg-[linear-gradient(90deg,#9d6813,#f3bd55)] shadow-[0_0_12px_rgba(243,189,85,.35)]" style={{width:details.customer.required_stamps?`${Math.min(100,(details.customer.current_stamps/details.customer.required_stamps)*100)}%`:"0%"}}/></div>
+                  </div>
+                  <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5">
+                    <div className="mb-5 flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl border border-[#d6a33d]/20 bg-[#8b5d12]/20 text-[#ffc857]"><BadgeCheck className="size-5"/></div><div><p className="font-semibold text-white">QR code</p><p className="text-xs text-white/35">Customer loyalty identifier</p></div></div>
+                    <div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-[#d6a33d]/20 bg-white/[.025] text-xs text-white/40">{details.customer.qr_code?"QR available":"No QR available"}</div>
+                    <p className="mt-3 text-xs text-white/30">QR rendering is handled in the scanner and wallet flow.</p>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-4 rounded-lg border p-4">
-                      <div className="text-sm font-medium">Loyalty progress</div>
-                      <div className="text-sm text-muted-foreground">
-                        Current stamps: <span className="font-medium text-foreground">{details.customer.current_stamps}</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Required stamps: <span className="font-medium text-foreground">{details.customer.required_stamps}</span>
-                      </div>
-                      <div className="text-sm">
-                        Reward status:{" "}
-                        <span className={cn("font-medium", "text-foreground")}>
-                          {rewardStatusLabel(details.customer.reward_status)}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-ring"
-                          style={{
-                            width: details.customer.required_stamps
-                              ? `${Math.min(100, (details.customer.current_stamps / details.customer.required_stamps) * 100)}%`
-                              : "0%",
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-4 rounded-lg border p-4">
-                      <div className="text-sm font-medium">QR code</div>
-                      <div className="flex items-center justify-center rounded-lg bg-muted/40 p-4">
-                        {details.customer.qr_code ? (
-                          <div className="text-xs text-muted-foreground">
-                            QR available
-                          </div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground">No QR</div>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        QR code rendering is handled in the scanner/wallet flow.
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    <div className="rounded-lg border p-4">
-                      <div className="text-sm font-medium">Visit history</div>
-                      {details.customer.visit_history.length ? (
-                        <div className="mt-3 space-y-2">
-                          {details.customer.visit_history.map((v) => (
-                            <div key={v.id} className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Visit</span>
-                              <span className="font-medium">{formatDate(v.date)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-3 text-sm text-muted-foreground">No visits yet.</div>
-                      )}
-                    </div>
-
-                    <div className="rounded-lg border p-4">
-                      <div className="text-sm font-medium">Reward history</div>
-                      {details.customer.reward_history.length ? (
-                        <div className="mt-3 space-y-2">
-                          {details.customer.reward_history.map((r) => (
-                            <div key={r.id} className="rounded-md bg-muted/30 p-3">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">{r.reward_name || "Reward"}</span>
-                                <Badge className={cn("px-2", statusBadgeClass(r.status as RewardStatus))}>
-                                  {rewardStatusLabel(r.status as RewardStatus)}
-                                </Badge>
-                              </div>
-                              <div className="mt-2 text-xs text-muted-foreground">
-                                Earned: {formatDate(r.earned_at)}
-                                {r.redeemed_at ? ` • Redeemed: ${formatDate(r.redeemed_at)}` : ""}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-3 text-sm text-muted-foreground">No rewards yet.</div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5"><div className="mb-4 flex items-center gap-2"><CalendarDays className="size-5 text-[#ffc857]"/><p className="font-semibold text-white">Visit history</p></div>{details.customer.visit_history.length?<div className="max-h-52 space-y-2 overflow-y-auto pr-1">{details.customer.visit_history.map((v,i)=><div key={v.id} className="flex items-center justify-between rounded-xl border border-white/[.06] bg-white/[.025] px-4 py-3 text-sm"><span className="text-white/45">Visit #{details.customer.visit_history.length-i}</span><span className="font-medium text-white/75">{formatDate(v.date)}</span></div>)}</div>:<div className="rounded-xl border border-dashed border-white/[.08] py-8 text-center text-sm text-white/35">No visits yet.</div>}</div>
+                  <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5"><div className="mb-4 flex items-center gap-2"><BadgeCheck className="size-5 text-[#ffc857]"/><p className="font-semibold text-white">Reward history</p></div>{details.customer.reward_history.length?<div className="max-h-52 space-y-2 overflow-y-auto pr-1">{details.customer.reward_history.map((r)=><div key={r.id} className="rounded-xl border border-white/[.06] bg-white/[.025] p-3"><div className="flex items-center justify-between gap-3"><span className="text-sm text-white/65">{r.reward_name||"Reward"}</span><Badge className={cn("rounded-full px-2",statusBadgeClass(r.status as RewardStatus))}>{rewardStatusLabel(r.status as RewardStatus)}</Badge></div><p className="mt-2 text-[11px] text-white/30">Earned: {formatDate(r.earned_at)}{r.redeemed_at?` • Redeemed: ${formatDate(r.redeemed_at)}`:""}</p></div>)}</div>:<div className="rounded-xl border border-dashed border-white/[.08] py-8 text-center text-sm text-white/35">No rewards yet.</div>}</div>
+                </div>
+              </>}
             </div>
           </div>
         </div>
