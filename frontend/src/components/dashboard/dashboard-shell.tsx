@@ -71,8 +71,9 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
   return (
     <main className="min-h-screen bg-[#070806] text-white">
       <div className="lg:grid lg:grid-cols-[264px_1fr]">
-        <aside className="hidden min-h-screen border-r border-[#d9a52f]/15 bg-[#090a08] lg:block">
-          <div className="sticky top-0 flex h-screen flex-col">
+        <aside className="relative hidden min-h-screen overflow-hidden border-r border-[#d9a52f]/15 bg-[#090a08] lg:block" style={{ backgroundImage: "url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
+          <div className="absolute inset-0 bg-black/25" aria-hidden="true" />
+          <div className="sticky top-0 z-10 flex h-screen flex-col">
             <div className="flex h-20 items-center gap-3 border-b border-[#d9a52f]/15 px-5">
               <div className="flex size-14 items-center justify-center">
                 <Image
@@ -113,7 +114,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
           </div>
         </aside>
 
-        <section className="min-w-0">
+        <section className="min-w-0 bg-[#070806]" style={{ backgroundImage: "url('/brand/Rubans dorés sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "top center", backgroundAttachment: "fixed", backgroundRepeat: "no-repeat" }}>
           <TopNav
             userName={user.name ?? businessName}
             avatarUrl={user.avatar_url ?? null}
