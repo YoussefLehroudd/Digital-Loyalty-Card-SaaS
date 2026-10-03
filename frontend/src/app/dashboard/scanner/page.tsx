@@ -152,7 +152,7 @@ export default function ScannerPage() {
     <DashboardShell activeItem="scanner">
       <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="rounded-2xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(15,16,13,.92),rgba(8,9,7,.82))] p-5 shadow-[0_18px_55px_rgba(0,0,0,.25)]">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h1 className="text-2xl font-bold leading-tight text-white">
                 Staff QR Scanner
@@ -208,7 +208,7 @@ export default function ScannerPage() {
                           <img
                             src={decodedQrDataUrl}
                             alt="Customer QR code"
-                            className="h-auto w-[320px] bg-white p-1"
+                            className="h-auto w-full max-w-[320px] bg-white p-1"
                           />
                         ) : (
                           <div className="text-sm text-muted-foreground">Generating QR…</div>
