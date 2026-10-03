@@ -100,7 +100,7 @@ a[href]:not([aria-disabled="true"]) {
 #hero-position-x::-webkit-slider-runnable-track,
 #hero-position-y::-webkit-slider-runnable-track {
   height: 5px;
-  border: 1px solid rgba(231,179,84,.16);
+  border: 0;
   border-radius: 9999px;
   background: linear-gradient(90deg, #d89b18 0%, #f5bd3d 45%, #ffd568 100%);
   box-shadow: inset 0 1px 2px rgba(0,0,0,.7), 0 0 5px rgba(239,189,93,.12);
@@ -132,7 +132,7 @@ a[href]:not([aria-disabled="true"]) {
 #hero-position-x::-moz-range-track,
 #hero-position-y::-moz-range-track {
   height: 5px;
-  border: 1px solid rgba(231,179,84,.16);
+  border: 0;
   border-radius: 9999px;
   background: #25241f;
   box-shadow: inset 0 1px 2px rgba(0,0,0,.7);
