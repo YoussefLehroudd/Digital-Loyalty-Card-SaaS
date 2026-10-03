@@ -60,6 +60,7 @@ export type DashboardOverview = {
   metrics: DashboardMetrics;
   period?: { key: string; start: string; end: string };
   activity?: Array<{ date: string; new_customers: number; stamps_issued: number; rewards_redeemed: number }>;
+  recent_customers?: Array<{ id: string; name: string; email: string | null; activity: { type: string; date: string } }>;
   generated_at: string;
 };
 
