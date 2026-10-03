@@ -150,11 +150,11 @@ export default function ScannerPage() {
 
   return (
     <DashboardShell activeItem="scanner">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-2">
-        <div className="w-full flex-none">
-          <div className="flex items-end justify-between gap-4">
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="rounded-2xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(15,16,13,.92),rgba(8,9,7,.82))] p-5 shadow-[0_18px_55px_rgba(0,0,0,.25)]">
+          <div className="flex items-center justify-between gap-4">
             <div className="space-y-1">
-              <h1 className="text-2xl font-semibold leading-tight">
+              <h1 className="text-2xl font-bold leading-tight text-white">
                 Staff QR Scanner
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -162,7 +162,7 @@ export default function ScannerPage() {
               </p>
             </div>
 
-            <div className="text-muted-foreground">
+            <div className="flex size-11 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[#8b5d12]/20 text-[#ffc857]">
               <QrCode className="size-5" />
             </div>
           </div>
@@ -177,7 +177,7 @@ export default function ScannerPage() {
 
         {/* Desktop (md+): 2 columns side-by-side; no internal scroll.
             Mobile: single column; allow normal page scrolling. */}
-        <div className="mt-4 md:mt-6">
+        <div className="mt-5">
           <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 md:items-start">
             {/* Left: scanner */}
             <div className="min-w-0">
@@ -186,7 +186,7 @@ export default function ScannerPage() {
 
             {/* Right: your customer QR (stretch to match left card height when possible) */}
             <div className="min-w-0 flex">
-              <div className="w-full h-full rounded-lg border bg-card p-4 flex flex-col">
+              <div className="flex h-full min-h-[180px] w-full flex-col rounded-2xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(15,16,13,.94),rgba(8,9,7,.9))] p-5 shadow-[0_16px_45px_rgba(0,0,0,.25)]">
                 {decodedQr ? (
                   <>
                     <div className="flex items-center justify-between gap-3">
