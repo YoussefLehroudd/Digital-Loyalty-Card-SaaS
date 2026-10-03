@@ -481,10 +481,6 @@ async function customerRow(sql: Sql, customer: DbCustomer, card: DbLoyaltyCard |
   const loyalty = loyalties[0];
   const current = loyalty?.current_stamps ?? 0;
   const required = card?.required_stamps ?? 10;
-  const redeemedRows = (await sql`
-    SELECT count(*)::int AS count FROM reward_redemptions WHERE customer_id = ${customer.id} AND status = 'redeemed'
-  `) as Array<{ count: number }>;
-
   return {
     id: customer.id,
     first_name: customer.first_name ?? "",
@@ -494,7 +490,8 @@ async function customerRow(sql: Sql, customer: DbCustomer, card: DbLoyaltyCard |
     qr_code: customer.qr_code,
     current_stamps: current,
     required_stamps: required,
-    reward_status: rewardStatus(current, required, (redeemedRows[0]?.count ?? 0) > 0),
+    // Status describes the CURRENT loyalty cycle only. Historical redemptions stay in reward_history.
+    reward_status: rewardStatus(current, required),
     total_visits: visits.length,
     last_visit: visits[0]?.date ?? null,
     joined_at: customer.created_at,
