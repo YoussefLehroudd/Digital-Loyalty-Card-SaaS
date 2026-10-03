@@ -20,6 +20,7 @@ export type Business = {
   primary_color: string;
   phone: string | null;
   address: string | null;
+  created_at?: string;
 };
 
 export type AuthUser = {
@@ -54,7 +55,7 @@ export type DashboardMetrics = {
 export type DashboardOverview = {
   business: Pick<
     Business,
-    "id" | "name" | "email" | "logo_url" | "logo_public_id" | "primary_color"
+    "id" | "name" | "email" | "logo_url" | "logo_public_id" | "primary_color" | "created_at"
   >;
   metrics: DashboardMetrics;
   generated_at: string;
