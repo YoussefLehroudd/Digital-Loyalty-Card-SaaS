@@ -246,7 +246,7 @@ export default function CustomersPage() {
             <div><p className="text-xs font-semibold uppercase tracking-[.18em] text-[#e8b74f]">Customer management</p><h1 className="mt-1 text-2xl font-bold text-white">Customers</h1><p className="mt-1 text-sm text-white/45">Track members, loyalty progress, visits and rewards.</p></div>
             <div className="hidden size-12 items-center justify-center rounded-xl border border-[#d6a33d]/25 bg-[#8b5d12]/20 text-[#ffc857] sm:flex"><Users className="size-6"/></div>
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {label:"Total Customers",value:summary?.total_customers,icon:Users},
               {label:"Active Customers",value:summary?.active_customers,icon:User},
@@ -267,7 +267,7 @@ export default function CustomersPage() {
             <Sparkles className="size-5 text-[#e8b74f]"/>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px]">
+            <table className="w-full min-w-[760px] lg:min-w-[980px]">
               <thead><tr className="border-b border-white/[.07] bg-white/[.025] text-left text-[11px] uppercase tracking-[.08em] text-white/38">
                 <th className="px-5 py-3 font-medium">Customer</th><th className="px-5 py-3 font-medium">Progress</th><th className="px-5 py-3 font-medium">Reward Status</th><th className="px-5 py-3 font-medium">Visits</th><th className="px-5 py-3 font-medium">Last Visit</th><th className="px-5 py-3 font-medium">Joined</th><th className="px-5 py-3 text-right font-medium">Action</th>
               </tr></thead>
@@ -292,7 +292,7 @@ export default function CustomersPage() {
       {/* Customer details modal */}
       {isModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" onMouseDown={(e)=>{if(e.target===e.currentTarget)closeModal();}}>
-          <div className="w-full max-w-4xl overflow-hidden rounded-[22px] border border-[#d6a33d]/30 bg-[linear-gradient(145deg,#11120f,#090a08)] shadow-[0_30px_100px_rgba(0,0,0,.65),0_0_40px_rgba(214,163,61,.06)]">
+          <div className="max-h-[94dvh] w-full max-w-4xl overflow-hidden rounded-[22px] border border-[#d6a33d]/30 bg-[linear-gradient(145deg,#11120f,#090a08)] shadow-[0_30px_100px_rgba(0,0,0,.65),0_0_40px_rgba(214,163,61,.06)]">
             <div className="flex items-center justify-between border-b border-white/[.07] px-5 py-5 sm:px-7">
               <div className="flex items-center gap-4">
                 <div className="flex size-12 items-center justify-center rounded-full border border-[#f2b93f]/30 bg-[linear-gradient(145deg,#a97418,#5f3d08)] font-bold text-white">{selectedCustomer?formatName(selectedCustomer).split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase():"CU"}</div>
@@ -305,7 +305,7 @@ export default function CustomersPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5">
                     <div className="mb-5 flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl border border-[#d6a33d]/20 bg-[#8b5d12]/20 text-[#ffc857]"><Sparkles className="size-5"/></div><div><p className="font-semibold text-white">Loyalty progress</p><p className="text-xs text-white/35">Current customer progress</p></div></div>
-                    <div className="grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Stamps</p><p className="mt-1 text-xl font-bold text-[#ffd067]">{details.customer.current_stamps}</p></div><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Target</p><p className="mt-1 text-xl font-bold text-white">{details.customer.required_stamps}</p></div><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Status</p><p className="mt-2 text-xs font-semibold text-[#ffd067]">{rewardStatusLabel(details.customer.reward_status)}</p></div></div>
+                    <div className="grid grid-cols-1 gap-2 text-center min-[420px]:grid-cols-3"><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Stamps</p><p className="mt-1 text-xl font-bold text-[#ffd067]">{details.customer.current_stamps}</p></div><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Target</p><p className="mt-1 text-xl font-bold text-white">{details.customer.required_stamps}</p></div><div className="rounded-xl bg-white/[.035] p-3"><p className="text-[10px] uppercase text-white/35">Status</p><p className="mt-2 text-xs font-semibold text-[#ffd067]">{rewardStatusLabel(details.customer.reward_status)}</p></div></div>
                     <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[.07]"><div className="h-full rounded-full bg-[linear-gradient(90deg,#9d6813,#f3bd55)] shadow-[0_0_12px_rgba(243,189,85,.35)]" style={{width:details.customer.required_stamps?`${Math.min(100,(details.customer.current_stamps/details.customer.required_stamps)*100)}%`:"0%"}}/></div>
                   </div>
                   <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5">
