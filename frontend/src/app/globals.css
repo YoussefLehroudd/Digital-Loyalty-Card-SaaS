@@ -244,3 +244,45 @@ input.loyvance-gold-range[type="range"]:focus-visible,
     opacity: .55;
   }
 }
+
+/* Dashboard responsive safety net: phones, tablets and iPad */
+@media (max-width: 1023px) {
+  .dashboard-responsive,
+  main {
+    min-width: 0;
+  }
+
+  main img,
+  main svg,
+  main video,
+  main canvas {
+    max-width: 100%;
+  }
+
+  main table {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  main {
+    overflow-x: hidden;
+  }
+
+  main input,
+  main select,
+  main textarea,
+  main button {
+    max-width: 100%;
+  }
+
+  main [role="dialog"] {
+    max-width: 100vw;
+  }
+}
+
+@media (max-width: 479px) {
+  main {
+    font-size: 14px;
+  }
+}
