@@ -263,8 +263,8 @@ export function getDashboardSession(token: string) {
   });
 }
 
-export function getDashboardOverview(token: string) {
-  return apiFetch<DashboardOverview>("/dashboard", {
+export function getDashboardOverview(token: string, period = "current_month") {
+  return apiFetch<DashboardOverview>(`/dashboard?period=${encodeURIComponent(period)}`, {
     token,
   });
 }
