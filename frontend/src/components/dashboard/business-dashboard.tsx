@@ -76,14 +76,12 @@ export function BusinessDashboard() {
         {!isLoading && metrics ? <>
           <MetricGrid metrics={metrics}/>
           <div className="space-y-5">
-            <div className="grid items-start gap-5 xl:grid-cols-[1.7fr_.95fr]">
-              <ActivityPanel activity={overview?.activity ?? []} period={period} setPeriod={setPeriod}/>
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-1">
-                <QuickActions/>
-                <BusinessInfo name={businessName} logoUrl={overview?.business.logo_url ?? user.business?.logo_url ?? null} createdAt={overview?.business.created_at ?? user.business?.created_at ?? null}/>
-              </div>
-            </div>
+            <ActivityPanel activity={overview?.activity ?? []} period={period} setPeriod={setPeriod}/>
             <RecentCustomers customers={overview?.recent_customers ?? []}/>
+            <div className="grid items-start gap-5 lg:grid-cols-2">
+              <QuickActions/>
+              <BusinessInfo name={businessName} logoUrl={overview?.business.logo_url ?? user.business?.logo_url ?? null} createdAt={overview?.business.created_at ?? user.business?.created_at ?? null}/>
+            </div>
           </div>
         </> : null}
       </div>
