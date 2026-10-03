@@ -210,3 +210,19 @@ a[href]:not([aria-disabled="true"]) {
 @media (prefers-reduced-motion: reduce) {
   .gold-flow-border::before { animation: none; }
 }
+
+/* Mobile performance: keep LOYVANCE visuals while avoiding expensive continuous paint work. */
+@media (max-width: 767px) {
+  .mobile-lite-section .gold-flow-border::before {
+    animation: none;
+    filter: none;
+    opacity: .72;
+  }
+  .mobile-lite-section .animate-pulse {
+    animation: none !important;
+  }
+  .mobile-lite-section .how-step-card::after {
+    filter: blur(12px);
+    opacity: .55;
+  }
+}
