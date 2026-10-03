@@ -133,33 +133,37 @@ function ActivityPanel({activity,period,setPeriod}:{activity:Array<{date:string;
 }
 function LoyaltyPreview({business,card}:{business:DashboardOverview["business"]|null;card:LoyaltyCard|null}) {
   const required=Math.max(1,card?.required_stamps??5);
-  return <section className="rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-5">
+  return <section className="flex h-full min-h-[500px] flex-col rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-5">
     <div className="flex items-center justify-between gap-3">
-      <div><h2 className="font-bold">Your Loyalty Card</h2><p className="mt-1 text-xs text-white/40">This is how your card looks to customers.</p></div>
+      <div><h2 className="font-bold">Your Loyalty Card</h2><p className="mt-1 text-xs text-white/40">Customer-facing card preview.</p></div>
       <Button asChild size="sm" variant="outline" className="border-[#e7b354]/40 text-[#ffc857]"><Link href="/dashboard/loyalty-card"><Pencil className="size-3"/>Edit Card</Link></Button>
     </div>
-    <div className="mt-5">
-      <LoyaltyCardVisual
-        businessName={business?.name ?? "Business"}
-        businessLogoUrl={business?.logo_url ?? null}
-        heroImageUrl={business?.hero_image_url ?? null}
-        heroImageZoom={business?.hero_image_zoom ?? null}
-        heroImagePositionX={business?.hero_image_position_x ?? null}
-        heroImagePositionY={business?.hero_image_position_y ?? null}
-        brandPrimaryColor={business?.primary_color ?? null}
-        memberName="Customer name"
-        rewardName={card?.reward_name ?? null}
-        rewardDescription={card?.reward_description ?? null}
-        cardNumber="dashboard-preview"
-        qrToken={null}
-        showQrPayloadText={false}
-        stampUiVariant="customer"
-        progressPercent={0}
-        currentStamps={0}
-        requiredStamps={required}
-      />
+    <div className="mt-5 flex flex-1 items-center justify-center">
+      <div className="w-full max-w-[430px]">
+        <LoyaltyCardVisual
+          businessName={business?.name ?? "Business"}
+          businessLogoUrl={business?.logo_url ?? null}
+          heroImageUrl={business?.hero_image_url ?? null}
+          heroImageZoom={business?.hero_image_zoom ?? null}
+          heroImagePositionX={business?.hero_image_position_x ?? null}
+          heroImagePositionY={business?.hero_image_position_y ?? null}
+          brandPrimaryColor={business?.primary_color ?? null}
+          memberName="Preview member"
+          rewardName={card?.reward_name ?? null}
+          rewardDescription={card?.reward_description ?? null}
+          cardNumber="dashboard-preview"
+          qrToken={null}
+          showQrPayloadText={false}
+          stampUiVariant="customer"
+          progressPercent={0}
+          currentStamps={0}
+          requiredStamps={required}
+        />
+      </div>
     </div>
-    <p className="mt-3 text-[11px] leading-5 text-white/35">Preview starts at 0 stamps. Customer name, progress and QR are personalized for each member.</p>
+    <div className="mt-4 rounded-xl border border-[#e7b354]/10 bg-black/20 px-4 py-3">
+      <p className="text-[11px] leading-5 text-white/40">Preview only: real members see their own name, stamp progress and personal QR code.</p>
+    </div>
   </section>
 }
 function RecentCustomers({customers}:{customers:Array<{id:string;name:string;email:string|null;activity:{type:string;date:string}}>}){
