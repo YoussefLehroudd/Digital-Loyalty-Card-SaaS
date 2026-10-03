@@ -136,13 +136,13 @@ function ActivityPanel({activity,period,setPeriod}:{activity:Array<{date:string;
 }
 function LoyaltyPreview({business,card}:{business:DashboardOverview["business"]|null;card:LoyaltyCard|null}) {
   const required=Math.max(1,card?.required_stamps??5);
-  return <section className="flex flex-col rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-4">
+  return <section className="flex flex-col rounded-2xl border border-[#e7b354]/20 bg-[#0d0e0b]/95 p-3.5">
     <div className="flex items-center justify-between gap-3">
-      <div><h2 className="font-bold">Your Loyalty Card</h2><p className="mt-1 text-xs text-white/40">Customer-facing card preview.</p></div>
+      <div><h2 className="font-bold">Your Loyalty Card</h2><p className="mt-0.5 text-[11px] text-white/40">Customer-facing card preview.</p></div>
       <Button asChild size="sm" variant="outline" className="border-[#e7b354]/40 text-[#ffc857]"><Link href="/dashboard/loyalty-card"><Pencil className="size-3"/>Edit Card</Link></Button>
     </div>
-    <div className="mt-3 flex items-center justify-center overflow-hidden">
-      <div className="w-full max-w-[350px]">
+    <div className="mt-2 flex items-center justify-center overflow-hidden">
+      <div className="w-full max-w-[300px]">
         <LoyaltyCardVisual
           businessName={business?.name ?? "Business"}
           businessLogoUrl={business?.logo_url ?? null}
@@ -164,7 +164,7 @@ function LoyaltyPreview({business,card}:{business:DashboardOverview["business"]|
         />
       </div>
     </div>
-    <div className="mt-3 rounded-lg border border-[#e7b354]/10 bg-black/20 px-3 py-2">
+    <div className="mt-2 rounded-lg border border-[#e7b354]/10 bg-black/20 px-3 py-1.5">
       <p className="text-[10px] leading-4 text-white/40">Preview only: real members see their own name, stamp progress and personal QR code.</p>
     </div>
   </section>
