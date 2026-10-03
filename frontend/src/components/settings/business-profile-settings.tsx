@@ -405,8 +405,8 @@ export function BusinessProfileSettings() {
 
   return (
     <DashboardShell activeItem="settings">
-      <div className="mx-auto max-w-[1540px] space-y-6 px-5 py-6 sm:px-7 lg:px-10">
-        <div className="flex flex-col gap-3">
+      <div className="mx-auto max-w-[1600px] space-y-4 px-5 py-5 sm:px-7 lg:px-8">
+        <div className="flex items-center gap-4 rounded-2xl border border-[#d8a63f]/10 bg-black/10 px-4 py-3">
           <div className="flex size-11 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[#8b5d12]/25 text-[#ffc857] shadow-[0_8px_24px_rgba(231,179,84,.08)]">
             <Building2 className="size-5" />
           </div>
@@ -414,7 +414,7 @@ export function BusinessProfileSettings() {
             <h1 className="text-3xl font-bold leading-tight text-white">
               Business profile
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            <p className="mt-1 max-w-3xl text-sm leading-5 text-muted-foreground">
               Manage the business identity customers will see across public
               registration and future loyalty experiences.
             </p>
@@ -428,9 +428,9 @@ export function BusinessProfileSettings() {
           <Alert className="border-red-500/30 text-red-600">{error}</Alert>
         ) : null}
 
-        <div className="grid gap-5 xl:grid-cols-[1.05fr_.95fr]">
+        <div className="grid items-start gap-4 xl:grid-cols-[1.08fr_.92fr_.82fr]">
           <Card className="border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(12,13,10,.96),rgba(7,8,6,.91))] shadow-[0_18px_50px_rgba(0,0,0,.28)] backdrop-blur-md">
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <UserRound className="size-5 text-muted-foreground" />
                 Owner profile
@@ -439,8 +439,8 @@ export function BusinessProfileSettings() {
                 Login identity for the person managing this business dashboard.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form className="space-y-5" onSubmit={handleAccountSubmit(onAccountSubmit)}>
+            <CardContent className="pt-0">
+              <form className="space-y-4" onSubmit={handleAccountSubmit(onAccountSubmit)}>
                 <div className="flex flex-col gap-4 rounded-2xl border border-[#d8a63f]/15 bg-[linear-gradient(135deg,rgba(20,19,14,.78),rgba(9,10,8,.72))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.025)] sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-sm font-semibold text-secondary-foreground ring-1 ring-border">
@@ -523,6 +523,7 @@ export function BusinessProfileSettings() {
 
                 <div className="flex justify-end">
                   <Button
+                    className="border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f]"
                     disabled={!isAccountDirty || isAccountSubmitting}
                     type="submit"
                   >
@@ -539,7 +540,7 @@ export function BusinessProfileSettings() {
           </Card>
 
           <Card className="border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(12,13,10,.96),rgba(7,8,6,.91))] shadow-[0_18px_50px_rgba(0,0,0,.28)] backdrop-blur-md">
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <ShieldCheck className="size-5 text-muted-foreground" />
                 Security
@@ -548,8 +549,8 @@ export function BusinessProfileSettings() {
                 Change the password used to access this business workspace.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form className="space-y-5" onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
+            <CardContent className="pt-0">
+              <form className="space-y-4" onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
                 <ProfileField
                   error={passwordErrors.current_password?.message}
                   icon={KeyRound}
@@ -585,6 +586,7 @@ export function BusinessProfileSettings() {
                     {isResetSending ? "Sending reset email..." : "Forgot your password? Send a secure reset link"}
                   </button>
                   <Button
+                    className="border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f]"
                     disabled={!isPasswordDirty || isPasswordSubmitting}
                     type="submit"
                   >
@@ -599,22 +601,26 @@ export function BusinessProfileSettings() {
               </form>
             </CardContent>
           </Card>
+
+          <div className="xl:row-span-2">
+            <BrandingPreview business={previewBusiness} heroImage={brandingImage} />
+          </div>
         </div>
 
         {isLoading ? (
           <SettingsSkeleton />
         ) : (
-          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_460px]">
-            <Card className="border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(12,13,10,.96),rgba(7,8,6,.91))] shadow-[0_18px_50px_rgba(0,0,0,.28)] backdrop-blur-md">
-              <CardHeader>
+          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(300px,.82fr)]">
+            <Card className="xl:col-span-1 border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(12,13,10,.96),rgba(7,8,6,.91))] shadow-[0_18px_50px_rgba(0,0,0,.28)] backdrop-blur-md">
+              <CardHeader className="pb-3">
                 <CardTitle>Business information</CardTitle>
                 <CardDescription>
                   Keep contact details and brand color accurate for this tenant.
                 </CardDescription>
               </CardHeader>
 
-              <CardContent>
-                <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+              <CardContent className="pt-0">
+                <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
                   <LogoUploader
                     business={business}
                     fileInputRef={fileInputRef}
@@ -719,6 +725,7 @@ export function BusinessProfileSettings() {
 
                   <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <Button
+                      className="border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f]"
                       disabled={(!isDirty && !hasHeroChanges) || isSubmitting}
                       type="submit"
                     >
@@ -734,7 +741,7 @@ export function BusinessProfileSettings() {
               </CardContent>
             </Card>
 
-            <BrandingPreview business={previewBusiness} heroImage={brandingImage} />
+            <div className="hidden xl:block" aria-hidden="true" />
           </div>
         )}
       </div>
@@ -894,7 +901,7 @@ function HeroImageUploader({
       </div>
 
       {heroImage ? (
-        <div className="space-y-4">
+        <div className="grid gap-3 lg:grid-cols-3">
           <div className="space-y-2">
             <div className="rounded-xl border border-white/10 bg-black/20 p-4 backdrop-blur-sm">
               <div className="flex items-center justify-between gap-3">
@@ -1044,8 +1051,8 @@ function BrandingPreview({
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
-        <div className="mx-auto w-full max-w-[560px]">
+      <CardContent className="pt-0">
+        <div className="mx-auto w-full max-w-[430px]">
           <LoyaltyCardVisual
             businessName={businessName}
             businessLogoUrl={business?.logo_url}
