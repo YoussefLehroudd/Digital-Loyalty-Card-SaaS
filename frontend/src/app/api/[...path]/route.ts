@@ -1192,15 +1192,22 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: remaining, required_stamps: card.required_stamps, reward_unlocked: remaining >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
   }
 
+  // A completed cycle must be redeemed before another stamp can be added.
+  // This prevents 10/10 from becoming 11/10 when the business chooses "Not now".
   const stampRows = (await sql`
-    WITH visit_insert AS (
+    WITH eligible AS (
+      SELECT id FROM customer_loyalties
+      WHERE id = ${current.id} AND current_stamps < ${card.required_stamps}
+    ),
+    visit_insert AS (
       INSERT INTO visits (id, business_id, customer_id)
-      VALUES (${randomUUID()}, ${auth.business.id}, ${customer.id})
+      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}
+      WHERE EXISTS (SELECT 1 FROM eligible)
       RETURNING id
     ),
     loyalty_update AS (
       UPDATE customer_loyalties
-      SET current_stamps = current_stamps + 1, updated_at = now()
+      SET current_stamps = LEAST(current_stamps + 1, ${card.required_stamps}), updated_at = now()
       WHERE id = ${current.id} AND EXISTS (SELECT 1 FROM visit_insert)
       RETURNING *
     ),
@@ -1219,7 +1226,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     FROM loyalty_update lu
   `) as Array<DbLoyalty & { redemption_created: boolean }>;
   const updated = stampRows[0];
-  if (!updated) throw new Error("Could not add stamp.");
+  if (!updated) return error("Reward is ready. Redeem it before adding another stamp.", 409);
   const unlocked = updated.current_stamps >= card.required_stamps;
   const redemptionCreated = updated.redemption_created;
   await syncGoogleWalletCustomer(sql, customer.id);
