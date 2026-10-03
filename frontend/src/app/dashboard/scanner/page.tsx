@@ -33,6 +33,7 @@ export default function ScannerPage() {
   const [decodedQrDataUrl, setDecodedQrDataUrl] = useState<string | null>(null);
 
   const [redeeming, setRedeeming] = useState(false);
+  const [rewardReadyBlocked, setRewardReadyBlocked] = useState(false);
 
   const scanAnotherRef = useRef<(() => void) | null>(null);
 
@@ -80,11 +81,13 @@ export default function ScannerPage() {
     setError(null);
     setDecodedQr(null);
     setDecodedQrDataUrl(null);
+    setRewardReadyBlocked(false);
   }
 
   async function handleQrScanned(qrCode: string) {
     setError(null);
     setRedeeming(false);
+    setRewardReadyBlocked(false);
     setDecodedQr(qrCode);
 
     try {
@@ -96,6 +99,11 @@ export default function ScannerPage() {
 
       setStampResult(response.loyalty);
     } catch (err) {
+      if (err instanceof ApiError && err.message.toLowerCase().includes("reward is ready")) {
+        setRewardReadyBlocked(true);
+        setStampResult({ current_stamps: 1, required_stamps: 1, reward_unlocked: true, reward_redemption_created: false });
+        return;
+      }
       const message =
         err instanceof ApiError
           ? err.message
@@ -232,6 +240,7 @@ export default function ScannerPage() {
               requiredStamps={stampResult.required_stamps}
               rewardUnlocked={stampResult.reward_unlocked}
               rewardRedeemed={stampResult.reward_redeemed}
+              rewardAlreadyReady={rewardReadyBlocked}
               redeeming={redeeming}
               onRedeemReward={handleRedeemReward}
               onClose={clearResult}
