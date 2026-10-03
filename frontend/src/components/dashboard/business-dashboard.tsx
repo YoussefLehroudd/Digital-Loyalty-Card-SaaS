@@ -21,12 +21,13 @@ export function BusinessDashboard() {
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState("current_month");
 
   async function loadDashboard() {
     setIsLoading(true); setError(null);
     try {
       const [dashboard, card] = await Promise.all([
-        getDashboardOverview(token),
+        getDashboardOverview(token, period),
         getLoyaltyCard(token).catch(() => null),
       ]);
       setOverview(dashboard);
@@ -36,10 +37,10 @@ export function BusinessDashboard() {
   }
 
   async function loadDashboardSilent() {
-    try { setOverview(await getDashboardOverview(token)); } catch {}
+    try { setOverview(await getDashboardOverview(token, period)); } catch {}
   }
 
-  useEffect(() => { void loadDashboard(); }, [token]);
+  useEffect(() => { void loadDashboard(); }, [token, period]);
 
   useEffect(() => {
     if (!echo.echo) return;
@@ -48,7 +49,7 @@ export function BusinessDashboard() {
     const channel = echo.echo.private(`business.${businessId}`);
     ["StampAdded","RewardRedeemed","MembershipCreated","MembershipDeleted","BusinessBrandUpdated","BusinessCardUpdated"].forEach((event) => channel.listen(event, () => void loadDashboardSilent()));
     return () => { try { ["StampAdded","RewardRedeemed","MembershipCreated","MembershipDeleted","BusinessBrandUpdated","BusinessCardUpdated"].forEach((event) => channel.stopListening(event)); } catch {} };
-  }, [echo.echo, user?.business?.id, user?.business_id, token]);
+  }, [echo.echo, user?.business?.id, user?.business_id, token, period]);
 
   const metrics = overview?.metrics;
   const businessName = overview?.business.name ?? user.business?.name ?? "Business";
@@ -63,7 +64,7 @@ export function BusinessDashboard() {
               <h1 className="mt-1 text-[28px] font-black leading-tight tracking-[-.025em] text-white sm:text-[34px]">Your business is growing! <span className="text-[26px]">🚀</span></h1>
               <p className="mt-1.5 text-[14px] text-white/55">Here’s an overview of your loyalty program performance.</p>
             </div>
-            <DateRangePicker />
+            <DateRangePicker value={period} onChange={setPeriod} />
           </div>
         </section>
 
@@ -95,11 +96,15 @@ function MetricGrid({metrics}:{metrics:DashboardMetrics}) {
   return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([label,value,growth,Icon])=><div key={label} className="relative min-h-[132px] overflow-hidden rounded-[16px] border border-[#c88b20]/35 bg-black/25 px-4 py-4 backdrop-blur-[2px]"><div className="relative flex h-full items-center gap-4"><div className="flex size-[64px] shrink-0 items-center justify-center rounded-[16px] border border-[#d59a2c]/25 bg-[#8a5c13]/20 text-[#ffc64d]"><Icon className="size-8 stroke-[2.1]"/></div><div className="min-w-0 flex-1"><p className="truncate text-[14px] font-medium text-white/70">{label}</p><div className="mt-1 flex items-end justify-between gap-2"><p className="text-[32px] font-black leading-none tracking-[-.025em] text-white">{formatter.format(value)}</p><div className="pb-0.5 text-right"><p className={cn("flex items-center justify-end gap-1 text-[13px] font-bold",growth>=0?"text-[#45df71]":"text-red-400")}><ArrowUpRight className={cn("size-4 stroke-[2.5]",growth<0&&"rotate-90")}/>{growth>0?"+":""}{growth}%</p><p className="mt-1 whitespace-nowrap text-[10px] text-white/38">vs last month</p></div></div></div></div></div>)}</div>
 }
 
-function DateRangePicker() {
-  const [range,setRange]=useState("Sep 1, 2026 - Sep 30, 2026");
+function DateRangePicker({value,onChange}:{value:string;onChange:(value:string)=>void}) {
   const [open,setOpen]=useState(false);
-  const ranges=["Sep 1, 2026 - Sep 30, 2026","Aug 1, 2026 - Aug 31, 2026","Last 30 days"];
-  return <div className="relative"><button type="button" onClick={()=>setOpen(v=>!v)} className="flex h-12 min-w-[244px] items-center gap-3 rounded-xl border border-white/15 bg-[#0d0e0d]/90 px-4 text-[13px] text-white/85 shadow-[0_8px_28px_rgba(0,0,0,.25)] transition hover:border-[#e7b354]/35"><CalendarDays className="size-5 text-white/65"/><span className="flex-1 text-left">{range}</span><ChevronDown className={cn("size-4 text-white/45 transition-transform",open&&"rotate-180")}/></button>{open?<div className="absolute right-0 top-[54px] z-30 w-[270px] rounded-xl border border-[#e7b354]/20 bg-[#0c0d0b] p-2 shadow-2xl">{ranges.map(item=><button type="button" key={item} onClick={()=>{setRange(item);setOpen(false)}} className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm text-white/75 hover:bg-[#e7b354]/10 hover:text-white"><span>{item}</span>{range===item?<Check className="size-4 text-[#f3bd55]"/>:null}</button>)}</div>:null}</div>
+  const ranges=[
+    {key:"current_month",label:"Sep 1, 2026 - Sep 30, 2026"},
+    {key:"previous_month",label:"Aug 1, 2026 - Aug 31, 2026"},
+    {key:"last_30_days",label:"Last 30 days"},
+  ];
+  const label=ranges.find(item=>item.key===value)?.label??ranges[0].label;
+  return <div className="relative"><button type="button" onClick={()=>setOpen(v=>!v)} className="flex h-12 min-w-[244px] items-center gap-3 rounded-xl border border-white/15 bg-[#0d0e0d]/90 px-4 text-[13px] text-white/85 shadow-[0_8px_28px_rgba(0,0,0,.25)] transition hover:border-[#e7b354]/35"><CalendarDays className="size-5 text-white/65"/><span className="flex-1 text-left">{label}</span><ChevronDown className={cn("size-4 text-white/45 transition-transform",open&&"rotate-180")}/></button>{open?<div className="absolute right-0 top-[54px] z-30 w-[270px] rounded-xl border border-[#e7b354]/20 bg-[#0c0d0b] p-2 shadow-2xl">{ranges.map(item=><button type="button" key={item.key} onClick={()=>{onChange(item.key);setOpen(false)}} className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm text-white/75 hover:bg-[#e7b354]/10 hover:text-white"><span>{item.label}</span>{value===item.key?<Check className="size-4 text-[#f3bd55]"/>:null}</button>)}</div>:null}</div>
 }
 function ActivityPanel({metrics}:{metrics:DashboardMetrics}) {
   const bars=[32,38,29,46,58,43,35,52,68,57,48,63,76,60,51,69,82,73,64,79,92,70,62,80,96,88,75,91,84,100];
