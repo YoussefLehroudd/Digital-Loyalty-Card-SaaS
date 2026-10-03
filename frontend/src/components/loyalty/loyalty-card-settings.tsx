@@ -297,7 +297,7 @@ export function LoyaltyCardSettings() {
         {isLoading ? (
           <LoyaltyCardSettingsSkeleton />
         ) : (
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
             <Card className="rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
               <CardHeader>
                 <CardTitle>{loyaltyCard ? "Edit loyalty card" : "Create loyalty card"}</CardTitle>
@@ -386,7 +386,7 @@ export function LoyaltyCardSettings() {
             <img
               src={joinQrDataUrl}
               alt="Customer join QR code"
-              className="mx-auto h-56 w-56 rounded-md border bg-white p-2"
+              className="mx-auto aspect-square h-auto w-full max-w-56 rounded-md border bg-white p-2"
             />
           ) : (
             <div className="rounded-md border p-3 text-xs text-muted-foreground">
