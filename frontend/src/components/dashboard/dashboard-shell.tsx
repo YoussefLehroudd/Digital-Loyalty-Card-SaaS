@@ -17,7 +17,6 @@ import {
 
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider } from "@/components/echo/echo-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -116,7 +115,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
 
         <section className="min-w-0">
           <TopNav
-            onSignOut={signOut}
+            userName={user.name ?? businessName}
             onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           />
 
@@ -292,14 +291,16 @@ function MobileDrawerItem({
 }
 
 function TopNav({
-  onSignOut,
+  userName,
   onOpenMobileMenu,
 }: {
-  onSignOut: () => Promise<void>;
+  userName: string;
   onOpenMobileMenu: () => void;
 }) {
+  const initial = userName.trim().charAt(0).toUpperCase() || "Y";
+
   return (
-    <header className="sticky top-0 z-20 border-b border-[#d9a52f]/15 bg-[#070806]/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl">
       <div className="flex h-20 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <Button
@@ -312,28 +313,27 @@ function TopNav({
           >
             <Menu className="size-5" />
           </Button>
+          <h1 className="hidden text-xl font-bold tracking-tight lg:block">Dashboard</h1>
           <div className="flex min-w-0 items-center gap-2 lg:hidden">
-            <Image
-              alt="LOYVANCE"
-              className="size-8 object-contain"
-              height={32}
-              priority
-              src="/brand/icon.png"
-              width={48}
-            />
+            <Image alt="LOYVANCE" className="size-8 object-contain" height={32} priority src="/brand/icon.png" width={48}/>
             <p className="truncate text-sm font-semibold">LOYVANCE</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button aria-label="Notifications" size="icon" variant="ghost">
-            <Bell className="size-4" />
+        <div className="flex items-center gap-4">
+          <Button aria-label="Notifications" className="relative text-white/75 hover:bg-white/5 hover:text-white" size="icon" variant="ghost">
+            <Bell className="size-5" />
+            <span className="absolute right-2 top-2 size-2 rounded-full bg-[#f3bd55] shadow-[0_0_8px_rgba(243,189,85,.8)]" />
           </Button>
-          <ThemeToggle />
-          <Button onClick={onSignOut} variant="outline">
-            <LogOut className="size-4" />
-            <span className="hidden sm:inline">Log out</span>
-          </Button>
+          <div className="h-8 w-px bg-white/10" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-full border border-[#e7b354]/15 bg-[#5b451b] font-bold text-white">{initial}</div>
+            <div className="hidden min-w-0 sm:block">
+              <p className="max-w-44 truncate text-sm font-semibold text-white">{userName}</p>
+              <p className="text-xs text-white/40">Business Owner</p>
+            </div>
+            <span className="ml-1 text-white/45">⌄</span>
+          </div>
         </div>
       </div>
     </header>
