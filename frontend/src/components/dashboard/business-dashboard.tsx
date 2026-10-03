@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboardOverview, getLoyaltyCard, type DashboardMetrics, type DashboardOverview, type LoyaltyCard } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEcho } from "@/components/echo/echo-provider";
 
 const formatter = new Intl.NumberFormat("en");
@@ -98,8 +97,9 @@ function MetricGrid({metrics}:{metrics:DashboardMetrics}) {
 
 function DateRangePicker() {
   const [range,setRange]=useState("Sep 1, 2026 - Sep 30, 2026");
+  const [open,setOpen]=useState(false);
   const ranges=["Sep 1, 2026 - Sep 30, 2026","Aug 1, 2026 - Aug 31, 2026","Last 30 days"];
-  return <Popover><PopoverTrigger asChild><button type="button" className="flex h-12 min-w-[244px] items-center gap-3 rounded-xl border border-white/15 bg-[#0d0e0d]/90 px-4 text-[13px] text-white/85 shadow-[0_8px_28px_rgba(0,0,0,.25)] transition hover:border-[#e7b354]/35"><CalendarDays className="size-5 text-white/65"/><span className="flex-1 text-left">{range}</span><ChevronDown className="size-4 text-white/45"/></button></PopoverTrigger><PopoverContent align="end" className="w-[270px] border-[#e7b354]/20 bg-[#0c0d0b] p-2 text-white">{ranges.map(item=><button type="button" key={item} onClick={()=>setRange(item)} className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm text-white/75 hover:bg-[#e7b354]/10 hover:text-white"><span>{item}</span>{range===item?<Check className="size-4 text-[#f3bd55]"/>:null}</button>)}</PopoverContent></Popover>
+  return <div className="relative"><button type="button" onClick={()=>setOpen(v=>!v)} className="flex h-12 min-w-[244px] items-center gap-3 rounded-xl border border-white/15 bg-[#0d0e0d]/90 px-4 text-[13px] text-white/85 shadow-[0_8px_28px_rgba(0,0,0,.25)] transition hover:border-[#e7b354]/35"><CalendarDays className="size-5 text-white/65"/><span className="flex-1 text-left">{range}</span><ChevronDown className={cn("size-4 text-white/45 transition-transform",open&&"rotate-180")}/></button>{open?<div className="absolute right-0 top-[54px] z-30 w-[270px] rounded-xl border border-[#e7b354]/20 bg-[#0c0d0b] p-2 shadow-2xl">{ranges.map(item=><button type="button" key={item} onClick={()=>{setRange(item);setOpen(false)}} className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm text-white/75 hover:bg-[#e7b354]/10 hover:text-white"><span>{item}</span>{range===item?<Check className="size-4 text-[#f3bd55]"/>:null}</button>)}</div>:null}</div>
 }
 function ActivityPanel({metrics}:{metrics:DashboardMetrics}) {
   const bars=[32,38,29,46,58,43,35,52,68,57,48,63,76,60,51,69,82,73,64,79,92,70,62,80,96,88,75,91,84,100];
