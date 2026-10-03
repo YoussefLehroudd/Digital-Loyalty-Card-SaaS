@@ -17,7 +17,7 @@ import { useEcho } from "@/components/echo/echo-provider";
 
 export default function UserDashboardPage() {
   const { token, user } = useCustomerAuth();
-  const { echo } = useEcho();
+  const { echo, connected } = useEcho();
 
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<CustomerCardItem[]>([]);
@@ -86,6 +86,19 @@ export default function UserDashboardPage() {
       channel.stopListening("data.changed", refresh);
     };
   }, [echo, token]);
+
+  // Keep the visible loyalty card in sync after a business adds a stamp or redeems a reward.
+  // The realtime provider polls the server version; this fallback also refreshes while the tab is visible.
+  useEffect(() => {
+    if (!token) return;
+    const refreshCards = () => {
+      void customerCards(token).then((res) => setCards(res.data ?? [])).catch(() => undefined);
+    };
+    const timer = window.setInterval(refreshCards, connected ? 2000 : 4000);
+    const onVisible = () => { if (document.visibilityState === "visible") refreshCards(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisible); };
+  }, [token, connected]);
 
   return (
     <CustomerLayout
