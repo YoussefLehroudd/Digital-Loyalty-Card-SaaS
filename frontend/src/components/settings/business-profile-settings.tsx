@@ -650,9 +650,9 @@ export function BusinessProfileSettings() {
                         Choose whether the card background image is shown on Google Wallet.
                       </p>
                     </div>
-                    <div className="inline-flex rounded-xl border border-[#e7b354]/20 bg-black/30 p-1">
+                    <div className="inline-flex w-full rounded-xl border border-[#e7b354]/20 bg-black/30 p-1 sm:w-auto">
                       <Button
-                        className="h-8 px-4"
+                        className="h-8 flex-1 px-4 sm:flex-none"
                         type="button"
                         variant={watchedValues.google_wallet_show_background ? "default" : "ghost"}
                         onClick={() => setValue("google_wallet_show_background", true, { shouldDirty: true })}
@@ -660,7 +660,7 @@ export function BusinessProfileSettings() {
                         Show
                       </Button>
                       <Button
-                        className="h-8 px-4"
+                        className="h-8 flex-1 px-4 sm:flex-none"
                         type="button"
                         variant={!watchedValues.google_wallet_show_background ? "default" : "ghost"}
                         onClick={() => setValue("google_wallet_show_background", false, { shouldDirty: true })}
