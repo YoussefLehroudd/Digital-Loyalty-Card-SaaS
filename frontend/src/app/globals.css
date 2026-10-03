@@ -163,6 +163,30 @@ a[href]:not([aria-disabled="true"]) {
   box-shadow: 0 0 0 3px rgba(255,224,138,.25), 0 0 10px rgba(239,189,93,.6);
 }
 
+/* Force Settings range controls to render as a clean line only (no native input frame) */
+input.loyvance-gold-range[type="range"],
+#hero-zoom,
+#hero-position-x,
+#hero-position-y {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  outline: 0 !important;
+  border-radius: 0 !important;
+}
+input.loyvance-gold-range[type="range"]:focus,
+input.loyvance-gold-range[type="range"]:focus-visible,
+#hero-zoom:focus,
+#hero-position-x:focus,
+#hero-position-y:focus {
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
 /* LOYVANCE continuously travelling gold border */
 .gold-flow-border {
   position: relative;
