@@ -70,12 +70,12 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
   }, [isMobileMenuOpen]);
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen bg-[#070806] text-white">
       <div className="lg:grid lg:grid-cols-[264px_1fr]">
-        <aside className="hidden min-h-screen border-r bg-card lg:block">
+        <aside className="hidden min-h-screen border-r border-[#d9a52f]/15 bg-[#090a08] lg:block">
           <div className="sticky top-0 flex h-screen flex-col">
-            <div className="flex h-16 items-center gap-3 border-b px-5">
-              <div className="flex size-14 items-center justify-center rounded-xl bg-muted/30 ring-1 ring-border/70">
+            <div className="flex h-20 items-center gap-3 border-b border-[#d9a52f]/15 px-5">
+              <div className="flex size-14 items-center justify-center">
                 <Image
                   alt="LOYVANCE"
                   className="h-full w-full object-contain"
@@ -93,7 +93,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
               </div>
             </div>
 
-            <nav className="flex-1 space-y-1 px-3 py-4">
+            <nav className="flex-1 space-y-2 px-3 py-5">
               {sidebarItems.map((item) => (
                 <SidebarItem
                   active={item.key === activeItem}
@@ -105,7 +105,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
               ))}
             </nav>
 
-            <div className="border-t p-3">
+            <div className="border-t border-[#d9a52f]/15 p-3">
               <Button className="w-full justify-start" onClick={signOut} variant="ghost">
                 <LogOut className="size-4" />
                 Log out
@@ -206,7 +206,7 @@ function SidebarItem({
   icon: React.ElementType;
   label: string;
 }) {
-  const className = cn("w-full justify-start", !active && "text-muted-foreground");
+  const className = cn("h-12 w-full justify-start gap-3 rounded-xl border transition-all", active ? "border-[#f6bd46]/40 bg-gradient-to-r from-[#b27a14]/35 to-[#e4a62e]/15 text-[#ffc857] shadow-[0_0_24px_rgba(224,165,46,.10)]" : "border-transparent text-white/55 hover:border-[#d9a52f]/20 hover:bg-[#d9a52f]/5 hover:text-white");
 
   if (!href) {
     return (
@@ -218,7 +218,7 @@ function SidebarItem({
   }
 
   return (
-    <Button asChild className={className} variant={active ? "secondary" : "ghost"}>
+    <Button asChild className={className} variant="ghost">
       <Link href={href}>
         <Icon className="size-4" />
         {label}
@@ -299,8 +299,8 @@ function TopNav({
   onOpenMobileMenu: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
-      <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-20 border-b border-[#d9a52f]/15 bg-[#070806]/90 backdrop-blur-xl">
+      <div className="flex h-20 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             aria-label="Open menu"
