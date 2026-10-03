@@ -180,7 +180,7 @@ export default function RewardsPage() {
             <CardTitle className="text-lg">Rewards</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Card className="border-[#e7b354]/15 bg-black/25 shadow-none">
                 <CardHeader className="px-4 py-3">
                   <CardTitle className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
@@ -253,7 +253,7 @@ export default function RewardsPage() {
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="min-w-[860px] w-full">
+              <table className="w-full min-w-[700px] lg:min-w-[860px]">
                 <thead className="border-b border-white/10 bg-white/[.025] text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="py-4 px-4 font-medium">Customer</th>
@@ -323,7 +323,7 @@ export default function RewardsPage() {
                   <span className="font-medium text-foreground">{response.meta.total}</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
