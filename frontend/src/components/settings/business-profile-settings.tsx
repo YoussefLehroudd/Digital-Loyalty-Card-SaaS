@@ -446,7 +446,7 @@ export function BusinessProfileSettings() {
                 Login identity for the person managing this business dashboard.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="min-w-0 pt-0">
               <form className="space-y-4" onSubmit={handleAccountSubmit(onAccountSubmit)}>
                 <div className="flex flex-col gap-4 rounded-2xl border border-[#d8a63f]/15 bg-[linear-gradient(135deg,rgba(20,19,14,.78),rgba(9,10,8,.72))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.025)] lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex min-w-0 items-center gap-3 overflow-hidden">
@@ -613,8 +613,8 @@ export function BusinessProfileSettings() {
         {isLoading ? (
           <SettingsSkeleton />
         ) : (
-          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(340px,.72fr)]">
-            <Card className="xl:col-span-1 border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(12,13,10,.96),rgba(7,8,6,.91))] shadow-[0_18px_50px_rgba(0,0,0,.28)] backdrop-blur-md">
+          <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] xl:grid-cols-[minmax(0,1.8fr)_minmax(340px,.72fr)]">
+            <Card className="min-w-0 border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(12,13,10,.96),rgba(7,8,6,.91))] shadow-[0_18px_50px_rgba(0,0,0,.28)] backdrop-blur-md">
               <CardHeader className="pb-3">
                 <CardTitle>Business information</CardTitle>
                 <CardDescription>
@@ -623,7 +623,7 @@ export function BusinessProfileSettings() {
               </CardHeader>
 
               <CardContent className="pt-0">
-                <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+                <form className="min-w-0 space-y-4" onSubmit={handleSubmit(onSubmit)}>
                   <LogoUploader
                     business={business}
                     fileInputRef={fileInputRef}
@@ -767,7 +767,7 @@ function LogoUploader({
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-[#d8a63f]/15 bg-[linear-gradient(135deg,rgba(20,19,14,.78),rgba(9,10,8,.72))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,.025)] sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-4">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-card">
           {business?.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -780,9 +780,9 @@ function LogoUploader({
             <span className="text-lg font-semibold">{initials}</span>
           )}
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium">Business logo</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:whitespace-normal">
             PNG, JPG, or WEBP. Maximum upload size is 2 MB.
           </p>
         </div>
@@ -926,7 +926,7 @@ function HeroImageUploader({
       </div>
 
       {heroImage ? (
-        <div className="mt-3 grid gap-2.5 md:grid-cols-3">
+        <div className="mt-3 grid min-w-0 gap-2.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-3">
           <div className="rounded-lg border border-[#d8a63f]/20 bg-black/25 px-3 py-2.5">
             <div className="mb-1.5 flex items-center justify-between gap-3">
               <Label className="flex items-center gap-2 text-[11px] font-semibold text-white" htmlFor="hero-zoom">
@@ -1058,7 +1058,7 @@ function BrandingPreview({
   const businessName = business?.name ?? "Business";
 
   return (
-    <Card className="h-fit overflow-hidden border-[#d8a63f]/20 xl:sticky xl:top-24 bg-[linear-gradient(145deg,rgba(12,13,10,.96),rgba(7,8,6,.91))] shadow-[0_18px_50px_rgba(0,0,0,.28)] backdrop-blur-md">
+    <Card className="h-fit min-w-0 overflow-hidden border-[#d8a63f]/20 lg:sticky lg:top-24 bg-[linear-gradient(145deg,rgba(12,13,10,.96),rgba(7,8,6,.91))] shadow-[0_18px_50px_rgba(0,0,0,.28)] backdrop-blur-md">
       <CardHeader className="pb-3">
         <CardTitle>Branding preview</CardTitle>
         <CardDescription>
@@ -1067,7 +1067,7 @@ function BrandingPreview({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <div className="mx-auto w-full max-w-[400px]">
+        <div className="mx-auto w-full min-w-0 max-w-[400px]">
           <LoyaltyCardVisual
             businessName={businessName}
             businessLogoUrl={business?.logo_url}
