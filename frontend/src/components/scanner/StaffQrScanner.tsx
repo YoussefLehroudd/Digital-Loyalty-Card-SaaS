@@ -148,6 +148,11 @@ export function StaffQrScanner({
           setIsDecoding(true);
           setHasScanned(true);
 
+          // Short success haptic on supported mobile devices.
+          if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+            navigator.vibrate(80);
+          }
+
           // Destroy reader + stop camera.
           await stopDecoding();
 
