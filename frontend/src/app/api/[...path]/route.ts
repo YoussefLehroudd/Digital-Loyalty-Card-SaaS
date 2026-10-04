@@ -897,14 +897,16 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
                v.created_at, CONCAT('stamp_added-', v.id::text)
         FROM visits v JOIN customers c ON c.id = v.customer_id WHERE v.business_id = ${businessId}
         UNION ALL
-        SELECT r.id::text,
-               CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed' ELSE 'reward_ready' END::text,
-               CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward ready' END::text,
-               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'),
-                      CASE WHEN r.status = 'redeemed' THEN ' redeemed a reward.' ELSE ' unlocked a reward.' END),
-               COALESCE(r.redeemed_at, r.earned_at),
-               CONCAT(CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed-' ELSE 'reward_ready-' END, r.id::text)
+        SELECT CONCAT(r.id::text, ':ready'), 'reward_ready'::text, 'Reward ready'::text,
+               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' unlocked a reward.'),
+               r.earned_at, CONCAT('reward_ready-', r.id::text)
         FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE r.business_id = ${businessId}
+        UNION ALL
+        SELECT CONCAT(r.id::text, ':redeemed'), 'reward_redeemed'::text, 'Reward redeemed'::text,
+               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' redeemed a reward.'),
+               r.redeemed_at, CONCAT('reward_redeemed-', r.id::text)
+        FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id
+        WHERE r.business_id = ${businessId} AND r.redeemed_at IS NOT NULL
       ) n
       LEFT JOIN business_notification_reads br
         ON br.user_id = ${auth.user.id} AND br.notification_key = n.notification_key
