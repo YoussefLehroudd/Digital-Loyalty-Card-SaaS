@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Gift, LayoutGrid, Link2, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
+import { Building2, CreditCard, Gift, LayoutGrid, Link2, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -185,7 +185,7 @@ export default function UserDashboardPage() {
                 <div className="relative z-20 flex items-center justify-between gap-3 px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[linear-gradient(145deg,rgba(157,107,17,.36),rgba(87,57,9,.28))] text-[#ffd369] shadow-[inset_0_0_18px_rgba(255,194,64,.08)] lg:size-12">
-                      <QrCode className="size-4 lg:size-5" />
+                      <CreditCard className="size-4 lg:size-5" />
                     </div>
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-semibold text-white sm:text-lg lg:text-xl">Your loyalty cards</h2>
