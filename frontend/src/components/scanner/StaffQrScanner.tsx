@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Loader2, ScanLine } from "lucide-react";
+import { CheckCircle2, Loader2, RefreshCw, ScanLine } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { BrowserCodeReader } from "@zxing/library";
@@ -42,8 +42,6 @@ export function StaffQrScanner({
   });
   const [isDecoding, setIsDecoding] = useState(false);
   const [hasScanned, setHasScanned] = useState(false);
-
-  const canScan = useMemo(() => !hasScanned && !isDecoding, [hasScanned, isDecoding]);
 
   const stopDecoding = useCallback(async () => {
     // Destroy/reset ZXing reader instance and stop camera tracks.
@@ -200,7 +198,7 @@ export function StaffQrScanner({
     } finally {
       startingRef.current = false;
     }
-  }, [canScan, onQrScanned, stopDecoding]);
+  }, [onQrScanned, stopDecoding]);
 
   useEffect(() => {
     // Auto-start on mount.
@@ -247,8 +245,13 @@ export function StaffQrScanner({
 
       <CardContent className="space-y-4">
         {cameraStatus.state === "permission_denied" ? (
-          <Alert className="border-red-500/30 text-red-600">
-            {cameraStatus.message}
+          <Alert className="border-red-500/30 text-red-500">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span>{cameraStatus.message}</span>
+              <Button className="shrink-0" onClick={() => void start()} size="sm" type="button" variant="outline">
+                <RefreshCw className="size-4" /> Try again
+              </Button>
+            </div>
           </Alert>
         ) : null}
 
@@ -268,21 +271,21 @@ export function StaffQrScanner({
             ref={videoRef}
             muted
             playsInline
-            className="h-[320px] w-full object-cover"
+            className="h-[260px] w-full object-cover sm:h-[320px]"
           />
           {/* overlay guide */}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-56 w-56 rounded-lg border-2 border-primary/70 shadow-[0_0_0_999px_rgba(0,0,0,0.0)]" />
+            <div className="h-48 w-48 rounded-xl border-2 border-[#f3bd55]/75 shadow-[0_0_24px_rgba(243,189,85,.12)] sm:h-56 sm:w-56" />
           </div>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm text-muted-foreground">
-            {hasScanned ? "QR detected." : "Align the QR code within the frame."}
+            {hasScanned ? <span className="inline-flex items-center gap-1.5 text-emerald-400"><CheckCircle2 className="size-4" /> QR scanned successfully.</span> : "Align the QR code within the frame."}
           </div>
 
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={reset} disabled={isDecoding}>
+            <Button className="w-full sm:w-auto" type="button" variant="outline" onClick={reset} disabled={isDecoding}>
               Scan another
             </Button>
           </div>
