@@ -222,7 +222,7 @@ export function CustomerCardCarousel({
           )}
         >
           <div
-            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[540px] lg:max-w-[660px]" : "max-w-[560px]")}
+            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[500px] lg:max-w-[560px]" : "max-w-[560px]")}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -243,11 +243,11 @@ export function CustomerCardCarousel({
                 const side = offset > 0 ? 1 : -1;
                 // Fan the inactive cards upward and outward so their rounded top
                 // corner is visible instead of looking like a flat side strip.
-                const baseX = side * ((dashboardMode ? 48 : 24) + (distance - 1) * 20);
-                const baseY = dashboardMode ? 8 - (distance - 1) * 4 : -10 - (distance - 1) * 7;
-                const baseScale = 1 - distance * (dashboardMode ? 0.035 : 0.055);
-                const baseRotateY = side * distance * -5;
-                const baseRotateZ = side * distance * 0.7;
+                const baseX = side * ((dashboardMode ? 28 : 24) + (distance - 1) * 16);
+                const baseY = dashboardMode ? 10 + (distance - 1) * 3 : -10 - (distance - 1) * 7;
+                const baseScale = 1 - distance * (dashboardMode ? 0.045 : 0.055);
+                const baseRotateY = dashboardMode ? 0 : side * distance * -5;
+                const baseRotateZ = dashboardMode ? 0 : side * distance * 0.7;
                 const opacity = 1 - distance * 0.16;
                 const brightness = 1 - distance * 0.07;
                 const activeTransform = dragging
