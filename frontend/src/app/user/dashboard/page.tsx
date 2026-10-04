@@ -122,7 +122,7 @@ export default function UserDashboardPage() {
         </div>
       ) : (
         <div className="mx-auto max-w-[1440px] space-y-5 lg:space-y-7">
-          <div className="grid grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4 lg:gap-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4 lg:gap-3">
             {[
               { label: "Total Cards", value: cards.length, note: "Businesses you follow", icon: CreditCard },
               { label: "Total Stamps", value: totalStamps, note: "Across all cards", icon: Ticket },
@@ -133,15 +133,15 @@ export default function UserDashboardPage() {
               return (
                 <Card key={stat.label} className="group relative min-w-0 overflow-hidden rounded-xl border-[#d8a63f]/20 sm:rounded-2xl bg-[linear-gradient(135deg,rgba(18,19,16,.96),rgba(8,9,7,.94))] shadow-[0_10px_28px_rgba(0,0,0,.22)] transition duration-300 hover:border-[#e7b354]/35">
                   <div className="pointer-events-none absolute -left-8 -top-10 size-24 rounded-full bg-[#d79b16]/[.06] blur-2xl" />
-                  <CardContent className="relative flex min-h-[112px] items-start gap-3 p-3 sm:min-h-[122px] sm:gap-4 sm:p-4">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-12 sm:rounded-xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(139,93,18,.34),rgba(68,44,7,.22))] text-[#ffc857] shadow-[inset_0_1px_0_rgba(255,218,130,.08)] sm:size-12">
+                  <CardContent className="relative flex min-h-[104px] items-start gap-3 p-3 sm:min-h-[118px] sm:gap-4 sm:p-4 lg:min-h-[124px]">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(139,93,18,.38),rgba(68,44,7,.24))] text-[#ffc857] shadow-[inset_0_1px_0_rgba(255,218,130,.08)] sm:size-12">
                       <Icon className="size-4 sm:size-5" />
                     </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="truncate pr-3 text-[9px] font-semibold uppercase tracking-[0.06em] text-[#c9c1ae] sm:pr-0 sm:text-[11px] sm:tracking-[0.1em]">{stat.label}</p>
-                      <p className="mt-0.5 text-xl font-bold leading-none tracking-tight text-white sm:text-[28px]">{stat.value}</p>
-                      <div className="mt-1.5 h-px w-full sm:mt-2 bg-gradient-to-r from-[#d8a63f]/20 via-white/10 to-transparent" />
-                      <p className="mt-1 truncate text-[9px] text-muted-foreground sm:mt-1.5 sm:text-[11px]">{stat.note}</p>
+                    <div className="min-w-0 flex-1 pt-0.5 sm:pt-1">
+                      <p className="truncate pr-3 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c9c1ae] sm:pr-0 sm:text-[11px] sm:tracking-[0.1em]">{stat.label}</p>
+                      <p className="mt-1 text-[22px] font-bold leading-none tracking-tight text-white sm:text-[30px]">{stat.value}</p>
+                      <div className="mt-2 h-px w-full bg-gradient-to-r from-[#d8a63f]/25 via-white/10 to-transparent" />
+                      <p className="mt-1.5 truncate text-[9px] leading-tight text-muted-foreground sm:mt-2 sm:text-[11px]">{stat.note}</p>
                     </div>
                     <div className="absolute right-3 top-3 text-[#d8a63f]/65 sm:right-4 sm:top-4 transition group-hover:text-[#ffc857]">
                       <svg viewBox="0 0 24 24" className="size-3 sm:size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
