@@ -165,7 +165,7 @@ export default function LoyaltyCardVisual({
 
   return (
     <div
-      className={dashboardCompact ? "relative aspect-[1.9/1] overflow-hidden rounded-2xl border border-white/10 text-white shadow-sm" : "relative overflow-hidden rounded-2xl border border-white/10 text-white shadow-sm"}
+      className={dashboardCompact ? "relative aspect-[2.15/1] overflow-hidden rounded-2xl border border-white/10 text-white shadow-sm" : "relative overflow-hidden rounded-2xl border border-white/10 text-white shadow-sm"}
       style={{
         background: showHero ? "transparent" : `linear-gradient(135deg, ${primary} 0%, rgba(2,6,23,1) 100%)`,
       }}
@@ -203,7 +203,7 @@ export default function LoyaltyCardVisual({
         />
       )}
 
-      <div className={dashboardCompact ? "relative z-[2] p-4 lg:p-5" : "relative z-[2] p-5"}>
+      <div className={dashboardCompact ? "relative z-[2] p-3.5 lg:p-4" : "relative z-[2] p-5"}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="mt-0 flex items-center gap-3">
@@ -232,7 +232,7 @@ export default function LoyaltyCardVisual({
           </div>
         </div>
 
-        <div className={dashboardCompact ? "mt-2.5" : "mt-4"}>
+        <div className={dashboardCompact ? "mt-1.5" : "mt-4"}>
           <div className="h-2 w-full bg-white/15 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full"
@@ -242,7 +242,7 @@ export default function LoyaltyCardVisual({
           <div className="mt-2 text-xs text-white/80">{progressLabel}</div>
         </div>
 
-        <div className={dashboardCompact ? "mt-2.5 grid grid-cols-5 gap-3 items-start" : "mt-4 grid grid-cols-5 gap-3 items-start"}>
+        <div className={dashboardCompact ? "mt-1.5 grid grid-cols-5 gap-2 items-start" : "mt-4 grid grid-cols-5 gap-3 items-start"}>
           {/* Member */}
           <div className="col-span-3">
             <div className="text-xs text-white/80">{memberName ? "Member" : "Card code"}</div>
@@ -294,7 +294,7 @@ export default function LoyaltyCardVisual({
           </div>
         </div>
 
-        <div className={dashboardCompact ? "mt-2.5 rounded-lg bg-black/10 p-2.5" : "mt-4 rounded-lg bg-black/10 p-3"}>
+        <div className={dashboardCompact ? "mt-1.5 rounded-lg bg-black/10 p-2" : "mt-4 rounded-lg bg-black/10 p-3"}>
           <div className="flex items-center justify-between text-xs">
             <span className="opacity-90">Stamp progress</span>
             <span className="opacity-90">
@@ -302,7 +302,7 @@ export default function LoyaltyCardVisual({
             </span>
           </div>
 
-          <div className={dashboardCompact ? "mt-2 grid grid-cols-10 gap-2" : "mt-3 grid grid-cols-5 gap-2"}>
+          <div className={dashboardCompact ? "mt-1 grid grid-cols-10 gap-1.5" : "mt-3 grid grid-cols-5 gap-2"}>
             {Array.from({ length: maxSlots }).map((_, index) => {
               const isFilled = index < filled;
 
