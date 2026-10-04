@@ -116,14 +116,14 @@ export default function UserDashboardPage() {
 
       {loading ? (
         <div className="space-y-3">
-          <Card>
+          <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
             <CardContent className="p-4 text-sm text-muted-foreground">Loading dashboard...</CardContent>
           </Card>
         </div>
       ) : (
-        <div className="space-y-4 lg:space-y-6">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-            <Card>
+        <div className="mx-auto max-w-6xl space-y-5 lg:space-y-7">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-3">
+            <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-muted-foreground">Cards</CardTitle>
               </CardHeader>
@@ -133,7 +133,7 @@ export default function UserDashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-muted-foreground">Stamps</CardTitle>
               </CardHeader>
@@ -143,7 +143,7 @@ export default function UserDashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-muted-foreground">Ready rewards</CardTitle>
               </CardHeader>
@@ -153,7 +153,7 @@ export default function UserDashboardPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-muted-foreground">Activity</CardTitle>
               </CardHeader>
@@ -181,16 +181,17 @@ export default function UserDashboardPage() {
             </Card>
           ) : (
             <>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-end justify-between gap-3 border-b border-white/5 pb-3">
                 <div>
-                  <h2 className="text-base font-semibold text-white sm:text-lg">Your loyalty cards</h2>
-                  <p className="text-xs text-muted-foreground">Swipe or switch between businesses.</p>
+                  <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">Your loyalty cards</h2>
+                  <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Keep your active card ready for the next visit.</p>
                 </div>
                 <Button className="shrink-0" size="sm" variant="outline" onClick={() => router.push("/user/join")}>
                   <Plus className="size-4" /> <span className="hidden sm:inline">Add card</span>
                 </Button>
               </div>
 
+              <div className="mx-auto w-full max-w-[760px] overflow-hidden rounded-3xl border border-white/5 bg-white/[0.015] p-3 sm:p-5 lg:p-6">
               <CustomerCardCarousel
             cards={cards}
             selectedId={selectedCardId}
@@ -199,8 +200,9 @@ export default function UserDashboardPage() {
               window.localStorage.setItem("digital_loyalty_selected_card", card.id);
             }}
               />
+            </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="mx-auto grid w-full max-w-[760px] gap-2 sm:grid-cols-2">
                 <Button className="w-full" onClick={() => router.push("/user/cards")}>
                   <QrCode className="size-4" /> Open my card & QR
                 </Button>
