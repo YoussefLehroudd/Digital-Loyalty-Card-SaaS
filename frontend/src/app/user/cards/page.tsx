@@ -149,7 +149,7 @@ function CardsUI() {
             {scanOpen ? (
               <StaffQrScanner
                 onQrScanned={async (qrCode) => {
-                  if (!token || joining) return;
+                  if (!token || joining) return false;
                   setJoining(true);
                   setError(null);
 
@@ -165,12 +165,14 @@ function CardsUI() {
                     }
 
                     router.push(membershipId ? `/user/cards?selected=${encodeURIComponent(membershipId)}` : "/user/cards");
+                    return true;
                   } catch (err) {
                     setError(
                       err instanceof Error
                         ? err.message
                         : "Unable to join this business from QR",
                     );
+                    return false;
                   } finally {
                     setJoining(false);
                   }
