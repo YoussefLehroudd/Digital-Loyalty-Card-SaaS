@@ -222,7 +222,7 @@ export function CustomerCardCarousel({
           )}
         >
           <div
-            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[500px] lg:max-w-[560px]" : "max-w-[560px]")}
+            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[300px] sm:max-w-[340px] lg:max-w-[380px]" : "max-w-[560px]")}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -243,7 +243,7 @@ export function CustomerCardCarousel({
                 const side = offset > 0 ? 1 : -1;
                 // Fan the inactive cards upward and outward so their rounded top
                 // corner is visible instead of looking like a flat side strip.
-                const baseX = side * ((dashboardMode ? 28 : 24) + (distance - 1) * 16);
+                const baseX = side * ((dashboardMode ? 18 : 24) + (distance - 1) * 12);
                 const baseY = dashboardMode ? 10 + (distance - 1) * 3 : -10 - (distance - 1) * 7;
                 const baseScale = 1 - distance * (dashboardMode ? 0.045 : 0.055);
                 const baseRotateY = dashboardMode ? 0 : side * distance * -5;
@@ -286,7 +286,6 @@ export function CustomerCardCarousel({
                       qrToken={qrForCard}
                       showQrPayloadText={false}
                       stampUiVariant="customer"
-                      dashboardCompact={dashboardMode}
                       progressPercent={progressForCard}
                       currentStamps={stampsForCard}
                       requiredStamps={requiredForCard}
