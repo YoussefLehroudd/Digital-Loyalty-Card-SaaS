@@ -347,3 +347,16 @@ export function createLoyaltyCard(token: string, payload: LoyaltyCardPayload) {
 export function updateLoyaltyCard(token: string, payload: LoyaltyCardPayload) {
   return mutateLoyaltyCard(token, "PUT", payload);
 }
+
+
+export type BusinessNotification = {
+  id: string;
+  type: "customer_joined" | "stamp_added" | "reward_ready" | "reward_redeemed";
+  title: string;
+  message: string;
+  created_at: string;
+};
+
+export function getBusinessNotifications(token: string) {
+  return apiFetch<{ data: BusinessNotification[] }>("/dashboard/notifications", { token });
+}
