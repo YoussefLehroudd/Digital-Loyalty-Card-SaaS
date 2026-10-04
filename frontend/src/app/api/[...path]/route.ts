@@ -862,6 +862,45 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
   }
 
   const businessId = auth.business.id;
+
+  if (path[1] === "notifications" && req.method === "GET") {
+    const rows = (await sql`
+      SELECT * FROM (
+        SELECT c.id::text AS id, 'customer_joined'::text AS type,
+               'New customer'::text AS title,
+               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' joined your loyalty program.') AS message,
+               c.created_at AS created_at
+        FROM customers c
+        WHERE c.business_id = ${businessId}
+
+        UNION ALL
+
+        SELECT v.id::text AS id, 'stamp_added'::text AS type,
+               'Stamp added'::text AS title,
+               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' received a stamp.') AS message,
+               v.created_at AS created_at
+        FROM visits v
+        JOIN customers c ON c.id = v.customer_id
+        WHERE v.business_id = ${businessId}
+
+        UNION ALL
+
+        SELECT r.id::text AS id,
+               CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed' ELSE 'reward_ready' END::text AS type,
+               CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward ready' END::text AS title,
+               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'),
+                      CASE WHEN r.status = 'redeemed' THEN ' redeemed a reward.' ELSE ' unlocked a reward.' END) AS message,
+               COALESCE(r.redeemed_at, r.earned_at) AS created_at
+        FROM reward_redemptions r
+        JOIN customers c ON c.id = r.customer_id
+        WHERE r.business_id = ${businessId}
+      ) notifications
+      ORDER BY created_at DESC
+      LIMIT 40
+    `) as Array<{ id:string; type:"customer_joined"|"stamp_added"|"reward_ready"|"reward_redeemed"; title:string; message:string; created_at:string }>;
+    return json({ data: rows });
+  }
+
   const url = new URL(req.url);
   const period = url.searchParams.get("period") ?? "current_month";
   const now = new Date();
