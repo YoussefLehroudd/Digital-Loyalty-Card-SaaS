@@ -910,7 +910,7 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
       ) n
       LEFT JOIN business_notification_reads br
         ON br.user_id = ${auth.user.id} AND br.notification_key = n.notification_key
-      ORDER BY n.created_at DESC LIMIT 40
+      ORDER BY n.created_at DESC LIMIT 100
     `) as Array<{ id:string; type:"customer_joined"|"stamp_added"|"reward_ready"|"reward_redeemed"; title:string; message:string; created_at:string; is_read:boolean }>;
     return json({ data: rows });
   }
@@ -930,7 +930,8 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
       SELECT notification_key FROM (
         SELECT CONCAT('customer_joined-', c.id::text) AS notification_key, c.created_at FROM customers c WHERE c.business_id = ${businessId}
         UNION ALL SELECT CONCAT('stamp_added-', v.id::text), v.created_at FROM visits v WHERE v.business_id = ${businessId}
-        UNION ALL SELECT CONCAT(CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed-' ELSE 'reward_ready-' END, r.id::text), COALESCE(r.redeemed_at, r.earned_at) FROM reward_redemptions r WHERE r.business_id = ${businessId}
+        UNION ALL SELECT CONCAT('reward_ready-', r.id::text), r.earned_at FROM reward_redemptions r WHERE r.business_id = ${businessId}
+        UNION ALL SELECT CONCAT('reward_redeemed-', r.id::text), r.redeemed_at FROM reward_redemptions r WHERE r.business_id = ${businessId} AND r.redeemed_at IS NOT NULL
       ) x ORDER BY created_at DESC LIMIT 40
     `) as Array<{notification_key:string}>;
     for (const row of keys) {
