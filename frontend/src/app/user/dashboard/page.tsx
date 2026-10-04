@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Gift, Sparkles, Ticket } from "lucide-react";
+import { Building2, Gift, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { CustomerCardCarousel } from "@/components/customer-app/customer-card-carousel";
@@ -17,6 +19,7 @@ import { useEcho } from "@/components/echo/echo-provider";
 
 export default function UserDashboardPage() {
   const { token, user } = useCustomerAuth();
+  const router = useRouter();
   const { echo, connected } = useEcho();
 
   const [loading, setLoading] = useState(true);
@@ -161,14 +164,52 @@ export default function UserDashboardPage() {
             </Card>
           </div>
 
-          <CustomerCardCarousel
+          {cards.length === 0 ? (
+            <Card className="overflow-hidden border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.92))]">
+              <CardContent className="flex flex-col items-center px-5 py-8 text-center">
+                <div className="flex size-12 items-center justify-center rounded-2xl border border-[#e7b354]/25 bg-[#8b5d12]/20 text-[#ffc857]">
+                  <QrCode className="size-5" />
+                </div>
+                <h2 className="mt-4 text-lg font-semibold text-white">Add your first loyalty card</h2>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+                  Scan a business QR code to join its loyalty program and start collecting stamps.
+                </p>
+                <Button className="mt-5 w-full sm:w-auto" onClick={() => router.push("/user/join")}>
+                  <QrCode className="size-4" /> Scan business QR
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-white sm:text-lg">Your loyalty cards</h2>
+                  <p className="text-xs text-muted-foreground">Swipe or switch between businesses.</p>
+                </div>
+                <Button className="shrink-0" size="sm" variant="outline" onClick={() => router.push("/user/join")}>
+                  <Plus className="size-4" /> <span className="hidden sm:inline">Add card</span>
+                </Button>
+              </div>
+
+              <CustomerCardCarousel
             cards={cards}
             selectedId={selectedCardId}
             onChange={(card) => {
               setSelectedCardId(card.id);
               window.localStorage.setItem("digital_loyalty_selected_card", card.id);
             }}
-          />
+              />
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button className="w-full" onClick={() => router.push("/user/cards")}>
+                  <QrCode className="size-4" /> Open my card & QR
+                </Button>
+                <Button className="w-full" variant="outline" onClick={() => router.push("/user/rewards")}>
+                  <Gift className="size-4" /> {availableRewards > 0 ? `View ${availableRewards} ready reward${availableRewards === 1 ? "" : "s"}` : "View rewards"}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </CustomerLayout>
