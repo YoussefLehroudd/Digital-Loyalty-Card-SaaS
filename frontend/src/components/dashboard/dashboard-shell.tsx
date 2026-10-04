@@ -406,7 +406,7 @@ function TopNav({
 
   return (
     <header className="sticky top-0 z-20 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl">
-      <div className="flex h-20 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="flex h-16 items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             aria-label="Open menu"
@@ -420,7 +420,7 @@ function TopNav({
           </Button>
           <h1 className="hidden text-xl font-bold tracking-tight lg:block">{pageTitle[activeItem]}</h1>
           <div className="flex min-w-0 items-center gap-2 lg:hidden">
-            <Image alt="LOYVANCE" className="size-8 object-contain" height={32} priority src="/brand/icon.png" width={48}/>
+            <Image alt="LOYVANCE" className="size-7 object-contain sm:size-8" height={32} priority src="/brand/icon.png" width={48}/>
             <p className="truncate text-sm font-semibold">LOYVANCE</p>
           </div>
         </div>
