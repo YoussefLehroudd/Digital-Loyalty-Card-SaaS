@@ -233,13 +233,13 @@ export default function LoyaltyCardVisual({
         </div>
 
         <div className={dashboardCompact ? "mt-1.5" : "mt-4"}>
-          <div className="h-2 w-full bg-white/15 rounded-full overflow-hidden">
+          <div className="h-2.5 w-full overflow-hidden rounded-full border border-black/35 bg-white/25 shadow-[0_1px_3px_rgba(0,0,0,.55),inset_0_1px_0_rgba(255,255,255,.28)]">
             <div
-              className="h-full rounded-full"
-              style={{ width: `${progress}%`, background: primary }}
+              className="h-full rounded-full border-r border-black/25 bg-[linear-gradient(90deg,#fff3c4_0%,#f5c451_48%,#fff7d6_100%)] shadow-[0_0_7px_rgba(255,220,120,.55),0_1px_2px_rgba(0,0,0,.65)]"
+              style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="mt-2 text-xs text-white/80">{progressLabel}</div>
+          <div className="mt-2 text-xs font-medium text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,.95),0_0_4px_rgba(0,0,0,.75)]">{progressLabel}</div>
         </div>
 
         <div className={dashboardCompact ? "mt-1.5 grid grid-cols-5 gap-2 items-start" : "mt-4 grid grid-cols-5 gap-3 items-start"}>
