@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { BrowserCodeReader } from "@zxing/library";
 
 export type StaffQrScannerProps = {
-  onQrScanned: (qrCode: string) => Promise<void> | void;
+  onQrScanned: (qrCode: string) => Promise<boolean> | boolean;
   className?: string;
   /**
    * Optional escape hatch for parent UI:
@@ -140,55 +140,58 @@ export function StaffQrScanner({
             return;
           }
 
-          // First successful QR for this session.
+          // Pause this scan while the backend validates the QR.
           acceptedRef.current = true;
-          hasScannedRef.current = true;
           setIsDecoding(true);
-          setHasScanned(true);
 
-          // Short success haptic on supported mobile devices.
-          if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-            navigator.vibrate(80);
-          }
-
-          // Play a short scan-success chime without requiring an external audio file.
-          try {
-            const AudioContextClass =
-              window.AudioContext ||
-              (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-            if (AudioContextClass) {
-              const audioContext = new AudioContextClass();
-              const now = audioContext.currentTime;
-              const gain = audioContext.createGain();
-              gain.gain.setValueAtTime(0.0001, now);
-              gain.gain.exponentialRampToValueAtTime(0.16, now + 0.01);
-              gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-              gain.connect(audioContext.destination);
-
-              [880, 1174].forEach((frequency, index) => {
-                const oscillator = audioContext.createOscillator();
-                oscillator.type = "sine";
-                oscillator.frequency.value = frequency;
-                oscillator.connect(gain);
-                oscillator.start(now + index * 0.08);
-                oscillator.stop(now + 0.14 + index * 0.08);
-              });
-
-              window.setTimeout(() => void audioContext.close(), 350);
-            }
-          } catch {
-            // Audio feedback is optional; scanning must continue if the browser blocks it.
-          }
-
-          // Destroy reader + stop camera.
+          // Stop camera before submitting so the same QR cannot be sent twice.
           await stopDecoding();
 
-          // Ensure callback fires exactly once.
-          await Promise.resolve(onQrScanned(qr));
+          // Only show success feedback after the backend confirms this is a valid LOYVANCE QR.
+          const isValid = await Promise.resolve(onQrScanned(qr));
 
-          if (sessionId === scanSessionRef.current) {
-            setIsDecoding(false);
+          if (sessionId !== scanSessionRef.current) return;
+
+          if (isValid) {
+            hasScannedRef.current = true;
+            setHasScanned(true);
+
+            if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+              navigator.vibrate(80);
+            }
+
+            try {
+              const AudioContextClass =
+                window.AudioContext ||
+                (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+              if (AudioContextClass) {
+                const audioContext = new AudioContextClass();
+                const now = audioContext.currentTime;
+                const gain = audioContext.createGain();
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.16, now + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+                gain.connect(audioContext.destination);
+
+                [880, 1174].forEach((frequency, index) => {
+                  const oscillator = audioContext.createOscillator();
+                  oscillator.type = "sine";
+                  oscillator.frequency.value = frequency;
+                  oscillator.connect(gain);
+                  oscillator.start(now + index * 0.08);
+                  oscillator.stop(now + 0.14 + index * 0.08);
+                });
+
+                window.setTimeout(() => void audioContext.close(), 350);
+              }
+            } catch {
+              // Audio feedback is optional.
+            }
+          } else {
+            setHasScanned(false);
           }
+
+          setIsDecoding(false);
         } catch {
           // No QR detected in this attempt: schedule another single decode attempt.
           if (sessionId !== scanSessionRef.current) return;
