@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -354,6 +354,7 @@ function TopNav({
 }) {
   const initial = userName.trim().charAt(0).toUpperCase() || "Y";
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement | null>(null);
   const [liveNotifications, setLiveNotifications] = useState<BusinessNotification[]>(notifications);
   const [readNotificationKeys, setReadNotificationKeys] = useState<Set<string>>(() => new Set());
   useEffect(() => {
@@ -361,6 +362,16 @@ function TopNav({
     window.addEventListener("loyvance:notifications", handler);
     return () => window.removeEventListener("loyvance:notifications", handler);
   }, []);
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!notificationsRef.current?.contains(target)) setNotificationsOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePress);
+  }, [notificationsOpen]);
+
   const unreadNotifications = liveNotifications.filter((item) => !readNotificationKeys.has(`${item.type}-${item.id}`));
   const markAllRead = () => setReadNotificationKeys(new Set(liveNotifications.map((item) => `${item.type}-${item.id}`)));
   const pageTitle: Record<DashboardShellProps["activeItem"], string> = {
@@ -394,14 +405,14 @@ function TopNav({
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative">
+          <div ref={notificationsRef} className="relative">
             <Button aria-label="Notifications" onClick={() => setNotificationsOpen((open) => !open)} className="relative text-white/75 hover:bg-white/5 hover:text-white" size="icon" variant="ghost">
               <Bell className="size-5" />
               {unreadNotifications.length > 0 ? <span className="absolute right-1.5 top-1.5 flex min-w-4 h-4 items-center justify-center rounded-full bg-[#f3bd55] px-1 text-[9px] font-black text-black shadow-[0_0_8px_rgba(243,189,85,.8)]">{Math.min(unreadNotifications.length,99)}</span> : null}
             </Button>
             {notificationsOpen ? <div className="absolute right-0 top-12 z-50 w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#090a08]/[.98] shadow-2xl backdrop-blur-xl">
               <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3"><div className="min-w-0"><p className="font-bold text-white">Notifications</p><p className="text-xs text-white/45">Latest business activity</p></div>{unreadNotifications.length > 0 ? <button type="button" onClick={markAllRead} className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#f3bd55] transition hover:bg-[#f3bd55]/10">Read all</button> : <span className="shrink-0 text-xs text-white/30">All read</span>}</div>
-              <div className="max-h-[420px] overflow-y-auto p-2">{liveNotifications.length ? liveNotifications.slice(0,20).map((item) => <div key={item.type+"-"+item.id} className={`rounded-xl px-3 py-3 hover:bg-white/[.04] ${readNotificationKeys.has(`${item.type}-${item.id}`) ? "opacity-55" : ""}`}><div className="flex items-start gap-3"><span className="mt-1 size-2 shrink-0 rounded-full bg-[#f3bd55]"/><div className="min-w-0"><p className="text-sm font-semibold text-white">{item.title}</p><p className="mt-0.5 text-xs leading-5 text-white/55">{item.message}</p><p className="mt-1 whitespace-nowrap text-[10px] text-white/35">{new Date(item.created_at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</p></div></div></div>) : <p className="px-3 py-8 text-center text-sm text-white/40">No notifications yet.</p>}</div>
+              <div className="max-h-[420px] overscroll-contain overflow-y-auto p-2" onWheel={(event) => event.stopPropagation()} onTouchMove={(event) => event.stopPropagation()}>{liveNotifications.length ? liveNotifications.slice(0,20).map((item) => <div key={item.type+"-"+item.id} className={`rounded-xl px-3 py-3 hover:bg-white/[.04] ${readNotificationKeys.has(`${item.type}-${item.id}`) ? "opacity-55" : ""}`}><div className="flex items-start gap-3"><span className="mt-1 size-2 shrink-0 rounded-full bg-[#f3bd55]"/><div className="min-w-0"><p className="text-sm font-semibold text-white">{item.title}</p><p className="mt-0.5 text-xs leading-5 text-white/55">{item.message}</p><p className="mt-1 whitespace-nowrap text-[10px] text-white/35">{new Date(item.created_at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</p></div></div></div>) : <p className="px-3 py-8 text-center text-sm text-white/40">No notifications yet.</p>}</div>
             </div> : null}
           </div>
           <div className="h-8 w-px bg-white/10" />
