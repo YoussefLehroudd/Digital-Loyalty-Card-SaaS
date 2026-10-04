@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Gift, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
+import { Building2, Gift, LayoutGrid, Link2, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -181,35 +181,40 @@ export default function UserDashboardPage() {
             </Card>
           ) : (
             <>
-              <div className="flex items-end justify-between gap-3 border-b border-white/5 pb-3">
-                <div>
-                  <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">Your loyalty cards</h2>
-                  <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Keep your active card ready for the next visit.</p>
+              <section className="overflow-hidden rounded-[26px] border border-[#d8a63f]/20 bg-[radial-gradient(circle_at_100%_50%,rgba(180,126,18,.10),transparent_34%),linear-gradient(145deg,rgba(14,15,12,.96),rgba(7,8,6,.94))] shadow-[0_24px_70px_rgba(0,0,0,.28)]">
+                <div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[#8b5d12]/20 text-[#ffc857]">
+                      <QrCode className="size-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="truncate text-base font-semibold text-white sm:text-lg">Your loyalty cards</h2>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground sm:text-xs">Swipe or switch between businesses.</p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button className="border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f]" size="sm" onClick={() => router.push("/user/join")}>
+                      <Plus className="size-4" /> <span className="hidden sm:inline">Add card</span>
+                    </Button>
+                    <div className="hidden rounded-lg border border-[#d8a63f]/15 bg-black/20 p-1 sm:flex">
+                      <span className="flex size-7 items-center justify-center rounded-md bg-[#d79b16]/12 text-[#ffc857]"><LayoutGrid className="size-3.5" /></span>
+                      <span className="flex size-7 items-center justify-center text-muted-foreground"><Link2 className="size-3.5" /></span>
+                    </div>
+                  </div>
                 </div>
-                <Button className="shrink-0" size="sm" variant="outline" onClick={() => router.push("/user/join")}>
-                  <Plus className="size-4" /> <span className="hidden sm:inline">Add card</span>
-                </Button>
-              </div>
 
-              <div className="mx-auto w-full max-w-[820px] overflow-hidden rounded-[28px] border border-[#d8a63f]/10 bg-[linear-gradient(145deg,rgba(16,17,14,.72),rgba(8,9,7,.55))] p-3 shadow-[0_24px_70px_rgba(0,0,0,.24)] sm:p-5 lg:p-6">
-              <CustomerCardCarousel
+                <div className="px-2 pb-3 sm:px-4 sm:pb-4 lg:px-6">
+                  <CustomerCardCarousel
             cards={cards}
+            dashboardMode
             selectedId={selectedCardId}
             onChange={(card) => {
               setSelectedCardId(card.id);
               window.localStorage.setItem("digital_loyalty_selected_card", card.id);
             }}
-              />
-            </div>
-
-              <div className="mx-auto grid w-full max-w-[820px] gap-2.5 sm:grid-cols-2">
-                <Button className="w-full" onClick={() => router.push("/user/cards")}>
-                  <QrCode className="size-4" /> Open my card & QR
-                </Button>
-                <Button className="w-full" variant="outline" onClick={() => router.push("/user/rewards")}>
-                  <Gift className="size-4" /> {availableRewards > 0 ? `View ${availableRewards} ready reward${availableRewards === 1 ? "" : "s"}` : "View rewards"}
-                </Button>
-              </div>
+                  />
+                </div>
+              </section>
             </>
           )}
         </div>
