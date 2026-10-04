@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, CreditCard, Gift, LayoutGrid, Link2, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
+import { Building2, CreditCard, Gift, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -196,10 +196,7 @@ export default function UserDashboardPage() {
                     <Button className="border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] hover:bg-[#f4c86f] lg:h-11 lg:px-5" size="sm" onClick={() => router.push("/user/join")}>
                       <Plus className="size-4" /> <span className="hidden sm:inline">Add card</span>
                     </Button>
-                    <div className="hidden rounded-lg border border-[#d8a63f]/20 bg-black/30 p-1 sm:flex lg:h-11 lg:items-center">
-                      <span className="flex size-7 items-center justify-center rounded-md bg-[#d79b16]/12 text-[#ffc857]"><LayoutGrid className="size-3.5" /></span>
-                      <span className="flex size-7 items-center justify-center text-muted-foreground"><Link2 className="size-3.5" /></span>
-                    </div>
+
                   </div>
                 </div>
 
