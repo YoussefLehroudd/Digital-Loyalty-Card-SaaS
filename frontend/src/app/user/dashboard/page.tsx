@@ -121,45 +121,45 @@ export default function UserDashboardPage() {
           </Card>
         </div>
       ) : (
-        <div className="mx-auto max-w-6xl space-y-5 lg:space-y-7">
+        <div className="mx-auto max-w-[1180px] space-y-5 lg:space-y-7">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-3">
             <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs text-muted-foreground">Cards</CardTitle>
+              <CardHeader className="pb-1.5 pt-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Cards</CardTitle>
               </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <p className="text-2xl font-semibold">{cards.length}</p>
-                <Building2 className="h-5 w-5 text-muted-foreground" />
+              <CardContent className="flex items-end justify-between pb-4">
+                <p className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{cards.length}</p>
+                <Building2 className="h-5 w-5 text-[#d8a63f]" />
               </CardContent>
             </Card>
 
             <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs text-muted-foreground">Stamps</CardTitle>
+              <CardHeader className="pb-1.5 pt-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Stamps</CardTitle>
               </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <p className="text-2xl font-semibold">{totalStamps}</p>
-                <Ticket className="h-5 w-5 text-muted-foreground" />
+              <CardContent className="flex items-end justify-between pb-4">
+                <p className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{totalStamps}</p>
+                <Ticket className="h-5 w-5 text-[#d8a63f]" />
               </CardContent>
             </Card>
 
             <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs text-muted-foreground">Ready rewards</CardTitle>
+              <CardHeader className="pb-1.5 pt-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Ready rewards</CardTitle>
               </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <p className="text-2xl font-semibold">{availableRewards}</p>
-                <Gift className="h-5 w-5 text-muted-foreground" />
+              <CardContent className="flex items-end justify-between pb-4">
+                <p className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{availableRewards}</p>
+                <Gift className="h-5 w-5 text-[#d8a63f]" />
               </CardContent>
             </Card>
 
             <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs text-muted-foreground">Activity</CardTitle>
+              <CardHeader className="pb-1.5 pt-4">
+                <CardTitle className="text-xs font-medium text-muted-foreground">Activity</CardTitle>
               </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <p className="text-2xl font-semibold">{activitiesCount}</p>
-                <Sparkles className="h-5 w-5 text-muted-foreground" />
+              <CardContent className="flex items-end justify-between pb-4">
+                <p className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{activitiesCount}</p>
+                <Sparkles className="h-5 w-5 text-[#d8a63f]" />
               </CardContent>
             </Card>
           </div>
@@ -191,7 +191,7 @@ export default function UserDashboardPage() {
                 </Button>
               </div>
 
-              <div className="mx-auto w-full max-w-[760px] overflow-hidden rounded-3xl border border-white/5 bg-white/[0.015] p-3 sm:p-5 lg:p-6">
+              <div className="mx-auto w-full max-w-[820px] overflow-hidden rounded-[28px] border border-[#d8a63f]/10 bg-[linear-gradient(145deg,rgba(16,17,14,.72),rgba(8,9,7,.55))] p-3 shadow-[0_24px_70px_rgba(0,0,0,.24)] sm:p-5 lg:p-6">
               <CustomerCardCarousel
             cards={cards}
             selectedId={selectedCardId}
@@ -202,7 +202,7 @@ export default function UserDashboardPage() {
               />
             </div>
 
-              <div className="mx-auto grid w-full max-w-[760px] gap-2 sm:grid-cols-2">
+              <div className="mx-auto grid w-full max-w-[820px] gap-2.5 sm:grid-cols-2">
                 <Button className="w-full" onClick={() => router.push("/user/cards")}>
                   <QrCode className="size-4" /> Open my card & QR
                 </Button>
