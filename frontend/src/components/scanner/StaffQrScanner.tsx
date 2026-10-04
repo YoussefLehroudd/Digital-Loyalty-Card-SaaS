@@ -151,6 +151,35 @@ export function StaffQrScanner({
             navigator.vibrate(80);
           }
 
+          // Play a short scan-success chime without requiring an external audio file.
+          try {
+            const AudioContextClass =
+              window.AudioContext ||
+              (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+            if (AudioContextClass) {
+              const audioContext = new AudioContextClass();
+              const now = audioContext.currentTime;
+              const gain = audioContext.createGain();
+              gain.gain.setValueAtTime(0.0001, now);
+              gain.gain.exponentialRampToValueAtTime(0.16, now + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+              gain.connect(audioContext.destination);
+
+              [880, 1174].forEach((frequency, index) => {
+                const oscillator = audioContext.createOscillator();
+                oscillator.type = "sine";
+                oscillator.frequency.value = frequency;
+                oscillator.connect(gain);
+                oscillator.start(now + index * 0.08);
+                oscillator.stop(now + 0.14 + index * 0.08);
+              });
+
+              window.setTimeout(() => void audioContext.close(), 350);
+            }
+          } catch {
+            // Audio feedback is optional; scanning must continue if the browser blocks it.
+          }
+
           // Destroy reader + stop camera.
           await stopDecoding();
 
