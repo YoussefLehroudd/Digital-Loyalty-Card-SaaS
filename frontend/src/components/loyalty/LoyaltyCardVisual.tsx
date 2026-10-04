@@ -218,7 +218,7 @@ export default function LoyaltyCardVisual({
                 <div className="h-12 w-12 rounded-lg bg-white/10 object-contain p-1.5" />
               )}
 
-              <div className="text-xl font-semibold truncate">{businessName}</div>
+              <div className="min-w-0 flex-1 pr-1 text-base font-semibold leading-tight sm:text-xl"><span className="block break-words sm:truncate">{businessName}</span></div>
             </div>
 
             <div className="text-sm text-white/80 mt-1">
