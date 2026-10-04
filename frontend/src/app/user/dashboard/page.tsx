@@ -133,11 +133,11 @@ export default function UserDashboardPage() {
               return (
                 <Card key={stat.label} className="group relative min-w-0 overflow-hidden rounded-xl border-[#d8a63f]/20 sm:rounded-2xl bg-[linear-gradient(135deg,rgba(18,19,16,.96),rgba(8,9,7,.94))] shadow-[0_10px_28px_rgba(0,0,0,.22)] transition duration-300 hover:border-[#e7b354]/35">
                   <div className="pointer-events-none absolute -left-8 -top-10 size-24 rounded-full bg-[#d79b16]/[.06] blur-2xl" />
-                  <CardContent className="relative flex min-h-[126px] flex-col items-start gap-2 p-3 sm:min-h-[142px] sm:gap-2.5 sm:p-4">
+                  <CardContent className="relative flex min-h-[112px] items-start gap-3 p-3 sm:min-h-[122px] sm:gap-4 sm:p-4">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-12 sm:rounded-xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(139,93,18,.34),rgba(68,44,7,.22))] text-[#ffc857] shadow-[inset_0_1px_0_rgba(255,218,130,.08)] sm:size-12">
                       <Icon className="size-4 sm:size-5" />
                     </div>
-                    <div className="min-w-0 w-full flex-1">
+                    <div className="min-w-0 flex-1 pt-0.5">
                       <p className="truncate pr-3 text-[9px] font-semibold uppercase tracking-[0.06em] text-[#c9c1ae] sm:pr-0 sm:text-[11px] sm:tracking-[0.1em]">{stat.label}</p>
                       <p className="mt-0.5 text-xl font-bold leading-none tracking-tight text-white sm:text-[28px]">{stat.value}</p>
                       <div className="mt-1.5 h-px w-full sm:mt-2 bg-gradient-to-r from-[#d8a63f]/20 via-white/10 to-transparent" />
