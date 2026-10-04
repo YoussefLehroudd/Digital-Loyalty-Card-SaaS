@@ -117,7 +117,10 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
         </aside>
 
         <section className="relative min-h-screen min-w-0 bg-[#070806] lg:col-start-2">
-          <div aria-hidden="true" className="pointer-events-none fixed inset-0 left-0 z-0 bg-[#070806] bg-[url('/brand/Rubans_dorés_sur_fond_noir.png')] bg-cover bg-top bg-no-repeat lg:left-[264px]" style={{ backgroundImage: "linear-gradient(rgba(7,8,6,.18),rgba(7,8,6,.42)), url('/brand/Rubans dorés sur fond noir.png')" }} />
+          <div aria-hidden="true" className="pointer-events-none fixed inset-0 left-0 z-0 bg-[#070806] lg:left-[264px]">
+            <div className="absolute inset-x-0 top-0 h-[460px] bg-[url('/brand/Rubans_dorés_sur_fond_noir.png')] bg-cover bg-top bg-no-repeat opacity-90 sm:h-[520px]" />
+            <div className="absolute inset-x-0 top-0 h-[620px] bg-gradient-to-b from-transparent via-[#070806]/75 to-[#070806] sm:h-[700px]" />
+          </div>
           <div className="relative z-10 min-h-screen">
           <TopNav
             activeItem={activeItem}
