@@ -472,7 +472,7 @@ export function BusinessProfileSettings() {
                     </div>
                   </div>
 
-                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap lg:shrink-0">
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap lg:shrink-0">
                     <input
                       ref={avatarInputRef}
                       accept="image/jpeg,image/png,image/webp,image/gif"
