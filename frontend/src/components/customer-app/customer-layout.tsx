@@ -30,7 +30,7 @@ export function CustomerLayout({
   const router = useRouter();
 
   return (
-    <div className="min-h-dvh overflow-x-clip bg-[#080907] text-foreground lg:flex">
+    <div className="relative min-h-dvh overflow-x-clip bg-[#080907] bg-[url('/brand/Élégance_noire_aux_rubans_dorés.png')] bg-[length:100%_100%] bg-fixed bg-center bg-no-repeat text-foreground lg:flex">
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-[280px] lg:flex-col lg:border-r lg:border-[#d8a63f]/15 lg:bg-[linear-gradient(180deg,rgba(16,17,14,.98),rgba(8,9,7,.98))] lg:backdrop-blur-xl">
         <div className="border-b border-[#d8a63f]/10 px-5 py-6">
           <div className="flex items-center gap-3">
