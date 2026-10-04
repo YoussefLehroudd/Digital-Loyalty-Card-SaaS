@@ -881,7 +881,7 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
 
   const businessId = auth.business.id;
 
-  if (path[1] === "notifications" && req.method === "GET") {
+  if (path[1] === "notifications" && !path[2] && req.method === "GET") {
     const rows = (await sql`
       SELECT n.*, (br.notification_key IS NOT NULL) AS is_read
       FROM (
@@ -928,16 +928,29 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
   if (path[1] === "notifications" && path[2] === "read-all" && req.method === "POST") {
     const keys = (await sql`
       SELECT notification_key FROM (
-        SELECT CONCAT('customer_joined-', c.id::text) AS notification_key, c.created_at FROM customers c WHERE c.business_id = ${businessId}
-        UNION ALL SELECT CONCAT('stamp_added-', v.id::text), v.created_at FROM visits v WHERE v.business_id = ${businessId}
-        UNION ALL SELECT CONCAT('reward_ready-', r.id::text), r.earned_at FROM reward_redemptions r WHERE r.business_id = ${businessId}
-        UNION ALL SELECT CONCAT('reward_redeemed-', r.id::text), r.redeemed_at FROM reward_redemptions r WHERE r.business_id = ${businessId} AND r.redeemed_at IS NOT NULL
-      ) x ORDER BY created_at DESC LIMIT 40
-    `) as Array<{notification_key:string}>;
-    for (const row of keys) {
-      await sql`INSERT INTO business_notification_reads (user_id, notification_key)
-                VALUES (${auth.user.id}, ${row.notification_key})
-                ON CONFLICT (user_id, notification_key) DO UPDATE SET read_at = now()`;
+        SELECT CONCAT('customer_joined-', c.id::text) AS notification_key, c.created_at AS created_at
+        FROM customers c WHERE c.business_id = ${businessId}
+        UNION ALL
+        SELECT CONCAT('stamp_added-', v.id::text), v.created_at
+        FROM visits v WHERE v.business_id = ${businessId}
+        UNION ALL
+        SELECT CONCAT('reward_ready-', r.id::text), r.earned_at
+        FROM reward_redemptions r WHERE r.business_id = ${businessId}
+        UNION ALL
+        SELECT CONCAT('reward_redeemed-', r.id::text), r.redeemed_at
+        FROM reward_redemptions r WHERE r.business_id = ${businessId} AND r.redeemed_at IS NOT NULL
+      ) x
+      ORDER BY created_at DESC
+      LIMIT 100
+    `) as Array<{ notification_key: string }>;
+
+    if (keys.length) {
+      const values = keys.map((row) => row.notification_key);
+      await sql`
+        INSERT INTO business_notification_reads (user_id, notification_key)
+        SELECT ${auth.user.id}, key FROM unnest(${values}::text[]) AS key
+        ON CONFLICT (user_id, notification_key) DO UPDATE SET read_at = now()
+      `;
     }
     return json({ message: "All notifications marked as read." });
   }
