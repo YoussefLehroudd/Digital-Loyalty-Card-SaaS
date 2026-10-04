@@ -251,7 +251,7 @@ export default function LoyaltyCardVisual({
             </div>
 
             {showRewardDescription ? (
-              <div className="mt-2 max-w-full whitespace-normal break-words pr-1 text-xs leading-[1.35] text-white/80 line-clamp-3 sm:line-clamp-2">
+              <div className="mt-2 max-w-full whitespace-normal break-words pr-1 text-xs leading-[1.35] text-white/80">
                 {rewardDescription}
               </div>
             ) : null}
