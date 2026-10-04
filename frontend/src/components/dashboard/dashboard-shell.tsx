@@ -371,19 +371,28 @@ function TopNav({
   }, [notificationsOpen]);
 
   const unreadNotifications = liveNotifications.filter((item) => !item.is_read);
+  const refreshNotifications = async () => {
+    if (!token) return;
+    const result = await getBusinessNotifications(token);
+    setLiveNotifications(result.data ?? []);
+  };
   const markAllRead = async () => {
     if (!token || unreadNotifications.length === 0) return;
-    setLiveNotifications((items) => items.map((item) => ({ ...item, is_read: true })));
-    try { await markAllBusinessNotificationsRead(token); } catch {
-      try { const result = await getBusinessNotifications(token); setLiveNotifications(result.data ?? []); } catch {}
+    try {
+      await markAllBusinessNotificationsRead(token);
+      await refreshNotifications();
+    } catch {
+      await refreshNotifications().catch(() => undefined);
     }
   };
   const markOneRead = async (item: BusinessNotification) => {
     if (!token || item.is_read) return;
-    const key = `${item.type}-${item.id}`;
-    setLiveNotifications((items) => items.map((entry) => entry.type === item.type && entry.id === item.id ? { ...entry, is_read: true } : entry));
-    try { await markBusinessNotificationRead(token, key); } catch {
-      try { const result = await getBusinessNotifications(token); setLiveNotifications(result.data ?? []); } catch {}
+    const key = `${item.type}-${item.id.replace(/:(ready|redeemed)$/, "")}`;
+    try {
+      await markBusinessNotificationRead(token, key);
+      await refreshNotifications();
+    } catch {
+      await refreshNotifications().catch(() => undefined);
     }
   };
   const pageTitle: Record<DashboardShellProps["activeItem"], string> = {
