@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, CreditCard, Gift, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
+import { CreditCard, Gift, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -14,7 +14,7 @@ import {
   customerRewards,
   type CustomerCardItem,
 } from "@/lib/customerAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useEcho } from "@/components/echo/echo-provider";
 
 export default function UserDashboardPage() {
@@ -122,46 +122,34 @@ export default function UserDashboardPage() {
         </div>
       ) : (
         <div className="mx-auto max-w-[1440px] space-y-5 lg:space-y-7">
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-3">
-            <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-              <CardHeader className="pb-1.5 pt-4">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Cards</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-end justify-between pb-4">
-                <p className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{cards.length}</p>
-                <Building2 className="h-5 w-5 text-[#d8a63f]" />
-              </CardContent>
-            </Card>
-
-            <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-              <CardHeader className="pb-1.5 pt-4">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Stamps</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-end justify-between pb-4">
-                <p className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{totalStamps}</p>
-                <Ticket className="h-5 w-5 text-[#d8a63f]" />
-              </CardContent>
-            </Card>
-
-            <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-              <CardHeader className="pb-1.5 pt-4">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Ready rewards</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-end justify-between pb-4">
-                <p className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{availableRewards}</p>
-                <Gift className="h-5 w-5 text-[#d8a63f]" />
-              </CardContent>
-            </Card>
-
-            <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-              <CardHeader className="pb-1.5 pt-4">
-                <CardTitle className="text-xs font-medium text-muted-foreground">Activity</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-end justify-between pb-4">
-                <p className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{activitiesCount}</p>
-                <Sparkles className="h-5 w-5 text-[#d8a63f]" />
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-4">
+            {[
+              { label: "Total Cards", value: cards.length, note: "Businesses you follow", icon: CreditCard },
+              { label: "Total Stamps", value: totalStamps, note: "Across all cards", icon: Ticket },
+              { label: "Ready Rewards", value: availableRewards, note: availableRewards ? "Available to claim" : "Keep collecting", icon: Gift },
+              { label: "Total Activity", value: activitiesCount, note: "Stamps & rewards", icon: Sparkles },
+            ].map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <Card key={stat.label} className="group relative overflow-hidden border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(19,20,17,.94),rgba(9,10,8,.92))] shadow-[0_14px_38px_rgba(0,0,0,.22)] transition duration-300 hover:-translate-y-0.5 hover:border-[#e7b354]/35 hover:shadow-[0_18px_44px_rgba(0,0,0,.3)]">
+                  <div className="pointer-events-none absolute -right-8 -top-10 size-28 rounded-full bg-[#d79b16]/[.07] blur-2xl transition group-hover:bg-[#d79b16]/[.12]" />
+                  <CardContent className="relative p-3.5 sm:p-4 lg:p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(139,93,18,.32),rgba(74,48,8,.2))] text-[#ffc857] shadow-[inset_0_1px_0_rgba(255,218,130,.08)] sm:size-10">
+                        <Icon className="size-4 sm:size-[18px]" />
+                      </div>
+                      <Sparkles className="size-3.5 text-[#d8a63f]/45 transition group-hover:text-[#ffc857]/80" />
+                    </div>
+                    <div className="mt-3 lg:mt-4">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#c9c1ae] sm:text-[11px]">{stat.label}</p>
+                      <p className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-[32px]">{stat.value}</p>
+                      <p className="mt-1 hidden text-[11px] text-muted-foreground sm:block">{stat.note}</p>
+                    </div>
+                    <div className="absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-[#d8a63f]/35 to-transparent opacity-60" />
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {cards.length === 0 ? (
