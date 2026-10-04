@@ -328,6 +328,13 @@ async function ensureSchema(sql: Sql) {
         read_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY (user_id, reward_redemption_id)
       )`;
+      await sql`CREATE TABLE IF NOT EXISTS business_notification_reads (
+        user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+        notification_key text NOT NULL,
+        read_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, notification_key)
+      )`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_business_notification_reads_user ON business_notification_reads(user_id)`;
     })();
   }
   await schemaReady;
@@ -865,40 +872,60 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
 
   if (path[1] === "notifications" && req.method === "GET") {
     const rows = (await sql`
-      SELECT * FROM (
+      SELECT n.*, (br.notification_key IS NOT NULL) AS is_read
+      FROM (
         SELECT c.id::text AS id, 'customer_joined'::text AS type,
                'New customer'::text AS title,
                CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' joined your loyalty program.') AS message,
-               c.created_at AS created_at
-        FROM customers c
-        WHERE c.business_id = ${businessId}
-
+               c.created_at AS created_at,
+               CONCAT('customer_joined-', c.id::text) AS notification_key
+        FROM customers c WHERE c.business_id = ${businessId}
         UNION ALL
-
-        SELECT v.id::text AS id, 'stamp_added'::text AS type,
-               'Stamp added'::text AS title,
-               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' received a stamp.') AS message,
-               v.created_at AS created_at
-        FROM visits v
-        JOIN customers c ON c.id = v.customer_id
-        WHERE v.business_id = ${businessId}
-
+        SELECT v.id::text, 'stamp_added'::text, 'Stamp added'::text,
+               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' received a stamp.'),
+               v.created_at, CONCAT('stamp_added-', v.id::text)
+        FROM visits v JOIN customers c ON c.id = v.customer_id WHERE v.business_id = ${businessId}
         UNION ALL
-
-        SELECT r.id::text AS id,
-               CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed' ELSE 'reward_ready' END::text AS type,
-               CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward ready' END::text AS title,
+        SELECT r.id::text,
+               CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed' ELSE 'reward_ready' END::text,
+               CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward ready' END::text,
                CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'),
-                      CASE WHEN r.status = 'redeemed' THEN ' redeemed a reward.' ELSE ' unlocked a reward.' END) AS message,
-               COALESCE(r.redeemed_at, r.earned_at) AS created_at
-        FROM reward_redemptions r
-        JOIN customers c ON c.id = r.customer_id
-        WHERE r.business_id = ${businessId}
-      ) notifications
-      ORDER BY created_at DESC
-      LIMIT 40
-    `) as Array<{ id:string; type:"customer_joined"|"stamp_added"|"reward_ready"|"reward_redeemed"; title:string; message:string; created_at:string }>;
+                      CASE WHEN r.status = 'redeemed' THEN ' redeemed a reward.' ELSE ' unlocked a reward.' END),
+               COALESCE(r.redeemed_at, r.earned_at),
+               CONCAT(CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed-' ELSE 'reward_ready-' END, r.id::text)
+        FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE r.business_id = ${businessId}
+      ) n
+      LEFT JOIN business_notification_reads br
+        ON br.user_id = ${auth.user.id} AND br.notification_key = n.notification_key
+      ORDER BY n.created_at DESC LIMIT 40
+    `) as Array<{ id:string; type:"customer_joined"|"stamp_added"|"reward_ready"|"reward_redeemed"; title:string; message:string; created_at:string; is_read:boolean }>;
     return json({ data: rows });
+  }
+
+  if (path[1] === "notifications" && path[2] === "read" && req.method === "POST") {
+    const body = await req.json().catch(() => ({})) as JsonRecord;
+    const notificationKey = asString(body.notification_key);
+    if (!notificationKey || notificationKey.length > 100) return error("Invalid notification.", 422);
+    await sql`INSERT INTO business_notification_reads (user_id, notification_key)
+              VALUES (${auth.user.id}, ${notificationKey})
+              ON CONFLICT (user_id, notification_key) DO UPDATE SET read_at = now()`;
+    return json({ message: "Notification marked as read." });
+  }
+
+  if (path[1] === "notifications" && path[2] === "read-all" && req.method === "POST") {
+    const keys = (await sql`
+      SELECT notification_key FROM (
+        SELECT CONCAT('customer_joined-', c.id::text) AS notification_key, c.created_at FROM customers c WHERE c.business_id = ${businessId}
+        UNION ALL SELECT CONCAT('stamp_added-', v.id::text), v.created_at FROM visits v WHERE v.business_id = ${businessId}
+        UNION ALL SELECT CONCAT(CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed-' ELSE 'reward_ready-' END, r.id::text), COALESCE(r.redeemed_at, r.earned_at) FROM reward_redemptions r WHERE r.business_id = ${businessId}
+      ) x ORDER BY created_at DESC LIMIT 40
+    `) as Array<{notification_key:string}>;
+    for (const row of keys) {
+      await sql`INSERT INTO business_notification_reads (user_id, notification_key)
+                VALUES (${auth.user.id}, ${row.notification_key})
+                ON CONFLICT (user_id, notification_key) DO UPDATE SET read_at = now()`;
+    }
+    return json({ message: "All notifications marked as read." });
   }
 
   const url = new URL(req.url);
