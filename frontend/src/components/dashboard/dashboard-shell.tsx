@@ -139,8 +139,8 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
                 onClick={() => setIsMobileMenuOpen(false)}
                 type="button"
               />
-              <div className="absolute left-0 top-0 h-full w-[86%] max-w-[320px] overflow-hidden border-r border-[#d9a52f]/15 bg-[#090a08] shadow-2xl" style={{ backgroundImage: "linear-gradient(rgba(9,10,8,.88),rgba(9,10,8,.96)), url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
-                <div className="flex h-20 items-center justify-between border-b border-[#d9a52f]/15 px-5">
+              <div className="absolute left-0 top-0 flex h-dvh w-[86%] max-w-[320px] flex-col overflow-hidden border-r border-[#d9a52f]/15 bg-[#090a08] shadow-2xl" style={{ backgroundImage: "linear-gradient(rgba(9,10,8,.88),rgba(9,10,8,.96)), url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
+                <div className="flex h-20 shrink-0 items-center justify-between border-b border-[#d9a52f]/15 px-5">
                   <div className="flex min-w-0 items-center gap-2">
                     <Image
                       alt="LOYVANCE"
@@ -161,7 +161,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
                     <Menu className="size-5" />
                   </Button>
                 </div>
-                <nav className="space-y-2 px-3 py-5">
+                <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-5">
                   {sidebarItems.map((item) => (
                     <MobileDrawerItem
                       active={item.key === activeItem}
@@ -173,6 +173,19 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
                     />
                   ))}
                 </nav>
+                <div className="shrink-0 border-t border-[#d9a52f]/15 bg-[#090a08]/85 p-3 backdrop-blur-sm">
+                  <Button
+                    className="h-12 w-full justify-start gap-3 rounded-xl border border-white/10 bg-black/20 text-white/75 hover:border-[#d9a52f]/25 hover:bg-[#d9a52f]/10 hover:text-white"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      signOut();
+                    }}
+                    variant="ghost"
+                  >
+                    <LogOut className="size-4" />
+                    Log out
+                  </Button>
+                </div>
               </div>
             </div>
           ) : null}
