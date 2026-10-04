@@ -222,7 +222,7 @@ export function CustomerCardCarousel({
           )}
         >
           <div
-            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[500px] lg:max-w-[600px]" : "max-w-[560px]")}
+            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[560px] lg:max-w-[720px]" : "max-w-[560px]")}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -286,6 +286,7 @@ export function CustomerCardCarousel({
                       qrToken={qrForCard}
                       showQrPayloadText={false}
                       stampUiVariant="customer"
+                      dashboardCompact={dashboardMode}
                       progressPercent={progressForCard}
                       currentStamps={stampsForCard}
                       requiredStamps={requiredForCard}
@@ -296,7 +297,7 @@ export function CustomerCardCarousel({
             </div>
           </div>
 
-          {showNav ? (
+          {showNav && !dashboardMode ? (
             <div className="flex justify-center gap-1.5 pt-3" aria-label="Card position">
               {cards.map((card, cardIndex) => (
                 <button
