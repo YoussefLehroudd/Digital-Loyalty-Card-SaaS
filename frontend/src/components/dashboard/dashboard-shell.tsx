@@ -173,26 +173,6 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             </div>
           ) : null}
 
-          <div className="border-b px-4 py-2 lg:hidden">
-            <div className="relative">
-              <div className="flex gap-2 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {sidebarItems.map((item) => (
-                  <MobileNavItem
-                    active={item.key === activeItem}
-                    href={item.href}
-                    icon={item.icon}
-                    key={item.key}
-                    label={item.label}
-                  />
-                ))}
-              </div>
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent"
-              />
-            </div>
-          </div>
-
           <EchoProvider token={token ?? null}>
             <DashboardRealtimeContent>{children}</DashboardRealtimeContent>
           </EchoProvider>
