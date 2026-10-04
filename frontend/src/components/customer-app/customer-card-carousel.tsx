@@ -243,9 +243,9 @@ export function CustomerCardCarousel({
                 const side = offset > 0 ? 1 : -1;
                 // Fan the inactive cards upward and outward so their rounded top
                 // corner is visible instead of looking like a flat side strip.
-                const baseX = side * (24 + (distance - 1) * 18);
-                const baseY = -10 - (distance - 1) * 7;
-                const baseScale = 1 - distance * 0.055;
+                const baseX = side * ((dashboardMode ? 34 : 24) + (distance - 1) * 18);
+                const baseY = dashboardMode ? 8 - (distance - 1) * 4 : -10 - (distance - 1) * 7;
+                const baseScale = 1 - distance * (dashboardMode ? 0.045 : 0.055);
                 const baseRotateY = side * distance * -5;
                 const baseRotateZ = side * distance * 0.7;
                 const opacity = 1 - distance * 0.16;
@@ -295,6 +295,29 @@ export function CustomerCardCarousel({
                 );
               })}
             </div>
+
+            {showNav && dashboardMode ? (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous loyalty card"
+                  onClick={() => setAndNotify(index - 1)}
+                  disabled={index <= 0}
+                  className="absolute left-[-54px] top-1/2 z-[70] hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[#111210]/90 text-white shadow-[0_8px_28px_rgba(0,0,0,.35)] transition hover:border-[#d8a63f]/35 hover:bg-[#191a17] disabled:opacity-35 lg:flex"
+                >
+                  <ChevronLeft className="size-5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next loyalty card"
+                  onClick={() => setAndNotify(index + 1)}
+                  disabled={index >= cards.length - 1}
+                  className="absolute right-[-54px] top-1/2 z-[70] hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[#111210]/90 text-white shadow-[0_8px_28px_rgba(0,0,0,.35)] transition hover:border-[#d8a63f]/35 hover:bg-[#191a17] disabled:opacity-35 lg:flex"
+                >
+                  <ChevronRight className="size-5" />
+                </button>
+              </>
+            ) : null}
           </div>
 
           {showNav && !dashboardMode ? (
