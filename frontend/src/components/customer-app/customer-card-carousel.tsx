@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Trash2, WalletCards } from "lucide-react";
+import { ChevronLeft, ChevronRight, Gift, Info, QrCode, Trash2, WalletCards } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import type { CustomerCardItem } from "@/lib/customerAuth";
@@ -20,11 +20,13 @@ export function CustomerCardCarousel({
   selectedId,
   onChange,
   onRefresh,
+  dashboardMode = false,
 }: {
   cards: CustomerCardItem[];
   selectedId?: string | null;
   onChange?: (card: CustomerCardItem) => void;
   onRefresh?: () => Promise<CustomerCardItem[]>;
+  dashboardMode?: boolean;
 }) {
   const router = useRouter();
   const { token } = useCustomerAuth();
@@ -220,7 +222,7 @@ export function CustomerCardCarousel({
           )}
         >
           <div
-            className="relative mx-auto w-full max-w-[560px] touch-pan-y select-none [perspective:1500px]"
+            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[500px] lg:max-w-[520px]" : "max-w-[560px]")}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -312,30 +314,46 @@ export function CustomerCardCarousel({
           ) : null}
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
-          onClick={() => setConfirmDeleteOpen(true)}
-          disabled={deleting}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete Card
-        </Button>
+        {dashboardMode ? (
+          <div className="grid gap-2.5 pt-1 sm:grid-cols-3">
+            <Button type="button" variant="outline" className="w-full border-[#d8a63f]/20 bg-black/20 hover:border-[#e7b354]/40 hover:bg-[#d79b16]/10" onClick={() => router.push("/user/rewards")}>
+              <Gift className="size-4 text-[#ffc857]" /> View Rewards
+            </Button>
+            <Button type="button" className="w-full border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f]" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
+              <QrCode className="size-4" /> Show QR Code
+            </Button>
+            <Button type="button" variant="outline" className="w-full border-[#d8a63f]/20 bg-black/20 hover:border-[#e7b354]/40 hover:bg-[#d79b16]/10" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
+              <Info className="size-4 text-[#ffc857]" /> Card Details
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
+              onClick={() => setConfirmDeleteOpen(true)}
+              disabled={deleting}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Card
+            </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => void handleGoogleWallet()}
-          disabled={addingToWallet}
-        >
-          <WalletCards className="mr-2 h-4 w-4" />
-          {addingToWallet ? "Opening Google Wallet..." : "Add to Google Wallet"}
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => void handleGoogleWallet()}
+              disabled={addingToWallet}
+            >
+              <WalletCards className="mr-2 h-4 w-4" />
+              {addingToWallet ? "Opening Google Wallet..." : "Add to Google Wallet"}
+            </Button>
+          </>
+        )}
       </div>
 
-      {showNav ? (
+      {showNav && !dashboardMode ? (
         <div className="flex items-center justify-between gap-2">
           <Button
             variant="outline"
