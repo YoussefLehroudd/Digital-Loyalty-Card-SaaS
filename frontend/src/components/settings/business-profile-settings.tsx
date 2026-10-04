@@ -414,8 +414,8 @@ export function BusinessProfileSettings() {
     <DashboardShell activeItem="settings">
       <div className="mx-auto w-full max-w-[1600px] space-y-4 overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8">
         <div className="flex items-start gap-3 rounded-2xl sm:items-center sm:gap-4 border border-[#d8a63f]/10 bg-black/10 px-4 py-3">
-          <div className="flex size-11 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[#8b5d12]/25 text-[#ffc857] shadow-[0_8px_24px_rgba(231,179,84,.08)]">
-            <Building2 className="size-5" />
+          <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[#8b5d12]/25 text-[#ffc857] shadow-[0_8px_24px_rgba(231,179,84,.08)] sm:mt-0 sm:size-11">
+            <Building2 className="size-4 sm:size-5" />
           </div>
           <div>
             <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
@@ -472,7 +472,7 @@ export function BusinessProfileSettings() {
                     </div>
                   </div>
 
-                  <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:shrink-0">
+                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap lg:shrink-0">
                     <input
                       ref={avatarInputRef}
                       accept="image/jpeg,image/png,image/webp,image/gif"
@@ -485,6 +485,7 @@ export function BusinessProfileSettings() {
                       onClick={() => avatarInputRef.current?.click()}
                       type="button"
                       variant="outline"
+                      className="w-full sm:w-auto"
                     >
                       {isAvatarUploading ? (
                         <Loader2 className="size-4 animate-spin" />
@@ -499,6 +500,7 @@ export function BusinessProfileSettings() {
                         onClick={() => void onAvatarRemove()}
                         type="button"
                         variant="ghost"
+                        className="w-full sm:w-auto"
                       >
                         {isAvatarRemoving ? (
                           <Loader2 className="size-4 animate-spin" />
