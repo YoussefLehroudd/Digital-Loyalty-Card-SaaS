@@ -335,6 +335,15 @@ async function ensureSchema(sql: Sql) {
         PRIMARY KEY (user_id, notification_key)
       )`;
       await sql`CREATE INDEX IF NOT EXISTS idx_business_notification_reads_user ON business_notification_reads(user_id)`;
+      await sql`CREATE TABLE IF NOT EXISTS business_notifications (
+        id uuid PRIMARY KEY,
+        business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+        type text NOT NULL,
+        title text NOT NULL,
+        message text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_business_notifications_business_created ON business_notifications(business_id, created_at DESC)`;
     })();
   }
   await schemaReady;
@@ -883,34 +892,15 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
 
   if (path[1] === "notifications" && !path[2] && req.method === "GET") {
     const rows = (await sql`
-      SELECT n.*, (br.notification_key IS NOT NULL) AS is_read
-      FROM (
-        SELECT c.id::text AS id, 'customer_joined'::text AS type,
-               'New customer'::text AS title,
-               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' joined your loyalty program.') AS message,
-               c.created_at AS created_at,
-               CONCAT('customer_joined-', c.id::text) AS notification_key
-        FROM customers c WHERE c.business_id = ${businessId}
-        UNION ALL
-        SELECT v.id::text, 'stamp_added'::text, 'Stamp added'::text,
-               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' received a stamp.'),
-               v.created_at, CONCAT('stamp_added-', v.id::text)
-        FROM visits v JOIN customers c ON c.id = v.customer_id WHERE v.business_id = ${businessId}
-        UNION ALL
-        SELECT CONCAT(r.id::text, ':ready'), 'reward_ready'::text, 'Reward ready'::text,
-               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' unlocked a reward.'),
-               r.earned_at, CONCAT('reward_ready-', r.id::text)
-        FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE r.business_id = ${businessId}
-        UNION ALL
-        SELECT CONCAT(r.id::text, ':redeemed'), 'reward_redeemed'::text, 'Reward redeemed'::text,
-               CONCAT(COALESCE(NULLIF(TRIM(CONCAT(c.first_name, ' ', c.last_name)), ''), c.email, 'A customer'), ' redeemed a reward.'),
-               r.redeemed_at, CONCAT('reward_redeemed-', r.id::text)
-        FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id
-        WHERE r.business_id = ${businessId} AND r.redeemed_at IS NOT NULL
-      ) n
+      SELECT n.id::text, n.type, n.title, n.message, n.created_at,
+             (br.notification_key IS NOT NULL) AS is_read
+      FROM business_notifications n
       LEFT JOIN business_notification_reads br
-        ON br.user_id = ${auth.user.id} AND br.notification_key = n.notification_key
-      ORDER BY n.created_at DESC LIMIT 100
+        ON br.user_id = ${auth.user.id}
+       AND br.notification_key = CONCAT(n.type, '-', n.id::text)
+      WHERE n.business_id = ${businessId}
+      ORDER BY n.created_at DESC
+      LIMIT 100
     `) as Array<{ id:string; type:"customer_joined"|"stamp_added"|"reward_ready"|"reward_redeemed"; title:string; message:string; created_at:string; is_read:boolean }>;
     return json({ data: rows });
   }
@@ -927,23 +917,12 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
 
   if (path[1] === "notifications" && path[2] === "read-all" && req.method === "POST") {
     const keys = (await sql`
-      SELECT notification_key FROM (
-        SELECT CONCAT('customer_joined-', c.id::text) AS notification_key, c.created_at AS created_at
-        FROM customers c WHERE c.business_id = ${businessId}
-        UNION ALL
-        SELECT CONCAT('stamp_added-', v.id::text), v.created_at
-        FROM visits v WHERE v.business_id = ${businessId}
-        UNION ALL
-        SELECT CONCAT('reward_ready-', r.id::text), r.earned_at
-        FROM reward_redemptions r WHERE r.business_id = ${businessId}
-        UNION ALL
-        SELECT CONCAT('reward_redeemed-', r.id::text), r.redeemed_at
-        FROM reward_redemptions r WHERE r.business_id = ${businessId} AND r.redeemed_at IS NOT NULL
-      ) x
+      SELECT CONCAT(type, '-', id::text) AS notification_key
+      FROM business_notifications
+      WHERE business_id = ${businessId}
       ORDER BY created_at DESC
       LIMIT 100
     `) as Array<{ notification_key: string }>;
-
     if (keys.length) {
       const values = keys.map((row) => row.notification_key);
       await sql`
@@ -1283,6 +1262,9 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     `) as Array<{ id: string; current_stamps: number }>;
     if (!redeemed[0]) return error("No reward is ready to redeem.", 409);
     const remaining = redeemed[0].current_stamps;
+    const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || customer.email || "A customer";
+    await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
+              VALUES (${randomUUID()}, ${auth.business.id}, 'reward_redeemed', 'Reward redeemed', ${customerName + " redeemed a reward."})`;
     await syncGoogleWalletCustomer(sql, customer.id);
     return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: remaining, required_stamps: card.required_stamps, reward_unlocked: remaining >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
   }
@@ -1324,6 +1306,13 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (!updated) return error("Reward is ready. Redeem it before adding another stamp.", 409);
   const unlocked = updated.current_stamps >= card.required_stamps;
   const redemptionCreated = updated.redemption_created;
+  const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || customer.email || "A customer";
+  await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
+            VALUES (${randomUUID()}, ${auth.business.id}, 'stamp_added', 'Stamp added', ${customerName + " received a stamp."})`;
+  if (redemptionCreated) {
+    await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
+              VALUES (${randomUUID()}, ${auth.business.id}, 'reward_ready', 'Reward ready', ${customerName + " unlocked a reward."})`;
+  }
   await syncGoogleWalletCustomer(sql, customer.id);
   return json({ message: "Stamp added.", loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
 }
