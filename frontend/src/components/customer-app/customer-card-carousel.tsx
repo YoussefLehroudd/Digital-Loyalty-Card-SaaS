@@ -222,7 +222,7 @@ export function CustomerCardCarousel({
           )}
         >
           <div
-            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[500px] lg:max-w-[520px]" : "max-w-[560px]")}
+            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[500px] lg:max-w-[600px]" : "max-w-[560px]")}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -315,14 +315,14 @@ export function CustomerCardCarousel({
         </div>
 
         {dashboardMode ? (
-          <div className="grid gap-2.5 pt-1 sm:grid-cols-3">
-            <Button type="button" variant="outline" className="w-full border-[#d8a63f]/20 bg-black/20 hover:border-[#e7b354]/40 hover:bg-[#d79b16]/10" onClick={() => router.push("/user/rewards")}>
+          <div className="mx-auto grid max-w-[960px] gap-2.5 pt-1 sm:grid-cols-3 lg:pt-3">
+            <Button type="button" variant="outline" className="h-11 w-full border-[#d8a63f]/30 bg-black/25 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 lg:h-12" onClick={() => router.push("/user/rewards")}>
               <Gift className="size-4 text-[#ffc857]" /> View Rewards
             </Button>
-            <Button type="button" className="w-full border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f]" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
+            <Button type="button" className="h-11 w-full border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.16)] hover:bg-[#f4c86f] lg:h-12" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
               <QrCode className="size-4" /> Show QR Code
             </Button>
-            <Button type="button" variant="outline" className="w-full border-[#d8a63f]/20 bg-black/20 hover:border-[#e7b354]/40 hover:bg-[#d79b16]/10" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
+            <Button type="button" variant="outline" className="h-11 w-full border-[#d8a63f]/30 bg-black/25 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 lg:h-12" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
               <Info className="size-4 text-[#ffc857]" /> Card Details
             </Button>
           </div>
