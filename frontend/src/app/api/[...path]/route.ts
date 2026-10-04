@@ -441,6 +441,17 @@ async function requireAuth(req: Request, sql: Sql) {
   return auth;
 }
 
+async function requireBusinessOwner(req: Request, sql: Sql) {
+  const auth = await requireAuth(req, sql);
+  if (auth.user.role !== "business_owner") {
+    throw new Response(JSON.stringify({ message: "Forbidden." }), { status: 403, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  }
+  if (!auth.business) {
+    throw new Response(JSON.stringify({ message: "Business not found." }), { status: 404, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  }
+  return auth;
+}
+
 async function defaultCard(sql: Sql, businessId: string) {
   const rows = (await sql`SELECT * FROM loyalty_cards WHERE business_id = ${businessId} LIMIT 1`) as DbLoyaltyCard[];
   if (rows[0]) return rows[0];
@@ -861,7 +872,7 @@ async function handleRealtimeVersion(req: Request, sql: Sql) {
 }
 
 async function handleDashboard(path: string[], req: Request, sql: Sql) {
-  const auth = await requireAuth(req, sql);
+  const auth = await requireBusinessOwner(req, sql);
   if (!auth.business) return error("Business not found.", 404);
 
   if (path[1] === "session") {
@@ -1007,7 +1018,7 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
 }
 
 async function handleBusiness(path: string[], req: Request, sql: Sql) {
-  const auth = await requireAuth(req, sql);
+  const auth = await requireBusinessOwner(req, sql);
   if (!auth.business) return error("Business not found.", 404);
   const businessId = auth.business.id;
 
@@ -1137,7 +1148,7 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
 }
 
 async function handleLoyaltyCard(req: Request, sql: Sql) {
-  const auth = await requireAuth(req, sql);
+  const auth = await requireBusinessOwner(req, sql);
   if (!auth.business) return error("Business not found.", 404);
   const existing = await defaultCard(sql, auth.business.id);
 
@@ -1197,7 +1208,9 @@ async function handlePublic(path: string[], req: Request, sql: Sql) {
 }
 
 async function handleStamp(path: string[], req: Request, sql: Sql) {
-  const auth = await requireAuth(req, sql);
+  const auth = await requireBusinessOwner(req, sql);
+  const limited = await rateLimit(sql, req, path[0] === "redeem-reward" ? "reward-action" : "stamp-action", 120, 60_000);
+  if (limited) return limited;
   if (!auth.business) return error("Business not found.", 404);
   const body = await readJson(req);
   const qr = asString(body.qr_code);
