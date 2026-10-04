@@ -36,7 +36,6 @@ export function StaffQrScanner({
   const scanSessionRef = useRef(0);
   const acceptedRef = useRef(false);
   const hasScannedRef = useRef(false);
-  const lastAcceptedQrRef = useRef<{ value: string; at: number } | null>(null);
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>({
     state: "idle",
@@ -143,16 +142,7 @@ export function StaffQrScanner({
             return;
           }
 
-          // Ignore an accidental immediate re-scan of the same QR across scanner resets.
-          const previous = lastAcceptedQrRef.current;
-          const now = Date.now();
-          if (previous?.value === qr && now - previous.at < 2500) {
-            window.setTimeout(() => { void decodeUntilSuccessOrReset(); }, 250);
-            return;
-          }
-
           // First successful QR for this session.
-          lastAcceptedQrRef.current = { value: qr, at: now };
           acceptedRef.current = true;
           hasScannedRef.current = true;
           setIsDecoding(true);
