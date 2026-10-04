@@ -59,11 +59,12 @@ export default function ScannerPage() {
       });
 
       setStampResult(response.loyalty);
+      return true;
     } catch (err) {
       if (err instanceof ApiError && err.message.toLowerCase().includes("reward is ready")) {
         setRewardReadyBlocked(true);
         setStampResult({ current_stamps: 1, required_stamps: 1, reward_unlocked: true, reward_redemption_created: false });
-        return;
+        return true;
       }
       const message =
         err instanceof ApiError
@@ -71,6 +72,7 @@ export default function ScannerPage() {
           : "Failed to add stamp. Please try again.";
 
       setError(message);
+      return false;
     }
   }
 
