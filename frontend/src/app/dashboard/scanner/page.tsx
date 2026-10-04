@@ -5,7 +5,6 @@ import { QrCode, XCircle } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-guard";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
 import { apiFetch, ApiError } from "@/lib/api";
@@ -34,6 +33,10 @@ export default function ScannerPage() {
   const [rewardReadyBlocked, setRewardReadyBlocked] = useState(false);
 
   const scanAnotherRef = useRef<(() => void) | null>(null);
+
+  const handleResetReady = useCallback((resetFn: () => void) => {
+    scanAnotherRef.current = resetFn;
+  }, []);
 
   function clearResult() {
     setStampResult(null);
