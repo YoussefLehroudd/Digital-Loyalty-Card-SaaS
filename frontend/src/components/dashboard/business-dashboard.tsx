@@ -101,9 +101,15 @@ function MetricGrid({metrics}:{metrics:DashboardMetrics}) {
 
 function DateRangePicker({value,onChange}:{value:DashboardPeriod;onChange:(value:DashboardPeriod)=>void}) {
   const [open,setOpen]=useState(false);
+  const now=new Date();
+  const format=(date:Date)=>date.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+  const currentStart=new Date(now.getFullYear(),now.getMonth(),1);
+  const currentEnd=new Date(now.getFullYear(),now.getMonth()+1,0);
+  const previousStart=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const previousEnd=new Date(now.getFullYear(),now.getMonth(),0);
   const ranges=[
-    {key:"current_month",label:"Sep 1, 2026 - Sep 30, 2026"},
-    {key:"previous_month",label:"Aug 1, 2026 - Aug 31, 2026"},
+    {key:"current_month",label:`${format(currentStart)} - ${format(currentEnd)}`},
+    {key:"previous_month",label:`${format(previousStart)} - ${format(previousEnd)}`},
     {key:"last_30_days",label:"Last 30 days"},
   ];
   const label=ranges.find(item=>item.key===value)?.label??ranges[0].label;
@@ -123,7 +129,7 @@ function ActivityPanel({activity,period,setPeriod}:{activity:Array<{date:string;
     <div className="relative mt-3 overflow-x-auto"><svg viewBox={`0 0 ${width} ${height}`} className="block w-full min-w-[560px] sm:min-w-[680px]" role="img" aria-label="Customer activity chart">
       <defs><linearGradient id="barGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#d99c2b" stopOpacity=".72"/><stop offset="100%" stopColor="#7a4b08" stopOpacity=".25"/></linearGradient><filter id="lineGlow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
       {grid.map((g,i)=>{const yy=top+(height-top-bottom)*g;return <g key={i}><line x1={left} x2={width-right} y1={yy} y2={yy} stroke="rgba(255,255,255,.10)" strokeDasharray="3 3"/><text x="8" y={yy+4} fill="rgba(255,255,255,.55)" fontSize="11">{Math.round(max*(1-g))}</text></g>})}
-      {activity.map((d,i)=>{const bw=Math.max(5,Math.min(15,(width-left-right)/Math.max(activity.length,1)*.55));const xx=x(i)-bw/2;return <g key={d.date}><rect x={xx} y={y(d.stamps_issued)} width={bw} height={height-bottom-y(d.stamps_issued)} rx="2" fill="url(#barGold)"/><rect x={x(i)-Math.max(12,bw)} y={top} width={Math.max(24,bw*2)} height={height-top-bottom} fill="transparent" className="cursor-crosshair" onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}/></g>})}
+      {activity.map((d,i)=>{const bw=Math.max(5,Math.min(15,(width-left-right)/Math.max(activity.length,1)*.55));const xx=x(i)-bw/2;return <g key={d.date}><rect x={xx} y={y(d.stamps_issued)} width={bw} height={height-bottom-y(d.stamps_issued)} rx="2" fill="url(#barGold)"/><rect x={x(i)-Math.max(12,bw)} y={top} width={Math.max(24,bw*2)} height={height-top-bottom} fill="transparent" className="cursor-crosshair" onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)} onPointerDown={()=>setHovered(i)}/></g>})}
       {activity.length>1?<polyline points={customerPoints} fill="none" stroke="#f6c34f" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" filter="url(#lineGlow)"/>:null}
       {activity.map((d,i)=><circle key={d.date+"p"} cx={x(i)} cy={y(d.new_customers)} r="3.5" fill="#ffd66d"/>)}
       {labels.map((d)=>{const i=activity.indexOf(d);const dt=new Date(d.date+"T00:00:00");return <text key={d.date+"l"} x={x(i)} y={height-14} textAnchor={i===0?"start":i===activity.length-1?"end":"middle"} fill="rgba(255,255,255,.55)" fontSize="10">{dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</text>})}
