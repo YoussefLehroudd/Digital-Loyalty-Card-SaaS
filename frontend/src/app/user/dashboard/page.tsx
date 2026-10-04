@@ -181,7 +181,7 @@ export default function UserDashboardPage() {
             </Card>
           ) : (
             <>
-              <section className="relative overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] lg:min-h-[440px]">
+              <section className="relative overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] lg:min-h-[390px]">
                 <div className="relative z-20 flex items-center justify-between gap-3 px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[linear-gradient(145deg,rgba(157,107,17,.36),rgba(87,57,9,.28))] text-[#ffd369] shadow-[inset_0_0_18px_rgba(255,194,64,.08)] lg:size-12">
@@ -203,7 +203,7 @@ export default function UserDashboardPage() {
                   </div>
                 </div>
 
-                <div className="relative z-10 px-2 pb-3 sm:px-4 sm:pb-4 lg:-mt-1 lg:px-8 lg:pb-5">
+                <div className="relative z-10 px-2 pb-3 sm:px-4 sm:pb-4 lg:-mt-3 lg:px-8 lg:pb-5">
                   <CustomerCardCarousel
             cards={cards}
             dashboardMode
