@@ -355,8 +355,24 @@ export type BusinessNotification = {
   title: string;
   message: string;
   created_at: string;
+  is_read: boolean;
 };
 
 export function getBusinessNotifications(token: string) {
   return apiFetch<{ data: BusinessNotification[] }>("/dashboard/notifications", { token });
+}
+
+export function markBusinessNotificationRead(token: string, notificationKey: string) {
+  return apiFetch<{ message: string }>("/dashboard/notifications/read", {
+    method: "POST",
+    token,
+    body: JSON.stringify({ notification_key: notificationKey }),
+  });
+}
+
+export function markAllBusinessNotificationsRead(token: string) {
+  return apiFetch<{ message: string }>("/dashboard/notifications/read-all", {
+    method: "POST",
+    token,
+  });
 }
