@@ -790,7 +790,7 @@ function LogoUploader({
         </div>
       </div>
 
-      <div>
+      <div className="w-full sm:w-auto">
         <input
           accept="image/png,image/jpeg,image/webp"
           className="hidden"
@@ -799,6 +799,7 @@ function LogoUploader({
           onChange={(event) => onLogoSelected(event.target.files?.[0])}
         />
         <Button
+          className="w-full sm:w-auto"
           disabled={isUploading}
           type="button"
           variant="outline"
@@ -906,7 +907,7 @@ function HeroImageUploader({
             onChange={(event) => handleHeroFile(event.target.files?.[0])}
           />
           <Button
-            className="h-9 border-[#d8a63f]/25 bg-black/20 px-4 text-xs font-semibold hover:border-[#f5bf3d]/60 hover:bg-[#d79b16]/10"
+            className="h-9 w-full border-[#d8a63f]/25 bg-black/20 px-4 text-xs font-semibold hover:border-[#f5bf3d]/60 hover:bg-[#d79b16]/10 sm:w-auto"
             type="button"
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
@@ -916,7 +917,7 @@ function HeroImageUploader({
           </Button>
           {heroImage ? (
             <Button
-              className="h-9 border-[#d8a63f]/20 bg-black/20 px-4 text-xs hover:border-[#f5bf3d]/50"
+              className="h-9 w-full border-[#d8a63f]/20 bg-black/20 px-4 text-xs hover:border-[#f5bf3d]/50 sm:w-auto"
               type="button"
               variant="outline"
               onClick={onClear}
