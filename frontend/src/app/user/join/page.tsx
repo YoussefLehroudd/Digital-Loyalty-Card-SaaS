@@ -71,8 +71,8 @@ export default function UserJoinPage() {
 
         <StaffQrScanner
           onQrScanned={async (qrCode) => {
-            if (!token) return;
-            if (loading) return;
+            if (!token) return false;
+            if (loading) return false;
 
             setLoading(true);
             setError(null);
@@ -86,10 +86,12 @@ export default function UserJoinPage() {
 
               const membershipId = joinResult.customer?.id;
               router.push(membershipId ? `/user/cards?selected=${encodeURIComponent(membershipId)}` : "/user/cards");
+              return true;
             } catch (err) {
               setError(
                 err instanceof Error ? err.message : "Unable to join this business from QR",
               );
+              return false;
             } finally {
               setLoading(false);
             }
