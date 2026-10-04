@@ -132,16 +132,16 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             <div className="fixed inset-0 z-40 lg:hidden">
               <button
                 aria-label="Close mobile menu overlay"
-                className="absolute inset-0 bg-black/40"
+                className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
                 onClick={() => setIsMobileMenuOpen(false)}
                 type="button"
               />
-              <div className="absolute left-0 top-0 h-full w-[86%] max-w-[320px] border-r bg-background shadow-xl">
-                <div className="flex h-16 items-center justify-between border-b px-4">
+              <div className="absolute left-0 top-0 h-full w-[86%] max-w-[320px] overflow-hidden border-r border-[#d9a52f]/15 bg-[#090a08] shadow-2xl" style={{ backgroundImage: "linear-gradient(rgba(9,10,8,.88),rgba(9,10,8,.96)), url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
+                <div className="flex h-20 items-center justify-between border-b border-[#d9a52f]/15 px-5">
                   <div className="flex min-w-0 items-center gap-2">
                     <Image
                       alt="LOYVANCE"
-                      className="size-12 object-contain"
+                      className="size-14 object-contain"
                       height={48}
                       priority
                       src="/brand/icon.png"
@@ -158,7 +158,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
                     <Menu className="size-5" />
                   </Button>
                 </div>
-                <nav className="space-y-1 p-3">
+                <nav className="space-y-2 px-3 py-5">
                   {sidebarItems.map((item) => (
                     <MobileDrawerItem
                       active={item.key === activeItem}
@@ -259,7 +259,7 @@ function MobileDrawerItem({
   label: string;
   onNavigate: () => void;
 }) {
-  const className = cn("w-full justify-start", !active && "text-muted-foreground");
+  const className = cn("h-12 w-full justify-start gap-3 rounded-xl border transition-all", active ? "border-[#f6bd46]/40 bg-gradient-to-r from-[#b27a14]/35 to-[#e4a62e]/15 text-[#ffc857] shadow-[0_0_24px_rgba(224,165,46,.10)]" : "border-transparent text-white/55 hover:border-[#d9a52f]/20 hover:bg-[#d9a52f]/5 hover:text-white");
 
   if (!href) {
     return (
@@ -271,7 +271,7 @@ function MobileDrawerItem({
   }
 
   return (
-    <Button asChild className={className} variant={active ? "secondary" : "ghost"}>
+    <Button asChild className={className} variant="ghost">
       <Link href={href} onClick={onNavigate}>
         <Icon className="size-4" />
         {label}
