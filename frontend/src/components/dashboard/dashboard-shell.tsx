@@ -19,6 +19,7 @@ import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider } from "@/components/echo/echo-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getBusinessNotifications, type BusinessNotification } from "@/lib/auth";
 
 type DashboardShellProps = {
   activeItem:
@@ -54,6 +55,21 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
   const { user, signOut, token } = useAuth();
   const businessName = user.business?.name ?? "Business";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<BusinessNotification[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    const loadNotifications = async () => {
+      try {
+        const result = await getBusinessNotifications(token);
+        if (!cancelled) setNotifications(result.data ?? []);
+      } catch {}
+    };
+    void loadNotifications();
+    const timer = window.setInterval(loadNotifications, 5000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [token]);
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
@@ -122,6 +138,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             userName={user.name ?? businessName}
             avatarUrl={user.avatar_url ?? null}
             onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+            notifications={notifications}
           />
 
           {isMobileMenuOpen ? (
@@ -301,13 +318,16 @@ function TopNav({
   userName,
   avatarUrl,
   onOpenMobileMenu,
+  notifications,
 }: {
   activeItem: DashboardShellProps["activeItem"];
   userName: string;
   avatarUrl: string | null;
   onOpenMobileMenu: () => void;
+  notifications: BusinessNotification[];
 }) {
   const initial = userName.trim().charAt(0).toUpperCase() || "Y";
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const pageTitle: Record<DashboardShellProps["activeItem"], string> = {
     overview: "Dashboard",
     customers: "Customers",
@@ -339,10 +359,16 @@ function TopNav({
         </div>
 
         <div className="flex items-center gap-4">
-          <Button aria-label="Notifications" className="relative text-white/75 hover:bg-white/5 hover:text-white" size="icon" variant="ghost">
-            <Bell className="size-5" />
-            <span className="absolute right-2 top-2 size-2 rounded-full bg-[#f3bd55] shadow-[0_0_8px_rgba(243,189,85,.8)]" />
-          </Button>
+          <div className="relative">
+            <Button aria-label="Notifications" onClick={() => setNotificationsOpen((open) => !open)} className="relative text-white/75 hover:bg-white/5 hover:text-white" size="icon" variant="ghost">
+              <Bell className="size-5" />
+              {notifications.length > 0 ? <span className="absolute right-1.5 top-1.5 flex min-w-4 h-4 items-center justify-center rounded-full bg-[#f3bd55] px-1 text-[9px] font-black text-black shadow-[0_0_8px_rgba(243,189,85,.8)]">{Math.min(notifications.length,99)}</span> : null}
+            </Button>
+            {notificationsOpen ? <div className="absolute right-0 top-12 z-50 w-[min(360px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#090a08]/[.98] shadow-2xl backdrop-blur-xl">
+              <div className="border-b border-white/10 px-4 py-3"><p className="font-bold text-white">Notifications</p><p className="text-xs text-white/45">Latest business activity</p></div>
+              <div className="max-h-[420px] overflow-y-auto p-2">{notifications.length ? notifications.slice(0,20).map((item) => <div key={item.type+"-"+item.id} className="rounded-xl px-3 py-3 hover:bg-white/[.04]"><div className="flex items-start gap-3"><span className="mt-1 size-2 shrink-0 rounded-full bg-[#f3bd55]"/><div className="min-w-0"><p className="text-sm font-semibold text-white">{item.title}</p><p className="mt-0.5 text-xs leading-5 text-white/55">{item.message}</p><p className="mt-1 whitespace-nowrap text-[10px] text-white/35">{new Date(item.created_at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</p></div></div></div>) : <p className="px-3 py-8 text-center text-sm text-white/40">No notifications yet.</p>}</div>
+            </div> : null}
+          </div>
           <div className="h-8 w-px bg-white/10" />
           <div className="flex items-center gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e7b354]/25 bg-[#5b451b] font-bold text-white shadow-[0_0_14px_rgba(231,179,84,.10)]">{avatarUrl ? <img alt={userName} src={avatarUrl} className="h-full w-full object-cover object-center" /> : initial}</div>
