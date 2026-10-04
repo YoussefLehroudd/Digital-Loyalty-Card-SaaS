@@ -288,19 +288,36 @@ function DashboardRealtimeContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
+    let timer: number | undefined;
+
     const refresh = async () => {
       try {
         const result = await getBusinessNotifications(token);
         if (!cancelled) setNotifications(result.data ?? []);
       } catch {}
     };
+
+    const poll = async () => {
+      if (cancelled) return;
+      if (document.visibilityState === "visible") await refresh();
+      if (!cancelled) timer = window.setTimeout(poll, 1500);
+    };
+
     void refresh();
-    if (!echo) return () => { cancelled = true; };
-    const channel = echo.private("business");
-    channel.listen("data.changed", refresh);
+    timer = window.setTimeout(poll, 1500);
+
+    const channel = echo?.private("business");
+    channel?.listen("data.changed", refresh);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       cancelled = true;
-      channel.stopListening("data.changed", refresh);
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      channel?.stopListening("data.changed", refresh);
     };
   }, [token, echo]);
 
