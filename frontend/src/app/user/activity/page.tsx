@@ -135,7 +135,7 @@ export default function UserActivityPage() {
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <div className="flex gap-1 rounded-xl border border-white/5 bg-black/25 p-1">
                   {([{ key: "all", label: "All activity" }, { key: "stamps", label: "Stamps" }, { key: "rewards", label: "Rewards" }] as const).map((tab) => (
-                    <button key={tab.key} type="button" aria-pressed={filter === tab.key} onClick={() => setFilter(tab.key)} className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] ${filter === tab.key ? "bg-[#f3bd55]/15 text-[#f3bd55]" : "text-white/45 hover:bg-white/5 hover:text-white"}`}>{tab.label}</button>
+                    <button key={tab.key} type="button" aria-pressed={filter === tab.key} onClick={() => setFilter(tab.key)} className={`flex-1 whitespace-nowrap rounded-lg px-2.5 py-2 text-xs sm:px-3 font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] ${filter === tab.key ? "bg-[#f3bd55]/15 text-[#f3bd55]" : "text-white/45 hover:bg-white/5 hover:text-white"}`}>{tab.label}</button>
                   ))}
                 </div>
                 <div className="relative xl:w-72">
