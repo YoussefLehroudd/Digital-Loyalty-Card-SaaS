@@ -337,6 +337,16 @@ async function ensureSchema(sql: Sql) {
         read_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY (user_id, reward_redemption_id)
       )`;
+      await sql`CREATE TABLE IF NOT EXISTS customer_notifications (
+        id text PRIMARY KEY,
+        customer_id uuid NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+        type text NOT NULL,
+        title text NOT NULL,
+        message text NOT NULL,
+        reward_id uuid REFERENCES reward_redemptions(id) ON DELETE CASCADE,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_customer_notifications_customer_created ON customer_notifications(customer_id, created_at DESC)`;
       await sql`CREATE TABLE IF NOT EXISTS customer_notification_reads (
         user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
         notification_key text NOT NULL,
@@ -933,15 +943,17 @@ async function handleRealtimeVersion(req: Request, sql: Sql) {
     const rows = (await sql`
       SELECT
         GREATEST(
+          COALESCE((SELECT max(n.created_at) FROM customer_notifications n JOIN customers c ON c.id = n.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz),
           COALESCE((SELECT max(c.updated_at) FROM customers c WHERE c.user_id = ${userId}), 'epoch'::timestamptz),
           COALESCE((SELECT max(cl.updated_at) FROM customer_loyalties cl JOIN customers c ON c.id = cl.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz),
           COALESCE((SELECT max(v.created_at) FROM visits v JOIN customers c ON c.id = v.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz),
           COALESCE((SELECT max(COALESCE(r.redeemed_at, r.earned_at)) FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz)
         ) AS changed_at,
+        (SELECT count(*)::int FROM customer_notifications n JOIN customers c ON c.id = n.customer_id WHERE c.user_id = ${userId}) AS notifications_count,
         (SELECT count(*)::int FROM customers WHERE user_id = ${userId}) AS cards_count,
         (SELECT count(*)::int FROM visits v JOIN customers c ON c.id = v.customer_id WHERE c.user_id = ${userId}) AS visits_count,
         (SELECT count(*)::int FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE c.user_id = ${userId}) AS rewards_count
-    `) as Array<{ changed_at: string; cards_count: number; visits_count: number; rewards_count: number }>;
+    `) as Array<{ changed_at: string; cards_count: number; visits_count: number; rewards_count: number; notifications_count: number }>;
     return json({ version: rows[0] });
   }
 
@@ -1341,6 +1353,12 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
         SET current_stamps = GREATEST(0, current_stamps - ${card.required_stamps}), updated_at = now()
         WHERE id = ${current.id} AND EXISTS (SELECT 1 FROM redeemed)
         RETURNING current_stamps
+      ),
+      notification_insert AS (
+        INSERT INTO customer_notifications (id, customer_id, type, title, message, reward_id)
+        SELECT CONCAT('reward_redeemed-', r.id::text), ${customer.id}, 'reward_redeemed', 'Reward redeemed',
+               ${"Your reward (" + card.reward_name + ") at " + auth.business.name + " was redeemed. Start collecting stamps for your next reward."}, r.id
+        FROM redeemed r
       )
       SELECT r.id, l.current_stamps FROM redeemed r CROSS JOIN loyalty_update l
     `) as Array<{ id: string; current_stamps: number }>;
@@ -1378,6 +1396,19 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
           WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready'
         )
       RETURNING id
+    ),
+    stamp_notification AS (
+      INSERT INTO customer_notifications (id, customer_id, type, title, message)
+      SELECT CONCAT('stamp_added-', v.id::text), ${customer.id}, 'stamp_added', 'Stamp added',
+             CONCAT('You received a stamp at ', ${auth.business.name}::text, '. ',
+                    lu.current_stamps::text, '/', ${card.required_stamps}::text, ' stamps collected.')
+      FROM visit_insert v CROSS JOIN loyalty_update lu
+    ),
+    reward_notification AS (
+      INSERT INTO customer_notifications (id, customer_id, type, title, message, reward_id)
+      SELECT CONCAT('reward_ready-', r.id::text), ${customer.id}, 'reward_ready', 'Reward unlocked',
+             ${"You collected " + card.required_stamps + "/" + card.required_stamps + " stamps at " + auth.business.name + ". Your reward (" + card.reward_name + ") is unlocked and ready to redeem."}, r.id
+      FROM reward_insert r
     )
     SELECT lu.*, EXISTS (SELECT 1 FROM reward_insert) AS redemption_created
     FROM loyalty_update lu
@@ -1646,34 +1677,37 @@ async function syncGoogleWalletBusiness(sql: Sql, businessId: string) {
 async function customerNotificationEvents(sql: Sql, userId: string) {
   return (await sql`
     WITH events AS (
-      SELECT CONCAT('stamp_added-', v.id::text) AS id, 'stamp_added' AS type,
-             'Stamp added' AS title, CONCAT('You received a stamp at ', b.name, '.') AS message,
-             v.created_at, NULL::uuid AS reward_id
-      FROM visits v
-      JOIN customers c ON c.id = v.customer_id
-      JOIN businesses b ON b.id = v.business_id
+      SELECT n.id, n.type, n.title, n.message, n.created_at, n.reward_id
+      FROM customer_notifications n
+      JOIN customers c ON c.id = n.customer_id
       WHERE c.user_id = ${userId}
       UNION ALL
-      SELECT CONCAT('reward_ready-', r.id::text), 'reward_ready', 'Reward ready',
+      -- Retain real reward history from before event notifications were introduced.
+      -- Future-dated seed records must not bury new customer notifications.
+      SELECT CONCAT('reward_ready-', r.id::text), 'reward_ready', 'Reward unlocked',
              CONCAT('You unlocked a reward at ', b.name, '.'), r.earned_at, r.id
       FROM reward_redemptions r
       JOIN customers c ON c.id = r.customer_id
       JOIN businesses b ON b.id = r.business_id
-      WHERE c.user_id = ${userId}
+      WHERE c.user_id = ${userId} AND r.earned_at <= now()
+        AND NOT EXISTS (SELECT 1 FROM customer_notifications n WHERE n.id = CONCAT('reward_ready-', r.id::text))
       UNION ALL
       SELECT CONCAT('reward_redeemed-', r.id::text), 'reward_redeemed', 'Reward redeemed',
              CONCAT('Your reward at ', b.name, ' was redeemed.'), r.redeemed_at, r.id
       FROM reward_redemptions r
       JOIN customers c ON c.id = r.customer_id
       JOIN businesses b ON b.id = r.business_id
-      WHERE c.user_id = ${userId} AND r.redeemed_at IS NOT NULL
+      WHERE c.user_id = ${userId} AND r.redeemed_at <= now()
+        AND NOT EXISTS (SELECT 1 FROM customer_notifications n WHERE n.id = CONCAT('reward_redeemed-', r.id::text))
     )
     SELECT e.id, e.type, e.title, e.message, e.created_at::text,
            (cr.notification_key IS NOT NULL OR COALESCE(nr.read_at >= e.created_at, false)) AS read
     FROM events e
     LEFT JOIN customer_notification_reads cr ON cr.user_id = ${userId} AND cr.notification_key = e.id
     LEFT JOIN notification_reads nr ON nr.user_id = ${userId} AND nr.reward_redemption_id = e.reward_id
-    ORDER BY e.created_at DESC, e.id DESC LIMIT 100
+    ORDER BY e.created_at DESC,
+             CASE e.type WHEN 'reward_ready' THEN 2 WHEN 'reward_redeemed' THEN 1 ELSE 0 END DESC,
+             e.id DESC LIMIT 100
   `) as Array<{ id: string; type: string; title: string; message: string; created_at: string; read: boolean }>;
 }
 

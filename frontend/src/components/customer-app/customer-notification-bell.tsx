@@ -47,11 +47,11 @@ export function CustomerNotificationBell() {
     const poll = async () => {
       if (cancelled) return;
       if (document.visibilityState === "visible") await refresh();
-      if (!cancelled) timer = window.setTimeout(poll, 1500);
+      if (!cancelled) timer = window.setTimeout(poll, 1000);
     };
     setLoading(true);
     void refresh();
-    timer = window.setTimeout(poll, 1500);
+    timer = window.setTimeout(poll, 1000);
     const channel = echo?.private("customer");
     const onChange = () => { void refresh(); };
     channel?.listen("data.changed", onChange);
