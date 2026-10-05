@@ -596,7 +596,7 @@ async function sendLoyvanceEmail(options: { to: string; subject: string; html: s
     return false;
   }
   const domain = process.env.RESEND_DOMAIN || "youssefhrd.com";
-  const from = `LOYVANCE <hello@${domain}>`;
+  const from = process.env.RESEND_FROM_EMAIL || `LOYVANCE <hello@${domain}>`;
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -646,12 +646,12 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     `;
     const sent = await sendLoyvanceEmail({
       to: businessEmail,
-      subject: "Your LOYVANCE verification code",
+      subject: `${code} is your LOYVANCE code`,
       category: "security",
       html: loyvanceEmailTemplate({
-        title: "Verify your business email",
-        preheader: "Use this code to confirm your email address.",
-        message: "Use the code below to confirm your email address and continue setting up your business account.",
+        title: "Confirm your email",
+        preheader: `${code} is your LOYVANCE verification code.`,
+        message: "Enter this code in LOYVANCE to confirm your email address.",
         code,
         footerNote: "If you did not start this registration, no action is needed.",
       }),
@@ -880,13 +880,13 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const resetUrl = `${origin}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     await sendLoyvanceEmail({
       to: email,
-      subject: "Reset your LOYVANCE password",
+      subject: "LOYVANCE password reset",
       category: "security",
       html: loyvanceEmailTemplate({
         title: "Reset your password",
-        preheader: "Use this link to reset your password.",
+        preheader: "Password reset link for your LOYVANCE account.",
         greeting: user.name,
-        message: "A password reset was requested for your account. Use the button below within 30 minutes.",
+        message: "We received a request to reset your password. This link is available for 30 minutes.",
         actionLabel: "Reset password",
         actionUrl: resetUrl,
         footerNote: "If you did not request a password reset, you can safely ignore this email. Your password will not change.",
