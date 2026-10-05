@@ -322,6 +322,15 @@ async function ensureSchema(sql: Sql) {
         reset_at timestamptz NOT NULL
       )`;
       await sql`CREATE INDEX IF NOT EXISTS idx_api_rate_limits_reset_at ON api_rate_limits(reset_at)`;
+      await sql`CREATE TABLE IF NOT EXISTS business_email_verifications (
+        email text PRIMARY KEY,
+        code_hash text NOT NULL,
+        payload jsonb NOT NULL,
+        attempts integer NOT NULL DEFAULT 0,
+        expires_at timestamptz NOT NULL,
+        created_at timestamptz DEFAULT now()
+      )`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_business_email_verifications_expires ON business_email_verifications(expires_at)`;
       await sql`CREATE TABLE IF NOT EXISTS notification_reads (
         user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
         reward_redemption_id uuid NOT NULL REFERENCES reward_redemptions(id) ON DELETE CASCADE,
@@ -574,7 +583,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     if (limited) return limited;
     const body = await readJson(req);
     const businessName = asString(body.business_name);
-    const businessEmail = asString(body.business_email);
+    const businessEmail = asString(body.business_email).toLowerCase();
     const name = asString(body.name);
     const email = asString(body.email).toLowerCase();
     const password = asString(body.password);
@@ -586,38 +595,63 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     if (password !== passwordConfirmation) {
       return error("Password confirmation does not match.", 422, { password_confirmation: ["Password confirmation does not match."] });
     }
-
     const duplicate = ((await sql`SELECT id FROM app_users WHERE email = ${email} LIMIT 1`) as Array<{ id: string }>)[0];
     if (duplicate) return error("This email is already registered.", 422, { email: ["This email is already registered."] });
 
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = (await import("crypto")).createHash("sha256").update(code).digest("hex");
+    const payload = { business_name: businessName, business_email: businessEmail, name, email, password, password_confirmation: passwordConfirmation };
+    await sql`
+      INSERT INTO business_email_verifications (email, code_hash, payload, attempts, expires_at, created_at)
+      VALUES (${businessEmail}, ${codeHash}, ${JSON.stringify(payload)}::jsonb, 0, now() + interval '10 minutes', now())
+      ON CONFLICT (email) DO UPDATE SET code_hash = EXCLUDED.code_hash, payload = EXCLUDED.payload, attempts = 0, expires_at = EXCLUDED.expires_at, created_at = now()
+    `;
+    const sent = await sendTransactionalEmail({
+      to: businessEmail,
+      subject: "Your LOYVANCE verification code",
+      category: "security",
+      html: `<div style="font-family:Arial,sans-serif;background:#0b0c09;color:#fff;padding:32px"><div style="max-width:520px;margin:auto;border:1px solid #5f491e;border-radius:18px;padding:28px;background:#11120f"><div style="color:#f4c45e;font-weight:700">LOYVANCE</div><h2 style="margin:12px 0">Verify your business email</h2><p style="color:#bdb8ad">Use this code to finish creating your business account. It expires in 10 minutes.</p><div style="font-size:36px;letter-spacing:10px;font-weight:800;color:#ffd36b;margin:26px 0">${code}</div><p style="color:#817c72;font-size:12px">If you did not request this code, you can ignore this email.</p></div></div>`,
+    });
+    if (!sent) return error("We could not send the verification email. Try again.", 503);
+    return json({ verification_required: true, email: businessEmail, expires_in: 600 }, { status: 202 });
+  }
+
+  if (path[1] === "verify-business-email" && req.method === "POST") {
+    const limited = await rateLimit(sql, req, "business-email-verify", 12, 15 * 60 * 1000);
+    if (limited) return limited;
+    const body = await readJson(req);
+    const businessEmail = asString(body.email).toLowerCase();
+    const code = asString(body.code).replace(/\D/g, "").slice(0, 6);
+    const rows = (await sql`SELECT * FROM business_email_verifications WHERE email = ${businessEmail} LIMIT 1`) as Array<{ code_hash: string; payload: JsonRecord; attempts: number; expires_at: string }>;
+    const verification = rows[0];
+    if (!verification || new Date(verification.expires_at).getTime() < Date.now()) return error("This code has expired. Request a new one.", 422);
+    if (verification.attempts >= 5) return error("Too many incorrect attempts. Request a new code.", 429);
+    const codeHash = (await import("crypto")).createHash("sha256").update(code).digest("hex");
+    if (code.length !== 6 || codeHash !== verification.code_hash) {
+      await sql`UPDATE business_email_verifications SET attempts = attempts + 1 WHERE email = ${businessEmail}`;
+      return error("Incorrect verification code.", 422);
+    }
+    const payload = verification.payload;
+    const businessName = asString(payload.business_name);
+    const name = asString(payload.name);
+    const email = asString(payload.email).toLowerCase();
+    const password = asString(payload.password);
+    const duplicate = ((await sql`SELECT id FROM app_users WHERE email = ${email} LIMIT 1`) as Array<{ id: string }>)[0];
+    if (duplicate) return error("This email is already registered.", 422);
     const businessId = randomUUID();
     const userId = randomUUID();
     const passwordHash = await hashPassword(password);
     const slug = `${slugify(businessName)}-${randomBytes(2).toString("hex")}`;
-
     const token = randomBytes(32).toString("hex");
     const cardId = randomUUID();
     const [businessRows, userRows] = await sql.transaction([
-      sql`
-        INSERT INTO businesses (id, slug, name, email, primary_color)
-        VALUES (${businessId}, ${slug}, ${businessName}, ${businessEmail}, '#111827')
-        RETURNING *
-      `,
-      sql`
-        INSERT INTO app_users (id, business_id, name, email, password_hash, role)
-        VALUES (${userId}, ${businessId}, ${name}, ${email}, ${passwordHash}, 'business_owner')
-        RETURNING *
-      `,
-      sql`
-        INSERT INTO loyalty_cards (id, business_id, reward_name, required_stamps, reward_description)
-        VALUES (${cardId}, ${businessId}, 'Free Coffee', 10, 'Collect stamps to unlock your reward.')
-      `,
+      sql`INSERT INTO businesses (id, slug, name, email, primary_color) VALUES (${businessId}, ${slug}, ${businessName}, ${businessEmail}, '#111827') RETURNING *`,
+      sql`INSERT INTO app_users (id, business_id, name, email, password_hash, role) VALUES (${userId}, ${businessId}, ${name}, ${email}, ${passwordHash}, 'business_owner') RETURNING *`,
+      sql`INSERT INTO loyalty_cards (id, business_id, reward_name, required_stamps, reward_description) VALUES (${cardId}, ${businessId}, 'Free Coffee', 10, 'Collect stamps to unlock your reward.')`,
       sql`INSERT INTO user_sessions (token, user_id) VALUES (${token}, ${userId})`,
+      sql`DELETE FROM business_email_verifications WHERE email = ${businessEmail}`,
     ]);
-    const business = (businessRows as DbBusiness[])[0];
-    const user = (userRows as DbUser[])[0];
-
-    return json({ token, token_type: "Bearer", user: publicUser(user, business) }, { status: 201 });
+    return json({ token, token_type: "Bearer", user: publicUser((userRows as DbUser[])[0], (businessRows as DbBusiness[])[0]) }, { status: 201 });
   }
 
   if (path[1] === "login" && req.method === "POST") {
