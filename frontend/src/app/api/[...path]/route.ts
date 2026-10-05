@@ -542,26 +542,48 @@ function loyvanceEmailTemplate(options: { title: string; preheader: string; gree
   const safeTitle = escapeEmailHtml(options.title);
   const safeMessage = escapeEmailHtml(options.message);
   const greeting = options.greeting
-    ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:#e8e5dc">Hi ${escapeEmailHtml(options.greeting)},</p>`
+    ? `<p style="margin:0 0 12px;font-size:15px;line-height:24px;color:#e8e5dc">Hi ${escapeEmailHtml(options.greeting)},</p>`
     : "";
   const action = options.actionLabel && options.actionUrl
-    ? `<tr><td style="padding:4px 24px 28px;text-align:center"><a href="${escapeEmailHtml(options.actionUrl)}" style="display:inline-block;box-sizing:border-box;min-width:190px;background:#e9b949;color:#17140d;text-decoration:none;font-size:14px;line-height:20px;font-weight:700;padding:13px 20px;border-radius:12px">${escapeEmailHtml(options.actionLabel)}</a></td></tr>`
+    ? `<tr><td align="center" style="padding:2px 24px 28px"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td bgcolor="#e7b354" style="border-radius:10px"><a href="${escapeEmailHtml(options.actionUrl)}" style="display:inline-block;padding:13px 22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:20px;font-weight:700;color:#17140d;text-decoration:none;border-radius:10px">${escapeEmailHtml(options.actionLabel)}</a></td></tr></table></td></tr>`
     : "";
-  const code = options.code
-    ? `<tr><td style="padding:4px 18px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="border:1px solid #4c4024;background:#15150f;border-radius:14px;padding:18px 8px"><div style="font-family:Arial,sans-serif;font-size:clamp(26px,8vw,38px);line-height:1;font-weight:800;letter-spacing:clamp(5px,2vw,10px);white-space:nowrap;color:#f2c55c">${escapeEmailHtml(options.code)}</div></td></tr></table></td></tr>`
+  const digits = options.code ? escapeEmailHtml(options.code).split("") : [];
+  const code = digits.length
+    ? `<tr><td style="padding:4px 16px 28px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;table-layout:fixed"><tr>${digits.map((digit, index) => `<td width="${Math.floor(100 / digits.length)}%" align="center" style="padding:${index === 0 ? "0 3px 0 0" : index === digits.length - 1 ? "0 0 0 3px" : "0 3px"}"><div style="box-sizing:border-box;width:100%;min-width:0;padding:14px 2px;border:1px solid #5a4824;border-radius:10px;background:#171710;font-family:Arial,Helvetica,sans-serif;font-size:26px;line-height:30px;font-weight:800;color:#f2c55c;text-align:center">${digit}</div></td>`).join("")}</tr></table><p style="margin:10px 0 0;text-align:center;font-size:11px;line-height:17px;color:#817b6e">This code expires in 10 minutes.</p></td></tr>`
     : "";
+
   return `<!doctype html>
-<html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head>
-<body style="margin:0;padding:0;background:#0b0c09;font-family:Arial,Helvetica,sans-serif;color:#ffffff;-webkit-text-size-adjust:100%">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeEmailHtml(options.preheader)}</div>
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#0b0c09"><tr><td align="center" style="padding:20px 12px">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:560px;border-collapse:separate;background:#11120f;border:1px solid #383323;border-radius:18px;overflow:hidden">
-<tr><td style="padding:22px 24px;border-bottom:1px solid #2b281e"><div style="font-size:20px;line-height:24px;font-weight:800;letter-spacing:.7px;color:#f2c55c">LOYVANCE</div><div style="margin-top:4px;font-size:12px;line-height:18px;color:#969184">Digital loyalty, made simple.</div></td></tr>
-<tr><td style="padding:28px 24px 14px"><h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;font-weight:750;color:#ffffff">${safeTitle}</h1>${greeting}<p style="margin:0;font-size:15px;line-height:1.65;color:#bbb7ac">${safeMessage}</p></td></tr>
-${code}${action}
-<tr><td style="padding:0 24px 26px"><p style="margin:0;font-size:12px;line-height:1.6;color:#858176">${escapeEmailHtml(options.footerNote ?? "This message was sent by LOYVANCE for your account.")}</p></td></tr>
-<tr><td style="padding:16px 24px;border-top:1px solid #2b281e;font-size:11px;line-height:17px;color:#6f6b62">© ${new Date().getFullYear()} LOYVANCE</td></tr>
-</table></td></tr></table></body></html>`;
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>${safeTitle}</title>
+</head>
+<body style="margin:0;padding:0;width:100%;background:#090a08;font-family:Arial,Helvetica,sans-serif;color:#ffffff;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all">${escapeEmailHtml(options.preheader)}</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#090a08" style="width:100%;margin:0;padding:0;background:#090a08">
+<tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#11120f" style="width:100%;max-width:560px;background:#11120f;border:1px solid #373122;border-radius:18px;border-collapse:separate;overflow:hidden">
+<tr><td style="padding:22px 24px;border-bottom:1px solid #2b281e">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
+<td><div style="font-size:20px;line-height:24px;font-weight:800;letter-spacing:.8px;color:#f2c55c">LOYVANCE</div><div style="margin-top:3px;font-size:11px;line-height:17px;color:#8e897d">Digital loyalty, made simple.</div></td>
+<td align="right" valign="top"><div style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e7b354"></div></td>
+</tr></table>
+</td></tr>
+<tr><td style="padding:28px 24px 18px">
+<h1 style="margin:0 0 14px;font-size:24px;line-height:31px;font-weight:750;color:#ffffff">${safeTitle}</h1>
+${greeting}
+<p style="margin:0;font-size:15px;line-height:24px;color:#bbb7ac">${safeMessage}</p>
+</td></tr>
+${code}
+${action}
+<tr><td style="padding:0 24px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td style="padding-top:16px;border-top:1px solid #29271f"><p style="margin:0;font-size:12px;line-height:19px;color:#858176">${escapeEmailHtml(options.footerNote ?? "This email relates to activity on your LOYVANCE account.")}</p></td></tr></table></td></tr>
+<tr><td style="padding:15px 24px;border-top:1px solid #29271f"><p style="margin:0;font-size:11px;line-height:17px;color:#68645b">© ${new Date().getFullYear()} LOYVANCE · Account message</p></td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 }
 async function sendLoyvanceEmail(options: { to: string; subject: string; html: string; category?: "security" | "support" | "notifications" }) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -626,7 +648,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     `;
     const sent = await sendLoyvanceEmail({
       to: businessEmail,
-      subject: "Your LOYVANCE verification code",
+      subject: "LOYVANCE email verification",
       category: "security",
       html: loyvanceEmailTemplate({
         title: "Verify your business email",
@@ -860,7 +882,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const resetUrl = `${origin}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     await sendLoyvanceEmail({
       to: email,
-      subject: "Reset your LOYVANCE password",
+      subject: "LOYVANCE password reset",
       category: "security",
       html: loyvanceEmailTemplate({
         title: "Reset your password",
