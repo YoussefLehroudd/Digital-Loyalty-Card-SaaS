@@ -1,6 +1,7 @@
 import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
+import { appleWalletAvailable, createAppleWalletLink, ensureAppleWalletSchema, handleAppleWallet, syncAppleWalletCustomer } from "@/lib/server/apple-wallet";
 
 export const runtime = "nodejs";
 
@@ -331,6 +332,7 @@ async function ensureSchema(sql: Sql) {
         created_at timestamptz DEFAULT now()
       )`;
       await sql`CREATE INDEX IF NOT EXISTS idx_business_email_verifications_expires ON business_email_verifications(expires_at)`;
+      await ensureAppleWalletSchema(sql);
       await sql`CREATE TABLE IF NOT EXISTS notification_reads (
         user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
         reward_redemption_id uuid NOT NULL REFERENCES reward_redemptions(id) ON DELETE CASCADE,
@@ -1542,6 +1544,7 @@ function googleWalletStampStrip(current: number, required: number) {
 }
 
 async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
+  await syncAppleWalletCustomer(sql, customerId);
   try {
     const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID?.trim();
     if (!issuerId) return;
@@ -1820,6 +1823,12 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       return json({ message: notificationId ? "Notification marked as read." : "Notifications marked as read." });
     }
     return json({ data: events });
+  }
+
+  if (path[1] === "wallet" && path[2] === "apple") {
+    if (path[3] === "status" && req.method === "GET") return json({ available: appleWalletAvailable() });
+    if (path[3] && req.method === "POST") return createAppleWalletLink(sql, path[3], auth.user.id);
+    return error("API route not found.", 404);
   }
 
   const memberships = (await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.user_id = ${auth.user.id} ORDER BY c.created_at DESC`) as DbCustomer[];
@@ -2142,7 +2151,8 @@ async function dispatch(req: Request, context: RouteContext) {
     const path = params.path ?? [];
 
     let response: Response | null = null;
-    if (path[0] === "auth") response = await handleAuth(path, req, sql);
+    if (path[0] === "apple-wallet") response = await handleAppleWallet(path, req, sql);
+    else if (path[0] === "auth") response = await handleAuth(path, req, sql);
     else if (path[0] === "dashboard") response = await handleDashboard(path, req, sql);
     else if (path[0] === "realtime-version") response = await handleRealtimeVersion(req, sql);
     else if (path[0] === "business") response = await handleBusiness(path, req, sql);
@@ -2159,3 +2169,4 @@ async function dispatch(req: Request, context: RouteContext) {
     return error(message, 500);
   }
 }
+

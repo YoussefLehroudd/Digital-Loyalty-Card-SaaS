@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Gift, Info, QrCode, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 
 import type { CustomerCardItem } from "@/lib/customerAuth";
-import { customerDeleteCard, customerGoogleWalletLink } from "@/lib/customerAuth";
+import { customerAppleWalletLink, customerAppleWalletStatus, customerDeleteCard, customerGoogleWalletLink } from "@/lib/customerAuth";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 
 import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
@@ -59,6 +60,18 @@ export function CustomerCardCarousel({
   const touchDeltaY = useRef(0);
   const [deleting, setDeleting] = useState(false);
   const [addingToWallet, setAddingToWallet] = useState(false);
+  const [addingToAppleWallet, setAddingToAppleWallet] = useState(false);
+  const [appleWalletUrl, setAppleWalletUrl] = useState<string | null>(null);
+  const [appleWalletReady, setAppleWalletReady] = useState(false);
+  useEffect(() => {
+    if (!token || dashboardMode) return;
+    let cancelled = false;
+    setAppleWalletReady(false);
+    void customerAppleWalletStatus(token)
+      .then((res) => { if (!cancelled) setAppleWalletReady(res.available); })
+      .catch(() => { if (!cancelled) setAppleWalletReady(false); });
+    return () => { cancelled = true; };
+  }, [token, dashboardMode]);
 
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const showToast = (t: { type: "success" | "error"; message: string }) => {
@@ -179,6 +192,18 @@ export function CustomerCardCarousel({
       });
       setAddingToWallet(false);
     }
+  };
+
+  const handleAppleWallet = async () => {
+    if (!token || !current || !appleWalletReady || addingToAppleWallet) return;
+    setAddingToAppleWallet(true);
+    try {
+      const { url } = await customerAppleWalletLink(token, current.id);
+      if (/iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent)) window.location.assign(url);
+      else setAppleWalletUrl(url);
+    } catch (err) {
+      showToast({ type: "error", message: err instanceof Error ? err.message : "Could not open Apple Wallet." });
+    } finally { setAddingToAppleWallet(false); }
   };
 
   if (!cards.length || !current) {
@@ -410,6 +435,23 @@ export function CustomerCardCarousel({
               </button>
               {addingToWallet ? <p role="status" className="text-xs text-white/70">Opening Google Wallet...</p> : null}
             </div>
+            <div className="flex flex-col items-center gap-2 p-2 lg:px-0">
+              <button
+                type="button"
+                className="flex h-[50px] w-[283px] max-w-full items-center justify-center rounded-xl border border-white/45 bg-black p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#10110f] disabled:cursor-default"
+                onClick={() => void handleAppleWallet()}
+                disabled={!appleWalletReady || addingToAppleWallet}
+                aria-label={appleWalletReady ? "Add to Apple Wallet" : "Apple Wallet — coming soon"}
+                aria-describedby="apple-wallet-availability"
+                aria-busy={addingToAppleWallet}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/add-to-apple-wallet.svg" alt="Add to Apple Wallet" className="block h-[42px] w-auto max-w-full" />
+              </button>
+              <p id="apple-wallet-availability" role="status" className="text-center text-xs text-white/60">
+                {addingToAppleWallet ? "Opening Apple Wallet..." : appleWalletReady ? "Open on iPhone to add your card." : "Coming soon"}
+              </p>
+            </div>
             <Button
               type="button"
               variant="ghost"
@@ -425,6 +467,23 @@ export function CustomerCardCarousel({
       </div>
 
 
+
+      <Modal
+        isOpen={Boolean(appleWalletUrl)}
+        onClose={() => setAppleWalletUrl(null)}
+        title="Add to Apple Wallet"
+        description="Scan this QR code with your iPhone camera to add your loyalty card."
+      >
+        {appleWalletUrl ? (
+          <div className="flex flex-col items-center gap-4 py-3">
+            <div className="rounded-2xl bg-white p-4">
+              <QRCodeSVG value={appleWalletUrl} size={192} level="M" title="Open your loyalty card in Apple Wallet" />
+            </div>
+            <p className="text-center text-sm text-muted-foreground">This private link expires in 15 minutes.</p>
+            <a href={appleWalletUrl} className="text-sm font-medium text-[#ffd369] underline underline-offset-4">Download the pass</a>
+          </div>
+        ) : null}
+      </Modal>
 
       <Modal
         isOpen={confirmDeleteOpen}

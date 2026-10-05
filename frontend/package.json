@@ -15,18 +15,20 @@
     "@zxing/library": "^0.21.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "laravel-echo": "^2.4.0",
     "lucide-react": "^1.25.0",
     "next": "15.5.20",
     "next-themes": "^0.4.6",
+    "passkit-generator": "^3.6.1",
+    "pusher-js": "^8.6.0",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.81.0",
+    "sharp": "^0.35.5",
     "tailwind-merge": "^3.6.0",
-    "zod": "^4.4.3",
-    "laravel-echo": "^2.4.0",
-    "pusher-js": "^8.6.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

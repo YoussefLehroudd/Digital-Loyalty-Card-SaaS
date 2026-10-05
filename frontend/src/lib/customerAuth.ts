@@ -342,3 +342,12 @@ export function defaultCustomerPreferences(
     },
   };
 }
+
+export function customerAppleWalletStatus(token: string) {
+  return apiFetch<{ available: boolean }>("/user/wallet/apple/status", { token, cache: "no-store" });
+}
+
+export function customerAppleWalletLink(token: string, membershipId: string) {
+  return apiFetch<{ url: string }>(`/user/wallet/apple/${membershipId}`, { method: "POST", token });
+}
+
