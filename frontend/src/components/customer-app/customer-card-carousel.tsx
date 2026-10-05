@@ -224,7 +224,7 @@ export function CustomerCardCarousel({
         </div>
       ) : null}
 
-      <div className={cn("space-y-4 overflow-visible px-3 pb-2 sm:px-5", !dashboardMode && "lg:pr-[310px]")}>
+      <div className={cn("space-y-4 overflow-visible px-3 pb-2 sm:px-5", !dashboardMode && "lg:pr-[310px] lg:space-y-2 lg:pb-0")}>
         <div
           key={`wallet-stage-${current.id}`}
           className={cn(
@@ -236,7 +236,7 @@ export function CustomerCardCarousel({
           )}
         >
           <div
-            className={cn("relative mx-auto w-full touch-pan-y select-none overscroll-contain [perspective:1500px]", "max-w-[300px] sm:max-w-[340px] lg:max-w-[380px]")}
+            className={cn("relative mx-auto w-full touch-pan-y select-none overscroll-contain [perspective:1500px]", "max-w-[300px] sm:max-w-[340px]", dashboardMode ? "lg:max-w-[380px]" : "lg:max-w-[340px]")}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
