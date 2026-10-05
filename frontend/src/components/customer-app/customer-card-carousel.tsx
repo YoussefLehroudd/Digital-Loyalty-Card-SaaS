@@ -389,7 +389,7 @@ export function CustomerCardCarousel({
             </Button>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5 lg:absolute lg:right-8 lg:top-[88px] lg:m-0 lg:w-[283px] lg:max-w-none lg:pt-0">
+          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5 lg:absolute lg:right-8 lg:top-[98px] lg:m-0 lg:w-[283px] lg:max-w-none lg:pt-0">
             <div className="flex flex-col items-center gap-2 p-2 lg:px-0">
               <button
                 type="button"
@@ -413,7 +413,7 @@ export function CustomerCardCarousel({
             <Button
               type="button"
               variant="ghost"
-              className="mx-auto h-11 rounded-xl px-5 text-rose-300/80 transition hover:bg-rose-500/10 hover:text-rose-200 focus-visible:ring-rose-300"
+              className="mx-auto h-11 rounded-xl px-5 lg:h-[50px] lg:w-[283px] lg:rounded-full lg:border lg:border-rose-400/25 lg:bg-rose-500/5 text-rose-300/80 transition hover:bg-rose-500/10 hover:text-rose-200 focus-visible:ring-rose-300"
               onClick={() => setConfirmDeleteOpen(true)}
               disabled={deleting}
             >
