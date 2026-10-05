@@ -103,13 +103,13 @@ export function CustomerNotificationBell() {
   };
 
   return (
-    <div ref={container} className="relative">
+    <div ref={container} className="static">
       <button type="button" ref={trigger} onClick={() => setOpen((value) => !value)} aria-label="Notifications" aria-expanded={open} aria-controls="customer-notifications-panel" className={cn(buttonVariants({ size: "icon", variant: "ghost" }), "relative border border-transparent lg:rounded-xl hover:border-[#d8a63f]/15 hover:bg-[#d79b16]/10 hover:text-[#ffc857]")}>
         <Bell className="h-5 w-5" />
         {unread > 0 ? <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f3bd55] px-1 text-[9px] font-black text-black shadow-[0_0_8px_rgba(243,189,85,.8)]">{Math.min(unread, 99)}</span> : null}
       </button>
       {open ? (
-        <section id="customer-notifications-panel" aria-label="Notifications" className="absolute right-0 top-12 z-50 w-[min(360px,calc(100vw-100px))] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#090a08]/[.98] shadow-2xl backdrop-blur-xl lg:w-[360px]">
+        <section id="customer-notifications-panel" aria-label="Notifications" className="absolute inset-x-3 top-full z-50 lg:left-auto lg:right-[max(2rem,calc((100%_-_1440px)/2_+_2rem))] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#090a08]/[.98] shadow-2xl backdrop-blur-xl lg:w-[360px]">
           <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
             <div className="min-w-0"><p className="font-bold text-white">Notifications</p><p className="text-xs text-white/45">Recent updates and reward alerts</p></div>
             {unread > 0 ? <button type="button" disabled={marking} onClick={() => void markRead()} className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#f3bd55] hover:bg-[#f3bd55]/10 disabled:opacity-50">Read all</button> : !loading && !error ? <span className="shrink-0 text-xs text-white/30">All read</span> : null}
