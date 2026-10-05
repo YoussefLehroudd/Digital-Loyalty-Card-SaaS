@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Gift, Info, QrCode, Trash2, WalletCards } from "lucide-react";
+import { ChevronLeft, ChevronRight, Gift, Info, QrCode, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import type { CustomerCardItem } from "@/lib/customerAuth";
@@ -390,15 +390,26 @@ export function CustomerCardCarousel({
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5">
-            <Button
-              type="button"
-              className="h-12 w-full rounded-xl border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] px-4 font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] transition hover:brightness-110 active:scale-[.98] focus-visible:ring-[#ffd36b] disabled:opacity-50"
-              onClick={() => void handleGoogleWallet()}
-              disabled={addingToWallet}
-            >
-              <WalletCards className="size-4 shrink-0" />
-              {addingToWallet ? "Opening Google Wallet..." : "Add to Google Wallet"}
-            </Button>
+            <div className="flex flex-col items-center gap-2 p-2">
+              <button
+                type="button"
+                className="block max-w-full cursor-pointer rounded-full bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#10110f] disabled:cursor-wait"
+                onClick={() => void handleGoogleWallet()}
+                disabled={addingToWallet}
+                aria-label="Add to Google Wallet"
+                aria-busy={addingToWallet}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/add-to-google-wallet.svg"
+                  alt="Add to Google Wallet"
+                  width={283}
+                  height={50}
+                  className="block h-auto w-[283px] max-w-full"
+                />
+              </button>
+              {addingToWallet ? <p role="status" className="text-xs text-white/70">Opening Google Wallet...</p> : null}
+            </div>
             <Button
               type="button"
               variant="ghost"
