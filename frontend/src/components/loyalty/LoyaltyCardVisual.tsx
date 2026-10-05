@@ -90,7 +90,7 @@ export default function LoyaltyCardVisual({
   const prevFilledRef = useRef<number>(0);
 
   const stampGoal = Math.max(1, Math.floor(requiredStamps || 1));
-  const maxSlots = 10;
+  const maxSlots = stampGoal;
 
   // Grid should represent CURRENT stamps, not only the goal.
   const normalizedCurrent = Math.max(0, Math.floor(currentStamps || 0));
@@ -302,7 +302,15 @@ export default function LoyaltyCardVisual({
             </span>
           </div>
 
-          <div className={dashboardCompact ? "mt-1 grid grid-cols-10 gap-1.5" : "mt-3 grid grid-cols-5 gap-2"}>
+          <div
+            className={dashboardCompact ? "mt-1 grid gap-1.5" : "mt-3 grid gap-2"}
+            style={{
+              // Reserve the original stamp area even when fewer slots are shown.
+              aspectRatio: dashboardCompact ? "10 / 1" : "5 / 2",
+              gridTemplateColumns: `repeat(${dashboardCompact ? Math.max(10, maxSlots) : Math.max(5, Math.ceil(maxSlots / 2))}, minmax(0, 1fr))`,
+              gridTemplateRows: dashboardCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+            }}
+          >
             {Array.from({ length: maxSlots }).map((_, index) => {
               const isFilled = index < filled;
 
@@ -310,7 +318,7 @@ export default function LoyaltyCardVisual({
                 return (
                   <div
                     key={index}
-                    className="aspect-square rounded-md border border-white/20"
+                    className="h-full min-h-0 rounded-md border border-white/20"
                     style={{
                       backgroundColor: isFilled ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.10)",
                     }}
@@ -327,7 +335,7 @@ export default function LoyaltyCardVisual({
                 <div
                   key={index}
                   className={[
-                    "relative aspect-square rounded-md border",
+                    "relative h-full min-h-0 rounded-md border",
                     isFilled ? "border-white/30" : "border-white/20",
                     shouldAnimate ? "scale-[1.08] opacity-100" : "scale-100",
                     shouldAnimate ? "shadow-[0_0_22px_rgba(255,255,255,0.55)]" : "shadow-none",

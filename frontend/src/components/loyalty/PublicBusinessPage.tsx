@@ -20,10 +20,8 @@ export function PublicBusinessPage({ businessSlug }: { businessSlug: string }) {
   useEffect(() => {
     let mounted = true;
 
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      setNotFound(false);
+    async function load(silent = false) {
+      if (!silent) { setIsLoading(true); setError(null); setNotFound(false); }
 
       try {
         const response = await getPublicBusinessBySlug(businessSlug);
@@ -31,7 +29,7 @@ export function PublicBusinessPage({ businessSlug }: { businessSlug: string }) {
         if (!mounted) return;
         setData(response);
       } catch (unknownError) {
-        if (!mounted) return;
+        if (!mounted || silent) return;
 
         if (unknownError instanceof ApiError && unknownError.status === 404) {
           setNotFound(true);
@@ -46,10 +44,16 @@ export function PublicBusinessPage({ businessSlug }: { businessSlug: string }) {
       }
     }
 
-    load();
-
+    let timer: number | undefined;
+    const poll = async (initial = false) => {
+      if (!mounted) return;
+      if (initial || document.visibilityState === "visible") await load(!initial);
+      if (mounted) timer = window.setTimeout(poll, 1500);
+    };
+    void poll(true);
     return () => {
       mounted = false;
+      if (timer !== undefined) window.clearTimeout(timer);
     };
   }, [businessSlug]);
 
@@ -176,13 +180,13 @@ export function PublicBusinessPage({ businessSlug }: { businessSlug: string }) {
                         {loyalty_card.reward_description ??
                           "No description provided."}
                       </p>
-                      <div className="mt-3 grid grid-cols-5 gap-2">
+                      <div className="mt-3 grid grid-cols-5 grid-rows-2 gap-2" style={{ aspectRatio: "5 / 2" }}>
                         {Array.from({
-                          length: Math.min(loyalty_card.required_stamps, 10),
+                          length: Math.max(1, Math.floor(loyalty_card.required_stamps)),
                         }).map((_, idx) => (
                           <div
                             key={idx}
-                            className="aspect-square rounded-md border border-white/20 bg-white/10"
+                            className="h-full min-h-0 rounded-md border border-white/20 bg-white/10"
                           />
                         ))}
                       </div>

@@ -223,7 +223,18 @@ function WalletInner({
     prevStampsRef.current = null;
     prevRewardUnlockedRef.current = null;
 
-    void reloadWallet(qrCode, false);
+    let cancelled = false;
+    let timer: number | undefined;
+    const poll = async (initial = false) => {
+      if (cancelled) return;
+      if (initial || document.visibilityState === "visible") await reloadWallet(qrCode, !initial);
+      if (!cancelled) timer = window.setTimeout(poll, 1500);
+    };
+    void poll(true);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qrCode]);
 
@@ -286,7 +297,7 @@ function WalletInner({
       ? 0
       : Math.min(100, Math.round((currentStamps / requiredStamps) * 100));
 
-    const stampCount = Math.max(1, Math.min(requiredStamps || 8, 16));
+    const stampCount = Math.max(1, Math.floor(requiredStamps || 1));
     const stampSlots = Array.from(
       { length: stampCount },
       (_, index) => index < currentStamps
@@ -430,11 +441,11 @@ function WalletInner({
                     ) : null}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-4 gap-2">
+                  <div className="mt-4 grid grid-cols-5 grid-rows-2 gap-2" style={{ aspectRatio: "5 / 2" }}>
                     {stampSlots.map((filled, index) => (
                       <div
                         key={index}
-                        className="flex aspect-square items-center justify-center rounded-md border border-white/30 bg-white/10"
+                        className="flex h-full min-h-0 items-center justify-center rounded-md border border-white/30 bg-white/10"
                       >
                         {filled ? (
                           <CheckCircle2 className="size-5 text-white" />

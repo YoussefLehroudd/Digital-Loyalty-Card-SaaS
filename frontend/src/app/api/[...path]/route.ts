@@ -951,11 +951,14 @@ async function handleRealtimeVersion(req: Request, sql: Sql) {
           COALESCE((SELECT max(v.created_at) FROM visits v JOIN customers c ON c.id = v.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz),
           COALESCE((SELECT max(COALESCE(r.redeemed_at, r.earned_at)) FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE c.user_id = ${userId}), 'epoch'::timestamptz)
         ) AS changed_at,
+        COALESCE((SELECT string_agg(lc.id || ':' || lc.updated_at::text || ':' || lc.required_stamps::text || ':' || b.updated_at::text, ',' ORDER BY lc.id)
+          FROM loyalty_cards lc JOIN businesses b ON b.id = lc.business_id
+          WHERE EXISTS (SELECT 1 FROM customers c WHERE c.business_id = b.id AND c.user_id = ${userId})), '') AS configuration_version,
         (SELECT count(*)::int FROM customer_notifications n JOIN customers c ON c.id = n.customer_id WHERE c.user_id = ${userId}) AS notifications_count,
         (SELECT count(*)::int FROM customers WHERE user_id = ${userId}) AS cards_count,
         (SELECT count(*)::int FROM visits v JOIN customers c ON c.id = v.customer_id WHERE c.user_id = ${userId}) AS visits_count,
         (SELECT count(*)::int FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id WHERE c.user_id = ${userId}) AS rewards_count
-    `) as Array<{ changed_at: string; cards_count: number; visits_count: number; rewards_count: number; notifications_count: number }>;
+    `) as Array<{ changed_at: string; configuration_version: string; cards_count: number; visits_count: number; rewards_count: number; notifications_count: number }>;
     return json({ version: rows[0] });
   }
 
@@ -1250,7 +1253,7 @@ async function handleLoyaltyCard(req: Request, sql: Sql) {
   if (req.method === "POST" || req.method === "PUT") {
     const body = await readJson(req);
     const rewardName = asString(body.reward_name, existing.reward_name);
-    const requiredStamps = Math.max(1, asNumber(body.required_stamps, existing.required_stamps));
+    const requiredStamps = Math.max(1, Math.min(10, Math.floor(asNumber(body.required_stamps, existing.required_stamps))));
     const rewardDescription = asNullableString(body.reward_description);
     const updated = ((await sql`
       UPDATE loyalty_cards SET reward_name = ${rewardName}, required_stamps = ${requiredStamps}, reward_description = ${rewardDescription}, updated_at = now()
@@ -1538,7 +1541,7 @@ async function upsertGoogleWallet(resource: "loyaltyClass" | "loyaltyObject", id
 
 
 function googleWalletStampStrip(current: number, required: number) {
-  const total = Math.max(1, Math.min(required, 20));
+  const total = Math.max(1, Math.floor(required));
   const filled = Math.max(0, Math.min(current, total));
   return Array.from({ length: total }, (_, i) => (i < filled ? "●" : "○")).join(" ");
 }
@@ -2016,7 +2019,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "businesses") {
-    return json({ data: cards.map((c) => ({ business: c.business, membership: c.membership, card: c.loyalty_card, loyalty_status: c.loyalty ?? { current_stamps: 0, progress_percent: 0, required_stamps: 10 } })) });
+    return json({ data: cards.map((c) => ({ business: c.business, membership: c.membership, card: c.loyalty_card, loyalty_status: c.loyalty ?? { current_stamps: 0, progress_percent: 0, required_stamps: c.loyalty_card?.required_stamps ?? 1 } })) });
   }
 
   if (path[1] === "rewards") {
