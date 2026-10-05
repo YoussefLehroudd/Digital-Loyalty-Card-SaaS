@@ -5,6 +5,7 @@ import { CreditCard, Gift, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
+import { CustomerPageSkeleton } from "@/components/customer-app/customer-skeletons";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { CustomerCardCarousel } from "@/components/customer-app/customer-card-carousel";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
@@ -115,11 +116,7 @@ export default function UserDashboardPage() {
       ) : null}
 
       {loading ? (
-        <div className="space-y-3">
-          <Card className="border-[#d8a63f]/15 bg-[linear-gradient(145deg,rgba(18,19,16,.88),rgba(10,11,9,.82))] shadow-[0_12px_32px_rgba(0,0,0,.18)]">
-            <CardContent className="p-4 text-sm text-muted-foreground">Loading dashboard...</CardContent>
-          </Card>
-        </div>
+        <CustomerPageSkeleton variant="dashboard" />
       ) : (
         <div className="mx-auto max-w-[1440px] space-y-5 lg:space-y-7">
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4 lg:gap-3">

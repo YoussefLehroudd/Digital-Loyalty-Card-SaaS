@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, Gift, Loader2 } from "lucide-react";
+import { Building2, Gift } from "lucide-react";
 
 import { PublicCustomerRegisterForm } from "@/components/loyalty/PublicCustomerRegisterForm";
 import { Alert } from "@/components/ui/alert";
@@ -233,10 +233,7 @@ function PublicBusinessPageSkeleton() {
 
         <Card>
           <CardContent className="space-y-4 p-6">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              Loading registration form...
-            </div>
+            <Skeleton aria-hidden="true" className="h-5 w-2/3" />
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { CustomerPageSkeleton } from "@/components/customer-app/customer-skeletons";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
@@ -64,7 +65,7 @@ export default function UserJoinPage() {
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             {loading ? (
-              <p className="text-sm text-muted-foreground">Adding card…</p>
+              <CustomerPageSkeleton variant="join" />
             ) : null}
           </CardContent>
         </Card>

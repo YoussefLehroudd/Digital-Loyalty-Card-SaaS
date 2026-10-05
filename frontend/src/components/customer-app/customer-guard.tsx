@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
+import { CustomerPageLoading } from "@/components/customer-app/customer-page-loading";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 
 const PUBLIC_USER_ROUTES = new Set(["/user/login", "/user/register"]);
@@ -29,9 +30,7 @@ export function CustomerGuard({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="mx-auto flex min-h-dvh w-full max-w-md items-center justify-center px-4">
-        <p className="text-sm text-muted-foreground">Loading your account...</p>
-      </div>
+      <CustomerPageLoading />
     );
   }
 

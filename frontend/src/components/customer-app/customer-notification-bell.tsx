@@ -1,5 +1,6 @@
 "use client";
 
+import { CustomerListSkeleton } from "@/components/customer-app/customer-skeletons";
 import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
@@ -116,7 +117,7 @@ export function CustomerNotificationBell() {
           </div>
           <div className="max-h-[min(420px,calc(100dvh-180px))] overflow-y-auto overscroll-contain p-2" onWheel={(event) => event.stopPropagation()} onTouchMove={(event) => event.stopPropagation()}>
             {error ? <div role="alert" className="px-3 py-2 text-xs text-rose-300">{error}<button type="button" onClick={() => void refreshRef.current()} className="ml-2 underline">Retry</button></div> : null}
-            {loading ? <p role="status" className="px-3 py-8 text-center text-sm text-white/40">Loading notifications...</p> : items.length ? items.map((item) => (
+            {loading ? <CustomerListSkeleton rows={3} /> : items.length ? items.map((item) => (
               <button key={item.id} type="button" disabled={marking} onClick={() => { if (!item.read) void markRead(item.id); }} className={`block w-full rounded-xl px-3 py-3 text-left hover:bg-white/[.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] ${item.read ? "opacity-55" : ""}`}>
                 <span className="flex items-start gap-3">
                   <span aria-hidden="true" className={`mt-1 size-2 shrink-0 rounded-full ${item.read ? "" : "bg-[#f3bd55]"}`} />

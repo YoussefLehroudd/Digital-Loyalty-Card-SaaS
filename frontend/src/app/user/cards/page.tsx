@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
+import { CustomerPageSkeleton } from "@/components/customer-app/customer-skeletons";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { CustomerCardCarousel } from "@/components/customer-app/customer-card-carousel";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
@@ -105,11 +106,7 @@ function CardsUI() {
       subtitle="Switch between business loyalty cards"
     >
       {loading ? (
-        <Card>
-          <CardContent className="p-4 text-sm text-muted-foreground">
-            Loading cards...
-          </CardContent>
-        </Card>
+        <CustomerPageSkeleton variant="cards" />
       ) : error ? (
         <Card className="border-destructive/30">
           <CardContent className="space-y-3 p-4">

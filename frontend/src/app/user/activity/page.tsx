@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, CircleDot, Gift, Search, Store, Ticket, X } from "lucide-react";
 
+import { CustomerPageSkeleton } from "@/components/customer-app/customer-skeletons";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { customerActivity } from "@/lib/customerAuth";
@@ -104,7 +105,7 @@ export default function UserActivityPage() {
   return (
     <CustomerLayout title="Activity" subtitle="Your latest visits and reward events">
       {loading ? (
-        <Card className="border-white/10 bg-[#10110e]/95"><CardContent role="status" className="p-6 text-sm text-white/50">Loading activity...</CardContent></Card>
+        <CustomerPageSkeleton variant="activity" />
       ) : error ? (
         <Card className="border-destructive/30"><CardContent role="alert" className="p-6 text-sm text-destructive">{error}</CardContent></Card>
       ) : (

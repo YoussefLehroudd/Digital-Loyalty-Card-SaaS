@@ -5,6 +5,7 @@ import { Check, Gift, History, Store } from "lucide-react";
 import Image from "next/image";
 
 import { RewardSlider } from "@/components/customer-app/reward-slider";
+import { CustomerPageSkeleton } from "@/components/customer-app/customer-skeletons";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { customerRewards } from "@/lib/customerAuth";
@@ -85,9 +86,7 @@ export default function UserRewardsPage() {
   return (
     <CustomerLayout title="Rewards" subtitle="Track rewards you can claim and your history">
       {loading ? (
-        <Card className="border-white/10 bg-[#10110e]/95">
-          <CardContent role="status" className="p-6 text-sm text-white/50">Loading rewards...</CardContent>
-        </Card>
+        <CustomerPageSkeleton variant="rewards" />
       ) : error ? (
         <Card className="border-destructive/30">
           <CardContent role="alert" className="p-4 text-sm text-destructive">{error}</CardContent>
