@@ -52,6 +52,7 @@ export function CustomerCardCarousel({
   const [isSwitching, setIsSwitching] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const dragFrame = useRef<number | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchDeltaX = useRef(0);
@@ -74,7 +75,7 @@ export function CustomerCardCarousel({
     setIsSwitching(true);
     setIndex(normalized);
     onChange?.(cards[normalized]);
-    window.setTimeout(() => setIsSwitching(false), 620);
+    window.setTimeout(() => setIsSwitching(false), 360);
   };
 
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -97,10 +98,19 @@ export function CustomerCardCarousel({
     touchDeltaY.current = touch.clientY - touchStartY.current;
     const horizontalDistance = Math.abs(touchDeltaX.current);
     const verticalDistance = Math.abs(touchDeltaY.current);
-    if (horizontalDistance > 8 && horizontalDistance > verticalDistance * 1.35) {
-      setDragX(Math.max(-150, Math.min(150, touchDeltaX.current)));
+    if (horizontalDistance > 6 && horizontalDistance > verticalDistance * 1.2) {
+      const nextDrag = Math.max(-170, Math.min(170, touchDeltaX.current));
+      if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+      dragFrame.current = requestAnimationFrame(() => {
+        setDragX(nextDrag);
+        dragFrame.current = null;
+      });
     } else if (verticalDistance > horizontalDistance) {
-      setDragX(0);
+      if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+      dragFrame.current = requestAnimationFrame(() => {
+        setDragX(0);
+        dragFrame.current = null;
+      });
     }
   };
 
@@ -111,6 +121,10 @@ export function CustomerCardCarousel({
     touchStartY.current = null;
     touchDeltaX.current = 0;
     touchDeltaY.current = 0;
+    if (dragFrame.current !== null) {
+      cancelAnimationFrame(dragFrame.current);
+      dragFrame.current = null;
+    }
     setDragging(false);
     setDragX(0);
 
@@ -119,8 +133,8 @@ export function CustomerCardCarousel({
 
     // A card changes only for a deliberate horizontal swipe. Normal vertical
     // scrolling may drift sideways, so horizontal movement must clearly dominate.
-    if (horizontalDistance < 70) return;
-    if (horizontalDistance < verticalDistance * 1.6) return;
+    if (horizontalDistance < 48) return;
+    if (horizontalDistance < verticalDistance * 1.25) return;
 
     if (deltaX < 0) setAndNotify(index + 1);
     else setAndNotify(index - 1);
@@ -222,7 +236,7 @@ export function CustomerCardCarousel({
           )}
         >
           <div
-            className={cn("relative mx-auto w-full touch-pan-y select-none [perspective:1500px]", dashboardMode ? "max-w-[300px] sm:max-w-[340px] lg:max-w-[380px]" : "max-w-[560px]")}
+            className={cn("relative mx-auto w-full touch-pan-y select-none overscroll-contain [perspective:1500px]", dashboardMode ? "max-w-[300px] sm:max-w-[340px] lg:max-w-[380px]" : "max-w-[560px]")}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -245,13 +259,12 @@ export function CustomerCardCarousel({
                 // corner is visible instead of looking like a flat side strip.
                 const baseX = side * ((dashboardMode ? 18 : 24) + (distance - 1) * 12);
                 const baseY = dashboardMode ? 10 + (distance - 1) * 3 : -10 - (distance - 1) * 7;
-                const baseScale = 1 - distance * (dashboardMode ? 0.045 : 0.055);
+                const baseScale = 1 - distance * (dashboardMode ? 0.035 : 0.05);
                 const baseRotateY = dashboardMode ? 0 : side * distance * -5;
                 const baseRotateZ = dashboardMode ? 0 : side * distance * 0.7;
-                const opacity = 1 - distance * 0.16;
-                const brightness = 1 - distance * 0.07;
+                const opacity = 1 - distance * 0.12;
                 const activeTransform = dragging
-                  ? `translateX(${dragX}px) rotateZ(${dragX * 0.055}deg) scale(${1 - Math.min(Math.abs(dragX), 150) / 1800})`
+                  ? `translate3d(${dragX}px,0,0) scale(${1 - Math.min(Math.abs(dragX), 170) / 2600})`
                   : "translateX(0px) rotateY(0deg) scale(1)";
                 const stackedTransform = `translate3d(${baseX}px, ${baseY}px, ${-distance * 18}px) rotateY(${baseRotateY}deg) rotateZ(${baseRotateZ}deg) scale(${baseScale})`;
 
@@ -259,14 +272,13 @@ export function CustomerCardCarousel({
                   <div
                     key={card.id}
                     className={cn(
-                      "col-start-1 row-start-1 transform-gpu [transform-style:preserve-3d]",
-                      dragging && isActive ? "transition-none" : "transition-all duration-[600ms] [transition-timing-function:cubic-bezier(0.23,1,0.32,1)]",
+                      "col-start-1 row-start-1 transform-gpu [backface-visibility:hidden] [transform-style:preserve-3d]",
+                      dragging && isActive ? "transition-none will-change-transform" : "transition-[transform,opacity] duration-[360ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
                       !isActive && "pointer-events-none",
                     )}
                     style={{
                       zIndex: isActive ? 40 : 30 - distance,
                       opacity,
-                      filter: `brightness(${brightness})`,
                       transform: isActive ? activeTransform : stackedTransform,
                       transformOrigin: "center center",
                     }}
