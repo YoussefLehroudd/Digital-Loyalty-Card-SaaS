@@ -11,8 +11,8 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
   const viewport = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const position = useRef(0);
-  const metrics = useRef({ cycle: 0, step: 0 });
-  const drag = useRef<{ id: number; x: number; y: number; lastX: number; active: boolean } | null>(null);
+  const metrics = useRef({ cycle: 0, step: 0, mobile: false });
+  const drag = useRef<{ id: number; x: number; y: number; lastX: number; active: boolean; startPosition?: number } | null>(null);
   const resumeAt = useRef(0);
   const pausedRef = useRef(false);
   const move = useRef<{ from: number; to: number; started: number } | null>(null);
@@ -36,7 +36,7 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
     if (!canSlide) {
       strip.style.transform = "";
       strip.style.removeProperty("--reward-slide-width");
-      metrics.current = { cycle: 0, step: 0 };
+      metrics.current = { cycle: 0, step: 0, mobile: false };
       position.current = 0;
       return;
     }
@@ -49,12 +49,13 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
     const measure = () => {
       const width = view.clientWidth;
       if (!width) return;
-      const columns = window.matchMedia("(min-width: 1024px)").matches ? Math.min(3, items.length) : 1;
+      const mobile = !window.matchMedia("(min-width: 1024px)").matches;
+      const columns = mobile ? 1 : Math.min(3, items.length);
       const slideWidth = (width - GAP * (columns - 1)) / columns;
       const oldCycle = metrics.current.cycle;
       const phase = oldCycle ? wrap(position.current, oldCycle) / oldCycle : 0;
       strip.style.setProperty("--reward-slide-width", `${slideWidth}px`);
-      metrics.current = { cycle: (slideWidth + GAP) * items.length, step: slideWidth + GAP };
+      metrics.current = { cycle: (slideWidth + GAP) * items.length, step: slideWidth + GAP, mobile };
       position.current = phase * metrics.current.cycle;
       move.current = null;
       paint();
@@ -62,6 +63,50 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
     const observer = new ResizeObserver(measure);
     observer.observe(view);
     measure();
+
+    // Native non-passive touch movement supports held swipes on mobile browsers.
+    const touchStart = (event: TouchEvent) => {
+      if (!metrics.current.mobile || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      move.current = null;
+      drag.current = { id: touch.identifier, x: touch.clientX, y: touch.clientY, lastX: touch.clientX, active: false, startPosition: position.current };
+    };
+    const touchMove = (event: TouchEvent) => {
+      const gesture = drag.current;
+      if (!metrics.current.mobile || !gesture || gesture.startPosition === undefined) return;
+      const touch = Array.from(event.touches).find((item) => item.identifier === gesture.id);
+      if (!touch) return;
+      const dx = touch.clientX - gesture.x;
+      const dy = touch.clientY - gesture.y;
+      if (!gesture.active) {
+        if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) { drag.current = null; return; }
+        if (Math.abs(dx) < 6 || Math.abs(dx) <= Math.abs(dy) * 1.2) return;
+        gesture.active = true;
+      }
+      if (event.cancelable) event.preventDefault();
+      position.current -= touch.clientX - gesture.lastX;
+      gesture.lastX = touch.clientX;
+      paint();
+    };
+    const touchEnd = () => {
+      const gesture = drag.current;
+      if (!gesture || gesture.startPosition === undefined) return;
+      drag.current = null;
+      const now = performance.now();
+      if (gesture.active) {
+        const step = metrics.current.step;
+        const distance = position.current - gesture.startPosition;
+        let destination = Math.round(position.current / step);
+        const origin = Math.round(gesture.startPosition / step);
+        if (Math.abs(distance) > 40 && destination === origin) destination += Math.sign(distance);
+        move.current = { from: position.current, to: destination * step, started: now };
+        resumeAt.current = now + 3500;
+      } else resumeAt.current = now + 900;
+    };
+    view.addEventListener("touchstart", touchStart, { passive: true });
+    view.addEventListener("touchmove", touchMove, { passive: false });
+    view.addEventListener("touchend", touchEnd);
+    view.addEventListener("touchcancel", touchEnd);
 
     const tick = (now: number) => {
       const delta = previous ? Math.min(now - previous, 64) : 0;
@@ -76,7 +121,7 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
           position.current += SPEED * delta / 1000;
         }
         // Wrapping swaps identical copies; the visible cards never jump to the start.
-        if (!move.current && metrics.current.cycle) position.current = wrap(position.current, metrics.current.cycle);
+        if (!move.current && !drag.current && metrics.current.cycle) position.current = wrap(position.current, metrics.current.cycle);
         paint();
       }
       frame = requestAnimationFrame(tick);
@@ -85,6 +130,10 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      view.removeEventListener("touchstart", touchStart);
+      view.removeEventListener("touchmove", touchMove);
+      view.removeEventListener("touchend", touchEnd);
+      view.removeEventListener("touchcancel", touchEnd);
       drag.current = null;
       move.current = null;
     };
@@ -92,8 +141,13 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
 
   const advance = (direction: number) => {
     if (!metrics.current.step) return;
-    move.current = { from: position.current, to: position.current + direction * metrics.current.step, started: performance.now() };
-    resumeAt.current = performance.now() + 1200;
+    const { step, mobile } = metrics.current;
+    const base = move.current?.to ?? position.current;
+    const target = mobile
+      ? (direction > 0 ? Math.floor(base / step + 0.000001) + 1 : Math.ceil(base / step - 0.000001) - 1) * step
+      : position.current + direction * step;
+    move.current = { from: position.current, to: target, started: performance.now() };
+    resumeAt.current = performance.now() + (mobile ? 3500 : 1200);
   };
   const finishDrag = () => {
     drag.current = null;
@@ -109,7 +163,9 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
         aria-label="Your loyalty rewards"
         tabIndex={canSlide ? 0 : undefined}
         className="overflow-hidden rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55]/60"
-        style={{ touchAction: "pan-y", cursor: canSlide ? "grab" : undefined }}
+        style={{ touchAction: "pan-y", WebkitTouchCallout: "none", cursor: canSlide ? "grab" : undefined }}
+        onContextMenu={(event) => { if (metrics.current.mobile) event.preventDefault(); }}
+        onDragStart={(event) => { if (metrics.current.mobile) event.preventDefault(); }}
         onKeyDown={(event) => {
           if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
             event.preventDefault();
@@ -117,11 +173,12 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
           }
         }}
         onPointerDown={(event) => {
-          if (!canSlide || !event.isPrimary || event.button !== 0) return;
+          if (!canSlide || (metrics.current.mobile && event.pointerType === "touch") || !event.isPrimary || event.button !== 0) return;
           move.current = null;
           drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, lastX: event.clientX, active: false };
         }}
         onPointerMove={(event) => {
+          if (metrics.current.mobile && event.pointerType === "touch") return;
           const gesture = drag.current;
           if (!gesture || gesture.id !== event.pointerId) return;
           const dx = event.clientX - gesture.x;
@@ -135,10 +192,10 @@ export function RewardSlider({ items }: { items: ReactNode[] }) {
           position.current -= event.clientX - gesture.lastX;
           gesture.lastX = event.clientX;
         }}
-        onPointerUp={finishDrag}
-        onPointerCancel={finishDrag}
-        onLostPointerCapture={finishDrag}
-        onPointerLeave={() => { if (!drag.current?.active) finishDrag(); }}
+        onPointerUp={(event) => { if (!metrics.current.mobile || event.pointerType !== "touch") finishDrag(); }}
+        onPointerCancel={(event) => { if (!metrics.current.mobile || event.pointerType !== "touch") finishDrag(); }}
+        onLostPointerCapture={(event) => { if (!metrics.current.mobile || event.pointerType !== "touch") finishDrag(); }}
+        onPointerLeave={(event) => { if ((!metrics.current.mobile || event.pointerType !== "touch") && !drag.current?.active) finishDrag(); }}
         onWheel={(event) => {
           if (!canSlide || Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
           move.current = null;
