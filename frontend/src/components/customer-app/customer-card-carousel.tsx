@@ -389,7 +389,7 @@ export function CustomerCardCarousel({
             </Button>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5 lg:absolute lg:right-8 lg:top-[98px] lg:m-0 lg:w-[283px] lg:max-w-none lg:pt-0">
+          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5 lg:absolute lg:right-8 lg:top-[76px] lg:m-0 lg:w-[283px] lg:max-w-none lg:pt-0">
             <div className="flex flex-col items-center gap-2 p-2 lg:px-0">
               <button
                 type="button"
