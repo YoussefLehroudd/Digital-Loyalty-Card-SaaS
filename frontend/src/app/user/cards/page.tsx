@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { CustomerCardCarousel } from "@/components/customer-app/customer-card-carousel";
@@ -186,17 +187,17 @@ function CardsUI() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4 lg:space-y-6">
-          <div className="flex items-center justify-between gap-3 lg:mx-auto lg:max-w-5xl">
-            <Badge className="shrink-0 border-white/30 bg-white/20 px-3 py-2 text-sm text-white shadow-sm backdrop-blur-sm">
+        <div className="relative mx-auto w-full max-w-[960px] space-y-6 overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] px-3 py-4 shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] sm:p-6 lg:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Badge className="shrink-0 rounded-full border-[#d8a63f]/25 bg-[#d8a63f]/10 px-3 py-2 text-xs font-medium text-[#ffd369] sm:text-sm">
               Card {Math.max(1, cards.findIndex((card) => card.id === selected?.id) + 1)} of {cards.length}
             </Badge>
             <Button
               type="button"
               onClick={() => router.push("/user/join")}
-              className="min-w-0 flex-1 sm:flex-none"
+              className="h-11 min-w-0 rounded-xl border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] px-3 text-xs font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] transition hover:brightness-110 active:scale-[.98] sm:px-4 sm:text-sm"
             >
-              + Add Loyalty Card
+              <Plus className="size-4 shrink-0" /> Add Loyalty Card
             </Button>
           </div>
 

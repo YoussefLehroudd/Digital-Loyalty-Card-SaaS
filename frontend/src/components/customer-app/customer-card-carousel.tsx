@@ -224,7 +224,7 @@ export function CustomerCardCarousel({
         </div>
       ) : null}
 
-      <div className="space-y-3 overflow-visible px-3 pb-2">
+      <div className="space-y-4 overflow-visible px-3 pb-2 sm:px-5">
         <div
           key={`wallet-stage-${current.id}`}
           className={cn(
@@ -236,7 +236,7 @@ export function CustomerCardCarousel({
           )}
         >
           <div
-            className={cn("relative mx-auto w-full touch-pan-y select-none overscroll-contain [perspective:1500px]", dashboardMode ? "max-w-[300px] sm:max-w-[340px] lg:max-w-[380px]" : "max-w-[560px]")}
+            className={cn("relative mx-auto w-full touch-pan-y select-none overscroll-contain [perspective:1500px]", "max-w-[300px] sm:max-w-[340px] lg:max-w-[380px]")}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
@@ -257,11 +257,11 @@ export function CustomerCardCarousel({
                 const side = offset > 0 ? 1 : -1;
                 // Fan the inactive cards upward and outward so their rounded top
                 // corner is visible instead of looking like a flat side strip.
-                const baseX = side * ((dashboardMode ? 18 : 24) + (distance - 1) * 12);
-                const baseY = dashboardMode ? 10 + (distance - 1) * 3 : -10 - (distance - 1) * 7;
-                const baseScale = 1 - distance * (dashboardMode ? 0.035 : 0.05);
-                const baseRotateY = dashboardMode ? 0 : side * distance * -5;
-                const baseRotateZ = dashboardMode ? 0 : side * distance * 0.7;
+                const baseX = side * (18 + (distance - 1) * 12);
+                const baseY = 10 + (distance - 1) * 3;
+                const baseScale = 1 - distance * 0.035;
+                const baseRotateY = 0;
+                const baseRotateZ = 0;
                 const opacity = 1 - distance * 0.12;
                 const activeTransform = dragging
                   ? `translate3d(${dragX}px,0,0) scale(${1 - Math.min(Math.abs(dragX), 170) / 2600})`
@@ -331,22 +331,7 @@ export function CustomerCardCarousel({
             ) : null}
           </div>
 
-          {showNav && !dashboardMode ? (
-            <div className="flex justify-center gap-1.5 pt-3" aria-label="Card position">
-              {cards.map((card, cardIndex) => (
-                <button
-                  key={card.id}
-                  type="button"
-                  aria-label={`Show card ${cardIndex + 1}`}
-                  onClick={() => setAndNotify(cardIndex)}
-                  className={cn(
-                    "h-1.5 rounded-full transition-all duration-300",
-                    cardIndex === index ? "w-7 bg-foreground" : "w-1.5 bg-muted-foreground/35 hover:bg-muted-foreground/60",
-                  )}
-                />
-              ))}
-            </div>
-          ) : null}
+
         </div>
 
         {dashboardMode ? (
@@ -362,56 +347,70 @@ export function CustomerCardCarousel({
             </Button>
           </div>
         ) : (
-          <>
+          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5">
             <Button
               type="button"
-              variant="outline"
-              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
-              onClick={() => setConfirmDeleteOpen(true)}
-              disabled={deleting}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Card
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
+              className="h-12 w-full rounded-xl border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] px-4 font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] transition hover:brightness-110 active:scale-[.98] focus-visible:ring-[#ffd36b] disabled:opacity-50"
               onClick={() => void handleGoogleWallet()}
               disabled={addingToWallet}
             >
-              <WalletCards className="mr-2 h-4 w-4" />
+              <WalletCards className="size-4 shrink-0" />
               {addingToWallet ? "Opening Google Wallet..." : "Add to Google Wallet"}
             </Button>
-          </>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mx-auto h-11 rounded-xl px-5 text-rose-300/80 transition hover:bg-rose-500/10 hover:text-rose-200 focus-visible:ring-rose-300"
+              onClick={() => setConfirmDeleteOpen(true)}
+              disabled={deleting}
+            >
+              <Trash2 className="size-4" />
+              Delete Card
+            </Button>
+          </div>
         )}
       </div>
 
       {showNav && !dashboardMode ? (
-        <div className="flex items-center justify-between gap-2">
+        <nav className="mx-auto flex max-w-[420px] items-center justify-center gap-3 border-t border-[#d8a63f]/15 pt-4" aria-label="Loyalty card navigation">
           <Button
+            type="button"
             variant="outline"
-            size="sm"
-            className={cn("flex-1")}
+            size="icon"
+            className="size-11 shrink-0 rounded-full border-[#d8a63f]/25 bg-black/25 text-[#ffd369] transition hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 disabled:opacity-30"
+            aria-label="Previous loyalty card"
             onClick={() => setAndNotify(index - 1)}
-            disabled={index <= 0}
+            disabled={index <= 0 || isSwitching}
           >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Previous
+            <ChevronLeft className="size-5" />
           </Button>
-
+          <div className="flex min-w-0 flex-wrap items-center justify-center" aria-label="Card position">
+            {cards.map((card, cardIndex) => (
+              <button
+                key={card.id}
+                type="button"
+                aria-label={`Show card ${cardIndex + 1}`}
+                aria-current={cardIndex === index ? "true" : undefined}
+                disabled={isSwitching}
+                onClick={() => setAndNotify(cardIndex)}
+                className="flex h-11 min-w-6 items-center justify-center rounded-full px-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffd369]"
+              >
+                <span className={cn("h-1.5 rounded-full transition-all duration-300", cardIndex === index ? "w-6 bg-[#ffd369] shadow-[0_0_10px_rgba(255,211,105,.25)]" : "w-1.5 bg-white/25")} />
+              </button>
+            ))}
+          </div>
           <Button
+            type="button"
             variant="outline"
-            size="sm"
-            className={cn("flex-1")}
+            size="icon"
+            className="size-11 shrink-0 rounded-full border-[#d8a63f]/25 bg-black/25 text-[#ffd369] transition hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 disabled:opacity-30"
+            aria-label="Next loyalty card"
             onClick={() => setAndNotify(index + 1)}
-            disabled={index >= cards.length - 1}
+            disabled={index >= cards.length - 1 || isSwitching}
           >
-            Next
-            <ChevronRight className="ml-1 h-4 w-4" />
+            <ChevronRight className="size-5" />
           </Button>
-        </div>
+        </nav>
       ) : null}
 
       <Modal
