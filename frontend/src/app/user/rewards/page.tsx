@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, Gift, History, Store } from "lucide-react";
 import Image from "next/image";
 
+import { RewardSlider } from "@/components/customer-app/reward-slider";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { customerRewards } from "@/lib/customerAuth";
@@ -120,12 +121,11 @@ export default function UserRewardsPage() {
                 <p className="mt-1 text-sm text-white/50">Add a loyalty card and collect stamps on your visits.</p>
               </div>
             ) : (
-              <div className="grid items-stretch gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                {available.map((reward) => {
+              <RewardSlider items={available.map((reward) => {
                   const progress = Math.max(0, Math.min(100, reward.progress_percent));
                   const remaining = Math.max(0, reward.points_required - reward.current_stamps);
                   return (
-                    <article key={`${reward.business_id}-${reward.loyalty_card_id}`} className="flex min-w-0 flex-col rounded-2xl border border-white/10 bg-[#10110e]/95 p-5">
+                    <article key={`${reward.business_id}-${reward.loyalty_card_id}`} className="flex min-w-0 flex-col rounded-2xl border border-[#f3bd55]/15 bg-[linear-gradient(145deg,#171811,#0c0d0a)] p-5 shadow-[0_8px_28px_rgba(0,0,0,.18)]">
                       <div className="flex items-center gap-3">
                         <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/30">
                           {reward.business_logo_url ? (
@@ -137,8 +137,8 @@ export default function UserRewardsPage() {
                           {reward.ready ? "Ready" : "In progress"}
                         </Badge>
                       </div>
-                      <h3 className="mt-5 break-words text-lg font-semibold leading-snug text-white">{reward.reward_name}</h3>
-                      <p className="mt-2 flex-1 text-sm leading-6 text-white/50">{reward.reward_description || "Collect stamps to unlock your reward."}</p>
+                      <h3 className="mt-5 min-h-14 break-words text-lg font-semibold leading-7 text-white">{reward.reward_name}</h3>
+                      <p className="mt-2 min-h-[72px] flex-1 text-sm leading-6 text-white/50">{reward.reward_description || "Collect stamps to unlock your reward."}</p>
                       <div className="mt-5 border-t border-white/10 pt-4">
                         <div className="mb-2.5 flex items-center justify-between gap-3 text-xs">
                           <p className="text-white/50"><span className="font-semibold text-white">{reward.current_stamps}</span> / {reward.points_required} stamps</p>
@@ -153,8 +153,7 @@ export default function UserRewardsPage() {
                       </div>
                     </article>
                   );
-                })}
-              </div>
+                })} />
             )}
           </section>
 
