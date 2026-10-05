@@ -606,7 +606,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
       VALUES (${businessEmail}, ${codeHash}, ${JSON.stringify(payload)}::jsonb, 0, now() + interval '10 minutes', now())
       ON CONFLICT (email) DO UPDATE SET code_hash = EXCLUDED.code_hash, payload = EXCLUDED.payload, attempts = 0, expires_at = EXCLUDED.expires_at, created_at = now()
     `;
-    const sent = await sendTransactionalEmail({
+    const sent = await sendLoyvanceEmail({
       to: businessEmail,
       subject: "Your LOYVANCE verification code",
       category: "security",
