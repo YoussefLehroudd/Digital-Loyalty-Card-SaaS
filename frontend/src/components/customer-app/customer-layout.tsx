@@ -73,12 +73,17 @@ export function CustomerLayout({
 
       <div className="min-w-0 flex-1 lg:ml-[280px]">
         <header className="sticky top-0 z-30 border-b border-[#d8a63f]/10 bg-[#080907]/90 backdrop-blur-xl">
-          <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3 lg:max-w-[1440px] lg:px-8 lg:py-5">
-            <div>
-              <h1 className="text-base font-bold text-white lg:text-2xl lg:tracking-tight">{title}</h1>
-              {subtitle ? <p className="text-xs text-muted-foreground lg:mt-1 lg:text-sm">{subtitle}</p> : null}
+          <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3 lg:max-w-[1440px] lg:px-8 lg:py-2">
+            <div className="min-w-0 lg:flex lg:items-center lg:gap-3">
+              <h1 className="text-base font-bold text-white lg:shrink-0 lg:text-xl lg:tracking-tight">{title}</h1>
+              {subtitle ? (
+                <>
+                  <span aria-hidden="true" className="hidden text-[#d8a63f]/40 lg:block">|</span>
+                  <p className="text-xs text-muted-foreground lg:truncate lg:text-sm">{subtitle}</p>
+                </>
+              ) : null}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2 pl-3">
               <Button size="icon" variant="ghost" onClick={() => router.push("/user/notifications")} aria-label="Notifications" className="border border-transparent lg:rounded-xl hover:border-[#d8a63f]/15 hover:bg-[#d79b16]/10 hover:text-[#ffc857]">
                 <Bell className="h-5 w-5" />
               </Button>
