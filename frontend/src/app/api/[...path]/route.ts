@@ -337,6 +337,12 @@ async function ensureSchema(sql: Sql) {
         read_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY (user_id, reward_redemption_id)
       )`;
+      await sql`CREATE TABLE IF NOT EXISTS customer_notification_reads (
+        user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+        notification_key text NOT NULL,
+        read_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, notification_key)
+      )`;
       await sql`CREATE TABLE IF NOT EXISTS business_notification_reads (
         user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
         notification_key text NOT NULL,
@@ -1314,7 +1320,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   const current = ((await sql`
     INSERT INTO customer_loyalties (id, customer_id, loyalty_card_id, current_stamps)
     VALUES (${randomUUID()}, ${customer.id}, ${card.id}, 0)
-    ON CONFLICT (customer_id, loyalty_card_id) DO UPDATE SET updated_at = now()
+    ON CONFLICT (customer_id, loyalty_card_id) DO UPDATE SET customer_id = EXCLUDED.customer_id
     RETURNING *
   `) as DbLoyalty[])[0];
 
@@ -1327,7 +1333,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
       ),
       redeemed AS (
         UPDATE reward_redemptions SET status = 'redeemed', redeemed_at = now()
-        WHERE id = (SELECT id FROM selected)
+        WHERE id = (SELECT id FROM selected) AND status = 'ready'
         RETURNING id
       ),
       loyalty_update AS (
@@ -1350,21 +1356,17 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   // A completed cycle must be redeemed before another stamp can be added.
   // This prevents 10/10 from becoming 11/10 when the business chooses "Not now".
   const stampRows = (await sql`
-    WITH eligible AS (
-      SELECT id FROM customer_loyalties
+    WITH loyalty_update AS (
+      UPDATE customer_loyalties
+      SET current_stamps = current_stamps + 1, updated_at = now()
       WHERE id = ${current.id} AND current_stamps < ${card.required_stamps}
+      RETURNING *
     ),
     visit_insert AS (
       INSERT INTO visits (id, business_id, customer_id)
       SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}
-      WHERE EXISTS (SELECT 1 FROM eligible)
+      FROM loyalty_update
       RETURNING id
-    ),
-    loyalty_update AS (
-      UPDATE customer_loyalties
-      SET current_stamps = LEAST(current_stamps + 1, ${card.required_stamps}), updated_at = now()
-      WHERE id = ${current.id} AND EXISTS (SELECT 1 FROM visit_insert)
-      RETURNING *
     ),
     reward_insert AS (
       INSERT INTO reward_redemptions (id, business_id, customer_id, loyalty_card_id, status)
@@ -1640,6 +1642,41 @@ async function syncGoogleWalletBusiness(sql: Sql, businessId: string) {
   await Promise.all(customers.map((customer) => syncGoogleWalletCustomer(sql, customer.id)));
 }
 
+
+async function customerNotificationEvents(sql: Sql, userId: string) {
+  return (await sql`
+    WITH events AS (
+      SELECT CONCAT('stamp_added-', v.id::text) AS id, 'stamp_added' AS type,
+             'Stamp added' AS title, CONCAT('You received a stamp at ', b.name, '.') AS message,
+             v.created_at, NULL::uuid AS reward_id
+      FROM visits v
+      JOIN customers c ON c.id = v.customer_id
+      JOIN businesses b ON b.id = v.business_id
+      WHERE c.user_id = ${userId}
+      UNION ALL
+      SELECT CONCAT('reward_ready-', r.id::text), 'reward_ready', 'Reward ready',
+             CONCAT('You unlocked a reward at ', b.name, '.'), r.earned_at, r.id
+      FROM reward_redemptions r
+      JOIN customers c ON c.id = r.customer_id
+      JOIN businesses b ON b.id = r.business_id
+      WHERE c.user_id = ${userId}
+      UNION ALL
+      SELECT CONCAT('reward_redeemed-', r.id::text), 'reward_redeemed', 'Reward redeemed',
+             CONCAT('Your reward at ', b.name, ' was redeemed.'), r.redeemed_at, r.id
+      FROM reward_redemptions r
+      JOIN customers c ON c.id = r.customer_id
+      JOIN businesses b ON b.id = r.business_id
+      WHERE c.user_id = ${userId} AND r.redeemed_at IS NOT NULL
+    )
+    SELECT e.id, e.type, e.title, e.message, e.created_at::text,
+           (cr.notification_key IS NOT NULL OR COALESCE(nr.read_at >= e.created_at, false)) AS read
+    FROM events e
+    LEFT JOIN customer_notification_reads cr ON cr.user_id = ${userId} AND cr.notification_key = e.id
+    LEFT JOIN notification_reads nr ON nr.user_id = ${userId} AND nr.reward_redemption_id = e.reward_id
+    ORDER BY e.created_at DESC, e.id DESC LIMIT 100
+  `) as Array<{ id: string; type: string; title: string; message: string; created_at: string; read: boolean }>;
+}
+
 async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   if ((path[1] === "register" || path[1] === "login") && req.method === "POST") {
     const body = await readJson(req);
@@ -1732,46 +1769,23 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     return json({ message: "Password updated." });
   }
   if (path[1] === "notifications") {
+    const events = await customerNotificationEvents(sql, auth.user.id);
     if (req.method === "POST") {
       const body = await readJson(req);
       const notificationId = asString(body.notification_id);
-      if (notificationId) {
+      // Only acknowledge events owned by this customer and present in this snapshot.
+      const keys = events.filter((event) => !notificationId || event.id === notificationId).map((event) => event.id);
+      if (notificationId && !keys.length) return error("Notification not found.", 404);
+      if (keys.length) {
         await sql`
-          INSERT INTO notification_reads (user_id, reward_redemption_id)
-          SELECT ${auth.user.id}, r.id
-          FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id
-          WHERE r.id = ${notificationId} AND c.user_id = ${auth.user.id}
-          ON CONFLICT DO NOTHING
-        `;
-      } else {
-        await sql`
-          INSERT INTO notification_reads (user_id, reward_redemption_id)
-          SELECT ${auth.user.id}, r.id
-          FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id
-          WHERE c.user_id = ${auth.user.id}
-          ON CONFLICT DO NOTHING
+          INSERT INTO customer_notification_reads (user_id, notification_key)
+          SELECT ${auth.user.id}, key FROM unnest(${keys}::text[]) AS key
+          ON CONFLICT (user_id, notification_key) DO NOTHING
         `;
       }
       return json({ message: notificationId ? "Notification marked as read." : "Notifications marked as read." });
     }
-    const rewards = (await sql`
-      SELECT r.id, r.status, b.name AS business_name, COALESCE(r.redeemed_at, r.earned_at)::text AS created_at,
-             (nr.reward_redemption_id IS NOT NULL) AS read
-      FROM reward_redemptions r
-      JOIN customers c ON c.id = r.customer_id
-      JOIN businesses b ON b.id = r.business_id
-      LEFT JOIN notification_reads nr ON nr.reward_redemption_id = r.id AND nr.user_id = ${auth.user.id}
-      WHERE c.user_id = ${auth.user.id}
-      ORDER BY COALESCE(r.redeemed_at, r.earned_at) DESC LIMIT 50
-    `) as Array<{ id: string; status: string; business_name: string; created_at: string; read: boolean }>;
-    return json({ data: rewards.map((r) => ({
-      id: r.id,
-      type: r.status === "redeemed" ? "reward_redeemed" : "reward_ready",
-      title: r.status === "redeemed" ? "Reward redeemed" : "Reward ready",
-      message: r.status === "redeemed" ? `Your reward at ${r.business_name} was redeemed.` : `You unlocked a reward at ${r.business_name}.`,
-      created_at: r.created_at,
-      read: r.read,
-    })) });
+    return json({ data: events });
   }
 
   const memberships = (await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.user_id = ${auth.user.id} ORDER BY c.created_at DESC`) as DbCustomer[];

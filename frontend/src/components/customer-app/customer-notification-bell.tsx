@@ -18,10 +18,12 @@ export function CustomerNotificationBell() {
   const [marking, setMarking] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const readKeys = useRef(new Set<string>());
   const refreshRef = useRef<() => Promise<void>>(async () => {});
 
   useEffect(() => {
     if (!token) { setItems([]); setLoading(false); return; }
+    readKeys.current.clear();
     let cancelled = false;
     let timer: number | undefined;
     let refreshing = false;
@@ -30,7 +32,10 @@ export function CustomerNotificationBell() {
       refreshing = true;
       try {
         const res = await customerNotifications(token);
-        if (!cancelled) { setItems(res.data ?? []); setError(null); }
+        if (!cancelled) {
+          setItems((res.data ?? []).map((item) => readKeys.current.has(item.id) ? { ...item, read: true } : item));
+          setError(null);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load notifications.");
       } finally {
@@ -52,11 +57,15 @@ export function CustomerNotificationBell() {
     channel?.listen("data.changed", onChange);
     const onVisible = () => { if (document.visibilityState === "visible") void refresh(); };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onChange);
+    window.addEventListener("online", onChange);
     return () => {
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
       channel?.stopListening("data.changed", onChange);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onChange);
+      window.removeEventListener("online", onChange);
       refreshRef.current = async () => {};
     };
   }, [token, echo]);
@@ -84,6 +93,7 @@ export function CustomerNotificationBell() {
     setMarking(true);
     try {
       await customerMarkNotificationsRead(token, id);
+      for (const item of items) { if (!id || item.id === id) readKeys.current.add(item.id); }
       setItems((current) => current.map((item) => !id || item.id === id ? { ...item, read: true } : item));
       setError(null);
       await refreshRef.current();
@@ -106,7 +116,7 @@ export function CustomerNotificationBell() {
           </div>
           <div className="max-h-[min(420px,calc(100dvh-180px))] overflow-y-auto overscroll-contain p-2" onWheel={(event) => event.stopPropagation()} onTouchMove={(event) => event.stopPropagation()}>
             {error ? <div role="alert" className="px-3 py-2 text-xs text-rose-300">{error}<button type="button" onClick={() => void refreshRef.current()} className="ml-2 underline">Retry</button></div> : null}
-            {loading ? <p role="status" className="px-3 py-8 text-center text-sm text-white/40">Loading notifications...</p> : items.length ? items.slice(0, 20).map((item) => (
+            {loading ? <p role="status" className="px-3 py-8 text-center text-sm text-white/40">Loading notifications...</p> : items.length ? items.map((item) => (
               <button key={item.id} type="button" disabled={marking} onClick={() => { if (!item.read) void markRead(item.id); }} className={`block w-full rounded-xl px-3 py-3 text-left hover:bg-white/[.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] ${item.read ? "opacity-55" : ""}`}>
                 <span className="flex items-start gap-3">
                   <span aria-hidden="true" className={`mt-1 size-2 shrink-0 rounded-full ${item.read ? "" : "bg-[#f3bd55]"}`} />

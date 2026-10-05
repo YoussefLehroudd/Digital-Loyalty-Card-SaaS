@@ -30,76 +30,74 @@ function CardsUI() {
   const [scanOpen, setScanOpen] = useState(false);
   const [joining, setJoining] = useState(false);
 
+  const selectedIdRef = useRef<string | null>(null);
+  const requestIdRef = useRef(0);
+  const pendingRef = useRef(0);
+
   const reload = useCallback(async (options?: { silent?: boolean }): Promise<CustomerCardItem[]> => {
     if (!token) return [];
     const silent = options?.silent ?? false;
-    if (!silent) setLoading(true);
-    setError(null);
-
+    const requestId = ++requestIdRef.current;
+    pendingRef.current += 1;
+    if (!silent) { setLoading(true); setError(null); }
     try {
       const res = await customerCards(token);
       const list = res.data ?? [];
+      if (requestId !== requestIdRef.current) return list;
       setCards(list);
-
-      if (list.length > 0) {
-        const querySelectedId =
-          typeof window !== "undefined"
-            ? new URLSearchParams(window.location.search).get("selected")
-            : null;
-        const savedSelectedId =
-          typeof window !== "undefined"
-            ? window.localStorage.getItem("digital_loyalty_selected_card")
-            : null;
-        const preferredId = querySelectedId ?? selected?.id ?? savedSelectedId;
-        const next = (preferredId && list.find((card) => card.id === preferredId)) || list[0];
-        setSelected(next);
-        window.localStorage.setItem("digital_loyalty_selected_card", next.id);
-      } else {
-        setSelected(null);
-        if (typeof window !== "undefined") {
-          window.localStorage.removeItem("digital_loyalty_selected_card");
-        }
-      }
-
+      setError(null);
+      const preferredId = selectedIdRef.current
+        ?? new URLSearchParams(window.location.search).get("selected")
+        ?? window.localStorage.getItem("digital_loyalty_selected_card");
+      const next = (preferredId && list.find((card) => card.id === preferredId)) || list[0] || null;
+      selectedIdRef.current = next?.id ?? null;
+      setSelected(next);
+      if (next) window.localStorage.setItem("digital_loyalty_selected_card", next.id);
+      else window.localStorage.removeItem("digital_loyalty_selected_card");
       return list;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load your cards");
+      if (requestId === requestIdRef.current && !silent) {
+        setError(err instanceof Error ? err.message : "Failed to load your cards");
+      }
       return [];
     } finally {
-      setLoading(false);
+      pendingRef.current -= 1;
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [selected?.id, token]);
+  }, [token]);
 
-  const initialLoadDone = useRef(false);
   useEffect(() => {
-    if (initialLoadDone.current) return;
-    initialLoadDone.current = true;
+    if (!token) return;
+    let cancelled = false;
+    let timer: number | undefined;
+    const refresh = async () => {
+      if (cancelled || pendingRef.current > 0) return;
+      await reload({ silent: true });
+    };
+    const poll = async () => {
+      if (cancelled) return;
+      if (document.visibilityState === "visible") await refresh();
+      if (!cancelled) timer = window.setTimeout(poll, 1500);
+    };
     void reload();
-  }, [reload]);
-
-  useEffect(() => {
-    if (!echo || !token) return;
-    const channel = echo.private("customer");
-    const refresh = () => {
-      void customerCards(token)
-        .then((res) => {
-          const list = res.data ?? [];
-          setCards(list);
-          if (!list.length) {
-            setSelected(null);
-            return;
-          }
-          const currentId = selected?.id;
-          const next = (currentId && list.find((card) => card.id === currentId)) || list[0];
-          setSelected(next);
-        })
-        .catch(() => undefined);
-    };
-    channel.listen("data.changed", refresh);
+    timer = window.setTimeout(poll, 1500);
+    const channel = echo?.private("customer");
+    const onChange = () => { void refresh(); };
+    const onVisible = () => { if (document.visibilityState === "visible") void refresh(); };
+    channel?.listen("data.changed", onChange);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onChange);
+    window.addEventListener("online", onChange);
     return () => {
-      channel.stopListening("data.changed", refresh);
+      cancelled = true;
+      requestIdRef.current += 1;
+      if (timer !== undefined) window.clearTimeout(timer);
+      channel?.stopListening("data.changed", onChange);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onChange);
+      window.removeEventListener("online", onChange);
     };
-  }, [echo, selected?.id, token]);
+  }, [echo, reload, token]);
 
   return (
     <CustomerLayout
@@ -162,6 +160,7 @@ function CardsUI() {
                     const membershipId = joinResult.customer?.id;
                     if (membershipId) {
                       const picked = await customerCardById(token, membershipId);
+                      selectedIdRef.current = picked.data.id;
                       setSelected(picked.data);
                     }
 
@@ -205,6 +204,7 @@ function CardsUI() {
             cards={cards}
             selectedId={selected?.id}
             onChange={(card) => {
+              selectedIdRef.current = card.id;
               setSelected(card);
               window.localStorage.setItem("digital_loyalty_selected_card", card.id);
             }}
