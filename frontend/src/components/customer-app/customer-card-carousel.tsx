@@ -438,7 +438,7 @@ export function CustomerCardCarousel({
             <div className="flex flex-col items-center gap-2 p-2 lg:px-0">
               <button
                 type="button"
-                className="flex h-[50px] w-[283px] max-w-full items-center justify-center rounded-xl border border-white/45 bg-black p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#10110f] disabled:cursor-default"
+                className="flex h-[50px] w-[283px] max-w-full items-center justify-center rounded-xl bg-black p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#10110f] disabled:cursor-default"
                 onClick={() => void handleAppleWallet()}
                 disabled={!appleWalletReady || addingToAppleWallet}
                 aria-label={appleWalletReady ? "Add to Apple Wallet" : "Apple Wallet — coming soon"}
@@ -446,7 +446,7 @@ export function CustomerCardCarousel({
                 aria-busy={addingToAppleWallet}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/add-to-apple-wallet.svg" alt="Add to Apple Wallet" className="block h-[42px] w-auto max-w-full" />
+                <img src="/images/add-to-apple-wallet.svg" alt="Add to Apple Wallet" width={283} height={50} className="block h-full w-full" />
               </button>
               <p id="apple-wallet-availability" role="status" className="text-center text-xs text-white/60">
                 {addingToAppleWallet ? "Opening Apple Wallet..." : appleWalletReady ? "Open on iPhone to add your card." : "Coming soon"}
