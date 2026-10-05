@@ -169,7 +169,7 @@ export default function UserRewardsPage() {
                 <p className="mt-1 text-xs leading-5 text-white/45">Your earned and redeemed rewards will appear here.</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/10">
+              <div role="region" aria-label="Reward history list" tabIndex={0} className="max-h-[420px] divide-y divide-white/10 overflow-y-auto overscroll-contain outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f3bd55]/40 lg:max-h-[480px]" style={{ scrollbarWidth: "thin", scrollbarColor: "#806629 #10110e" }}>
                 {history.map((item) => {
                   const date = item.redeemed_at ?? item.earned_at;
                   return (
