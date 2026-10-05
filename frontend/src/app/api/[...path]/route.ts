@@ -888,7 +888,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     if (limited) return limited;
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
-    const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role = 'business_owner' LIMIT 1`) as DbUser[])[0];
+    const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role IN ('business_owner', 'customer') LIMIT 1`) as DbUser[])[0];
     if (!user) return json({ message: "If that email exists, a password reset email has been sent." });
     const token = randomBytes(32).toString("hex");
     const tokenHash = (await import("crypto")).createHash("sha256").update(token).digest("hex");
@@ -924,7 +924,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const tokenHash = (await import("crypto")).createHash("sha256").update(token).digest("hex");
     const rows = (await sql`
       SELECT u.* FROM password_reset_tokens p JOIN app_users u ON u.id = p.user_id
-      WHERE p.token_hash = ${tokenHash} AND p.expires_at > now() AND u.email = ${email} AND u.role = 'business_owner' LIMIT 1
+      WHERE p.token_hash = ${tokenHash} AND p.expires_at > now() AND u.email = ${email} AND u.role IN ('business_owner', 'customer') LIMIT 1
     `) as DbUser[];
     const user = rows[0];
     if (!user) return error("This reset link is invalid or expired.", 422);

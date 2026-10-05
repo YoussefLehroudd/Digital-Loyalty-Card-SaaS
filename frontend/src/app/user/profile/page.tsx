@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Camera, LockKeyhole, Mail, Save, ShieldCheck, UserRound } from "lucide-react";
 
@@ -204,7 +205,10 @@ export default function UserProfilePage() {
             </div>
             <form className="space-y-4 p-5 sm:p-6" onSubmit={onChangePassword}>
               <div className="space-y-2">
-                <Label htmlFor="oldPassword" className="text-xs text-white/60">Current password</Label>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <Label htmlFor="oldPassword" className="text-xs text-white/60">Current password</Label>
+                  <Link href="/forgot-password" className="rounded text-xs font-medium text-[#f3bd55] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55]">Forgot password?</Link>
+                </div>
                 <PasswordInput id="oldPassword" autoComplete="current-password" inputClassName={inputStyle} value={oldPassword} onChange={(event) => setOldPassword(event.target.value)} required />
               </div>
               <div className="space-y-2">

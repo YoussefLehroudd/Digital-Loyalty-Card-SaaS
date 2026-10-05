@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -44,7 +45,6 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 import {
-  forgotPassword,
   getBusinessProfile,
   removeAccountAvatar,
   updateAccountPassword,
@@ -108,7 +108,6 @@ export function BusinessProfileSettings() {
   const [isUploading, setIsUploading] = useState(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   const [isAvatarRemoving, setIsAvatarRemoving] = useState(false);
-  const [isResetSending, setIsResetSending] = useState(false);
 
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -301,20 +300,6 @@ export function BusinessProfileSettings() {
       setError(unknownError instanceof ApiError ? unknownError.message : "Profile photo could not be removed.");
     } finally {
       setIsAvatarRemoving(false);
-    }
-  }
-
-  async function onForgotPassword() {
-    setSuccess(null);
-    setError(null);
-    setIsResetSending(true);
-    try {
-      const response = await forgotPassword({ email: user.email });
-      setSuccess(response.message);
-    } catch (unknownError) {
-      setError(unknownError instanceof ApiError ? unknownError.message : "Password reset email could not be sent.");
-    } finally {
-      setIsResetSending(false);
     }
   }
 
@@ -564,8 +549,9 @@ export function BusinessProfileSettings() {
                   error={passwordErrors.current_password?.message}
                   icon={KeyRound}
                   label="Current password"
+                  action={<Link href="/forgot-password" className="rounded text-xs font-medium text-[#efbd5d] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efbd5d]">Forgot password?</Link>}
                 >
-                  <PasswordInput autoComplete="current-password" {...registerPassword("current_password")} />
+                  <PasswordInput id="current-password" autoComplete="current-password" {...registerPassword("current_password")} />
                 </ProfileField>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -586,14 +572,6 @@ export function BusinessProfileSettings() {
                 </div>
 
                 <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-                  <button
-                    className="text-left text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                    disabled={isResetSending}
-                    type="button"
-                    onClick={() => void onForgotPassword()}
-                  >
-                    {isResetSending ? "Sending reset email..." : "Forgot your password? Send a secure reset link"}
-                  </button>
                   <Button
                     className="border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f]"
                     disabled={!isPasswordDirty || isPasswordSubmitting}
@@ -1031,8 +1009,10 @@ function ProfileField({
   error,
   icon: Icon,
   label,
+  action,
 }: {
   children: React.ReactNode;
+  action?: React.ReactNode;
   error?: string;
   icon: React.ElementType;
   label: string;
@@ -1041,10 +1021,13 @@ function ProfileField({
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-2" htmlFor={id}>
-        <Icon className="size-4 text-muted-foreground" />
-        {label}
-      </Label>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <Label className="flex items-center gap-2" htmlFor={id}>
+          <Icon className="size-4 text-muted-foreground" />
+          {label}
+        </Label>
+        {action}
+      </div>
       {children}
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
     </div>

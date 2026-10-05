@@ -6,7 +6,7 @@ import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 export default function ForgotPasswordPage() {
   return (
     <AuthShell
-      description="Enter the email linked to your business owner account."
+      description="Enter the email linked to your LOYVANCE account."
       eyebrow="Password recovery"
       footer={
         <Link className="font-medium text-foreground" href="/login">

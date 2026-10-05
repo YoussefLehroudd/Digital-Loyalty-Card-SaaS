@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
-import { resetPassword } from "@/lib/auth";
+import { clearStoredToken, resetPassword } from "@/lib/auth";
+import { clearStoredCustomerToken } from "@/lib/customerAuth";
 
 const passwordSchema = z
   .string()
@@ -66,6 +67,8 @@ export function ResetPasswordForm() {
         password_confirmation: values.passwordConfirmation,
       });
 
+      clearStoredToken();
+      clearStoredCustomerToken();
       router.replace("/login");
     } catch (unknownError) {
       if (unknownError instanceof ApiError) {
