@@ -187,8 +187,8 @@ function CardsUI() {
           </CardContent>
         </Card>
       ) : (
-        <div className="relative mx-auto w-full max-w-[960px] space-y-6 overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] px-3 py-4 shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] sm:p-6 lg:p-8 lg:pt-[10px] lg:space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative mx-auto w-full max-w-[960px] space-y-6 overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] px-3 py-4 shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] sm:p-6 lg:p-8 lg:pt-[10px] lg:pb-[10px] lg:space-y-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 lg:absolute lg:inset-x-8 lg:top-[10px] lg:z-10">
             <Badge className="shrink-0 rounded-full border-[#d8a63f]/25 bg-[#d8a63f]/10 px-3 py-2 text-xs font-medium text-[#ffd369] sm:text-sm">
               Card {Math.max(1, cards.findIndex((card) => card.id === selected?.id) + 1)} of {cards.length}
             </Badge>
