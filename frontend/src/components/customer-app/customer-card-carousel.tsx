@@ -224,7 +224,7 @@ export function CustomerCardCarousel({
         </div>
       ) : null}
 
-      <div className="space-y-4 overflow-visible px-3 pb-2 sm:px-5">
+      <div className={cn("space-y-4 overflow-visible px-3 pb-2 sm:px-5", !dashboardMode && "lg:pr-[310px]")}>
         <div
           key={`wallet-stage-${current.id}`}
           className={cn(
@@ -389,8 +389,8 @@ export function CustomerCardCarousel({
             </Button>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5">
-            <div className="flex flex-col items-center gap-2 p-2">
+          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5 lg:absolute lg:right-8 lg:top-[88px] lg:m-0 lg:w-[283px] lg:max-w-none lg:pt-0">
+            <div className="flex flex-col items-center gap-2 p-2 lg:px-0">
               <button
                 type="button"
                 className="block max-w-full cursor-pointer rounded-full bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#10110f] disabled:cursor-wait"
