@@ -160,7 +160,14 @@ export function clearStoredToken() {
 }
 
 export function registerBusinessOwner(payload: RegisterBusinessOwnerPayload) {
-  return apiFetch<AuthResponse>("/auth/register", {
+  return apiFetch<{ verification_required: true; email: string; expires_in: number }>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function verifyBusinessEmail(payload: { email: string; code: string }) {
+  return apiFetch<AuthResponse>("/auth/verify-business-email", {
     method: "POST",
     body: JSON.stringify(payload),
   });
