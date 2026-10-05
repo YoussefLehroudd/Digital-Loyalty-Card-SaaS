@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Gift, History, Sparkles, Store } from "lucide-react";
+import { Check, Gift, History, Store } from "lucide-react";
 import Image from "next/image";
 
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { customerRewards } from "@/lib/customerAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEcho } from "@/components/echo/echo-provider";
 
@@ -78,99 +78,118 @@ export default function UserRewardsPage() {
     return () => { channel.stopListening("data.changed", refresh); };
   }, [echo, token]);
 
+  const readyCount = available.filter((reward) => reward.ready).length;
+  const redeemedCount = history.filter((item) => item.status === "redeemed").length;
+
   return (
     <CustomerLayout title="Rewards" subtitle="Track rewards you can claim and your history">
       {loading ? (
-        <Card>
-          <CardContent className="p-4 text-sm text-muted-foreground">Loading rewards...</CardContent>
+        <Card className="border-white/10 bg-[#10110e]/95">
+          <CardContent role="status" className="p-6 text-sm text-white/50">Loading rewards...</CardContent>
         </Card>
       ) : error ? (
         <Card className="border-destructive/30">
-          <CardContent className="p-4 text-sm text-destructive">{error}</CardContent>
+          <CardContent role="alert" className="p-4 text-sm text-destructive">{error}</CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          <Card className="overflow-hidden">
-            <CardHeader className="border-b bg-muted/20 pb-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Gift className="h-5 w-5" /> Available rewards
-                  </CardTitle>
-                  <p className="mt-1 text-sm text-muted-foreground">Rewards from your loyalty cards</p>
-                </div>
-                <Badge>{available.length} {available.length === 1 ? "reward" : "rewards"}</Badge>
+        <div className="space-y-7">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            {[
+              { label: "Ready to claim", value: readyCount },
+              { label: "In progress", value: available.length - readyCount },
+              { label: "Redeemed", value: redeemedCount },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-white/10 bg-[#10110e]/95 px-3 py-4 sm:px-5">
+                <p className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{stat.value}</p>
+                <p className="mt-1 text-[11px] text-white/50 sm:text-sm">{stat.label}</p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4 sm:p-5">
-              {available.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">No available rewards yet.</div>
-              ) : available.map((reward) => (
-                <div key={`${reward.business_id}-${reward.loyalty_card_id}`} className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-background shadow-sm">
-                      {reward.business_logo_url ? (
-                        <Image src={reward.business_logo_url} alt={`${reward.business_name} logo`} width={56} height={56} className="h-full w-full object-cover" unoptimized />
-                      ) : <Store className="h-6 w-6 text-muted-foreground" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-lg font-semibold">{reward.business_name}</p>
-                      <p className="truncate text-sm text-muted-foreground">{reward.reward_name}</p>
-                    </div>
-                    <Badge className={reward.ready ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500" : "border-amber-500/30 bg-amber-500/10 text-amber-400"}>
-                      {reward.ready ? "Ready" : "In progress"}
-                    </Badge>
-                  </div>
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    {reward.reward_description ?? "Collect stamps to unlock your reward."}
-                  </p>
-                  <div className="mt-4 flex items-center gap-3">
-                    <span className="whitespace-nowrap text-sm font-medium">{reward.current_stamps}/{reward.points_required} stamps</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, reward.progress_percent)}%`, backgroundColor: reward.business_primary_color ?? undefined }} />
-                    </div>
-                    <span className="w-10 text-right text-sm font-semibold">{reward.progress_percent}%</span>
-                  </div>
-                  <div className="mt-4 flex items-center gap-3 rounded-xl border bg-muted/20 p-3">
-                    <Gift className="h-5 w-5 shrink-0" />
-                    <div>
-                      <p className="font-medium">{reward.reward_name}</p>
-                      <p className="text-xs text-muted-foreground">Required: {reward.points_required} stamps</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+            ))}
+          </div>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="border-b bg-muted/20 pb-4">
-              <div className="flex items-center justify-between gap-3">
-                <CardTitle className="flex items-center gap-2 text-lg"><History className="h-5 w-5" /> Reward history</CardTitle>
-                <Badge>{history.length} claimed</Badge>
+          <section aria-labelledby="loyalty-rewards-heading">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 id="loyalty-rewards-heading" className="flex items-center gap-2 text-base font-semibold text-white">
+                <Gift className="size-4 text-[#f3bd55]" /> Your rewards
+              </h2>
+              <span className="text-xs text-white/45">{available.length} {available.length === 1 ? "loyalty card" : "loyalty cards"}</span>
+            </div>
+            {available.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/15 bg-[#10110e]/90 px-5 py-10 text-center">
+                <Gift className="mx-auto mb-3 size-7 text-[#f3bd55]/70" />
+                <p className="text-sm font-medium text-white">Start collecting rewards</p>
+                <p className="mt-1 text-sm text-white/50">Add a loyalty card and collect stamps on your visits.</p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3 p-4 sm:p-5">
-              {history.length === 0 ? (
-                <div className="flex flex-col items-center py-8 text-center">
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border bg-muted/30"><History className="h-6 w-6 text-muted-foreground" /></div>
-                  <p className="font-semibold">No reward history yet.</p>
-                  <p className="mt-1 max-w-xs text-sm text-muted-foreground">Claim rewards from your loyalty cards and they will appear here.</p>
-                </div>
-              ) : history.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 rounded-xl border p-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-background">
-                    {item.business_logo_url ? <Image src={item.business_logo_url} alt={`${item.business_name} logo`} width={44} height={44} className="h-full w-full object-cover" unoptimized /> : <Sparkles className="h-5 w-5 text-muted-foreground" />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{item.reward_name}</p>
-                    <p className="truncate text-sm text-muted-foreground">{item.business_name}</p>
-                  </div>
-                  <Badge>{item.status}</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+            ) : (
+              <div className="grid items-stretch gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                {available.map((reward) => {
+                  const progress = Math.max(0, Math.min(100, reward.progress_percent));
+                  const remaining = Math.max(0, reward.points_required - reward.current_stamps);
+                  return (
+                    <article key={`${reward.business_id}-${reward.loyalty_card_id}`} className="flex min-w-0 flex-col rounded-2xl border border-white/10 bg-[#10110e]/95 p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/30">
+                          {reward.business_logo_url ? (
+                            <Image src={reward.business_logo_url} alt={`${reward.business_name} logo`} width={44} height={44} className="h-full w-full object-cover" unoptimized />
+                          ) : <Store className="size-5 text-white/40" />}
+                        </div>
+                        <p className="min-w-0 flex-1 break-words text-sm font-medium text-white/70">{reward.business_name}</p>
+                        <Badge className={reward.ready ? "shrink-0 border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "shrink-0 border-white/10 bg-white/5 text-white/55"}>
+                          {reward.ready ? "Ready" : "In progress"}
+                        </Badge>
+                      </div>
+                      <h3 className="mt-5 break-words text-lg font-semibold leading-snug text-white">{reward.reward_name}</h3>
+                      <p className="mt-2 flex-1 text-sm leading-6 text-white/50">{reward.reward_description || "Collect stamps to unlock your reward."}</p>
+                      <div className="mt-5 border-t border-white/10 pt-4">
+                        <div className="mb-2.5 flex items-center justify-between gap-3 text-xs">
+                          <p className="text-white/50"><span className="font-semibold text-white">{reward.current_stamps}</span> / {reward.points_required} stamps</p>
+                          <span className="font-medium text-[#f3bd55]">{progress}%</span>
+                        </div>
+                        <div role="progressbar" aria-label={`${reward.business_name} reward progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                          <div className="h-full rounded-full bg-[#f3bd55] transition-all duration-500" style={{ width: `${progress}%` }} />
+                        </div>
+                        <p className={reward.ready ? "mt-3 flex items-center gap-1.5 text-xs text-emerald-300" : "mt-3 text-xs text-white/45"}>
+                          {reward.ready ? <><Check className="size-3.5" /> Show your card at the business to redeem.</> : `${remaining} more ${remaining === 1 ? "stamp" : "stamps"} to unlock`}
+                        </p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section aria-labelledby="reward-history-heading" className="overflow-hidden rounded-2xl border border-white/10 bg-[#10110e]/95">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
+              <h2 id="reward-history-heading" className="flex items-center gap-2 text-base font-semibold text-white"><History className="size-4 text-[#f3bd55]" /> Reward history</h2>
+              <span className="text-xs text-white/45">{history.length} {history.length === 1 ? "reward" : "rewards"}</span>
+            </div>
+            {history.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <History className="mx-auto mb-3 size-6 text-white/30" />
+                <p className="text-sm font-medium text-white/75">No reward history yet</p>
+                <p className="mt-1 text-xs leading-5 text-white/45">Your earned and redeemed rewards will appear here.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/10">
+                {history.map((item) => {
+                  const date = item.redeemed_at ?? item.earned_at;
+                  return (
+                    <div key={item.id} className="flex items-center gap-3 px-4 py-4 sm:px-5">
+                      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-black/30">
+                        {item.business_logo_url ? <Image src={item.business_logo_url} alt={`${item.business_name} logo`} width={40} height={40} className="h-full w-full object-cover" unoptimized /> : <Gift className="size-4 text-white/40" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-sm font-medium text-white">{item.reward_name}</p>
+                        <p className="mt-0.5 text-xs text-white/45">{item.business_name}</p>
+                        {date ? <p className="mt-1 text-[11px] text-white/35">{new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p> : null}
+                      </div>
+                      <Badge className={item.status === "redeemed" ? "shrink-0 border-white/10 bg-white/5 text-white/55" : "shrink-0 border-emerald-400/20 bg-emerald-400/10 text-emerald-300"}>{item.status === "redeemed" ? "Redeemed" : item.status === "ready" ? "Ready" : item.status}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
         </div>
       )}
     </CustomerLayout>
