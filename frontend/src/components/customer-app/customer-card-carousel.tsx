@@ -334,45 +334,8 @@ export function CustomerCardCarousel({
 
         </div>
 
-        {dashboardMode ? (
-          <div className="mx-auto grid max-w-[960px] gap-2.5 pt-1 sm:grid-cols-3 lg:pt-3">
-            <Button type="button" variant="outline" className="h-11 w-full border-[#d8a63f]/30 bg-black/25 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 lg:h-12" onClick={() => router.push("/user/rewards")}>
-              <Gift className="size-4 text-[#ffc857]" /> View Rewards
-            </Button>
-            <Button type="button" className="h-11 w-full border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.16)] hover:bg-[#f4c86f] lg:h-12" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
-              <QrCode className="size-4" /> Show QR Code
-            </Button>
-            <Button type="button" variant="outline" className="h-11 w-full border-[#d8a63f]/30 bg-black/25 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 lg:h-12" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
-              <Info className="size-4 text-[#ffc857]" /> Card Details
-            </Button>
-          </div>
-        ) : (
-          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5">
-            <Button
-              type="button"
-              className="h-12 w-full rounded-xl border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] px-4 font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] transition hover:brightness-110 active:scale-[.98] focus-visible:ring-[#ffd36b] disabled:opacity-50"
-              onClick={() => void handleGoogleWallet()}
-              disabled={addingToWallet}
-            >
-              <WalletCards className="size-4 shrink-0" />
-              {addingToWallet ? "Opening Google Wallet..." : "Add to Google Wallet"}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="mx-auto h-11 rounded-xl px-5 text-rose-300/80 transition hover:bg-rose-500/10 hover:text-rose-200 focus-visible:ring-rose-300"
-              onClick={() => setConfirmDeleteOpen(true)}
-              disabled={deleting}
-            >
-              <Trash2 className="size-4" />
-              Delete Card
-            </Button>
-          </div>
-        )}
-      </div>
-
       {showNav && !dashboardMode ? (
-        <nav className="mx-auto flex max-w-[420px] items-center justify-center gap-3 border-t border-[#d8a63f]/15 pt-4" aria-label="Loyalty card navigation">
+        <nav className="mx-auto flex max-w-[420px] items-center justify-center gap-3 pb-1 pt-2" aria-label="Loyalty card navigation">
           <Button
             type="button"
             variant="outline"
@@ -412,6 +375,45 @@ export function CustomerCardCarousel({
           </Button>
         </nav>
       ) : null}
+
+        {dashboardMode ? (
+          <div className="mx-auto grid max-w-[960px] gap-2.5 pt-1 sm:grid-cols-3 lg:pt-3">
+            <Button type="button" variant="outline" className="h-11 w-full border-[#d8a63f]/30 bg-black/25 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 lg:h-12" onClick={() => router.push("/user/rewards")}>
+              <Gift className="size-4 text-[#ffc857]" /> View Rewards
+            </Button>
+            <Button type="button" className="h-11 w-full border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.16)] hover:bg-[#f4c86f] lg:h-12" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
+              <QrCode className="size-4" /> Show QR Code
+            </Button>
+            <Button type="button" variant="outline" className="h-11 w-full border-[#d8a63f]/30 bg-black/25 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 lg:h-12" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
+              <Info className="size-4 text-[#ffc857]" /> Card Details
+            </Button>
+          </div>
+        ) : (
+          <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5">
+            <Button
+              type="button"
+              className="h-12 w-full rounded-xl border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] px-4 font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] transition hover:brightness-110 active:scale-[.98] focus-visible:ring-[#ffd36b] disabled:opacity-50"
+              onClick={() => void handleGoogleWallet()}
+              disabled={addingToWallet}
+            >
+              <WalletCards className="size-4 shrink-0" />
+              {addingToWallet ? "Opening Google Wallet..." : "Add to Google Wallet"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mx-auto h-11 rounded-xl px-5 text-rose-300/80 transition hover:bg-rose-500/10 hover:text-rose-200 focus-visible:ring-rose-300"
+              onClick={() => setConfirmDeleteOpen(true)}
+              disabled={deleting}
+            >
+              <Trash2 className="size-4" />
+              Delete Card
+            </Button>
+          </div>
+        )}
+      </div>
+
+
 
       <Modal
         isOpen={confirmDeleteOpen}
