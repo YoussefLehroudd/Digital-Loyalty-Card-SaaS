@@ -115,10 +115,12 @@ export default function UserActivityPage() {
               { label: "Unlocked", value: items.filter((item) => item.type === "reward_earned").length, icon: Gift },
               { label: "Redeemed", value: items.filter((item) => item.type === "reward_redeemed").length, icon: CircleDot },
             ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-[#10110e]/95 p-3 sm:p-5">
-                <Icon className="mb-3 size-4 text-[#f3bd55]/80" />
-                <p className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{value}</p>
-                <p className="mt-1 text-[11px] text-white/45 sm:text-xs">{label}</p>
+              <div key={label} className="min-w-0 rounded-2xl border border-white/10 bg-[#10110e]/95 px-3 py-3 sm:px-5 sm:py-3.5">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Icon aria-hidden="true" className="size-7 shrink-0 text-[#f3bd55]/80 sm:size-8" />
+                  <p className="min-w-0 break-all text-2xl font-semibold leading-none tracking-tight text-white sm:text-3xl">{value}</p>
+                </div>
+                <p className="mt-2 text-[11px] text-white/45 sm:text-xs">{label}</p>
               </div>
             ))}
           </div>
