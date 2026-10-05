@@ -272,12 +272,12 @@ export function LoyaltyCardSettings() {
   return (
     <DashboardShell activeItem="loyalty">
       <div className="mx-auto max-w-[1450px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="rounded-[20px] border border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(16,17,14,.94),rgba(8,9,7,.88))] p-5 shadow-[0_18px_55px_rgba(0,0,0,.25)] sm:p-6">
-          <div className="flex size-11 items-center justify-center rounded-xl border border-[#d6a33d]/25 bg-[#8b5d12]/20 text-[#ffc857]">
+        <div className="rounded-[20px] border border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(16,17,14,.94),rgba(8,9,7,.88))] p-5 shadow-[0_18px_55px_rgba(0,0,0,.25)] sm:p-6 lg:flex lg:items-center lg:gap-4">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#d6a33d]/25 bg-[#8b5d12]/20 text-[#ffc857]">
             <CreditCard className="size-5" />
           </div>
           <div>
-            <h1 className="mt-4 text-2xl font-bold leading-tight text-white">
+            <h1 className="mt-4 text-2xl font-bold leading-tight text-white lg:mt-0">
               Loyalty card settings
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-white/45">
