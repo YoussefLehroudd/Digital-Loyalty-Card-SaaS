@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChartSpline, CreditCard, Home, LogOut, Sparkles, Trophy, User } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ChartSpline, CreditCard, Home, LogOut, Sparkles, Trophy, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { cn } from "@/lib/utils";
+import { CustomerNotificationBell } from "@/components/customer-app/customer-notification-bell";
 
 const nav = [
   { href: "/user/dashboard", label: "Home", icon: Home },
@@ -27,7 +28,6 @@ export function CustomerLayout({
 }) {
   const pathname = usePathname();
   const { user, logout } = useCustomerAuth();
-  const router = useRouter();
 
   return (
     <div
@@ -84,9 +84,7 @@ export function CustomerLayout({
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-2 pl-3">
-              <Button size="icon" variant="ghost" onClick={() => router.push("/user/notifications")} aria-label="Notifications" className="border border-transparent lg:rounded-xl hover:border-[#d8a63f]/15 hover:bg-[#d79b16]/10 hover:text-[#ffc857]">
-                <Bell className="h-5 w-5" />
-              </Button>
+              <CustomerNotificationBell />
               <Button variant="outline" size="sm" onClick={logout} className="lg:hidden">Logout</Button>
             </div>
           </div>

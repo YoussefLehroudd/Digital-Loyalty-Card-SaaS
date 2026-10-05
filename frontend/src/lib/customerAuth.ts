@@ -258,8 +258,25 @@ export function customerActivity(token: string) {
   }>("/user/activity", { token });
 }
 
+export type CustomerNotification = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  created_at: string;
+  read: boolean;
+};
+
+export function customerMarkNotificationsRead(token: string, notificationId?: string) {
+  return apiFetch<{ message: string }>("/user/notifications", {
+    method: "POST",
+    token,
+    body: JSON.stringify(notificationId ? { notification_id: notificationId } : {}),
+  });
+}
+
 export function customerNotifications(token: string) {
-  return apiFetch<{ data: unknown[] }>("/user/notifications", { token });
+  return apiFetch<{ data: CustomerNotification[] }>("/user/notifications", { token });
 }
 
 export function customerJoinByQr(token: string, qr: string) {
