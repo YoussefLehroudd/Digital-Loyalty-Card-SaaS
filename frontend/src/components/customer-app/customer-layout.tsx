@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartSpline, CreditCard, Home, LogOut, Sparkles, Trophy, User } from "lucide-react";
+import { ChartSpline, CreditCard, Home, LogOut, Mail, Trophy, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
@@ -38,16 +38,16 @@ export function CustomerLayout({
       }}
     >
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-[280px] lg:flex-col lg:border-r lg:border-[#d8a63f]/15 lg:bg-[linear-gradient(180deg,rgba(16,17,14,.98),rgba(8,9,7,.98))] lg:backdrop-blur-xl">
-        <div className="border-b border-[#d8a63f]/10 px-5 py-6">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[#8b5d12]/20 text-[#ffc857]">
-              <Sparkles className="size-5" />
-            </div>
-            <div>
-              <p className="text-lg font-bold tracking-tight text-white">LOYVANCE</p>
-              <p className="text-xs text-muted-foreground">Loyalty wallet</p>
-            </div>
-          </div>
+        <div className="px-5 pb-2 pt-6">
+          <Link href="/user/dashboard" aria-label="LOYVANCE home" className="group flex items-center gap-3 rounded-2xl p-1 outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55]">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(231,179,84,.12),rgba(231,179,84,.025))] shadow-[0_8px_24px_rgba(0,0,0,.2)] transition group-hover:border-[#e7b354]/40">
+              <img src="/brand/icon.png" alt="" width={40} height={40} className="size-10 object-contain" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-lg font-bold tracking-tight text-white">LOYVANCE</span>
+              <span className="mt-0.5 block text-[10px] font-medium tracking-[.16em] text-[#e7b354]/65">LOYALTY WALLET</span>
+            </span>
+          </Link>
         </div>
         <nav className="flex-1 space-y-1.5 p-4 pt-5">
           {nav.map((item) => {
@@ -64,7 +64,7 @@ export function CustomerLayout({
           })}
         </nav>
         <div className="border-t border-[#d8a63f]/10 p-4">
-          {user ? <p className="mb-3 truncate px-2 text-xs text-muted-foreground">{user.email}</p> : null}
+          {user ? <AccountIdentity email={user.email} className="mb-3" /> : null}
           <Button variant="outline" className="w-full justify-start gap-2 border-[#d8a63f]/15 bg-black/20 hover:bg-white/5" onClick={logout}>
             <LogOut className="h-4 w-4" /> Logout
           </Button>
@@ -74,7 +74,12 @@ export function CustomerLayout({
       <div className="min-w-0 flex-1 lg:ml-[280px]">
         <header className="sticky top-0 z-30 border-b border-[#d8a63f]/10 bg-[#080907]/90 backdrop-blur-xl">
           <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3 lg:max-w-[1440px] lg:px-8 lg:py-2">
-            <div className="min-w-0 lg:flex lg:items-center lg:gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Link href="/user/dashboard" aria-label="LOYVANCE home" className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[#e7b354]/5 outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] lg:hidden">
+                <img src="/brand/icon.png" alt="" width={32} height={32} className="size-8 object-contain" />
+              </Link>
+              <div className="min-w-0 lg:flex lg:items-center lg:gap-3">
+                <p className="text-[9px] font-semibold tracking-[.15em] text-[#e7b354]/70 lg:hidden">LOYVANCE</p>
               <h1 className="text-base font-bold text-white lg:shrink-0 lg:text-xl lg:tracking-tight">{title}</h1>
               {subtitle ? (
                 <>
@@ -82,6 +87,7 @@ export function CustomerLayout({
                   <p className="text-xs text-muted-foreground lg:truncate lg:text-sm">{subtitle}</p>
                 </>
               ) : null}
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-2 pl-3">
               <CustomerNotificationBell />
@@ -111,10 +117,24 @@ export function CustomerLayout({
           </div>
         </nav>
 
-        <footer className="mx-auto w-full max-w-md px-4 pb-28 text-center text-xs text-muted-foreground lg:hidden">
-          {user && pathname === "/user/profile" ? `Signed in as ${user.email}` : ""}
-        </footer>
+        {user ? (
+          <footer className="mx-auto w-full max-w-md px-4 pb-28 lg:hidden">
+            <AccountIdentity email={user.email} />
+          </footer>
+        ) : null}
       </div>
     </div>
+  );
+}
+
+function AccountIdentity({ email, className }: { email: string; className?: string }) {
+  return (
+    <Link href="/user/profile" className={cn("flex min-w-0 items-center gap-3 rounded-2xl border border-[#e7b354]/15 bg-[linear-gradient(135deg,rgba(231,179,84,.07),rgba(255,255,255,.015))] p-3 text-left transition hover:border-[#e7b354]/30 hover:bg-[#e7b354]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55]", className)}>
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#e7b354]/10 text-[#f3bd55]"><Mail aria-hidden="true" className="size-4" /></span>
+      <span className="min-w-0">
+        <span className="block text-[10px] font-medium tracking-wide text-white/40">Your account</span>
+        <span title={email} className="mt-0.5 block truncate text-xs font-medium text-white/80">{email}</span>
+      </span>
+    </Link>
   );
 }
