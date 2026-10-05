@@ -491,7 +491,8 @@ export function CustomerCardCarousel({
         title="Remove Loyalty Card"
         description="Are you sure you want to remove this loyalty card?"
         allowOverlayClose={!deleting}
-        className="border-destructive/30"
+        closeDisabled={deleting}
+        icon={<Trash2 />}
       >
         <div className="space-y-3">
           <div className="text-sm text-muted-foreground">
@@ -510,7 +511,8 @@ export function CustomerCardCarousel({
             </Button>
             <Button
               type="button"
-              className="flex-1 border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/15"
+              variant="secondary"
+              className="h-11 flex-1 border border-rose-400/25 bg-rose-400/10 text-rose-300 hover:bg-rose-400/20"
               onClick={() => void handleDelete()}
               disabled={deleting}
             >

@@ -379,10 +379,9 @@ export default function LoyaltyCardVisual({
         title={businessName}
         description={`Member: ${memberText}`}
         allowOverlayClose={true}
-        className="border-white/10"
       >
         <div className="space-y-3">
-          <div className="flex items-center justify-center rounded-lg bg-white p-4 -mt-4">
+          <div className="flex items-center justify-center rounded-2xl bg-white p-4">
             {qrValue ? (
               <QRCodeSVG
                 value={qrValue}

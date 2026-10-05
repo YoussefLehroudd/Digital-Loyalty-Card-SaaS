@@ -50,6 +50,8 @@ export function Button({
     <Comp
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
+      data-variant={variant ?? "default"}
+      data-size={size ?? "default"}
     />
   );
 }

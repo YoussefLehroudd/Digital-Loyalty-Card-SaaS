@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/components/auth/auth-guard";
 import { apiFetch } from "@/lib/api";
@@ -290,17 +291,15 @@ export default function CustomersPage() {
         </section>
       </div>
       {/* Customer details modal */}
-      {isModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" onMouseDown={(e)=>{if(e.target===e.currentTarget)closeModal();}}>
-          <div className="max-h-[94dvh] w-full max-w-4xl overflow-hidden rounded-[22px] border border-[#d6a33d]/30 bg-[linear-gradient(145deg,#11120f,#090a08)] shadow-[0_30px_100px_rgba(0,0,0,.65),0_0_40px_rgba(214,163,61,.06)]">
-            <div className="flex items-center justify-between border-b border-white/[.07] px-5 py-5 sm:px-7">
-              <div className="flex items-center gap-4">
-                <div className="flex size-12 items-center justify-center rounded-full border border-[#f2b93f]/30 bg-[linear-gradient(145deg,#a97418,#5f3d08)] font-bold text-white">{selectedCustomer?formatName(selectedCustomer).split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase():"CU"}</div>
-                <div><div className="text-base font-semibold text-white">{selectedCustomer?formatName(selectedCustomer):"Customer"}</div><div className="mt-0.5 text-xs text-white/40">{selectedCustomer?.email||selectedCustomer?.phone||"—"}</div></div>
-              </div>
-              <Button variant="ghost" className="cursor-pointer rounded-lg text-white/55 hover:bg-[#d6a33d]/10 hover:text-[#ffd067]" onClick={closeModal}>Close</Button>
-            </div>
-            <div className="max-h-[75vh] overflow-y-auto p-5 sm:p-7">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        allowOverlayClose={true}
+        title={selectedCustomer ? formatName(selectedCustomer) : "Customer details"}
+        description={selectedCustomer?.email || selectedCustomer?.phone || "Loyalty progress and history"}
+        icon={<User />}
+        className="max-w-4xl"
+      >
               {isFetchingDetails||!details?<div className="space-y-3"><Skeleton className="h-24 w-full bg-white/10"/><Skeleton className="h-24 w-full bg-white/10"/></div>:<>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5">
@@ -319,10 +318,7 @@ export default function CustomersPage() {
                   <div className="rounded-2xl border border-[#d6a33d]/20 bg-black/25 p-5"><div className="mb-4 flex items-center gap-2"><BadgeCheck className="size-5 text-[#ffc857]"/><p className="font-semibold text-white">Reward history</p></div>{details.customer.reward_history.length?<div className="max-h-52 space-y-2 overflow-y-auto pr-1">{details.customer.reward_history.map((r)=><div key={r.id} className="rounded-xl border border-white/[.06] bg-white/[.025] p-3"><div className="flex items-center justify-between gap-3"><span className="text-sm text-white/65">{r.reward_name||"Reward"}</span><Badge className={cn("rounded-full px-2",statusBadgeClass(r.status as RewardStatus))}>{rewardStatusLabel(r.status as RewardStatus)}</Badge></div><p className="mt-2 text-[11px] text-white/30">Earned: {formatDate(r.earned_at)}{r.redeemed_at?` • Redeemed: ${formatDate(r.redeemed_at)}`:""}</p></div>)}</div>:<div className="rounded-xl border border-dashed border-white/[.08] py-8 text-center text-sm text-white/35">No rewards yet.</div>}</div>
                 </div>
               </>}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      </Modal>
     </DashboardShell>
   );
 }

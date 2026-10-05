@@ -3,7 +3,7 @@
 import { CheckCircle2, Gift } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 
 export type StampResultProps = {
@@ -39,72 +39,20 @@ export function StampResult({
     requiredStamps > 0 ? Math.min(100, (currentStamps / requiredStamps) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        style={{
-          animation: "bb-fade-in 220ms ease-out both",
-        }}
-      />
-
-      <div
-        className="relative w-full max-w-md"
-        style={{
-          animation: "bb-zoom-fade 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both",
-        }}
-      >
-        <Card className="relative overflow-hidden border-border/60 bg-card/95 p-5 shadow-2xl">
-          {/* animated success icon */}
-          <div className="flex items-start gap-3">
-            <div className="relative grid place-items-center">
-              <div className="absolute -inset-2 rounded-full bg-success/10 blur-sm" />
-              <div
-                className="grid place-items-center rounded-full bg-success/10 p-2.5"
-                style={{
-                  animation: "bb-check-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both",
-                }}
-              >
-                <CheckCircle2 className="size-10 text-success" />
-              </div>
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="text-sm text-muted-foreground">Success</div>
-
-              {rewardRedeemed ? (
-                <>
-                  <div className="mt-0.5 text-lg font-semibold">
-                    Reward redeemed ✅
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Badge className="bg-success/10 text-success hover:bg-success/10">
-                      New loyalty card started
-                    </Badge>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mt-0.5 text-lg font-semibold">{rewardAlreadyReady ? "Reward is ready" : "Stamp added 🎉"}</div>
-                  <div className="mt-1 flex items-center gap-2">
-                    {rewardUnlocked ? (
-                      <Badge className="bg-success/10 text-success hover:bg-success/10">
-                        Reward unlocked
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-muted text-muted-foreground">
-                        In progress
-                      </Badge>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
+    <Modal
+      isOpen={true}
+      onClose={() => onClose?.()}
+      closeDisabled={!!redeeming}
+      title={rewardRedeemed ? "Reward redeemed" : rewardAlreadyReady ? "Reward is ready" : "Stamp added"}
+      description={rewardRedeemed ? "A new loyalty cycle has started." : rewardUnlocked ? "This customer is ready to redeem their reward." : "The customer's loyalty card has been updated."}
+      icon={<CheckCircle2 />}
+    >
+      <Badge className={rewardUnlocked || rewardRedeemed ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border-[#e7b354]/20 bg-[#e7b354]/10 text-[#f3bd55]"}>
+        {rewardRedeemed ? "New loyalty card started" : rewardUnlocked ? "Reward unlocked" : "In progress"}
+      </Badge>
           {/* content */}
           <div className="mt-5 space-y-4">
-            <div className="rounded-lg border bg-background p-4">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Progress</span>
                 <span className="text-sm font-medium">
@@ -114,7 +62,7 @@ export function StampResult({
 
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-success transition-all"
+                  className="h-full rounded-full bg-[#f3bd55] transition-all"
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
@@ -133,7 +81,7 @@ export function StampResult({
             </div>
 
             {!rewardRedeemed && rewardUnlocked ? (
-              <div className="flex items-center gap-2 rounded-lg border bg-secondary p-3">
+              <div className="flex items-center gap-2 rounded-2xl border border-[#e7b354]/20 bg-[#e7b354]/5 p-3">
                 <Gift className="size-4 text-success" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">Reward is ready</p>
@@ -209,41 +157,6 @@ export function StampResult({
             </div>
           </div>
 
-          {/* inline keyframes (local to this page) */}
-          <style jsx>{`
-            @keyframes bb-fade-in {
-              from {
-                opacity: 0;
-              }
-              to {
-                opacity: 1;
-              }
-            }
-            @keyframes bb-zoom-fade {
-              from {
-                opacity: 0;
-                transform: translateY(6px) scale(0.96);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-              }
-            }
-            @keyframes bb-check-pop {
-              0% {
-                transform: scale(0.85);
-                filter: blur(0.2px);
-              }
-              60% {
-                transform: scale(1.07);
-              }
-              100% {
-                transform: scale(1);
-              }
-            }
-          `}</style>
-        </Card>
-      </div>
-    </div>
+    </Modal>
   );
 }
