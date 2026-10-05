@@ -100,9 +100,9 @@ export default function UserRewardsPage() {
               { label: "In progress", value: available.length - readyCount },
               { label: "Redeemed", value: redeemedCount },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-2xl border border-white/10 bg-[#10110e]/95 px-3 py-4 sm:px-5">
-                <p className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{stat.value}</p>
-                <p className="mt-1 text-[11px] text-white/50 sm:text-sm">{stat.label}</p>
+              <div key={stat.label} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-white/10 bg-[#10110e]/95 px-3 py-4 sm:px-5">
+                <p className="min-w-0 break-all text-2xl font-semibold tracking-tight text-white sm:text-3xl">{stat.value}</p>
+                <p className="text-[11px] text-white/50 sm:text-sm">{stat.label}</p>
               </div>
             ))}
           </div>
