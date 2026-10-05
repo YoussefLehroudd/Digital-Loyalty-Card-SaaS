@@ -195,7 +195,7 @@ function CardsUI() {
             <Button
               type="button"
               onClick={() => router.push("/user/join")}
-              className="h-11 min-w-0 rounded-xl border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] px-3 text-xs font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] transition hover:brightness-110 active:scale-[.98] sm:px-4 sm:text-sm"
+              className="h-11 min-w-0 rounded-xl lg:h-[50px] lg:w-[283px] lg:rounded-full border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] px-3 text-xs font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] transition hover:brightness-110 active:scale-[.98] sm:px-4 sm:text-sm"
             >
               <Plus className="size-4 shrink-0" /> Add Loyalty Card
             </Button>
