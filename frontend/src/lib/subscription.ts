@@ -49,3 +49,16 @@ export function subscriptionDate(value: string) {
 export function subscriptionExactDate(value: string) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hour12: false }).format(new Date(value)) + " UTC";
 }
+
+export function subscriptionUrgency(s: Pick<BusinessSubscription, "state" | "remaining_seconds">) {
+  return s.state === "expired" || s.remaining_seconds <= 0 ? "expired" : s.remaining_seconds <= 3 * 86400 ? "ending" : "normal";
+}
+export function subscriptionRemaining(seconds: number) {
+  if (seconds <= 0) return "Expired";
+  if (seconds <= 3600) return `${Math.ceil(seconds / 60)} min remaining`;
+  if (seconds <= 86400) return `${Math.ceil(seconds / 3600)} hours remaining`;
+  return `${Math.ceil(seconds / 86400)} days remaining`;
+}
+export function subscriptionContact(name: string) {
+  return "https://wa.me/212644819899?text=" + encodeURIComponent(`Hello, I would like to renew my LOYVANCE subscription for ${name}.`);
+}

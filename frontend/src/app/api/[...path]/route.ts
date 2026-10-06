@@ -762,7 +762,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "profile" && req.method === "PUT") {
-    const auth = await requireAuth(req, sql);
+    const auth = await requireBusinessOwner(req, sql);
     if (auth.user.role !== "business_owner") return error("Forbidden.", 403);
 
     const body = await readJson(req);
@@ -802,7 +802,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const limited = await rateLimit(sql, req, "change-password", 8, 15 * 60 * 1000);
     if (limited) return limited;
 
-    const auth = await requireAuth(req, sql);
+    const auth = await requireBusinessOwner(req, sql);
     if (auth.user.role !== "business_owner") return error("Forbidden.", 403);
 
     const body = await readJson(req);
@@ -841,7 +841,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "avatar" && req.method === "POST") {
-    const auth = await requireAuth(req, sql);
+    const auth = await requireBusinessOwner(req, sql);
     if (auth.user.role !== "business_owner") return error("Forbidden.", 403);
 
     const form = await req.formData();
@@ -877,7 +877,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
   }
 
   if (path[1] === "avatar" && req.method === "DELETE") {
-    const auth = await requireAuth(req, sql);
+    const auth = await requireBusinessOwner(req, sql);
     if (auth.user.role !== "business_owner") return error("Forbidden.", 403);
 
     const previousPublicId = auth.user.avatar_public_id;

@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
 import { Button } from "@/components/ui/button";
-import { BusinessSubscriptionCard, BusinessSubscriptionModal, useBusinessSubscription } from "@/components/subscriptions/business-subscription";
+import { BusinessSubscriptionAlert, BusinessSubscriptionCard, BusinessSubscriptionModal, useBusinessSubscription } from "@/components/subscriptions/business-subscription";
 import { cn } from "@/lib/utils";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 
@@ -56,6 +56,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
   const { user, signOut, token } = useAuth();
   const businessName = user.business?.name ?? "Business";
   const subscription = useBusinessSubscription(token ?? null);
+  const expired = subscription.data?.subscription.state === "expired";
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<BusinessNotification[]>([]);
@@ -211,9 +212,9 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
           ) : null}
 
           <BusinessSubscriptionModal data={subscription.data} name={businessName} open={subscriptionOpen} onClose={() => setSubscriptionOpen(false)} />
-          {subscription.data?.subscription.state === "expired" ? <div role="status" className="mx-4 mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/5 p-4 sm:mx-6 lg:mx-8"><p className="text-sm font-semibold text-rose-200">Your subscription has expired</p><p className="mt-1 text-xs leading-5 text-white/55">Your dashboard and history remain available. Contact the administrator to resume scanning, rewards, and loyalty changes.</p><button type="button" onClick={() => setSubscriptionOpen(true)} className="mt-3 text-xs font-semibold text-[#edbc62]">View subscription details →</button></div> : null}
+          <BusinessSubscriptionAlert data={subscription.data} name={businessName} onOpen={()=>setSubscriptionOpen(true)} />
           <EchoProvider token={token ?? null}>
-            <DashboardRealtimeContent>{children}</DashboardRealtimeContent>
+            <DashboardRealtimeContent><fieldset disabled={expired} aria-label={expired ? "Read-only business workspace" : "Business workspace"} className="min-w-0 border-0 p-0 [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-40">{children}</fieldset></DashboardRealtimeContent>
           </EchoProvider>
           </div>
         </section>
