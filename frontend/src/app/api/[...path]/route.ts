@@ -1,6 +1,7 @@
 import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
+import { ensureAdminSchema, handleAdmin, isPlatformAdmin } from "@/lib/server/admin";
 import { appleWalletAvailable, createAppleWalletLink, ensureAppleWalletSchema, handleAppleWallet, syncAppleWalletCustomer } from "@/lib/server/apple-wallet";
 
 export const runtime = "nodejs";
@@ -22,6 +23,7 @@ type DbUser = {
   password_hash: string;
   avatar_url: string | null;
   avatar_public_id: string | null;
+  status?: string;
 };
 
 type DbBusiness = {
@@ -41,6 +43,7 @@ type DbBusiness = {
   phone: string | null;
   address: string | null;
   created_at: string;
+  status?: string;
 };
 
 type DbLoyaltyCard = {
@@ -371,6 +374,7 @@ async function ensureSchema(sql: Sql) {
         created_at timestamptz NOT NULL DEFAULT now()
       )`;
       await sql`CREATE INDEX IF NOT EXISTS idx_business_notifications_business_created ON business_notifications(business_id, created_at DESC)`;
+      await ensureAdminSchema(sql);
     })();
   }
   await schemaReady;
@@ -454,7 +458,7 @@ async function getAuth(req: Request, sql: Sql): Promise<AuthContext | null> {
   if (!token) return null;
 
   const rows = (await sql`
-    SELECT u.id, u.business_id, u.name, u.email, u.role, u.password_hash, u.avatar_url, u.avatar_public_id
+    SELECT u.id, u.business_id, u.name, u.email, u.role, u.password_hash, u.avatar_url, u.avatar_public_id, u.status
     FROM user_sessions s
     JOIN app_users u ON u.id = s.user_id
     WHERE s.token = ${token} AND s.expires_at > now()
@@ -462,13 +466,16 @@ async function getAuth(req: Request, sql: Sql): Promise<AuthContext | null> {
   `) as DbUser[];
 
   const user = rows[0];
-  if (!user) return null;
+  if (!user || user.status === "suspended") return null;
 
   const businesses = user.business_id
     ? ((await sql`SELECT * FROM businesses WHERE id = ${user.business_id} LIMIT 1`) as DbBusiness[])
     : [];
 
-  return { user, business: businesses[0] ?? null };
+  const business = businesses[0] ?? null;
+  const adminRequest = new URL(req.url).pathname.startsWith("/api/admin/") && isPlatformAdmin(user);
+  if (user.role === "business_owner" && business?.status === "suspended" && !adminRequest) return null;
+  return { user, business };
 }
 
 async function requireAuth(req: Request, sql: Sql) {
@@ -724,12 +731,13 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const password = asString(body.password);
     const rows = (await sql`SELECT * FROM app_users WHERE email = ${email} LIMIT 1`) as DbUser[];
     const user = rows[0];
-    if (!user || !(await verifyPassword(password, user.password_hash))) {
+    if (!user || user.status === "suspended" || !(await verifyPassword(password, user.password_hash))) {
       return error("Invalid credentials.", 401);
     }
     const business = user.role === "business_owner" && user.business_id
       ? (((await sql`SELECT * FROM businesses WHERE id = ${user.business_id} LIMIT 1`) as DbBusiness[])[0] ?? null)
       : null;
+    if (business?.status === "suspended") return error("This business account is suspended. Contact support.", 403);
     const profile = user.role === "customer"
       ? (((await sql`SELECT first_name, last_name, phone, avatar_url, preferences, ${user.email} AS email FROM customer_profiles WHERE user_id = ${user.id}`) as JsonRecord[])[0] ?? null)
       : null;
@@ -888,7 +896,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     if (limited) return limited;
     const body = await readJson(req);
     const email = asString(body.email).toLowerCase();
-    const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role IN ('business_owner', 'customer') LIMIT 1`) as DbUser[])[0];
+    const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role IN ('business_owner', 'customer', 'platform_admin') LIMIT 1`) as DbUser[])[0];
     if (!user) return json({ message: "If that email exists, a password reset email has been sent." });
     const token = randomBytes(32).toString("hex");
     const tokenHash = (await import("crypto")).createHash("sha256").update(token).digest("hex");
@@ -924,7 +932,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const tokenHash = (await import("crypto")).createHash("sha256").update(token).digest("hex");
     const rows = (await sql`
       SELECT u.* FROM password_reset_tokens p JOIN app_users u ON u.id = p.user_id
-      WHERE p.token_hash = ${tokenHash} AND p.expires_at > now() AND u.email = ${email} AND u.role IN ('business_owner', 'customer') LIMIT 1
+      WHERE p.token_hash = ${tokenHash} AND p.expires_at > now() AND u.email = ${email} AND u.role IN ('business_owner', 'customer', 'platform_admin') LIMIT 1
     `) as DbUser[];
     const user = rows[0];
     if (!user) return error("This reset link is invalid or expired.", 422);
@@ -1271,6 +1279,7 @@ async function handlePublic(path: string[], req: Request, sql: Sql) {
   if (path[1] === "businesses" && path[2] && req.method === "GET") {
     const business = ((await sql`SELECT * FROM businesses WHERE slug = ${path[2]} LIMIT 1`) as DbBusiness[])[0];
     if (!business) return error("Business not found.", 404);
+    if (business.status === "suspended") return error("This loyalty program is currently unavailable.", 403);
     const card = await defaultCard(sql, business.id);
     return json({ business: publicBusiness(business), loyalty_card: publicLoyaltyCard(card) });
   }
@@ -1278,6 +1287,7 @@ async function handlePublic(path: string[], req: Request, sql: Sql) {
   if (path[1] === "businesses" && path[2] && path[3] === "customers" && path[4] === "register" && req.method === "POST") {
     const business = ((await sql`SELECT * FROM businesses WHERE slug = ${path[2]} LIMIT 1`) as DbBusiness[])[0];
     if (!business) return error("Business not found.", 404);
+    if (business.status === "suspended") return error("This loyalty program is currently unavailable.", 403);
     const body = await readJson(req);
     const customerId = randomUUID();
     const qr = `cust_${randomBytes(16).toString("hex")}`;
@@ -1739,7 +1749,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     }
 
     const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role = 'customer' LIMIT 1`) as DbUser[])[0];
-    if (!user || !(await verifyPassword(password, user.password_hash))) return error("Invalid credentials.", 401);
+    if (!user || user.status === "suspended" || !(await verifyPassword(password, user.password_hash))) return error("Invalid credentials.", 401);
     const token = await createSession(sql, user.id);
     const profile = ((await sql`SELECT first_name, last_name, phone, avatar_url, preferences, ${email} AS email FROM customer_profiles WHERE user_id = ${user.id}`) as JsonRecord[])[0] ?? null;
     return json({ token, token_type: "Bearer", user: publicUser(user, null, profile) });
@@ -2104,6 +2114,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       if (existingCustomer) business = ((await sql`SELECT * FROM businesses WHERE id = ${existingCustomer.business_id} LIMIT 1`) as DbBusiness[])[0];
     }
     if (!business) return error("Business QR not found.", 404);
+    if (business.status === "suspended") return error("This loyalty program is currently unavailable.", 403);
     let membership = ((await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE user_id = ${auth.user.id} AND business_id = ${business.id} LIMIT 1`) as DbCustomer[])[0];
     if (!membership) {
       const p = profile as JsonRecord;
@@ -2155,6 +2166,11 @@ async function dispatch(req: Request, context: RouteContext) {
 
     let response: Response | null = null;
     if (path[0] === "apple-wallet") response = await handleAppleWallet(path, req, sql);
+    else if (path[0] === "admin") response = await handleAdmin(path, req, sql, {
+      authenticate: (request) => getAuth(request, sql), verifyPassword, hashPassword,
+      createSession: (id) => createSession(sql, id),
+      rateLimit: (bucket, limit, window) => rateLimit(sql, req, bucket, limit, window),
+    });
     else if (path[0] === "auth") response = await handleAuth(path, req, sql);
     else if (path[0] === "dashboard") response = await handleDashboard(path, req, sql);
     else if (path[0] === "realtime-version") response = await handleRealtimeVersion(req, sql);
@@ -2172,4 +2188,3 @@ async function dispatch(req: Request, context: RouteContext) {
     return error(message, 500);
   }
 }
-
