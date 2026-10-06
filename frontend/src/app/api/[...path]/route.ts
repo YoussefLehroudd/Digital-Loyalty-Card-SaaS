@@ -731,9 +731,10 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const password = asString(body.password);
     const rows = (await sql`SELECT * FROM app_users WHERE email = ${email} LIMIT 1`) as DbUser[];
     const user = rows[0];
-    if (!user || user.status === "suspended" || !(await verifyPassword(password, user.password_hash))) {
+    if (!user || !(await verifyPassword(password, user.password_hash))) {
       return error("Invalid credentials.", 401);
     }
+    if (user.status === "suspended") return error("Your account has been suspended. Please contact support for assistance.", 403);
     const business = user.role === "business_owner" && user.business_id
       ? (((await sql`SELECT * FROM businesses WHERE id = ${user.business_id} LIMIT 1`) as DbBusiness[])[0] ?? null)
       : null;
@@ -1749,7 +1750,8 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     }
 
     const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role = 'customer' LIMIT 1`) as DbUser[])[0];
-    if (!user || user.status === "suspended" || !(await verifyPassword(password, user.password_hash))) return error("Invalid credentials.", 401);
+    if (!user || !(await verifyPassword(password, user.password_hash))) return error("Invalid credentials.", 401);
+    if (user.status === "suspended") return error("Your account has been suspended. Please contact support for assistance.", 403);
     const token = await createSession(sql, user.id);
     const profile = ((await sql`SELECT first_name, last_name, phone, avatar_url, preferences, ${email} AS email FROM customer_profiles WHERE user_id = ${user.id}`) as JsonRecord[])[0] ?? null;
     return json({ token, token_type: "Bearer", user: publicUser(user, null, profile) });
