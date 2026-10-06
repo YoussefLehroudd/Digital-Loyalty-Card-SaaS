@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { subscriptionPlan } from "@/lib/subscription";
 import type { getSql } from "@/lib/server/db";
 import { subscriptionDetails, subscriptionFor, subscriptionsFor } from "@/lib/server/subscriptions";
 
@@ -69,12 +70,14 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     if (req.method === "GET") return reply(await subscriptionDetails(database, path[2]));
     if (req.method !== "POST") return reply({ message: "Method not allowed." }, 405);
     const body = await req.json().catch(() => ({}));
+    const plan = subscriptionPlan(body.duration_months ?? 1);
+    if (!plan) return reply({ message: "Choose a subscription duration: 1, 3, 6 or 12 months." }, 422);
     const note = typeof body.note === "string" ? body.note.trim() : "";
     const reference = typeof body.reference === "string" ? body.reference.trim() : "";
     if (!uuid.test(body.request_id || "") || !Number.isInteger(body.revision) || body.revision < 0 || !note || note.length > 1000 || reference.length > 200) return reply({ message: "Add a note and provide a valid activation request." }, 422);
-    const existing = await sql`SELECT id, business_id, actor_id, note, reference FROM subscription_events WHERE id = ${body.request_id}`;
+    const existing = await sql`SELECT id, business_id, actor_id, note, reference, duration_months FROM subscription_events WHERE id = ${body.request_id}`;
     if (existing[0]) {
-      if (existing[0].business_id !== path[2] || existing[0].actor_id !== auth.user.id || existing[0].note !== note || existing[0].reference !== reference) return reply({ message: "This activation identifier has already been used." }, 409);
+      if (existing[0].business_id !== path[2] || existing[0].actor_id !== auth.user.id || existing[0].note !== note || existing[0].reference !== reference || existing[0].duration_months !== plan.months) return reply({ message: "This activation identifier has already been used." }, 409);
       return reply({ message: "Subscription activated.", ...(await subscriptionDetails(database, path[2])) });
     }
     await subscriptionFor(database, path[2]);
@@ -87,21 +90,21 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
       FROM business_subscriptions WHERE business_id = ${path[2]} AND revision = ${body.revision}
     ), changed AS (
       UPDATE business_subscriptions s SET paid_started_at = now(),
-        paid_ends_at = ((now() AT TIME ZONE 'UTC') + interval '1 month') AT TIME ZONE 'UTC', revision = s.revision + 1
+        paid_ends_at = ((now() AT TIME ZONE 'UTC') + make_interval(months => ${plan.months}::integer)) AT TIME ZONE 'UTC', revision = s.revision + 1
       FROM previous p WHERE s.business_id = p.business_id AND s.revision = ${body.revision}
       RETURNING s.*, p.old_start, p.old_end, p.old_state
     ), event AS (
-      INSERT INTO subscription_events(id,business_id,actor_id,actor_name,action,started_at,ends_at,previous_started_at,previous_ends_at,previous_state,note,reference,revision)
-      SELECT ${body.request_id}::uuid,business_id,${auth.user.id}::uuid,${auth.user.name},'activate',paid_started_at,paid_ends_at,old_start,old_end,old_state,${note},${reference},revision FROM changed RETURNING *
+      INSERT INTO subscription_events(id,business_id,actor_id,actor_name,action,started_at,ends_at,previous_started_at,previous_ends_at,previous_state,note,reference,duration_months,amount_dh,revision)
+      SELECT ${body.request_id}::uuid,business_id,${auth.user.id}::uuid,${auth.user.name},'activate',paid_started_at,paid_ends_at,old_start,old_end,old_state,${note},${reference},${plan.months},${plan.price},revision FROM changed RETURNING *
     ), audit AS (
       INSERT INTO admin_audit_logs(id,actor_id,actor_name,action,entity_type,entity_id,entity_name,reason)
       SELECT id,actor_id,actor_name,'subscription_activate','business',business_id,${String(businesses[0].name)},note FROM event RETURNING id
     ) SELECT id FROM audit`;
     if (!result.length) {
-      const retry = await sql`SELECT id FROM subscription_events WHERE id = ${body.request_id} AND business_id = ${path[2]} AND actor_id = ${auth.user.id} AND note = ${note} AND reference = ${reference}`;
+      const retry = await sql`SELECT id FROM subscription_events WHERE id = ${body.request_id} AND business_id = ${path[2]} AND actor_id = ${auth.user.id} AND note = ${note} AND reference = ${reference} AND duration_months = ${plan.months}`;
       if (!retry.length) return reply({ message: "The subscription changed. Review its latest dates and try again." }, 409);
     }
-    return reply({ message: "Subscription activated for one calendar month.", ...(await subscriptionDetails(database, path[2])) });
+    return reply({ message: `Subscription activated for ${plan.months} calendar month${plan.months === 1 ? "" : "s"} (${plan.price} DH).`, ...(await subscriptionDetails(database, path[2])) });
   }
   if (path[1] === "logout" && req.method === "POST") {
     const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
@@ -231,7 +234,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
         CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward unlocked' END, '', COALESCE(r.redeemed_at, r.earned_at)
       FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id JOIN businesses b ON b.id = r.business_id
       UNION ALL SELECT CONCAT('admin-', a.id), 'admin', a.actor_name, a.entity_name,
-        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · 1 month' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
+        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
     ) SELECT id, type, name, business_name, title, reason, date::text FROM events WHERE (${kind} = '' OR type = ${kind}) ORDER BY date DESC, id LIMIT 25 OFFSET ${offset}`;
     const total = sql`SELECT
       CASE WHEN ${kind} IN ('', 'stamp') THEN (SELECT count(*)::int FROM visits) ELSE 0 END +

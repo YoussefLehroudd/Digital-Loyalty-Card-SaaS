@@ -1,3 +1,16 @@
+export const SUBSCRIPTION_PLANS = [
+  { months: 1, price: 149, label: "1 month" },
+  { months: 3, price: 399, label: "3 months" },
+  { months: 6, price: 749, label: "6 months" },
+  { months: 12, price: 1299, label: "12 months" },
+] as const;
+export type SubscriptionMonths = typeof SUBSCRIPTION_PLANS[number]["months"];
+export function subscriptionPlan(months: unknown) {
+  return SUBSCRIPTION_PLANS.find(plan => plan.months === months);
+}
+export function subscriptionDuration(months: number) {
+  return months === 1 ? "1 month" : `${months} months`;
+}
 export type BusinessSubscription = {
   business_id: string;
   trial_started_at: string;
@@ -16,6 +29,8 @@ export type SubscriptionEvent = {
   actor_id: string | null;
   actor_name: string;
   action: "activate";
+  duration_months: number;
+  amount_dh: number | null;
   started_at: string;
   ends_at: string;
   previous_started_at: string;

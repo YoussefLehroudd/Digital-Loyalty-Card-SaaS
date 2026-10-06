@@ -22,6 +22,9 @@ export async function ensureSubscriptionSchema(sql: Sql) {
     revision integer NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
     UNIQUE(business_id, revision)
   )`;
+  // Preserve old activation evidence: its duration was one month, price was not recorded.
+  await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS duration_months integer NOT NULL DEFAULT 1 CHECK(duration_months IN (1,3,6,12))`;
+  await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS amount_dh integer CHECK(amount_dh > 0)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_subscription_events_business ON subscription_events(business_id, created_at DESC)`;
   // Bootstrap existing businesses once. ON CONFLICT never restarts a trial on cold starts.
   await sql`INSERT INTO business_subscriptions(business_id,trial_started_at,trial_ends_at)
@@ -53,7 +56,7 @@ export async function subscriptionsFor(sql: Sql, businessIds: string[]): Promise
 export async function subscriptionDetails(sql: Sql, businessId: string): Promise<SubscriptionDetails> {
   const subscription = await subscriptionFor(sql, businessId);
   const rows = await sql`SELECT id, actor_id, actor_name, action, started_at::text, ends_at::text,
-    previous_started_at::text, previous_ends_at::text, previous_state, note, reference, revision, created_at::text
+    previous_started_at::text, previous_ends_at::text, previous_state, note, reference, duration_months, amount_dh, revision, created_at::text
     FROM subscription_events WHERE business_id = ${businessId} ORDER BY revision DESC`;
   return { subscription, history: rows as unknown as SubscriptionDetails['history'] };
 }
@@ -61,7 +64,7 @@ export async function subscriptionDetails(sql: Sql, businessId: string): Promise
 export async function requireSubscription(sql: Sql, businessId: string) {
   const subscription = await subscriptionFor(sql, businessId);
   if (!subscription || subscription.state === "expired") throw Response.json({
-    message: "Your subscription has expired. Contact the administrator to activate one month of access.",
+    message: "Your subscription has expired. Contact the administrator to activate a subscription.",
     code: "SUBSCRIPTION_EXPIRED", subscription,
   }, { status: 403, headers: { "Cache-Control": "no-store" } });
 }
