@@ -1,6 +1,7 @@
 import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
+import { ensureSubscriptionSchema, requireSubscription, subscriptionDetails } from "@/lib/server/subscriptions";
 import { ensureAdminSchema, handleAdmin, isPlatformAdmin } from "@/lib/server/admin";
 import { appleWalletAvailable, createAppleWalletLink, ensureAppleWalletSchema, handleAppleWallet, syncAppleWalletCustomer } from "@/lib/server/apple-wallet";
 
@@ -375,6 +376,7 @@ async function ensureSchema(sql: Sql) {
       )`;
       await sql`CREATE INDEX IF NOT EXISTS idx_business_notifications_business_created ON business_notifications(business_id, created_at DESC)`;
       await ensureAdminSchema(sql);
+      await ensureSubscriptionSchema(sql);
     })();
   }
   await schemaReady;
@@ -492,6 +494,7 @@ async function requireBusinessOwner(req: Request, sql: Sql) {
   if (!auth.business) {
     throw new Response(JSON.stringify({ message: "Business not found." }), { status: 404, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   }
+  if (!["GET", "HEAD"].includes(req.method)) await requireSubscription(sql, auth.business.id);
   return auth;
 }
 
@@ -718,6 +721,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
       sql`INSERT INTO app_users (id, business_id, name, email, password_hash, role) VALUES (${userId}, ${businessId}, ${name}, ${email}, ${passwordHash}, 'business_owner') RETURNING *`,
       sql`INSERT INTO loyalty_cards (id, business_id, reward_name, required_stamps, reward_description) VALUES (${cardId}, ${businessId}, 'Free Coffee', 10, 'Collect stamps to unlock your reward.')`,
       sql`INSERT INTO user_sessions (token, user_id) VALUES (${token}, ${userId})`,
+      sql`INSERT INTO business_subscriptions(business_id, trial_started_at, trial_ends_at) VALUES (${businessId}, now(), now() + interval '14 days')`,
       sql`DELETE FROM business_email_verifications WHERE email = ${businessEmail}`,
     ]);
     return json({ token, token_type: "Bearer", user: publicUser((userRows as DbUser[])[0], (businessRows as DbBusiness[])[0]) }, { status: 201 });
@@ -1289,6 +1293,7 @@ async function handlePublic(path: string[], req: Request, sql: Sql) {
     const business = ((await sql`SELECT * FROM businesses WHERE slug = ${path[2]} LIMIT 1`) as DbBusiness[])[0];
     if (!business) return error("Business not found.", 404);
     if (business.status === "suspended") return error("This loyalty program is currently unavailable.", 403);
+    await requireSubscription(sql, business.id);
     const body = await readJson(req);
     const customerId = randomUUID();
     const qr = `cust_${randomBytes(16).toString("hex")}`;
@@ -2117,6 +2122,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     }
     if (!business) return error("Business QR not found.", 404);
     if (business.status === "suspended") return error("This loyalty program is currently unavailable.", 403);
+    await requireSubscription(sql, business.id);
     let membership = ((await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE user_id = ${auth.user.id} AND business_id = ${business.id} LIMIT 1`) as DbCustomer[])[0];
     if (!membership) {
       const p = profile as JsonRecord;
@@ -2173,6 +2179,10 @@ async function dispatch(req: Request, context: RouteContext) {
       createSession: (id) => createSession(sql, id),
       rateLimit: (bucket, limit, window) => rateLimit(sql, req, bucket, limit, window),
     });
+    else if (path[0] === "subscription" && req.method === "GET") {
+      const auth = await requireBusinessOwner(req, sql);
+      response = json(await subscriptionDetails(sql, auth.business!.id));
+    }
     else if (path[0] === "auth") response = await handleAuth(path, req, sql);
     else if (path[0] === "dashboard") response = await handleDashboard(path, req, sql);
     else if (path[0] === "realtime-version") response = await handleRealtimeVersion(req, sql);

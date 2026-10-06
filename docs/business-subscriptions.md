@@ -1,0 +1,15 @@
+# Business subscriptions
+
+Businesses receive one 14-day trial. Existing businesses start their trial when this schema is first deployed; new businesses start at verified registration. Trials are persisted and never renewed by login, refresh, deployment, or reactivation of account status.
+
+Only a platform administrator can activate a monthly subscription from Businesses → Subscription. Activation replaces any remaining period and begins immediately at the database timestamp. The expiry is one calendar month later in UTC (month-end dates clamp to the last day of the next month). This is a manually granted period; no payment collection, automatic charge, or automatic renewal is implemented.
+
+Each activation requires a note and accepts an optional payment/internal reference. Its immutable event records a unique activation ID, business ID, administrator ID and name, exact start/end/creation timestamps, previous start/end/state, reference, note, and revision. The subscription update, event, and platform audit commit in one PostgreSQL statement. Reusing an identical request ID safely retries the same activation; stale revisions reject competing changes with HTTP 409. Historical events cannot be edited through any API.
+
+Account suspension and subscription expiry are separate. A subscription never lifts a suspension. Expired businesses can sign in, read their dashboard, review history, manage account security, and view/export subscription evidence. Server-side checks block business loyalty mutations, stamps, redemptions, and new customer registrations/joins. Existing customer cards and history are preserved. Existing wallet cards are not erased on expiry.
+
+The business sidebar shows the current trial/monthly period above Log out on desktop and in the mobile drawer. Its details include Morocco-local dates (Africa/Casablanca), original trial dates, all activation records, UTC timestamps, and a JSON export. It refreshes every five seconds while visible, thirty seconds while hidden, and on window focus. Admin data follows the panel's three-second polling. These refresh intervals do not control expiry: the backend checks database time on each protected request.
+
+Verification uses an isolated PostgreSQL/PGlite database and the real route modules. 117 checks covered existing admin authorization/suspension/password flows, persisted trials, activation/renewal/idempotent retries, concurrent revision conflicts, exact expiry, protected scan/redeem/writes/joins, readable expired dashboards, reactivation, and UTC month-end/leap-year boundaries. Browser checks use the actual React components and API handlers in an isolated preview; external auth, Next navigation, images, and notification transport are stubbed there. Production customer data is not changed by these tests.
+
+19 browser checks passed: trial display, administrator activation, live business update, reference/administrator history, JSON export, Escape handling, admin and business layouts at 320/390 pixels without horizontal overflow, live expiry banner, and reactivation without reload.

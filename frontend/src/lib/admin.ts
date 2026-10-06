@@ -1,8 +1,9 @@
 import { apiFetch } from "@/lib/api";
+import type { BusinessSubscription } from "@/lib/subscription";
 
 export const ADMIN_TOKEN_KEY = "loyvance_admin_token";
 export type AdminUser = { id: string; name: string; email: string; role: "platform_admin" };
-export type AdminRow = { id: string; name: string; email: string; status: "active" | "suspended"; created_at: string; cards: number; stamps?: number; logo_url?: string | null; avatar_url?: string | null; slug?: string };
+export type AdminRow = { id: string; name: string; email: string; status: "active" | "suspended"; created_at: string; cards: number; stamps?: number; logo_url?: string | null; avatar_url?: string | null; slug?: string; subscription?: BusinessSubscription };
 export type AdminList = { data: AdminRow[]; total: number; page: number; per_page: number };
 export type AdminDetail = AdminRow & { phone?: string | null; address?: string | null; reward_name?: string; required_stamps?: number; redeemed?: number; cards: number };
 export type AdminCustomerDetail = Omit<AdminDetail, "cards"> & { cards: Array<{ id: string; business_name: string; current_stamps: number | null; required_stamps: number | null; reward_name: string | null }> };

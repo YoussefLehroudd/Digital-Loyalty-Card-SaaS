@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
 import { Button } from "@/components/ui/button";
+import { BusinessSubscriptionCard, BusinessSubscriptionModal, useBusinessSubscription } from "@/components/subscriptions/business-subscription";
 import { cn } from "@/lib/utils";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 
@@ -54,6 +55,8 @@ const sidebarItems = [
 export function DashboardShell({ activeItem, children }: DashboardShellProps) {
   const { user, signOut, token } = useAuth();
   const businessName = user.business?.name ?? "Business";
+  const subscription = useBusinessSubscription(token ?? null);
+  const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<BusinessNotification[]>([]);
 
@@ -110,7 +113,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
               </div>
             </div>
 
-            <nav className="flex-1 space-y-2 px-3 py-5">
+            <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-5">
               {sidebarItems.map((item) => (
                 <SidebarItem
                   active={item.key === activeItem}
@@ -122,7 +125,8 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
               ))}
             </nav>
 
-            <div className="p-3">
+            <div className="shrink-0 p-3">
+              <BusinessSubscriptionCard {...subscription} onOpen={() => setSubscriptionOpen(true)} />
               <Button className="h-12 w-full justify-start gap-3 rounded-xl border border-transparent text-white/55 transition-all hover:border-[#d9a52f]/20 hover:bg-[#d9a52f]/5 hover:text-white" onClick={signOut} variant="ghost">
                 <LogOut className="size-4" />
                 Log out
@@ -189,6 +193,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
                   ))}
                 </nav>
                 <div className="shrink-0 border-t border-[#d9a52f]/15 bg-[#090a08]/85 p-3 backdrop-blur-sm">
+                  <BusinessSubscriptionCard {...subscription} onOpen={() => { setIsMobileMenuOpen(false); setSubscriptionOpen(true); }} />
                   <Button
                     className="h-12 w-full justify-start gap-3 rounded-xl border border-white/10 bg-black/20 text-white/75 hover:border-[#d9a52f]/25 hover:bg-[#d9a52f]/10 hover:text-white"
                     onClick={() => {
@@ -205,6 +210,8 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             </div>
           ) : null}
 
+          <BusinessSubscriptionModal data={subscription.data} name={businessName} open={subscriptionOpen} onClose={() => setSubscriptionOpen(false)} />
+          {subscription.data?.subscription.state === "expired" ? <div role="status" className="mx-4 mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/5 p-4 sm:mx-6 lg:mx-8"><p className="text-sm font-semibold text-rose-200">Your subscription has expired</p><p className="mt-1 text-xs leading-5 text-white/55">Your dashboard and history remain available. Contact the administrator to resume scanning, rewards, and loyalty changes.</p><button type="button" onClick={() => setSubscriptionOpen(true)} className="mt-3 text-xs font-semibold text-[#edbc62]">View subscription details →</button></div> : null}
           <EchoProvider token={token ?? null}>
             <DashboardRealtimeContent>{children}</DashboardRealtimeContent>
           </EchoProvider>
@@ -481,3 +488,4 @@ function TopNav({
     </header>
   );
 }
+
