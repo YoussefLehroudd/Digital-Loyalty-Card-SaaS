@@ -211,7 +211,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             </div>
           ) : null}
 
-          <BusinessSubscriptionModal data={subscription.data} name={businessName} open={subscriptionOpen} onClose={() => setSubscriptionOpen(false)} />
+          <BusinessSubscriptionModal data={subscription.data} name={businessName} open={subscriptionOpen} token={token??""} onSaved={subscription.refresh} onClose={() => setSubscriptionOpen(false)} />
           <BusinessSubscriptionAlert data={subscription.data} name={businessName} onOpen={()=>setSubscriptionOpen(true)} />
           <EchoProvider token={token ?? null}>
             <DashboardRealtimeContent><fieldset disabled={expired} aria-label={expired ? "Read-only business workspace" : "Business workspace"} className="min-w-0 border-0 p-0 [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-40">{children}</fieldset></DashboardRealtimeContent>

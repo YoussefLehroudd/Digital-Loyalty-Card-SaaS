@@ -1,7 +1,9 @@
 import { randomUUID } from "crypto";
-import { subscriptionPlan } from "@/lib/subscription";
+import { paymentAmount, PAYMENT_METHODS, subscriptionPlan } from "@/lib/subscription";
 import type { getSql } from "@/lib/server/db";
 import { subscriptionDetails, subscriptionFor, subscriptionsFor } from "@/lib/server/subscriptions";
+
+import { rejectRenewal, renewalProof } from "@/lib/server/renewal-requests";
 
 type Sql = ReturnType<typeof getSql>;
 type RowSql = {
@@ -63,6 +65,17 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   if (!auth) return reply({ message: "Unauthenticated." }, 401);
   if (!isPlatformAdmin(auth.user)) return reply({ message: "Administrator access required." }, 403);
   if (path[1] === "me" && req.method === "GET") return reply({ user: safeUser(auth.user) });
+  if(path[1]==="renewals"){
+    if(path[2] && path[3]==="proof" && req.method==="GET")return renewalProof(database,path[2]);
+    if(path[2] && req.method==="PATCH")return rejectRenewal(database,path[2],req,auth.user);
+    if(req.method!=="GET")return reply({message:"Method not allowed."},405);
+    const {page,offset}=pageOptions(req);const status=new URL(req.url).searchParams.get("status")||"pending";
+    if(!["pending","approved","rejected","all"].includes(status))return reply({message:"Choose a valid request status."},422);
+    const [rows,count]=await Promise.all([sql`SELECT r.id,r.business_id,b.name AS business_name,r.duration_months,r.plan_price_dh,r.note,r.reference,r.status,r.created_at::text,r.reviewed_at::text,r.actor_name,r.review_note,true AS has_proof
+      FROM subscription_renewal_requests r JOIN businesses b ON b.id=r.business_id WHERE (${status}='all' OR r.status=${status}) ORDER BY r.created_at DESC LIMIT 25 OFFSET ${offset}`,
+      sql`SELECT count(*)::int AS total FROM subscription_renewal_requests WHERE (${status}='all' OR status=${status})`]);
+    return reply({data:rows,total:count[0].total,page,per_page:25});
+  }
   if (path[1] === "businesses" && path[3] === "subscription") {
     if (!uuid.test(path[2] || "")) return reply({ message: "Invalid business identifier." }, 422);
     const businesses = await sql`SELECT id, name FROM businesses WHERE id = ${path[2]} LIMIT 1`;
@@ -71,40 +84,56 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     if (req.method !== "POST") return reply({ message: "Method not allowed." }, 405);
     const body = await req.json().catch(() => ({}));
     const plan = subscriptionPlan(body.duration_months ?? 1);
-    if (!plan) return reply({ message: "Choose a subscription duration: 1, 3, 6 or 12 months." }, 422);
+    const mode = body.mode === undefined ? "replace" : body.mode;
+    const paymentRecorded = body.payment_recorded === true;
+    const amount = paymentRecorded ? paymentAmount(body.paid_amount) : null;
+    const paymentMethod = paymentRecorded && PAYMENT_METHODS.some(m=>m.value===body.payment_method) ? body.payment_method : null;
+    const paidAt = paymentRecorded && typeof body.paid_at === "string" && Number.isFinite(Date.parse(body.paid_at)) ? new Date(body.paid_at).toISOString() : null;
+    const renewalId = body.renewal_request_id ?? null;
     const note = typeof body.note === "string" ? body.note.trim() : "";
     const reference = typeof body.reference === "string" ? body.reference.trim() : "";
-    if (!uuid.test(body.request_id || "") || !Number.isInteger(body.revision) || body.revision < 0 || !note || note.length > 1000 || reference.length > 200) return reply({ message: "Add a note and provide a valid activation request." }, 422);
-    const existing = await sql`SELECT id, business_id, actor_id, note, reference, duration_months FROM subscription_events WHERE id = ${body.request_id}`;
-    if (existing[0]) {
-      if (existing[0].business_id !== path[2] || existing[0].actor_id !== auth.user.id || existing[0].note !== note || existing[0].reference !== reference || existing[0].duration_months !== plan.months) return reply({ message: "This activation identifier has already been used." }, 409);
-      return reply({ message: "Subscription activated.", ...(await subscriptionDetails(database, path[2])) });
+    if (!plan || !["extend","replace"].includes(mode) || !uuid.test(body.request_id || "") || !Number.isInteger(body.revision) || body.revision < 0 || !note || note.length > 1000 || reference.length > 200 || (renewalId!==null&&!uuid.test(renewalId)) || (paymentRecorded&&(!amount||!paymentMethod||!paidAt||Date.parse(paidAt)>Date.now()+60000)) || (renewalId && (!paymentRecorded||body.payment_confirmed!==true)) || (paymentRecorded && body.payment_confirmed!==true)) return reply({ message: "Choose a duration and mode, add a note, and confirm valid payment details when recording a payment." }, 422);
+    const existing = await sql`SELECT id,business_id,actor_id,note,reference,duration_months,mode,amount_centimes,payment_method,paid_at::text,renewal_request_id FROM subscription_events WHERE id=${body.request_id}`;
+    if(existing[0]){
+      const e=existing[0];
+      if(e.business_id!==path[2]||e.actor_id!==auth.user.id||e.note!==note||e.reference!==reference||e.duration_months!==plan.months||e.mode!==mode||e.amount_centimes!==amount||e.payment_method!==paymentMethod||e.renewal_request_id!==renewalId||(e.paid_at ? new Date(String(e.paid_at)).toISOString():null)!==paidAt)return reply({message:"This activation identifier has already been used."},409);
+      return reply({message:"Subscription already updated.",...(await subscriptionDetails(database,path[2]))});
     }
-    await subscriptionFor(database, path[2]);
-    // One statement commits the period, immutable evidence, and platform audit together.
-    // Revision prevents two administrators from replacing the same period concurrently.
-    const result = await sql`WITH previous AS MATERIALIZED (
-      SELECT *, COALESCE(paid_started_at, trial_started_at) AS old_start,
-        COALESCE(paid_ends_at, trial_ends_at) AS old_end,
-        CASE WHEN COALESCE(paid_ends_at,trial_ends_at) <= now() THEN 'expired' WHEN paid_ends_at IS NULL THEN 'trial' ELSE 'active' END AS old_state
-      FROM business_subscriptions WHERE business_id = ${path[2]} AND revision = ${body.revision}
+    await subscriptionFor(database,path[2]);
+    const result=await sql`WITH request_match AS MATERIALIZED (
+      SELECT id,business_id,duration_months FROM subscription_renewal_requests WHERE id=${renewalId}::uuid AND business_id=${path[2]} AND status='pending' AND duration_months=${plan.months} FOR UPDATE
+    ), previous AS MATERIALIZED (
+      SELECT s.*,COALESCE(paid_started_at,trial_started_at) AS old_start,COALESCE(paid_ends_at,trial_ends_at) AS old_end,
+        CASE WHEN COALESCE(paid_ends_at,trial_ends_at)<=now() THEN 'expired' WHEN paid_ends_at IS NULL THEN 'trial' ELSE 'active' END AS old_state
+      FROM business_subscriptions s WHERE business_id=${path[2]} AND revision=${body.revision}
+        AND (${renewalId}::uuid IS NULL OR EXISTS(SELECT 1 FROM request_match)) FOR UPDATE OF s
     ), changed AS (
-      UPDATE business_subscriptions s SET paid_started_at = now(),
-        paid_ends_at = ((now() AT TIME ZONE 'UTC') + make_interval(months => ${plan.months}::integer)) AT TIME ZONE 'UTC', revision = s.revision + 1
-      FROM previous p WHERE s.business_id = p.business_id AND s.revision = ${body.revision}
-      RETURNING s.*, p.old_start, p.old_end, p.old_state
+      UPDATE business_subscriptions s SET
+        paid_started_at=CASE WHEN ${mode}='extend' AND p.old_end>now() THEN COALESCE(s.paid_started_at,now()) ELSE now() END,
+        paid_ends_at=((CASE WHEN ${mode}='extend' AND p.old_end>now() THEN p.old_end ELSE now() END AT TIME ZONE 'UTC')+make_interval(months=>${plan.months}::integer)) AT TIME ZONE 'UTC',revision=s.revision+1
+      FROM previous p WHERE s.business_id=p.business_id AND s.revision=${body.revision}
+      RETURNING s.*,p.old_start,p.old_end,p.old_state
     ), event AS (
-      INSERT INTO subscription_events(id,business_id,actor_id,actor_name,action,started_at,ends_at,previous_started_at,previous_ends_at,previous_state,note,reference,duration_months,amount_dh,revision)
-      SELECT ${body.request_id}::uuid,business_id,${auth.user.id}::uuid,${auth.user.name},'activate',paid_started_at,paid_ends_at,old_start,old_end,old_state,${note},${reference},${plan.months},${plan.price},revision FROM changed RETURNING *
+      INSERT INTO subscription_events(id,business_id,actor_id,actor_name,action,started_at,ends_at,previous_started_at,previous_ends_at,previous_state,note,reference,duration_months,amount_dh,revision,mode,amount_centimes,payment_method,paid_at,receipt_number,renewal_request_id)
+      SELECT ${body.request_id}::uuid,business_id,${auth.user.id}::uuid,${auth.user.name},'activate',
+        CASE WHEN ${mode}='extend' AND old_end>now() THEN old_end ELSE paid_started_at END,paid_ends_at,old_start,old_end,old_state,
+        ${note},${reference},${plan.months},${plan.price},revision,${mode},${amount},${paymentMethod},${paidAt}::timestamptz,
+        CASE WHEN ${paymentRecorded} THEN 'LV-'||upper(replace(${body.request_id}::text,'-','')) ELSE NULL END,${renewalId}::uuid FROM changed RETURNING *
+    ), reviewed AS (
+      UPDATE subscription_renewal_requests r SET status='approved',reviewed_at=now(),actor_id=${auth.user.id},actor_name=${auth.user.name},review_note=${note}
+      FROM event e WHERE r.id=e.renewal_request_id RETURNING r.id
+    ), email AS (
+      INSERT INTO subscription_email_jobs(id,business_id,kind,period_ends_at,event_id) SELECT gen_random_uuid(),business_id,'renewed',ends_at,id FROM event ON CONFLICT(business_id,kind,period_ends_at) DO NOTHING RETURNING id
     ), audit AS (
       INSERT INTO admin_audit_logs(id,actor_id,actor_name,action,entity_type,entity_id,entity_name,reason)
       SELECT id,actor_id,actor_name,'subscription_activate','business',business_id,${String(businesses[0].name)},note FROM event RETURNING id
     ) SELECT id FROM audit`;
-    if (!result.length) {
-      const retry = await sql`SELECT id FROM subscription_events WHERE id = ${body.request_id} AND business_id = ${path[2]} AND actor_id = ${auth.user.id} AND note = ${note} AND reference = ${reference} AND duration_months = ${plan.months}`;
-      if (!retry.length) return reply({ message: "The subscription changed. Review its latest dates and try again." }, 409);
+    if(!result.length){
+      const retry=await sql`SELECT id FROM subscription_events WHERE id=${body.request_id} AND business_id=${path[2]} AND actor_id=${auth.user.id} AND note=${note} AND reference=${reference} AND duration_months=${plan.months} AND mode=${mode} AND amount_centimes IS NOT DISTINCT FROM ${amount}::integer AND payment_method IS NOT DISTINCT FROM ${paymentMethod}::text AND paid_at IS NOT DISTINCT FROM ${paidAt}::timestamptz AND renewal_request_id IS NOT DISTINCT FROM ${renewalId}::uuid`;
+      if(retry.length)return reply({message:"Subscription already updated.",...(await subscriptionDetails(database,path[2]))});
+      return reply({message:"The subscription or renewal request changed. Review the latest details and try again."},409);
     }
-    return reply({ message: `Subscription activated for ${plan.months} calendar month${plan.months === 1 ? "" : "s"} (${plan.price} DH).`, ...(await subscriptionDetails(database, path[2])) });
+    return reply({message:`Subscription ${mode==="extend"?"renewed":"activated"} for ${plan.months} calendar month${plan.months===1?"":"s"}. ${paymentRecorded?"Payment recorded and receipt created.":"No payment recorded."}`,...(await subscriptionDetails(database,path[2]))});
   }
   if (path[1] === "logout" && req.method === "POST") {
     const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
@@ -164,7 +193,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   }
   if (req.method !== "GET") return reply({ message: "API route not found." }, 404);
   if (path[1] === "overview") {
-    const [stats, trend, businesses] = await Promise.all([
+    const [stats, trend, businesses, subscriptions] = await Promise.all([
       sql`SELECT
         (SELECT count(*)::int FROM businesses) AS businesses,
         (SELECT count(*)::int FROM businesses WHERE status = 'active') AS active_businesses,
@@ -179,10 +208,17 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
         (SELECT count(*)::int FROM reward_redemptions WHERE redeemed_at >= d AND redeemed_at < d + interval '1 day') AS rewards
         FROM generate_series(current_date - interval '13 days', current_date, interval '1 day') d ORDER BY d`,
       sql`SELECT b.id, b.name, b.logo_url, b.status, count(c.id)::int AS cards FROM businesses b LEFT JOIN customers c ON c.business_id = b.id GROUP BY b.id ORDER BY count(c.id) DESC, b.name LIMIT 5`,
+      sql`SELECT
+        (SELECT COALESCE(sum(amount_centimes),0)::bigint::text FROM subscription_events WHERE paid_at>=date_trunc('month',now() AT TIME ZONE 'Africa/Casablanca') AT TIME ZONE 'Africa/Casablanca' AND paid_at<now()+interval '1 minute') AS payments_month_centimes,
+        (SELECT count(*)::int FROM business_subscriptions WHERE paid_ends_at>now()) AS subscribed,
+        (SELECT count(*)::int FROM business_subscriptions WHERE COALESCE(paid_ends_at,trial_ends_at)>now() AND COALESCE(paid_ends_at,trial_ends_at)<=now()+interval '3 days') AS ending_soon,
+        (SELECT count(*)::int FROM subscription_renewal_requests WHERE status='pending') AS pending_requests`,
     ]);
-    return reply({ data: { stats: stats[0], trend, businesses }, generated_at: new Date().toISOString() });
+    return reply({ data: { stats: stats[0], trend, businesses, subscriptions: subscriptions[0] }, generated_at: new Date().toISOString() });
   }
   const { page, offset, query, status } = pageOptions(req);
+  const subscriptionFilter=new URL(req.url).searchParams.get("subscription")||"";
+  if(!["","trial","active","ending","expired"].includes(subscriptionFilter))return reply({message:"Choose a valid subscription filter."},422);
   if (path[1] === "businesses") {
     if (path[2]) {
       if (!uuid.test(path[2])) return reply({ message: "Invalid identifier." }, 422);
@@ -198,9 +234,17 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
       sql`SELECT b.id, b.name, b.email, b.slug, b.status, b.logo_url, b.created_at::text,
         (SELECT count(*)::int FROM customers WHERE business_id = b.id) AS cards,
         (SELECT count(*)::int FROM visits WHERE business_id = b.id) AS stamps
-        FROM businesses b WHERE (b.name ILIKE ${query} OR b.email ILIKE ${query}) AND (${status} = '' OR b.status = ${status})
+        FROM businesses b WHERE (b.name ILIKE ${query} OR b.email ILIKE ${query}) AND (${status} = '' OR b.status = ${status}) AND (${subscriptionFilter}='' OR EXISTS(SELECT 1 FROM business_subscriptions s WHERE s.business_id=b.id AND (
+      (${subscriptionFilter}='trial' AND s.paid_ends_at IS NULL AND s.trial_ends_at>now()) OR
+      (${subscriptionFilter}='active' AND s.paid_ends_at>now()) OR
+      (${subscriptionFilter}='ending' AND COALESCE(s.paid_ends_at,s.trial_ends_at)>now() AND COALESCE(s.paid_ends_at,s.trial_ends_at)<=now()+interval '3 days') OR
+      (${subscriptionFilter}='expired' AND COALESCE(s.paid_ends_at,s.trial_ends_at)<=now()))))
         ORDER BY b.created_at DESC, b.id LIMIT 25 OFFSET ${offset}`,
-      sql`SELECT count(*)::int AS total FROM businesses b WHERE (b.name ILIKE ${query} OR b.email ILIKE ${query}) AND (${status} = '' OR b.status = ${status})`,
+      sql`SELECT count(*)::int AS total FROM businesses b WHERE (b.name ILIKE ${query} OR b.email ILIKE ${query}) AND (${status} = '' OR b.status = ${status}) AND (${subscriptionFilter}='' OR EXISTS(SELECT 1 FROM business_subscriptions s WHERE s.business_id=b.id AND (
+      (${subscriptionFilter}='trial' AND s.paid_ends_at IS NULL AND s.trial_ends_at>now()) OR
+      (${subscriptionFilter}='active' AND s.paid_ends_at>now()) OR
+      (${subscriptionFilter}='ending' AND COALESCE(s.paid_ends_at,s.trial_ends_at)>now() AND COALESCE(s.paid_ends_at,s.trial_ends_at)<=now()+interval '3 days') OR
+      (${subscriptionFilter}='expired' AND COALESCE(s.paid_ends_at,s.trial_ends_at)<=now()))))`,
     ]);
     const subscriptions = new Map((await subscriptionsFor(database, rows.map(row => String(row.id)))).map(subscription => [subscription.business_id, subscription]));
     return reply({ data: rows.map(row => ({ ...row, subscription: subscriptions.get(String(row.id)) })), total: total[0].total, page, per_page: 25 });
@@ -234,7 +278,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
         CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward unlocked' END, '', COALESCE(r.redeemed_at, r.earned_at)
       FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id JOIN businesses b ON b.id = r.business_id
       UNION ALL SELECT CONCAT('admin-', a.id), 'admin', a.actor_name, a.entity_name,
-        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
+        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'subscription_expiry_adjustment' THEN 'Subscription expiry adjusted for testing' WHEN a.action='renewal_rejected' THEN 'Renewal request rejected' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
     ) SELECT id, type, name, business_name, title, reason, date::text FROM events WHERE (${kind} = '' OR type = ${kind}) ORDER BY date DESC, id LIMIT 25 OFFSET ${offset}`;
     const total = sql`SELECT
       CASE WHEN ${kind} IN ('', 'stamp') THEN (SELECT count(*)::int FROM visits) ELSE 0 END +
@@ -255,3 +299,4 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   } });
   return reply({ message: "API route not found." }, 404);
 }
+

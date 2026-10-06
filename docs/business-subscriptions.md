@@ -1,15 +1,34 @@
 # Business subscriptions
 
-Businesses receive one 14-day trial. Existing businesses start their trial when this schema is first deployed; new businesses start at verified registration. Trials are persisted and never renewed by login, refresh, deployment, or reactivation of account status.
+Business owners may sign in and read their records after expiration. Workspace mutations are blocked by the API and the dashboard; subscription information, renewal requests, private proof viewing, recovery, contact and logout remain available. Suspension is independent of subscription expiration.
 
-Only a platform administrator can activate a 1, 3, 6 or 12 calendar-month subscription from Businesses → Subscription. Activation replaces any remaining period and begins immediately at the database timestamp. The expiry is the selected number of calendar months later in UTC (month-end dates clamp to the last day of the next month). This is a manually granted period; no payment collection, automatic charge, or automatic renewal is implemented.
+## Plans and dates
 
-Each activation requires a note and accepts an optional payment/internal reference. Its immutable event records a unique activation ID, business ID, administrator ID and name, exact start/end/creation timestamps, previous start/end/state, reference, note, duration in months, total plan price in DH, and revision. Prices are 149 / 399 / 749 / 1,299 DH respectively and are derived server-side. Legacy one-month events retain an unrecorded price; no historical payment is invented. The subscription update, event, and platform audit commit in one PostgreSQL statement. Reusing an identical request ID safely retries the same activation; stale revisions reject competing changes with HTTP 409. Historical events cannot be edited through any API.
+| Calendar months | Total plan price |
+| --- | --- |
+| 1 | 149 DH |
+| 3 | 399 DH |
+| 6 | 749 DH |
+| 12 | 1,299 DH |
 
-Account suspension and subscription expiry are separate. A subscription never lifts a suspension. Expired businesses can sign in, read their dashboard, review history, manage account security, and view/export subscription evidence. Server-side checks block business loyalty mutations, stamps, redemptions, and new customer registrations/joins. Existing customer cards and history are preserved. Existing wallet cards are not erased on expiry.
+The admin subscription form defaults to **Renew / Extend**: append the selected calendar months to an unexpired trial or paid period. Expired periods restart at confirmation. **Start now / Replace** discards remaining time and starts immediately. Dates use calendar arithmetic in UTC; the interface displays Africa/Casablanca time. Original trial dates and immutable activation history remain preserved. Legacy API calls without a mode retain replace behavior.
 
-The business sidebar shows the current trial/selected subscription period above Log out on desktop and in the mobile drawer. Its details include Morocco-local dates (Africa/Casablanca), original trial dates, all activation records, UTC timestamps, and a printable HTML export with Save PDF. It refreshes every five seconds while visible, thirty seconds while hidden, and on window focus. Admin data follows the panel's three-second polling. These refresh intervals do not control expiry: the backend checks database time on each protected request.
+## Payments and receipts
 
-Verification uses an isolated PostgreSQL/PGlite database and the real route modules. 117 checks covered existing admin authorization/suspension/password flows, persisted trials, activation/renewal/idempotent retries, concurrent revision conflicts, exact expiry, protected scan/redeem/writes/joins, readable expired dashboards, reactivation, and UTC month-end/leap-year boundaries. Browser checks use the actual React components and API handlers in an isolated preview; external auth, Next navigation, images, and notification transport are stubbed there. Production customer data is not changed by these tests.
+Administrators explicitly confirm that a payment was received and record the actual amount in integer centimes, method, date, reference and note. Plan price and received amount are separate. Recorded payments create a unique PDF receipt; historical or complimentary activations without actual payment records do not create receipts or count toward payments. The overview reports recorded payments in the current Morocco calendar month, paid subscriptions, periods ending within three days and pending requests.
 
-19 browser checks passed: trial display, administrator activation, live business update, reference/administrator history, JSON export, Escape handling, admin and business layouts at 320/390 pixels without horizontal overflow, live expiry banner, and reactivation without reload.
+Activation requires a current revision and unique request UUID. Identical retries return the existing result. Conflicting revisions, reused UUIDs or reviewed requests return 409. Subscription update, activation event, audit, request approval and renewal-email outbox are committed together.
+
+## Renewal requests
+
+Owners select a plan and submit a private JPG, PNG or WebP proof, maximum 2 MB, with an optional note and reference. One pending request per business is allowed. Submission never restores access. Proof retrieval requires the owning business or a platform administrator, uses no-store responses and is never included in listing payloads.
+
+Admin > Businesses contains pending, approved and rejected renewal requests. Approval opens the subscription form for payment verification and extends the requested duration. Rejection requires a reason visible to the owner and permits a new request. The business directory supports trial, subscribed, ending-soon and expired filters.
+
+## Notifications
+
+A protected Vercel cron calls `/api/cron/subscription-reminders` daily at 08:00 UTC in production. `CRON_SECRET` must be configured. Daily scans enqueue one warning for each period within three days and one expiration message. The dashboard warning and red countdown update immediately without waiting for email. Successful admin activation also attempts its renewal email immediately; failed delivery remains queued.
+
+`RESEND_API_KEY` and a verified sender are required by the existing email service. Jobs have unique business/kind/expiry keys, provider idempotency keys, stale-claim recovery and a maximum of six attempts. Obsolete or overdue upcoming-expiry reminders are skipped. Each scheduled run processes up to 40 jobs; larger installations should increase processing capacity or scheduling frequency according to their hosting plan.
+
+The demonstration account's test expiration is independent of this rollout and is not reset by schema initialization or deployment.

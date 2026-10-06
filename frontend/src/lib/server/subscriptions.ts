@@ -25,6 +25,30 @@ export async function ensureSubscriptionSchema(sql: Sql) {
   // Preserve old activation evidence: its duration was one month, price was not recorded.
   await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS duration_months integer NOT NULL DEFAULT 1 CHECK(duration_months IN (1,3,6,12))`;
   await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS amount_dh integer CHECK(amount_dh > 0)`;
+  await sql`CREATE TABLE IF NOT EXISTS subscription_renewal_requests (
+    id uuid PRIMARY KEY, business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    duration_months integer NOT NULL CHECK(duration_months IN (1,3,6,12)), plan_price_dh integer NOT NULL,
+    note text NOT NULL, reference text NOT NULL DEFAULT '', proof_data bytea NOT NULL, proof_mime text NOT NULL, proof_hash text NOT NULL,
+    status text NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+    created_at timestamptz NOT NULL DEFAULT now(), reviewed_at timestamptz,
+    actor_id uuid REFERENCES app_users(id) ON DELETE SET NULL, actor_name text, review_note text NOT NULL DEFAULT ''
+  )`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS one_pending_renewal_per_business ON subscription_renewal_requests(business_id) WHERE status='pending'`;
+  await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS mode text NOT NULL DEFAULT 'replace' CHECK(mode IN ('extend','replace'))`;
+  await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS amount_centimes integer CHECK(amount_centimes > 0)`;
+  await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS payment_method text`;
+  await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS paid_at timestamptz`;
+  await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS receipt_number text`;
+  await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS renewal_request_id uuid REFERENCES subscription_renewal_requests(id)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS subscription_receipt_number ON subscription_events(receipt_number)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS subscription_request_once ON subscription_events(renewal_request_id)`;
+  await sql`CREATE TABLE IF NOT EXISTS subscription_email_jobs (
+    id uuid PRIMARY KEY, business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    kind text NOT NULL CHECK(kind IN ('ending','expired','renewed')), period_ends_at timestamptz NOT NULL,
+    event_id uuid, state text NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','sending','sent','skipped')),
+    attempts integer NOT NULL DEFAULT 0, claimed_at timestamptz, sent_at timestamptz, last_error text NOT NULL DEFAULT '',
+    UNIQUE(business_id,kind,period_ends_at)
+  )`;
   await sql`CREATE INDEX IF NOT EXISTS idx_subscription_events_business ON subscription_events(business_id, created_at DESC)`;
   // Bootstrap existing businesses once. ON CONFLICT never restarts a trial on cold starts.
   await sql`INSERT INTO business_subscriptions(business_id,trial_started_at,trial_ends_at)
@@ -56,9 +80,11 @@ export async function subscriptionsFor(sql: Sql, businessIds: string[]): Promise
 export async function subscriptionDetails(sql: Sql, businessId: string): Promise<SubscriptionDetails> {
   const subscription = await subscriptionFor(sql, businessId);
   const rows = await sql`SELECT id, actor_id, actor_name, action, started_at::text, ends_at::text,
-    previous_started_at::text, previous_ends_at::text, previous_state, note, reference, duration_months, amount_dh, revision, created_at::text
+    previous_started_at::text, previous_ends_at::text, previous_state, note, reference, duration_months, amount_dh, revision, created_at::text, mode, amount_centimes, payment_method, paid_at::text, receipt_number, renewal_request_id
     FROM subscription_events WHERE business_id = ${businessId} ORDER BY revision DESC`;
-  return { subscription, history: rows as unknown as SubscriptionDetails['history'] };
+  const requests = await sql`SELECT id,business_id,duration_months,plan_price_dh,note,reference,status,created_at::text,reviewed_at::text,actor_name,review_note,true AS has_proof
+    FROM subscription_renewal_requests WHERE business_id=${businessId} ORDER BY created_at DESC LIMIT 100`;
+  return { subscription, history: rows as unknown as SubscriptionDetails['history'], requests: requests as unknown as SubscriptionDetails['requests'] };
 }
 
 export async function requireSubscription(sql: Sql, businessId: string) {
@@ -68,3 +94,4 @@ export async function requireSubscription(sql: Sql, businessId: string) {
     code: "SUBSCRIPTION_EXPIRED", subscription,
   }, { status: 403, headers: { "Cache-Control": "no-store" } });
 }
+

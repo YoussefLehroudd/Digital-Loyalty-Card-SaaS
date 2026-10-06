@@ -5,7 +5,10 @@ import { ensureSubscriptionSchema, requireSubscription, subscriptionDetails } fr
 import { ensureAdminSchema, handleAdmin, isPlatformAdmin } from "@/lib/server/admin";
 import { appleWalletAvailable, createAppleWalletLink, ensureAppleWalletSchema, handleAppleWallet, syncAppleWalletCustomer } from "@/lib/server/apple-wallet";
 
+import { renewalProof, submitRenewal } from "@/lib/server/renewal-requests";
+import { runSubscriptionEmails } from "@/lib/server/subscription-emails";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type RouteContext = {
   params: Promise<{ path?: string[] }>;
@@ -617,7 +620,7 @@ ${code}${action}
 </td></tr></table>
 </body></html>`;
 }
-async function sendLoyvanceEmail(options: { to: string; subject: string; html: string; category?: "security" | "support" | "notifications" }) {
+async function sendLoyvanceEmail(options: { to: string; subject: string; html: string; category?: "security" | "support" | "notifications"; idempotencyKey?: string }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn("RESEND_API_KEY is not configured; email was not sent.");
@@ -627,14 +630,14 @@ async function sendLoyvanceEmail(options: { to: string; subject: string; html: s
   const from = process.env.RESEND_FROM_EMAIL || `LOYVANCE <hello@${domain}>`;
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", ...(options.idempotencyKey ? { "Idempotency-Key": options.idempotencyKey } : {}) },
     body: JSON.stringify({
       from,
       to: [options.to],
       subject: options.subject,
       html: options.html,
       headers: {
-        "X-Entity-Ref-ID": randomUUID(),
+        "X-Entity-Ref-ID": options.idempotencyKey || randomUUID(),
       },
       tags: [{ name: "category", value: options.category ?? "notifications" }],
     }),
@@ -2173,7 +2176,21 @@ async function dispatch(req: Request, context: RouteContext) {
     const path = params.path ?? [];
 
     let response: Response | null = null;
-    if (path[0] === "apple-wallet") response = await handleAppleWallet(path, req, sql);
+    if(path[0]==="cron" && path[1]==="subscription-reminders") {
+      const secret=process.env.CRON_SECRET;
+      if(req.method!=="GET" || !secret || req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
+      response=json(await runSubscriptionEmails(sql,email=>sendLoyvanceEmail({...email,category:"notifications"})));
+    }
+    else if(path[0]==="subscription" && path[1]==="requests") {
+      const auth=await requireAuth(req,sql);
+      if(auth.user.role!=="business_owner"||!auth.business)return error("Forbidden.",403);
+      if(req.method==="POST" && !path[2]){
+        const limited=await rateLimit(sql,req,"renewal-request",10,60*60*1000);if(limited)return limited;
+        response=await submitRenewal(sql,req,auth.business.id);
+      }else if(req.method==="GET" && path[2] && path[3]==="proof")response=await renewalProof(sql,path[2],auth.business.id);
+      else return error("API route not found.",404);
+    }
+    else if (path[0] === "apple-wallet") response = await handleAppleWallet(path, req, sql);
     else if (path[0] === "admin") response = await handleAdmin(path, req, sql, {
       authenticate: (request) => getAuth(request, sql), verifyPassword, hashPassword,
       createSession: (id) => createSession(sql, id),
@@ -2192,6 +2209,10 @@ async function dispatch(req: Request, context: RouteContext) {
     else if (path[0] === "stamp" || path[0] === "redeem-reward") response = await handleStamp(path, req, sql);
     else if (path[0] === "user") response = await handleCustomerUser(path, req, sql);
 
+    if(response?.ok && path[0]==="admin" && path[1]==="businesses" && path[3]==="subscription" && req.method==="POST") {
+      try { await runSubscriptionEmails(sql,email=>sendLoyvanceEmail({...email,category:"notifications"}),5,path[2]); }
+      catch { console.error("Subscription email processing deferred to the scheduled retry."); }
+    }
     return response ?? error("API route not found.", 404);
   } catch (caught) {
     if (caught instanceof Response) return caught;
@@ -2200,3 +2221,4 @@ async function dispatch(req: Request, context: RouteContext) {
     return error(message, 500);
   }
 }
+
