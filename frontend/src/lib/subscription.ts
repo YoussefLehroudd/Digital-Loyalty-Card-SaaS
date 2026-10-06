@@ -30,3 +30,7 @@ export type SubscriptionDetails = { subscription: BusinessSubscription; history:
 export function subscriptionDate(value: string) {
   return new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Casablanca", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(value));
 }
+
+export function subscriptionExactDate(value: string) {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hour12: false }).format(new Date(value)) + " UTC";
+}

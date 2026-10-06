@@ -44,7 +44,7 @@ export function BusinessSubscriptionCard({ data, error, onOpen }: { data: Subscr
 }
 
 export function BusinessSubscriptionModal({ data, name, open, onClose }: { data: SubscriptionDetails | null; name: string; open: boolean; onClose: () => void }) {
-  return <Modal isOpen={open} onClose={onClose} title="Your subscription" description={name} icon={<Crown className="size-6" />}>
+  return <Modal className="sm:max-w-5xl" isOpen={open} onClose={onClose} title="Your subscription" description={name} icon={<Crown className="size-6" />}>
     {data ? <><SubscriptionDetailsView data={data} businessName={name} /><p className="mt-5 rounded-xl border border-white/10 p-3 text-xs leading-5 text-white/45">Activation is managed by the platform administrator. There is no automatic charge or automatic renewal.</p></> : <Skeleton className="h-64 rounded-2xl" />}
   </Modal>;
 }

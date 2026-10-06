@@ -28,7 +28,7 @@ export function AdminSubscription({ business, onClose, onSaved }: { business: Ad
     } catch (cause) { setSaveError(cause instanceof Error ? cause.message : "Unable to activate subscription."); refresh(); }
     finally { setBusy(false); }
   }
-  return <Modal isOpen onClose={onClose} closeDisabled={busy} title="Business subscription" description={business.name} icon={<Crown className="size-6" />}>
+  return <Modal className="sm:max-w-5xl" isOpen onClose={onClose} closeDisabled={busy} title="Business subscription" description={business.name} icon={<Crown className="size-6" />}>
     {error ? <p role="alert" className="mb-4 text-xs text-rose-300">{error}</p> : null}
     {message ? <p role="status" className="mb-4 rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-xs text-emerald-300">{message}</p> : null}
     {data ? <><SubscriptionDetailsView data={data} businessName={business.name} />
