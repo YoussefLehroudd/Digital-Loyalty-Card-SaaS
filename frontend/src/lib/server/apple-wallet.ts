@@ -1,3 +1,4 @@
+import { effectiveRewardCard } from "@/lib/server/reward-levels";
 import { createHash, createPrivateKey, randomBytes, timingSafeEqual, X509Certificate } from "crypto";
 import { connect } from "http2";
 import { after } from "next/server";
@@ -66,16 +67,19 @@ export async function ensureAppleWalletSchema(sql: Sql) {
 }
 
 async function passData(sql: Sql, customerId: string) {
-  return ((await sql`
+  const data = ((await sql`
     SELECT c.id, c.user_id, c.first_name, c.last_name, c.qr_code,
            b.name AS business_name, b.logo_url, b.primary_color,
-           lc.reward_name, lc.reward_description, lc.required_stamps,
+           lc.id AS card_id,lc.business_id,lc.reward_name, lc.reward_description, lc.required_stamps,
            COALESCE(cl.current_stamps, 0)::int AS current_stamps
     FROM customers c JOIN businesses b ON b.id = c.business_id
     JOIN loyalty_cards lc ON lc.business_id = c.business_id
     LEFT JOIN customer_loyalties cl ON cl.customer_id = c.id AND cl.loyalty_card_id = lc.id
     WHERE c.id = ${customerId} LIMIT 1
-  `) as PassData[])[0];
+  `) as Array<PassData & {card_id:string;business_id:string}>)[0];
+  if (!data) return data;
+  const card=await effectiveRewardCard(sql,customerId,{id:data.card_id,business_id:data.business_id,required_stamps:data.required_stamps,reward_name:data.reward_name,reward_description:data.reward_description});
+  return {...data,required_stamps:card.required_stamps,reward_name:card.reward_name,reward_description:card.reward_description};
 }
 
 function color(hex: string | null) {

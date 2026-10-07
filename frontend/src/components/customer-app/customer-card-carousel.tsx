@@ -1,4 +1,5 @@
 "use client";
+import {RewardGoalChooser} from "@/components/customer-app/reward-goal-chooser";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, Gift, Info, QrCode, Trash2 } from "lucide-react";
@@ -415,6 +416,8 @@ export function CustomerCardCarousel({
           </Button>
         </nav>
       ) : null}
+
+        <RewardGoalChooser card={current} token={token} onSaved={()=>onRefresh?.()}/>
 
         {dashboardMode ? (
           <div className="mx-auto grid max-w-[960px] gap-2.5 pt-1 sm:grid-cols-3 lg:pt-3">

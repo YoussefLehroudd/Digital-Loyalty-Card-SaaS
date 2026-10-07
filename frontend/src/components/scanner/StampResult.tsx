@@ -44,11 +44,11 @@ export function StampResult({
       onClose={() => onClose?.()}
       closeDisabled={!!redeeming}
       title={rewardRedeemed ? "Reward redeemed" : rewardAlreadyReady ? "Reward is ready" : "Stamp added"}
-      description={rewardRedeemed ? "A new loyalty cycle has started." : rewardUnlocked ? "This customer is ready to redeem their reward." : "The customer's loyalty card has been updated."}
+      description={rewardRedeemed ? (currentStamps > 0 ? `${currentStamps} collected stamps remain on this card.` : "A new loyalty cycle has started.") : rewardUnlocked ? "This customer is ready to redeem their reward." : "The customer's loyalty card has been updated."}
       icon={<CheckCircle2 />}
     >
       <Badge className={rewardUnlocked || rewardRedeemed ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border-[#e7b354]/20 bg-[#e7b354]/10 text-[#f3bd55]"}>
-        {rewardRedeemed ? "New loyalty card started" : rewardUnlocked ? "Reward unlocked" : "In progress"}
+        {rewardRedeemed ? (currentStamps > 0 ? "Remaining stamps preserved" : "New loyalty card started") : rewardUnlocked ? "Reward unlocked" : "In progress"}
       </Badge>
           {/* content */}
           <div className="mt-5 space-y-4">
@@ -69,7 +69,7 @@ export function StampResult({
 
               <p className="mt-3 text-xs text-muted-foreground">
                 {rewardRedeemed
-                  ? "Reward redeemed. A new loyalty cycle has started."
+                  ? (currentStamps > 0 ? `Reward redeemed. ${currentStamps} stamps remain; the customer can choose their next goal.` : "Reward redeemed. A new loyalty cycle has started.")
                   : rewardAlreadyReady
                     ? "This card is already complete. Redeem the reward before adding another stamp."
                     : rewardUnlocked

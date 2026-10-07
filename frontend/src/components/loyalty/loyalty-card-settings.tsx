@@ -1,4 +1,5 @@
 "use client";
+import {RewardLevelSettings} from "@/components/loyalty/reward-level-settings";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
@@ -23,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
-import { ApiError } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 import {
   createLoyaltyCard,
   getBusinessProfile,
@@ -139,6 +140,17 @@ export function LoyaltyCardSettings() {
       isMounted = false;
     };
   }, [defaultValues, reset, token]);
+
+  useEffect(() => {
+    let active = true;
+    const timer = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      apiFetch<{features:{reward_levels_enabled:boolean}}>("/business/features", {token}).then(data => {
+        if (active) setBusinessProfile(previous => previous ? {...previous,reward_levels_enabled:data.features.reward_levels_enabled} : previous);
+      }).catch(() => {});
+    }, 3000);
+    return () => {active = false; clearInterval(timer);};
+  }, [token]);
 
   const watched = watch();
 
@@ -297,7 +309,7 @@ export function LoyaltyCardSettings() {
 
         {isLoading ? (
           <LoyaltyCardSettingsSkeleton />
-        ) : (
+        ) : businessProfile?.reward_levels_enabled ? <RewardLevelSettings token={token}/> : (
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
             <Card className="rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
               <CardHeader>

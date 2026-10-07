@@ -1,3 +1,4 @@
+import {effectiveRewardCard} from "@/lib/server/reward-levels";
 import { adminBusinessFeatures, ensureFeatureSchema } from "@/lib/server/business-features";
 import { randomUUID } from "crypto";
 import { paymentAmount, PAYMENT_METHODS, subscriptionPlan } from "@/lib/subscription";
@@ -258,10 +259,11 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
       if (!uuid.test(path[2])) return reply({ message: "Invalid identifier." }, 422);
       const [users, cards] = await Promise.all([
         sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, u.status, u.created_at::text, CASE WHEN privacy.visible THEN cp.phone ELSE NULL END AS phone, privacy.visible AS contact_details_visible FROM app_users u LEFT JOIN customer_profiles cp ON cp.user_id = u.id CROSS JOIN LATERAL (SELECT EXISTS (SELECT 1 FROM customers c WHERE c.user_id=u.id) AND NOT EXISTS (SELECT 1 FROM customers c LEFT JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND COALESCE(b.admin_contact_access,false)=false) AS visible) privacy WHERE u.id = ${path[2]} AND u.role = 'customer' LIMIT 1`,
-        sql`SELECT c.id, b.name AS business_name, b.status AS business_status, cl.current_stamps, lc.required_stamps, lc.reward_name
+        sql`SELECT c.id, c.business_id,lc.id AS card_id,lc.reward_description, b.name AS business_name, b.status AS business_status, cl.current_stamps, lc.required_stamps, lc.reward_name
           FROM customers c JOIN businesses b ON b.id = c.business_id LEFT JOIN customer_loyalties cl ON cl.customer_id = c.id LEFT JOIN loyalty_cards lc ON lc.id = cl.loyalty_card_id WHERE c.user_id = ${path[2]} ORDER BY c.created_at DESC`,
       ]);
-      return users[0] ? reply({ data: { ...users[0], cards } }) : reply({ message: "Customer not found." }, 404);
+      const scopedCards=await Promise.all(cards.map(async row=>{if(!row.card_id)return row;const effective=await effectiveRewardCard(database,String(row.id),{id:String(row.card_id),business_id:String(row.business_id),required_stamps:Number(row.required_stamps),reward_name:String(row.reward_name),reward_description:row.reward_description as string|null});return {...row,required_stamps:effective.required_stamps,reward_name:effective.reward_name};}));
+      return users[0] ? reply({ data: { ...users[0], cards:scopedCards } }) : reply({ message: "Customer not found." }, 404);
     }
     const [rows, total] = await Promise.all([
       sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, privacy.visible AS contact_details_visible, u.status, u.avatar_url, u.created_at::text,
@@ -280,13 +282,13 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
       FROM visits v JOIN customers c ON c.id = v.customer_id JOIN businesses b ON b.id = v.business_id
       UNION ALL SELECT CONCAT('reward-', r.id), 'reward', CONCAT_WS(' ', c.first_name, c.last_name), b.name,
         CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward unlocked' END, '', COALESCE(r.redeemed_at, r.earned_at)
-      FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id JOIN businesses b ON b.id = r.business_id
+      FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id JOIN businesses b ON b.id = r.business_id WHERE r.status IN ('ready','redeemed')
       UNION ALL SELECT CONCAT('admin-', a.id), 'admin', a.actor_name, a.entity_name,
-        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'subscription_expiry_adjustment' THEN 'Subscription expiry adjusted for testing' WHEN a.action='renewal_rejected' THEN 'Renewal request rejected' WHEN a.action = 'business_features_change' THEN 'Business options updated' WHEN a.action = 'customer_privacy_change' THEN 'Customer privacy updated' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
+        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'subscription_expiry_adjustment' THEN 'Subscription expiry adjusted for testing' WHEN a.action='renewal_rejected' THEN 'Renewal request rejected' WHEN a.action = 'reward_levels_change' THEN 'Reward levels updated' WHEN a.action = 'business_features_change' THEN 'Business options updated' WHEN a.action = 'customer_privacy_change' THEN 'Customer privacy updated' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
     ) SELECT id, type, name, business_name, title, reason, date::text FROM events WHERE (${kind} = '' OR type = ${kind}) ORDER BY date DESC, id LIMIT 25 OFFSET ${offset}`;
     const total = sql`SELECT
       CASE WHEN ${kind} IN ('', 'stamp') THEN (SELECT count(*)::int FROM visits) ELSE 0 END +
-      CASE WHEN ${kind} IN ('', 'reward') THEN (SELECT count(*)::int FROM reward_redemptions) ELSE 0 END +
+      CASE WHEN ${kind} IN ('', 'reward') THEN (SELECT count(*)::int FROM reward_redemptions WHERE status IN ('ready','redeemed')) ELSE 0 END +
       CASE WHEN ${kind} IN ('', 'admin') THEN (SELECT count(*)::int FROM admin_audit_logs) ELSE 0 END AS total`;
     const [rows, counts] = await Promise.all([events, total]);
     return reply({ data: rows, total: counts[0].total, page, per_page: 25 });

@@ -171,6 +171,9 @@ export type CustomerCardItem = {
     reward_name: string;
     required_stamps: number;
     reward_description: string | null;
+    reward_levels?: Array<{stamps:number;name:string;message:string}>;
+    selected_goal?: number|null;
+    goal_confirmed?: boolean;
   } | null;
   loyalty: {
     id: string;

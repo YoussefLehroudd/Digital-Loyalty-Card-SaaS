@@ -1,3 +1,4 @@
+import { effectiveRewardCard, validateRewardLevels, saveRewardLevels, selectRewardGoal } from "@/lib/server/reward-levels";
 import { readBusinessFeatures, stampOptions } from "@/lib/server/business-features";
 import { businessPrivacy } from "@/lib/server/customer-privacy";
 import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
@@ -47,6 +48,8 @@ type DbBusiness = {
   google_wallet_show_background: boolean;
   custom_stamp_quantity?: boolean;
   stamp_messages?: boolean;
+  reward_levels_enabled?: boolean;
+  reward_levels?: import("@/lib/server/reward-levels").RewardLevel[];
   primary_color: string;
   phone: string | null;
   address: string | null;
@@ -420,6 +423,7 @@ function publicBusiness(b: DbBusiness) {
     hero_image_position_x: b.hero_image_position_x,
     hero_image_position_y: b.hero_image_position_y,
     google_wallet_show_background: b.google_wallet_show_background ?? true,
+    reward_levels_enabled: b.reward_levels_enabled ?? false,
     primary_color: b.primary_color,
     phone: b.phone,
     address: b.address,
@@ -446,6 +450,9 @@ function publicLoyaltyCard(card: DbLoyaltyCard | null) {
     id: card.id,
     business_id: card.business_id,
     reward_name: card.reward_name,
+    reward_levels: (card as DbLoyaltyCard & {reward_levels?:unknown}).reward_levels ?? [],
+    goal_confirmed: (card as DbLoyaltyCard & {goal_selection?:number|null}).goal_selection != null,
+    selected_goal: (card as DbLoyaltyCard & {selected_goal?:number}).selected_goal ?? null,
     required_stamps: card.required_stamps,
     reward_description: card.reward_description,
     created_at: card.created_at,
@@ -544,6 +551,7 @@ function paginate<T>(items: T[], page: number, perPage: number) {
 }
 
 async function customerRow(sql: Sql, customer: DbCustomer, card: DbLoyaltyCard | null) {
+  if (card) card = await effectiveRewardCard(sql,customer.id,card);
   const visits = (await sql`
     SELECT id, created_at::text AS date FROM visits WHERE customer_id = ${customer.id} ORDER BY created_at DESC
   `) as Array<{ id: string; date: string }>;
@@ -1145,6 +1153,16 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
   if (!auth.business) return error("Business not found.", 404);
   const businessId = auth.business.id;
 
+  if (path[1] === "reward-levels") {
+    if (!auth.business.reward_levels_enabled) return error("Reward levels are not enabled for your business.",403);
+    if (req.method === "GET") return json({levels:auth.business.reward_levels ?? []});
+    if (req.method !== "PUT") return error("Method not allowed.",405);
+    const body = await readJson(req);
+    try { const levels=validateRewardLevels(body.levels); await defaultCard(sql,businessId); await saveRewardLevels(sql,businessId,auth.user,levels); }
+    catch (cause) { if (cause instanceof Error && /Configure|Each reward|Enter a reward/.test(cause.message)) return error(cause.message,422); throw cause; }
+    await syncGoogleWalletBusiness(sql,businessId);
+    return json({message:"Reward levels saved. Customer goals and cards have been updated."});
+  }
   if (path[1] === "features" && req.method === "GET") return json({ features: await readBusinessFeatures(sql, businessId) });
 
   if (path[1] === "profile") {
@@ -1203,9 +1221,9 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
       const row = await customerRow(sql, customer, card);
       const visitHistory = (await sql`SELECT id, created_at::text AS date FROM visits WHERE customer_id = ${customer.id} ORDER BY created_at DESC`) as Array<{ id: string; date: string }>;
       const rewardHistory = (await sql`
-        SELECT r.id, lc.reward_name, r.earned_at::text, r.redeemed_at::text, r.status
+        SELECT r.id, COALESCE(r.reward_name_snapshot,lc.reward_name) AS reward_name, r.earned_at::text, r.redeemed_at::text, r.status
         FROM reward_redemptions r JOIN loyalty_cards lc ON lc.id = r.loyalty_card_id
-        WHERE r.customer_id = ${customer.id} ORDER BY r.earned_at DESC
+        WHERE r.customer_id = ${customer.id} AND r.status IN ('ready','redeemed') ORDER BY r.earned_at DESC
       `) as Array<{ id: string; reward_name: string | null; earned_at: string | null; redeemed_at: string | null; status: string }>;
       return json({ customer: { ...row, visit_history: visitHistory, reward_history: rewardHistory } });
     }
@@ -1238,12 +1256,12 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
     const page = Math.max(1, Number(url.searchParams.get("page") ?? 1));
     const perPage = Math.max(1, Number(url.searchParams.get("per_page") ?? 10));
     const rewards = (await sql`
-      SELECT r.status, r.earned_at::text, r.redeemed_at::text, lc.reward_name,
+      SELECT r.status, r.earned_at::text, r.redeemed_at::text, COALESCE(r.reward_name_snapshot,lc.reward_name) AS reward_name,
              c.id AS customer_id, c.first_name, c.last_name, c.email, c.phone
       FROM reward_redemptions r
       JOIN customers c ON c.id = r.customer_id
       JOIN loyalty_cards lc ON lc.id = r.loyalty_card_id
-      WHERE r.business_id = ${businessId}
+      WHERE r.business_id = ${businessId} AND r.status IN ('ready','redeemed')
       ORDER BY r.earned_at DESC
     `) as Array<{ status: "ready" | "redeemed"; earned_at: string | null; redeemed_at: string | null; reward_name: string | null; customer_id: string; first_name: string | null; last_name: string | null; email: string | null; phone: string | null }>;
     const rows = rewards.map((r) => ({
@@ -1327,7 +1345,7 @@ async function handlePublic(path: string[], req: Request, sql: Sql) {
     const customer = ((await sql`SELECT *, created_at::text, updated_at::text FROM customers WHERE qr_code = ${path[3]} LIMIT 1`) as DbCustomer[])[0];
     if (!customer) return error("Customer not found.", 404);
     const business = ((await sql`SELECT * FROM businesses WHERE id = ${customer.business_id} LIMIT 1`) as DbBusiness[])[0];
-    const card = await defaultCard(sql, business.id);
+    const card = await effectiveRewardCard(sql,customer.id,await defaultCard(sql, business.id));
     const loyalty = ((await sql`SELECT *, created_at::text, updated_at::text FROM customer_loyalties WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as DbLoyalty[])[0];
     return json({ business: publicBusiness(business), customer, loyalty_card: publicLoyaltyCard(card), loyalty });
   }
@@ -1405,7 +1423,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     }
     return error("Invalid QR code. Please scan a valid customer loyalty card.", 422);
   }
-  const card = await defaultCard(sql, auth.business.id);
+  const card = await effectiveRewardCard(sql,customer.id,await defaultCard(sql, auth.business.id));
   if (path[0] === "scan-preview") {
     const loyalty = ((await sql`SELECT current_stamps FROM customer_loyalties WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as Array<{ current_stamps: number }>)[0];
     const ready = ((await sql`SELECT id FROM reward_redemptions WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready' LIMIT 1`) as Array<{ id: string }>)[0];
@@ -1424,13 +1442,17 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
 
   if (path[0] === "redeem-reward") {
     const redeemed = (await sql`
-      WITH selected AS (
+      WITH locked_business AS (
+        SELECT id FROM businesses WHERE id=${auth.business.id} AND reward_config_version=${card.reward_config_version} FOR SHARE
+      ), locked_loyalty AS (
+        SELECT id,current_stamps FROM customer_loyalties WHERE id=${current.id} AND target_stamps IS NOT DISTINCT FROM ${card.goal_selection}::integer AND EXISTS(SELECT 1 FROM locked_business) FOR UPDATE
+      ), selected AS (
         SELECT id FROM reward_redemptions
-        WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready'
+        WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready' AND COALESCE(required_stamps_snapshot,${card.required_stamps})=${card.required_stamps} AND COALESCE(reward_name_snapshot,${card.reward_name})=${card.reward_name} AND EXISTS(SELECT 1 FROM locked_loyalty WHERE current_stamps>=${card.required_stamps})
         ORDER BY earned_at DESC LIMIT 1
       ),
       redeemed AS (
-        UPDATE reward_redemptions SET status = 'redeemed', redeemed_at = now()
+        UPDATE reward_redemptions SET status = 'redeemed', redeemed_at = now(),required_stamps_snapshot=COALESCE(required_stamps_snapshot,${card.required_stamps}),reward_name_snapshot=COALESCE(reward_name_snapshot,${card.reward_name}),description_snapshot=COALESCE(description_snapshot,${card.reward_description})
         WHERE id = (SELECT id FROM selected) AND status = 'ready'
         RETURNING id
       ),
@@ -1440,10 +1462,17 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
         WHERE id = ${current.id} AND EXISTS (SELECT 1 FROM redeemed)
         RETURNING current_stamps
       ),
-      notification_insert AS (
+      next_ready AS (
+        INSERT INTO reward_redemptions(id,business_id,customer_id,loyalty_card_id,status,required_stamps_snapshot,reward_name_snapshot,description_snapshot)
+        SELECT ${randomUUID()},${auth.business.id},${customer.id},${card.id},'ready',${card.required_stamps},${card.reward_name},${card.reward_description}
+        FROM loyalty_update WHERE current_stamps>=${card.required_stamps} RETURNING id
+      ), next_notification AS (
+        INSERT INTO customer_notifications(id,customer_id,type,title,message,reward_id)
+        SELECT CONCAT('reward_ready-',id::text),${customer.id},'reward_ready','Reward unlocked',${"Your remaining stamps cover " + card.reward_name + ". You can redeem it or choose a higher goal."},id FROM next_ready
+      ), notification_insert AS (
         INSERT INTO customer_notifications (id, customer_id, type, title, message, reward_id)
         SELECT CONCAT('reward_redeemed-', r.id::text), ${customer.id}, 'reward_redeemed', 'Reward redeemed',
-               ${"Your reward (" + card.reward_name + ") at " + auth.business.name + " was redeemed. Start collecting stamps for your next reward."}, r.id
+               ${"Your reward (" + card.reward_name + ") at " + auth.business.name + " was redeemed. Any remaining stamps are kept for your next reward."}, r.id
         FROM redeemed r
       )
       SELECT r.id, l.current_stamps FROM redeemed r CROSS JOIN loyalty_update l
@@ -1460,8 +1489,10 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   // A completed cycle must be redeemed before another stamp can be added.
   // This prevents 10/10 from becoming 11/10 when the business chooses "Not now".
   const stampRows = (await sql`
-    WITH locked_loyalty AS (
-      SELECT id, current_stamps FROM customer_loyalties WHERE id = ${current.id} FOR UPDATE
+    WITH locked_business AS (
+      SELECT id FROM businesses WHERE id=${auth.business.id} AND reward_config_version=${card.reward_config_version} FOR SHARE
+    ), locked_loyalty AS (
+      SELECT id, current_stamps FROM customer_loyalties WHERE id = ${current.id} AND target_stamps IS NOT DISTINCT FROM ${card.goal_selection}::integer AND EXISTS(SELECT 1 FROM locked_business) FOR UPDATE
     ),
     order_claim AS (
       INSERT INTO visits (id, business_id, customer_id, order_reference, stamp_count, stamp_message, actor_id)
@@ -1473,7 +1504,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     loyalty_update AS (
       UPDATE customer_loyalties
       SET current_stamps = current_stamps + ${stampCount}, updated_at = now()
-      WHERE id = ${current.id} AND current_stamps + ${stampCount} <= ${card.required_stamps}
+      WHERE id = ${current.id} AND EXISTS(SELECT 1 FROM locked_loyalty) AND current_stamps + ${stampCount} <= ${card.required_stamps}
         AND (${orderReference}::text IS NULL OR EXISTS (SELECT 1 FROM order_claim))
       RETURNING *
     ),
@@ -1487,8 +1518,8 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
       SELECT id FROM visit_insert UNION ALL SELECT id FROM order_claim
     ),
     reward_insert AS (
-      INSERT INTO reward_redemptions (id, business_id, customer_id, loyalty_card_id, status)
-      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${card.id}, 'ready'
+      INSERT INTO reward_redemptions (id, business_id, customer_id, loyalty_card_id, status, required_stamps_snapshot,reward_name_snapshot,description_snapshot)
+      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${card.id}, 'ready',${card.required_stamps},${card.reward_name},${card.reward_description}
       FROM loyalty_update lu
       WHERE lu.current_stamps >= ${card.required_stamps}
         AND NOT EXISTS (
@@ -1515,6 +1546,8 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   `) as Array<DbLoyalty & { redemption_created: boolean }>;
   const updated = stampRows[0];
   if (!updated) {
+    const latest = await effectiveRewardCard(sql,customer.id,await defaultCard(sql,auth.business.id));
+    if (latest.goal_selection !== card.goal_selection || latest.reward_config_version !== card.reward_config_version) return error("Reward goal changed. Scan the card again before confirming.",409);
     if (orderReference) {
       const used = await sql`SELECT id FROM visits WHERE business_id = ${auth.business.id} AND order_reference = ${orderReference} LIMIT 1`;
       if ((used as Array<{ id: string }>).length) return error("This order reference has already received a stamp.", 409);
@@ -1661,7 +1694,7 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
     if (!customer) return;
     const business = ((await sql`SELECT * FROM businesses WHERE id = ${customer.business_id} LIMIT 1`) as DbBusiness[])[0];
     if (!business) return;
-    const card = await defaultCard(sql, business.id);
+    const card = await effectiveRewardCard(sql,customer.id,await defaultCard(sql, business.id));
     const loyalty = ((await sql`SELECT * FROM customer_loyalties WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as DbLoyalty[])[0];
     const logoUrl = business.logo_url || business.hero_image_url;
     if (!logoUrl) return;
@@ -1742,12 +1775,12 @@ async function syncGoogleWalletCustomer(sql: Sql, customerId: string) {
         },
         appLinkData: {
           webAppLinkInfo: {
-            appTarget: { targetUri: { uri: "https://digital-loyalty-card-saa-s.vercel.app/dashboard/" } },
+            appTarget: { targetUri: { uri: "https://loyvance.vercel.app/user/cards" } },
           },
           displayText: { defaultValue: { language: "en-US", value: "Open loyalty card" } },
         },
         linksModuleData: {
-          uris: [{ id: "loyvance", uri: "https://digital-loyalty-card-saa-s.vercel.app/dashboard/", description: "Open in LOYVANCE" }],
+          uris: [{ id: "loyvance", uri: "https://loyvance.vercel.app/user/cards", description: "Open in LOYVANCE" }],
         },
         textModulesData: [
           {
@@ -1798,7 +1831,7 @@ async function customerNotificationEvents(sql: Sql, userId: string) {
       FROM reward_redemptions r
       JOIN customers c ON c.id = r.customer_id
       JOIN businesses b ON b.id = r.business_id
-      WHERE c.user_id = ${userId} AND r.earned_at <= now()
+      WHERE c.user_id = ${userId} AND r.earned_at <= now() AND r.status IN ('ready','redeemed')
         AND NOT EXISTS (SELECT 1 FROM customer_notifications n WHERE n.id = CONCAT('reward_ready-', r.id::text))
       UNION ALL
       SELECT CONCAT('reward_redeemed-', r.id::text), 'reward_redeemed', 'Reward redeemed',
@@ -1853,6 +1886,15 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   if (auth.user.role !== "customer") return error("Customer account required.", 403);
   const profile = ((await sql`SELECT first_name, last_name, phone, avatar_url, preferences, ${auth.user.email} AS email FROM customer_profiles WHERE user_id = ${auth.user.id}`) as JsonRecord[])[0] ?? null;
 
+  if (path[1] === "cards" && path[2] && path[3] === "goal") {
+    if (req.method !== "PATCH") return error("Method not allowed.",405);
+    const body=await readJson(req);
+    if (!Number.isInteger(body.stamps) || Number(body.stamps)<1 || Number(body.stamps)>10) return error("Choose a configured reward level.",422);
+    const selected=await selectRewardGoal(sql,auth.user.id,path[2],Number(body.stamps));
+    if (!selected) return error("This reward level is unavailable for your card.",422);
+    await syncGoogleWalletCustomer(sql,path[2]);
+    return json({message:"Reward goal updated. Your collected stamps are unchanged.",goal:selected});
+  }
   if (path[1] === "logout" && req.method === "POST") {
     const token = bearerToken(req);
     if (token) await sql`DELETE FROM user_sessions WHERE token = ${token}`;
@@ -1941,7 +1983,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   const memberships = (await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.user_id = ${auth.user.id} ORDER BY c.created_at DESC`) as DbCustomer[];
   const cards = await Promise.all(memberships.map(async (m) => {
     const business = ((await sql`SELECT * FROM businesses WHERE id = ${m.business_id} LIMIT 1`) as DbBusiness[])[0];
-    const card = await defaultCard(sql, m.business_id);
+    const card = await effectiveRewardCard(sql,m.id,await defaultCard(sql, m.business_id));
     const loyalty = ((await sql`SELECT * FROM customer_loyalties WHERE customer_id = ${m.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as DbLoyalty[])[0] ?? null;
     return {
       id: m.id,
@@ -2049,12 +2091,12 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       },
       appLinkData: {
         webAppLinkInfo: {
-          appTarget: { targetUri: { uri: "https://digital-loyalty-card-saa-s.vercel.app/dashboard/" } },
+          appTarget: { targetUri: { uri: "https://loyvance.vercel.app/user/cards" } },
         },
         displayText: { defaultValue: { language: "en-US", value: "Open loyalty card" } },
       },
       linksModuleData: {
-        uris: [{ id: "loyvance", uri: "https://digital-loyalty-card-saa-s.vercel.app/dashboard/", description: "Open in LOYVANCE" }],
+        uris: [{ id: "loyvance", uri: "https://loyvance.vercel.app/user/cards", description: "Open in LOYVANCE" }],
       },
       textModulesData: [
         {
@@ -2145,12 +2187,12 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const history = (await sql`
       SELECT r.id, r.status, r.business_id, r.customer_id, r.earned_at::text, r.redeemed_at::text,
              b.name AS business_name, b.logo_url AS business_logo_url, b.primary_color AS business_primary_color,
-             lc.reward_name, lc.reward_description, lc.required_stamps AS points_required
+             COALESCE(r.reward_name_snapshot,lc.reward_name) AS reward_name, COALESCE(r.description_snapshot,lc.reward_description) AS reward_description, COALESCE(r.required_stamps_snapshot,lc.required_stamps) AS points_required
       FROM reward_redemptions r
       JOIN customers c ON c.id = r.customer_id
       JOIN businesses b ON b.id = r.business_id
       JOIN loyalty_cards lc ON lc.id = r.loyalty_card_id
-      WHERE c.user_id = ${auth.user.id} ORDER BY r.earned_at DESC
+      WHERE c.user_id = ${auth.user.id} AND r.status IN ('ready','redeemed') ORDER BY r.earned_at DESC
     `) as JsonRecord[];
     return json({ data: { available, history } });
   }
@@ -2167,12 +2209,12 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       SELECT r.id, CASE WHEN r.status = 'redeemed' THEN 'reward_redeemed' ELSE 'reward_earned' END AS type,
         r.business_id, r.customer_id, COALESCE(r.redeemed_at, r.earned_at)::text AS date,
         b.name AS business_name, b.logo_url AS business_logo_url, b.primary_color AS business_primary_color,
-        lc.reward_name
+        COALESCE(r.reward_name_snapshot,lc.reward_name) AS reward_name
       FROM reward_redemptions r
       JOIN customers c ON c.id = r.customer_id
       JOIN businesses b ON b.id = r.business_id
       JOIN loyalty_cards lc ON lc.id = r.loyalty_card_id
-      WHERE c.user_id = ${auth.user.id}
+      WHERE c.user_id = ${auth.user.id} AND r.status IN ('ready','redeemed')
     `) as JsonRecord[];
     const items = [...visits, ...rewards].sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
     return json({ data: { items } });

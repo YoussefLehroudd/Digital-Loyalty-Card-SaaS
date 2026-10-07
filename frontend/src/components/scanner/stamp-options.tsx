@@ -1,6 +1,6 @@
 "use client";
 
-export type StampFeatures = { custom_stamp_quantity: boolean; stamp_messages: boolean };
+export type StampFeatures = { custom_stamp_quantity: boolean; stamp_messages: boolean; reward_levels_enabled?: boolean };
 export type ScanPreview = { customer_name: string; current_stamps: number; required_stamps: number; reward_name: string; reward_ready: boolean; features?: StampFeatures };
 export type StampSelection = { stamp_count: number; stamp_message: string };
 export const defaultStampSelection = (): StampSelection => ({ stamp_count: 1, stamp_message: "" });

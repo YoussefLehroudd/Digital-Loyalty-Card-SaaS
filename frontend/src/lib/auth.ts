@@ -17,6 +17,7 @@ export type Business = {
   hero_image_position_x?: number | null;
   hero_image_position_y?: number | null;
   google_wallet_show_background?: boolean;
+  reward_levels_enabled?: boolean;
   primary_color: string;
   phone: string | null;
   address: string | null;
