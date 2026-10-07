@@ -1497,7 +1497,9 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   // This prevents 10/10 from becoming 11/10 when the business chooses "Not now".
   const stampRows = (await sql`
     WITH locked_business AS (
-      SELECT id FROM businesses WHERE id=${auth.business.id} AND reward_config_version=${card.reward_config_version} FOR SHARE
+      SELECT id FROM businesses WHERE id=${auth.business.id} AND reward_config_version=${card.reward_config_version}
+        AND (${stampCount}=1 OR (custom_stamp_quantity AND custom_stamp_quantity_active))
+        AND (${stampMessage}='' OR (stamp_messages AND stamp_messages_active)) FOR SHARE
     ), locked_loyalty AS (
       SELECT id, current_stamps FROM customer_loyalties WHERE id = ${current.id} AND target_stamps IS NOT DISTINCT FROM ${card.goal_selection}::integer AND EXISTS(SELECT 1 FROM locked_business) FOR UPDATE
     ),
@@ -1553,6 +1555,8 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   `) as Array<DbLoyalty & { redemption_created: boolean }>;
   const updated = stampRows[0];
   if (!updated) {
+    const freshFeatures = await readBusinessFeatures(sql,auth.business.id);
+    if (!freshFeatures || (stampCount !== 1 && !freshFeatures.custom_stamp_quantity) || (stampMessage && !freshFeatures.stamp_messages)) return error("This business option is now switched off. Scan the card again.",403);
     const latest = await effectiveRewardCard(sql,customer.id,await defaultCard(sql,auth.business.id));
     if (latest.goal_selection !== card.goal_selection || latest.reward_config_version !== card.reward_config_version) return error("Reward goal changed. Scan the card again before confirming.",409);
     if (orderReference) {
