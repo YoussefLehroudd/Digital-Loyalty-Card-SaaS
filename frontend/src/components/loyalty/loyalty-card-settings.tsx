@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
-import { apiFetch, ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import {
   createLoyaltyCard,
   getBusinessProfile,
@@ -140,17 +140,6 @@ export function LoyaltyCardSettings() {
       isMounted = false;
     };
   }, [defaultValues, reset, token]);
-
-  useEffect(() => {
-    let active = true;
-    const timer = setInterval(() => {
-      if (document.visibilityState !== "visible") return;
-      apiFetch<{features:{access:{reward_levels_enabled:boolean}}}>("/business/features", {token}).then(data => {
-        if (active) setBusinessProfile(previous => previous ? {...previous,reward_levels_enabled:data.features.access.reward_levels_enabled} : previous);
-      }).catch(() => {});
-    }, 3000);
-    return () => {active = false; clearInterval(timer);};
-  }, [token]);
 
   const watched = watch();
 
@@ -307,11 +296,9 @@ export function LoyaltyCardSettings() {
           <Alert className="border-red-500/30 text-red-600">{error}</Alert>
         ) : null}
 
-        {!isLoading ? <BusinessLoyaltyTools token={token}/> : null}
-
         {isLoading ? (
           <LoyaltyCardSettingsSkeleton />
-        ) : businessProfile?.reward_levels_enabled ? null : (
+        ) : (
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
             <Card className="rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
               <CardHeader>
@@ -393,6 +380,8 @@ export function LoyaltyCardSettings() {
             />
           </div>
         )}
+
+        {!isLoading ? <BusinessLoyaltyTools token={token} /> : null}
       </div>
 
       <Modal
