@@ -1325,6 +1325,31 @@ async function handlePublic(path: string[], req: Request, sql: Sql) {
   return null;
 }
 
+async function handleOrderCustomers(req: Request, sql: Sql) {
+  if (req.method !== "POST") return error("Method not allowed.", 405);
+  const auth = await requireBusinessOwner(req, sql);
+  if (!auth.business) return error("Business not found.", 404);
+  const limited = await rateLimit(sql, req, "order-customer-search", 60, 60_000);
+  if (limited) return limited;
+  const body = await readJson(req);
+  const query = asString(body.query).trim().toLowerCase();
+  if (!query || query.length > 254) return error("Enter the customer's email or phone number.", 422);
+  const phone = /^[+\d\s().-]+$/.test(query) ? query.replace(/\D/g, "") : "";
+  if (!query.includes("@") && phone.length < 9) return error("Enter a complete email or phone number.", 422);
+  const rows = (await sql`
+    SELECT c.id, COALESCE(p.first_name,c.first_name,'') AS first_name,
+      COALESCE(p.last_name,c.last_name,'') AS last_name,
+      COALESCE(u.email,c.email) AS email, COALESCE(p.phone,c.phone) AS phone
+    FROM customers c LEFT JOIN app_users u ON u.id = c.user_id
+    LEFT JOIN customer_profiles p ON p.user_id = c.user_id
+    WHERE c.business_id = ${auth.business.id} AND (
+      lower(COALESCE(u.email,c.email)) = ${query} OR
+      (${phone.length >= 9} AND right(regexp_replace(COALESCE(p.phone,c.phone,''),'[^0-9]','','g'),9) = ${phone.slice(-9)})
+    ) ORDER BY c.created_at DESC LIMIT 10
+  `) as Array<{ id: string; first_name: string; last_name: string; email: string | null; phone: string | null }>;
+  return json({ data: rows.map(c => ({ id: c.id, name: [c.first_name,c.last_name].filter(Boolean).join(" ").trim() || "Customer", email: c.email, phone: c.phone })) });
+}
+
 async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (req.method !== "POST") return error("Method not allowed.", 405);
   const auth = await requireBusinessOwner(req, sql);
@@ -1337,8 +1362,13 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (rawReference.length > 120 || /[\u0000-\u001f\u007f]/.test(rawReference)) return error("Order reference must contain 1–120 printable characters.", 422);
   const orderReference = rawReference ? rawReference.toUpperCase() : null;
   if (body.source === "image" && path[0] === "stamp" && !orderReference) return error("Enter the confirmed order reference before adding a stamp.", 422);
-  const customer = ((await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.qr_code = ${qr} AND c.business_id = ${auth.business.id} LIMIT 1`) as DbCustomer[])[0];
+  const customerId = asString(body.customer_id).trim();
+  if (customerId && path[0] === "stamp" && !orderReference) return error("Enter the confirmed order reference before adding a stamp.", 422);
+  const customer = customerId
+    ? ((await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.id = ${customerId} AND c.business_id = ${auth.business.id} LIMIT 1`) as DbCustomer[])[0]
+    : ((await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.qr_code = ${qr} AND c.business_id = ${auth.business.id} LIMIT 1`) as DbCustomer[])[0];
   if (!customer) {
+    if (customerId) return error("Customer not found in your loyalty program.", 404);
     const otherCustomer = ((await sql`SELECT id, business_id FROM customers WHERE qr_code = ${qr} LIMIT 1`) as Array<{ id: string; business_id: string }>)[0];
     if (otherCustomer) {
       return error("This customer card belongs to another business. Please scan a customer card issued by your business.", 422);
@@ -2243,6 +2273,7 @@ async function dispatch(req: Request, context: RouteContext) {
     else if (path[0] === "business") response = await handleBusiness(path, req, sql);
     else if (path[0] === "loyalty-card") response = await handleLoyaltyCard(req, sql);
     else if (path[0] === "public") response = await handlePublic(path, req, sql);
+    else if (path[0] === "order-customers") response = await handleOrderCustomers(req, sql);
     else if (path[0] === "stamp" || path[0] === "redeem-reward" || path[0] === "scan-preview") response = await handleStamp(path, req, sql);
     else if (path[0] === "user") response = await handleCustomerUser(path, req, sql);
 
@@ -2258,4 +2289,3 @@ async function dispatch(req: Request, context: RouteContext) {
     return error(message, 500);
   }
 }
-

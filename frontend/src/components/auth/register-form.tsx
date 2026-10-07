@@ -78,7 +78,10 @@ export function RegisterForm() {
           device_name: "web-unified-register",
         });
         storeCustomerToken(response.token);
-        router.replace("/user/dashboard");
+        const query = new URLSearchParams(window.location.search);
+        const join = query.get("join");
+        const businessId = query.get("join_business_id");
+        router.replace(join ? `/user/join?auto=${encodeURIComponent(join)}` : businessId ? `/user/join?auto_business_id=${encodeURIComponent(businessId)}` : "/user/dashboard");
         router.refresh();
         return;
       }

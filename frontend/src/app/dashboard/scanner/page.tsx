@@ -12,6 +12,7 @@ import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
 import { OnlineOrderScanner } from "@/components/scanner/OnlineOrderScanner";
 import { Button } from "@/components/ui/button";
 import { StampResult } from "@/components/scanner/StampResult";
+import { ShareLoyaltyLink } from "@/components/loyalty/share-loyalty-link";
 
 type StampApiResponse = {
   message: string;
@@ -25,7 +26,7 @@ type StampApiResponse = {
 };
 
 export default function ScannerPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [mode, setMode] = useState<"camera" | "image">("camera");
 
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +143,7 @@ export default function ScannerPage() {
         </div>
 
         <div className="mx-auto mt-5 max-w-2xl">
+          <div className="mb-4"><ShareLoyaltyLink businessId={user.business?.id} name={user.business?.name} /></div>
           <div className="mb-4 grid grid-cols-2 gap-2" aria-label="Scan method">
             <Button variant={mode === "camera" ? "default" : "outline"} aria-pressed={mode === "camera"} onClick={() => { clearResult(); setMode("camera"); }}>Camera scan</Button>
             <Button variant={mode === "image" ? "default" : "outline"} aria-pressed={mode === "image"} onClick={() => { clearResult(); setMode("image"); }}>QR image / online</Button>

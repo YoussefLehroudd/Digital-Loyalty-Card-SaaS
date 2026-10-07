@@ -19,7 +19,13 @@ export function CustomerGuard({ children }: { children: React.ReactNode }) {
     const isPublic = PUBLIC_USER_ROUTES.has(pathname);
 
     if (!isAuthenticated && !isPublic) {
-      router.replace("/user/login");
+      const query = new URLSearchParams(window.location.search);
+      const login = new URLSearchParams();
+      if (pathname === "/user/join") {
+        if (query.get("auto")) login.set("join", query.get("auto")!);
+        if (query.get("auto_business_id")) login.set("join_business_id", query.get("auto_business_id")!);
+      }
+      router.replace(`/login${login.size ? `?${login}` : ""}`);
       return;
     }
 

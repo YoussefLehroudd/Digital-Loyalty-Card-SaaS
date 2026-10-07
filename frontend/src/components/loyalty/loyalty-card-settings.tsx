@@ -34,6 +34,7 @@ import {
 } from "@/lib/auth";
 import { useAutoDismiss } from "@/lib/use-auto-dismiss";
 import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
+import { ShareLoyaltyLink } from "@/components/loyalty/share-loyalty-link";
 
 const schema = z.object({
   reward_name: z.string().min(2, "Enter a reward name.").max(255),
@@ -401,6 +402,7 @@ export function LoyaltyCardSettings() {
           )}
 
           <div className="space-y-2">
+            <ShareLoyaltyLink businessId={business?.id} name={business?.name} />
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
