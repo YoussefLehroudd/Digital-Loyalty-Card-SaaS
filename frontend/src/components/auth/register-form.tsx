@@ -23,16 +23,15 @@ const passwordSchema = z
   .regex(/[A-Z]/, "Add an uppercase letter.")
   .regex(/[0-9]/, "Add a number.");
 
-const schema = z
-  .object({
+const baseSchema = z.object({
     businessName: z.string().min(2, "Enter your business name."),
     businessEmail: z.string().email("Enter a valid business email."),
     name: z.string().min(2, "Enter your name."),
     email: z.string().email("Enter a valid owner email."),
     password: passwordSchema,
     passwordConfirmation: z.string(),
-  })
-  .refine((values) => values.password === values.passwordConfirmation, {
+  });
+const schema = baseSchema.refine((values) => values.password === values.passwordConfirmation, {
     message: "Passwords do not match.",
     path: ["passwordConfirmation"],
   });
@@ -50,7 +49,7 @@ export function RegisterForm() {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(accountType === "customer" ? baseSchema.extend({ businessName: z.string(), businessEmail: z.string() }).refine(values => values.password === values.passwordConfirmation, { message: "Passwords do not match.", path: ["passwordConfirmation"] }) : schema),
     defaultValues: {
       businessName: "",
       businessEmail: "",
@@ -66,7 +65,7 @@ export function RegisterForm() {
 
     try {
       if (accountType === "customer") {
-        const nameParts = values.name.trim().split(/\\s+/);
+        const nameParts = values.name.trim().split(/\s+/);
         const firstName = nameParts.shift() || values.name.trim();
         const lastName = nameParts.join(" ") || "-";
         const response = await customerRegister({
@@ -141,7 +140,7 @@ export function RegisterForm() {
         />
         <Field
           error={errors.email?.message}
-          label="Owner email"
+          label={accountType === "business" ? "Owner email" : "Email"}
           registration={register("email")}
           type="email"
         />
