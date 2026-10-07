@@ -11,6 +11,8 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
 import { OnlineOrderScanner } from "@/components/scanner/OnlineOrderScanner";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { StampOptions, defaultStampSelection, type ScanPreview } from "@/components/scanner/stamp-options";
 import { StampResult } from "@/components/scanner/StampResult";
 import { ShareLoyaltyLink } from "@/components/loyalty/share-loyalty-link";
 
@@ -33,6 +35,10 @@ export default function ScannerPage() {
   const [stampResult, setStampResult] = useState<StampApiResponse["loyalty"] | null>(null);
   const [decodedQr, setDecodedQr] = useState<string | null>(null);
 
+  const [pending, setPending] = useState<ScanPreview | null>(null);
+  const [selection, setSelection] = useState(defaultStampSelection);
+  const [confirming, setConfirming] = useState(false);
+  const confirmingRef = useRef(false);
   const [redeeming, setRedeeming] = useState(false);
   const [rewardReadyBlocked, setRewardReadyBlocked] = useState(false);
 
@@ -43,6 +49,7 @@ export default function ScannerPage() {
   }, []);
 
   function clearResult() {
+    setPending(null); setSelection(defaultStampSelection());
     setStampResult(null);
     setError(null);
     setDecodedQr(null);
@@ -56,6 +63,15 @@ export default function ScannerPage() {
     setDecodedQr(qrCode);
 
     try {
+      const preview = await apiFetch<ScanPreview>("/scan-preview", { method: "POST", token, body: JSON.stringify({ qr_code: qrCode }) });
+      if (preview.reward_ready) {
+        setRewardReadyBlocked(true);
+        setStampResult({ current_stamps: preview.current_stamps, required_stamps: preview.required_stamps, reward_unlocked: true, reward_redemption_created: false });
+        return true;
+      }
+      if (preview.features?.custom_stamp_quantity || preview.features?.stamp_messages) {
+        setSelection(defaultStampSelection()); setPending(preview); return true;
+      }
       const response = await apiFetch<StampApiResponse>("/stamp", {
         method: "POST",
         token,
@@ -78,6 +94,16 @@ export default function ScannerPage() {
       setError(message);
       return false;
     }
+  }
+
+  async function confirmPurchase() {
+    if (!decodedQr || !pending || confirmingRef.current) return;
+    confirmingRef.current = true; setConfirming(true); setError(null);
+    try {
+      const response = await apiFetch<StampApiResponse>("/stamp", { method: "POST", token, body: JSON.stringify({ qr_code: decodedQr, ...selection }) });
+      setStampResult(response.loyalty); setPending(null);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to confirm purchase."); }
+    finally { confirmingRef.current = false; setConfirming(false); }
   }
 
   async function handleRedeemReward() {
@@ -149,6 +175,10 @@ export default function ScannerPage() {
             <Button variant={mode === "image" ? "default" : "outline"} aria-pressed={mode === "image"} onClick={() => { clearResult(); setMode("image"); }}>QR image / online</Button>
           </div>
           {mode === "camera" ? <StaffQrScanner onQrScanned={handleQrScanned} onResetReady={handleResetReady} /> : <OnlineOrderScanner token={token} />}
+
+          <Modal isOpen={!!pending} onClose={() => { if (!confirming) { clearResult(); scanAnotherRef.current?.(); } }} closeDisabled={confirming} title="Confirm purchase" description={pending?.customer_name} icon={<QrCode className="size-6" />}>
+            {pending ? <div className="space-y-4"><p className="text-sm text-muted-foreground">Current progress: <span className="font-semibold text-[#ffc857]">{pending.current_stamps}/{pending.required_stamps}</span>. No stamps are added until you confirm.</p><StampOptions prefix="camera-stamp" features={pending.features} value={selection} onChange={setSelection} remaining={pending.required_stamps-pending.current_stamps} disabled={confirming} />{error ? <p role="alert" className="text-sm text-rose-300">{error}</p> : null}<div className="flex flex-col gap-2 sm:flex-row sm:justify-end"><Button variant="outline" disabled={confirming} onClick={() => { clearResult(); scanAnotherRef.current?.(); }}>Cancel</Button><Button disabled={confirming || !Number.isInteger(selection.stamp_count) || selection.stamp_count < 1 || selection.stamp_count > pending.required_stamps-pending.current_stamps} onClick={() => void confirmPurchase()}>{confirming ? "Confirming…" : `Confirm & add ${selection.stamp_count} ${selection.stamp_count === 1 ? "stamp" : "stamps"}`}</Button></div></div> : null}
+          </Modal>
 
           {mode === "camera" && stampResult ? (
             <StampResult

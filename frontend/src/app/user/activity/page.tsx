@@ -22,6 +22,7 @@ type ActivityItem = {
   reward_name?: string | null;
   date: string | null;
   points?: number;
+  stamp_message?: string;
 };
 
 function iconForType(type: string) {
@@ -171,6 +172,7 @@ export default function UserActivityPage() {
                               <span className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-black/20">{item.business_logo_url ? <img src={item.business_logo_url} alt="" className="h-full w-full object-cover" /> : <Store className="size-3 text-white/40" />}</span>
                               <p className="break-words text-xs text-white/55">{item.business_name}</p>
                             </div>
+                            {item.stamp_message ? <p className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-white/65">{item.stamp_message}</p> : null}
                             {item.reward_name ? <p className="mt-1.5 break-words text-xs leading-5 text-white/45">{item.reward_name}</p> : null}
                             <p className="mt-2 text-[11px] text-white/35">{formatActivityDate(item.date)}</p>
                           </div>

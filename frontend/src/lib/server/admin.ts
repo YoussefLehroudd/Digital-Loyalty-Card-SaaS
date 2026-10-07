@@ -1,3 +1,4 @@
+import { adminBusinessFeatures, ensureFeatureSchema } from "@/lib/server/business-features";
 import { randomUUID } from "crypto";
 import { paymentAmount, PAYMENT_METHODS, subscriptionPlan } from "@/lib/subscription";
 import type { getSql } from "@/lib/server/db";
@@ -36,6 +37,7 @@ function pageOptions(req: Request) {
 }
 
 export async function ensureAdminSchema(sql: Sql) {
+  await ensureFeatureSchema(sql);
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS admin_contact_access boolean NOT NULL DEFAULT false`;
   await sql`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'`;
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'`;
@@ -66,6 +68,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   if (!auth) return reply({ message: "Unauthenticated." }, 401);
   if (!isPlatformAdmin(auth.user)) return reply({ message: "Administrator access required." }, 403);
   if (path[1] === "me" && req.method === "GET") return reply({ user: safeUser(auth.user) });
+  if (path[1] === "businesses" && path[3] === "features" && path.length === 4) return adminBusinessFeatures(req, database, path[2], auth.user);
   if(path[1]==="renewals"){
     if(path[2] && path[3]==="proof" && req.method==="GET")return renewalProof(database,path[2]);
     if(path[2] && req.method==="PATCH")return rejectRenewal(database,path[2],req,auth.user);
@@ -200,12 +203,12 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
         (SELECT count(*)::int FROM businesses WHERE status = 'active') AS active_businesses,
         (SELECT count(*)::int FROM app_users WHERE role = 'customer') AS customers,
         (SELECT count(*)::int FROM customers) AS cards,
-        (SELECT count(*)::int FROM visits) AS stamps,
-        (SELECT count(*)::int FROM visits WHERE created_at >= current_date) AS stamps_today,
+        (SELECT COALESCE(sum(stamp_count),0)::int FROM visits) AS stamps,
+        (SELECT COALESCE(sum(stamp_count),0)::int FROM visits WHERE created_at >= current_date) AS stamps_today,
         (SELECT count(*)::int FROM reward_redemptions WHERE status = 'redeemed') AS redeemed,
         (SELECT count(*)::int FROM reward_redemptions WHERE status = 'ready') AS ready_rewards`,
       sql`SELECT d::date::text AS date,
-        (SELECT count(*)::int FROM visits WHERE created_at >= d AND created_at < d + interval '1 day') AS stamps,
+        (SELECT COALESCE(sum(stamp_count),0)::int FROM visits WHERE created_at >= d AND created_at < d + interval '1 day') AS stamps,
         (SELECT count(*)::int FROM reward_redemptions WHERE redeemed_at >= d AND redeemed_at < d + interval '1 day') AS rewards
         FROM generate_series(current_date - interval '13 days', current_date, interval '1 day') d ORDER BY d`,
       sql`SELECT b.id, b.name, b.logo_url, b.status, count(c.id)::int AS cards FROM businesses b LEFT JOIN customers c ON c.business_id = b.id GROUP BY b.id ORDER BY count(c.id) DESC, b.name LIMIT 5`,
@@ -226,7 +229,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
       const rows = await sql`SELECT b.id, b.name, b.email, b.slug, b.status, b.logo_url, b.phone, b.address, b.created_at::text,
         lc.reward_name, lc.required_stamps,
         (SELECT count(*)::int FROM customers WHERE business_id = b.id) AS cards,
-        (SELECT count(*)::int FROM visits WHERE business_id = b.id) AS stamps,
+        (SELECT COALESCE(sum(stamp_count),0)::int FROM visits WHERE business_id = b.id) AS stamps,
         (SELECT count(*)::int FROM reward_redemptions WHERE business_id = b.id AND status = 'redeemed') AS redeemed
         FROM businesses b LEFT JOIN loyalty_cards lc ON lc.business_id = b.id WHERE b.id = ${path[2]} LIMIT 1`;
       return rows[0] ? reply({ data: { ...rows[0], subscription: await subscriptionFor(database, path[2]) } }) : reply({ message: "Business not found." }, 404);
@@ -234,7 +237,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     const [rows, total] = await Promise.all([
       sql`SELECT b.id, b.name, b.email, b.slug, b.status, b.logo_url, b.created_at::text,
         (SELECT count(*)::int FROM customers WHERE business_id = b.id) AS cards,
-        (SELECT count(*)::int FROM visits WHERE business_id = b.id) AS stamps
+        (SELECT COALESCE(sum(stamp_count),0)::int FROM visits WHERE business_id = b.id) AS stamps
         FROM businesses b WHERE (b.name ILIKE ${query} OR b.email ILIKE ${query}) AND (${status} = '' OR b.status = ${status}) AND (${subscriptionFilter}='' OR EXISTS(SELECT 1 FROM business_subscriptions s WHERE s.business_id=b.id AND (
       (${subscriptionFilter}='trial' AND s.paid_ends_at IS NULL AND s.trial_ends_at>now()) OR
       (${subscriptionFilter}='active' AND s.paid_ends_at>now()) OR
@@ -273,13 +276,13 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     const params = new URL(req.url).searchParams;
     const kind = ["stamp", "reward", "admin"].includes(params.get("kind") || "") ? params.get("kind")! : "";
     const events = sql`WITH events AS (
-      SELECT CONCAT('stamp-', v.id) AS id, 'stamp' AS type, CONCAT_WS(' ', c.first_name, c.last_name) AS name, b.name AS business_name, 'Stamp collected' AS title, '' AS reason, v.created_at AS date
+      SELECT CONCAT('stamp-', v.id) AS id, 'stamp' AS type, CONCAT_WS(' ', c.first_name, c.last_name) AS name, b.name AS business_name, CONCAT(v.stamp_count, CASE WHEN v.stamp_count=1 THEN ' stamp collected' ELSE ' stamps collected' END) AS title, v.stamp_message AS reason, v.created_at AS date
       FROM visits v JOIN customers c ON c.id = v.customer_id JOIN businesses b ON b.id = v.business_id
       UNION ALL SELECT CONCAT('reward-', r.id), 'reward', CONCAT_WS(' ', c.first_name, c.last_name), b.name,
         CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward unlocked' END, '', COALESCE(r.redeemed_at, r.earned_at)
       FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id JOIN businesses b ON b.id = r.business_id
       UNION ALL SELECT CONCAT('admin-', a.id), 'admin', a.actor_name, a.entity_name,
-        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'subscription_expiry_adjustment' THEN 'Subscription expiry adjusted for testing' WHEN a.action='renewal_rejected' THEN 'Renewal request rejected' WHEN a.action = 'customer_privacy_change' THEN 'Customer privacy updated' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
+        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'subscription_expiry_adjustment' THEN 'Subscription expiry adjusted for testing' WHEN a.action='renewal_rejected' THEN 'Renewal request rejected' WHEN a.action = 'business_features_change' THEN 'Business options updated' WHEN a.action = 'customer_privacy_change' THEN 'Customer privacy updated' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
     ) SELECT id, type, name, business_name, title, reason, date::text FROM events WHERE (${kind} = '' OR type = ${kind}) ORDER BY date DESC, id LIMIT 25 OFFSET ${offset}`;
     const total = sql`SELECT
       CASE WHEN ${kind} IN ('', 'stamp') THEN (SELECT count(*)::int FROM visits) ELSE 0 END +

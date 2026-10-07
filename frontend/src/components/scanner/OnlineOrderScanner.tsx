@@ -4,15 +4,17 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { ImagePlus, Loader2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StampOptions, defaultStampSelection, type ScanPreview } from "@/components/scanner/stamp-options";
 import { apiFetch } from "@/lib/api";
 
-type Preview = { customer_name: string; current_stamps: number; required_stamps: number; reward_name: string; reward_ready: boolean };
+type Preview = ScanPreview;
 type Result = { loyalty: { current_stamps: number; required_stamps: number; reward_unlocked: boolean; reward_redeemed?: boolean } };
 
 export function OnlineOrderScanner({ token }: { token: string | null }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const generation = useRef(0);
   const busyRef = useRef(false);
+  const [selection, setSelection] = useState(defaultStampSelection);
   const [busy, setBusy] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function OnlineOrderScanner({ token }: { token: string | null }) {
     event.preventDefault();
     if (busyRef.current || !token) return;
     const session = ++generation.current;
-    busyRef.current = true; setBusy(true); setError(null); setMessage(null); setPreview(null); setQr(null); setCustomerId(null); setCompleted(false); setMatches([]); setSearched(false); setReference("");
+    busyRef.current = true; setBusy(true); setError(null); setMessage(null); setPreview(null); setQr(null); setCustomerId(null); setCompleted(false); setMatches([]); setSearched(false); setReference(""); setSelection(defaultStampSelection());
     try {
       const result = await apiFetch<{data: typeof matches}>("/order-customers", { method: "POST", token, body: JSON.stringify({ query: query.trim() }) });
       if (session === generation.current) { setMatches(result.data); setSearched(true); }
@@ -41,7 +43,7 @@ export function OnlineOrderScanner({ token }: { token: string | null }) {
   async function selectCustomer(id: string) {
     if (busyRef.current || !token) return;
     const session = ++generation.current;
-    busyRef.current = true; setBusy(true); setError(null); setMessage(null); setPreview(null); setQr(null); setCustomerId(null); setCompleted(false); setReference("");
+    busyRef.current = true; setBusy(true); setError(null); setMessage(null); setPreview(null); setQr(null); setCustomerId(null); setCompleted(false); setReference(""); setSelection(defaultStampSelection());
     try {
       const data = await apiFetch<Preview>("/scan-preview", { method: "POST", token, body: JSON.stringify({ customer_id: id }) });
       if (session === generation.current) { setCustomerId(id); setPreview(data); }
@@ -54,7 +56,7 @@ export function OnlineOrderScanner({ token }: { token: string | null }) {
     event.target.value = "";
     if (!file || busyRef.current) return;
     const session = ++generation.current;
-    setQr(null); setCustomerId(null); setMatches([]); setSearched(false); setPreview(null); setReference(""); setMessage(null); setCompleted(false); setError(null);
+    setQr(null); setCustomerId(null); setMatches([]); setSearched(false); setPreview(null); setReference(""); setSelection(defaultStampSelection()); setMessage(null); setCompleted(false); setError(null);
     if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) {
       setError("Choose a PNG, JPG or WebP image smaller than 10 MB."); return;
     }
@@ -89,11 +91,11 @@ export function OnlineOrderScanner({ token }: { token: string | null }) {
     const session = generation.current;
     busyRef.current = true; setBusy(true); setError(null); setMessage(null);
     try {
-      const data = await apiFetch<Result>("/" + action, { method: "POST", token: token ?? undefined, body: JSON.stringify({ qr_code: qr ?? undefined, customer_id: customerId ?? undefined, source: customerId ? "online" : "image", order_reference: action === "stamp" ? reference.trim() : undefined }) });
+      const data = await apiFetch<Result>("/" + action, { method: "POST", token: token ?? undefined, body: JSON.stringify({ qr_code: qr ?? undefined, customer_id: customerId ?? undefined, source: customerId ? "online" : "image", order_reference: action === "stamp" ? reference.trim() : undefined, ...(action === "stamp" ? selection : {}) }) });
       if (session !== generation.current) return;
       setPreview({ ...preview, current_stamps: data.loyalty.current_stamps, reward_ready: data.loyalty.reward_unlocked });
       setCompleted(true);
-      setMessage(action === "stamp" ? "Stamp added. The customer's card has been updated." : "Reward redeemed. The customer's card has been updated.");
+      setMessage(action === "stamp" ? `${selection.stamp_count} stamp${selection.stamp_count === 1 ? "" : "s"} added. The customer's card has been updated.` : "Reward redeemed. The customer's card has been updated.");
     } catch (err) {
       if (session === generation.current) setError(err instanceof Error ? err.message : "Could not confirm this order.");
     } finally {
@@ -126,8 +128,9 @@ export function OnlineOrderScanner({ token }: { token: string | null }) {
         {!completed && !preview.reward_ready ? <>
           <label htmlFor="online-order-reference" className="block text-sm font-medium">Order reference</label>
           <Input id="online-order-reference" value={reference} maxLength={120} placeholder="e.g. ORDER-1042" autoComplete="off" disabled={busy} onChange={(event) => setReference(event.target.value)} />
-          <p className="text-xs text-muted-foreground">Use a unique reference for each confirmed order. Each order can receive one stamp.</p>
-          <Button className="h-11 w-full" disabled={busy || !reference.trim()} onClick={() => void confirm("stamp")}>Confirm order & add stamp</Button>
+          <p className="text-xs text-muted-foreground">Use a unique reference for each confirmed order. Each order can only be credited once.</p>
+          <StampOptions prefix="online-stamp" features={preview.features} value={selection} onChange={setSelection} remaining={preview.required_stamps-preview.current_stamps} disabled={busy} />
+          <Button className="h-11 w-full" disabled={busy || !reference.trim() || selection.stamp_count < 1 || selection.stamp_count > preview.required_stamps-preview.current_stamps} onClick={() => void confirm("stamp")}>Confirm order & add {selection.stamp_count} {selection.stamp_count === 1 ? "stamp" : "stamps"}</Button>
         </> : null}
         {!completed && preview.reward_ready ? <><p className="text-sm text-[#ffd369]">Reward ready. Redeem it when you provide the reward to this customer.</p><Button className="h-11 w-full" disabled={busy} onClick={() => void confirm("redeem-reward")}>Confirm reward redeemed</Button></> : null}
       </div> : <p className="mt-3 text-xs text-muted-foreground">Reading an image does not add a stamp. Confirm the order after checking the customer.</p>}

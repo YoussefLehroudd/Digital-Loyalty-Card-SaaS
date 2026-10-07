@@ -1,3 +1,4 @@
+import { readBusinessFeatures, stampOptions } from "@/lib/server/business-features";
 import { businessPrivacy } from "@/lib/server/customer-privacy";
 import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -44,6 +45,8 @@ type DbBusiness = {
   hero_image_position_x: number | null;
   hero_image_position_y: number | null;
   google_wallet_show_background: boolean;
+  custom_stamp_quantity?: boolean;
+  stamp_messages?: boolean;
   primary_color: string;
   phone: string | null;
   address: string | null;
@@ -1080,11 +1083,11 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
     SELECT
       (SELECT count(*)::int FROM customers WHERE business_id = ${businessId} AND created_at >= ${startIso}::timestamptz AND created_at < ${endIso}::timestamptz) AS customers,
       (SELECT count(DISTINCT customer_id)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${startIso}::timestamptz AND created_at < ${endIso}::timestamptz) AS active,
-      (SELECT count(*)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${startIso}::timestamptz AND created_at < ${endIso}::timestamptz) AS visits,
+      (SELECT COALESCE(sum(stamp_count),0)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${startIso}::timestamptz AND created_at < ${endIso}::timestamptz) AS visits,
       (SELECT count(*)::int FROM reward_redemptions WHERE business_id = ${businessId} AND status = 'redeemed' AND redeemed_at >= ${startIso}::timestamptz AND redeemed_at < ${endIso}::timestamptz) AS rewards,
       (SELECT count(*)::int FROM customers WHERE business_id = ${businessId} AND created_at >= ${previousStartIso}::timestamptz AND created_at < ${startIso}::timestamptz) AS prev_customers,
       (SELECT count(DISTINCT customer_id)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${previousStartIso}::timestamptz AND created_at < ${startIso}::timestamptz) AS prev_active,
-      (SELECT count(*)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${previousStartIso}::timestamptz AND created_at < ${startIso}::timestamptz) AS prev_visits,
+      (SELECT COALESCE(sum(stamp_count),0)::int FROM visits WHERE business_id = ${businessId} AND created_at >= ${previousStartIso}::timestamptz AND created_at < ${startIso}::timestamptz) AS prev_visits,
       (SELECT count(*)::int FROM reward_redemptions WHERE business_id = ${businessId} AND status = 'redeemed' AND redeemed_at >= ${previousStartIso}::timestamptz AND redeemed_at < ${startIso}::timestamptz) AS prev_rewards
   `) as Array<{ customers:number; active:number; visits:number; rewards:number; prev_customers:number; prev_active:number; prev_visits:number; prev_rewards:number }>;
   const row = counts[0] ?? { customers:0, active:0, visits:0, rewards:0, prev_customers:0, prev_active:0, prev_visits:0, prev_rewards:0 };
@@ -1108,7 +1111,7 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
     )
     SELECT d.day::date::text AS date,
       (SELECT count(*)::int FROM customers c WHERE c.business_id=${businessId} AND c.created_at >= d.day AND c.created_at < d.day + interval '1 day') AS new_customers,
-      (SELECT count(*)::int FROM visits v WHERE v.business_id=${businessId} AND v.created_at >= d.day AND v.created_at < d.day + interval '1 day') AS stamps_issued,
+      (SELECT COALESCE(sum(v.stamp_count),0)::int FROM visits v WHERE v.business_id=${businessId} AND v.created_at >= d.day AND v.created_at < d.day + interval '1 day') AS stamps_issued,
       (SELECT count(*)::int FROM reward_redemptions r WHERE r.business_id=${businessId} AND r.status='redeemed' AND r.redeemed_at >= d.day AND r.redeemed_at < d.day + interval '1 day') AS rewards_redeemed
     FROM days d ORDER BY d.day
   `) as Array<{date:string;new_customers:number;stamps_issued:number;rewards_redeemed:number}>;
@@ -1141,6 +1144,8 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
   const auth = await requireBusinessOwner(req, sql);
   if (!auth.business) return error("Business not found.", 404);
   const businessId = auth.business.id;
+
+  if (path[1] === "features" && req.method === "GET") return json({ features: await readBusinessFeatures(sql, businessId) });
 
   if (path[1] === "profile") {
     if (req.method === "GET") return json({ business: publicBusiness(auth.business) });
@@ -1362,6 +1367,11 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (limited) return limited;
   if (!auth.business) return error("Business not found.", 404);
   const body = await readJson(req);
+  let stampCount = 1, stampMessage = "";
+  if (path[0] === "stamp") {
+    try { const options = stampOptions(body, { custom_stamp_quantity: auth.business.custom_stamp_quantity === true, stamp_messages: auth.business.stamp_messages === true }); stampCount = options.count; stampMessage = options.message; }
+    catch (cause) { return error(cause instanceof Error ? cause.message : "Invalid stamp options.", 422); }
+  }
   const qr = asString(body.qr_code);
   const rawReference = asString(body.order_reference).trim();
   if (rawReference.length > 120 || /[\u0000-\u001f\u007f]/.test(rawReference)) return error("Order reference must contain 1–120 printable characters.", 422);
@@ -1399,7 +1409,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (path[0] === "scan-preview") {
     const loyalty = ((await sql`SELECT current_stamps FROM customer_loyalties WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as Array<{ current_stamps: number }>)[0];
     const ready = ((await sql`SELECT id FROM reward_redemptions WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready' LIMIT 1`) as Array<{ id: string }>)[0];
-    return json({ customer_name: [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || "Customer", current_stamps: loyalty?.current_stamps ?? 0, required_stamps: card.required_stamps, reward_name: card.reward_name, reward_ready: Boolean(ready) });
+    return json({ customer_name: [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || "Customer", current_stamps: loyalty?.current_stamps ?? 0, required_stamps: card.required_stamps, reward_name: card.reward_name, reward_ready: Boolean(ready), features: { custom_stamp_quantity: auth.business.custom_stamp_quantity === true, stamp_messages: auth.business.stamp_messages === true } });
   }
   if (orderReference && path[0] === "stamp") {
     const previous = await sql`SELECT id FROM visits WHERE business_id = ${auth.business.id} AND order_reference = ${orderReference} LIMIT 1`;
@@ -1454,22 +1464,22 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
       SELECT id, current_stamps FROM customer_loyalties WHERE id = ${current.id} FOR UPDATE
     ),
     order_claim AS (
-      INSERT INTO visits (id, business_id, customer_id, order_reference)
-      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${orderReference}
-      FROM locked_loyalty WHERE ${orderReference}::text IS NOT NULL AND current_stamps < ${card.required_stamps}
+      INSERT INTO visits (id, business_id, customer_id, order_reference, stamp_count, stamp_message, actor_id)
+      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${orderReference}, ${stampCount}, ${stampMessage}, ${auth.user.id}
+      FROM locked_loyalty WHERE ${orderReference}::text IS NOT NULL AND current_stamps + ${stampCount} <= ${card.required_stamps}
       ON CONFLICT (business_id, order_reference) WHERE order_reference IS NOT NULL DO NOTHING
       RETURNING id
     ),
     loyalty_update AS (
       UPDATE customer_loyalties
-      SET current_stamps = current_stamps + 1, updated_at = now()
-      WHERE id = ${current.id} AND current_stamps < ${card.required_stamps}
+      SET current_stamps = current_stamps + ${stampCount}, updated_at = now()
+      WHERE id = ${current.id} AND current_stamps + ${stampCount} <= ${card.required_stamps}
         AND (${orderReference}::text IS NULL OR EXISTS (SELECT 1 FROM order_claim))
       RETURNING *
     ),
     visit_insert AS (
-      INSERT INTO visits (id, business_id, customer_id)
-      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}
+      INSERT INTO visits (id, business_id, customer_id, stamp_count, stamp_message, actor_id)
+      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${stampCount}, ${stampMessage}, ${auth.user.id}
       FROM loyalty_update WHERE ${orderReference}::text IS NULL
       RETURNING id
     ),
@@ -1489,9 +1499,9 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     ),
     stamp_notification AS (
       INSERT INTO customer_notifications (id, customer_id, type, title, message)
-      SELECT CONCAT('stamp_added-', v.id::text), ${customer.id}, 'stamp_added', 'Stamp added',
-             CONCAT('You received a stamp at ', ${auth.business.name}::text, '. ',
-                    lu.current_stamps::text, '/', ${card.required_stamps}::text, ' stamps collected.')
+      SELECT CONCAT('stamp_added-', v.id::text), ${customer.id}, 'stamp_added', ${stampCount === 1 ? 'Stamp added' : 'Stamps added'},
+             CONCAT('You received ', ${stampCount}::text, CASE WHEN ${stampCount}=1 THEN ' stamp at ' ELSE ' stamps at ' END, ${auth.business.name}::text, '. ',
+                    lu.current_stamps::text, '/', ${card.required_stamps}::text, ' stamps collected.', CASE WHEN ${stampMessage}::text<>'' THEN CONCAT(' ', ${stampMessage}::text) ELSE '' END)
       FROM credited_visit v CROSS JOIN loyalty_update lu
     ),
     reward_notification AS (
@@ -1509,19 +1519,21 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
       const used = await sql`SELECT id FROM visits WHERE business_id = ${auth.business.id} AND order_reference = ${orderReference} LIMIT 1`;
       if ((used as Array<{ id: string }>).length) return error("This order reference has already received a stamp.", 409);
     }
+    const fresh = (await sql`SELECT current_stamps FROM customer_loyalties WHERE id = ${current.id}`) as Array<{current_stamps:number}>;
+    if (fresh[0] && fresh[0].current_stamps < card.required_stamps) return error(`Only ${card.required_stamps - fresh[0].current_stamps} stamps remain. Choose a smaller quantity.`, 422);
     return error("Reward is ready. Redeem it before adding another stamp.", 409);
   }
   const unlocked = updated.current_stamps >= card.required_stamps;
   const redemptionCreated = updated.redemption_created;
   const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || customer.email || "A customer";
   await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
-            VALUES (${randomUUID()}, ${auth.business.id}, 'stamp_added', 'Stamp added', ${customerName + " received a stamp."})`;
+            VALUES (${randomUUID()}, ${auth.business.id}, 'stamp_added', 'Stamp added', ${customerName + " received " + stampCount + (stampCount === 1 ? " stamp." : " stamps.")})`;
   if (redemptionCreated) {
     await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
               VALUES (${randomUUID()}, ${auth.business.id}, 'reward_ready', 'Reward ready', ${customerName + " unlocked a reward."})`;
   }
   await syncGoogleWalletCustomer(sql, customer.id);
-  return json({ message: "Stamp added.", loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
+  return json({ message: stampCount === 1 ? "Stamp added." : `${stampCount} stamps added.`, stamps_added: stampCount, loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
 }
 
 function base64Url(input: string) {
@@ -2144,7 +2156,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   }
   if (path[1] === "activity") {
     const visits = (await sql`
-      SELECT v.id, 'visit' AS type, v.business_id, v.customer_id, v.created_at::text AS date, 1 AS points,
+      SELECT v.id, 'visit' AS type, v.business_id, v.customer_id, v.created_at::text AS date, v.stamp_count AS points, v.stamp_message,
              b.name AS business_name, b.logo_url AS business_logo_url, b.primary_color AS business_primary_color
       FROM visits v
       JOIN customers c ON c.id = v.customer_id
