@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Modal } from "@/components/ui/modal";
 
 type Props = {
   businessName: string;
+  headerAction?: ReactNode;
   businessLogoUrl?: string | null;
 
   brandPrimaryColor?: string | null;
@@ -50,6 +51,7 @@ function clampPercent(value: number) {
 export default function LoyaltyCardVisual({
   businessName,
   businessLogoUrl,
+  headerAction,
   brandPrimaryColor,
   memberName,
   rewardName,
@@ -226,9 +228,12 @@ export default function LoyaltyCardVisual({
             </div>
           </div>
 
-          <div className="text-right">
-            <div className="text-xs text-white/80">Progress</div>
-            <div className="text-lg font-semibold">{progress}%</div>
+          <div className="flex shrink-0 items-start gap-2">
+            <div className="text-right">
+              <div className="text-xs text-white/80">Progress</div>
+              <div className="text-lg font-semibold">{progress}%</div>
+            </div>
+            {headerAction}
           </div>
         </div>
 

@@ -324,8 +324,8 @@ export function CustomerCardCarousel({
                       transformOrigin: "center center",
                     }}
                   >
-                    {isActive ? <RewardGoalChooser card={card} token={token} onSaved={()=>onRefresh?.()}/> : null}
                     <LoyaltyCardVisual
+                      headerAction={isActive ? <RewardGoalChooser card={card} token={token} onSaved={()=>onRefresh?.()}/> : null}
                       businessName={card.business.name}
                       businessLogoUrl={card.business.logo_url}
                       heroImageUrl={card.business.hero_image_url}

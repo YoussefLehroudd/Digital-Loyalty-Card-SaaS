@@ -38,14 +38,14 @@ export async function ownerBusinessFeatures(req: Request, sql: Sql, businessId: 
       UPDATE businesses b SET custom_stamp_quantity_active=${body.custom_stamp_quantity},stamp_messages_active=${body.stamp_messages},reward_levels_active=${body.reward_levels_enabled},
         reward_config_version=b.reward_config_version+1,updated_at=now() FROM previous p WHERE b.id=p.id
         AND (NOT ${body.custom_stamp_quantity} OR p.custom_stamp_quantity) AND (NOT ${body.stamp_messages} OR p.stamp_messages)
-        AND (NOT ${body.reward_levels_enabled} OR (p.reward_levels_enabled AND jsonb_array_length(p.reward_levels)>0)) RETURNING b.id
+        AND (NOT ${body.reward_levels_enabled} OR p.reward_levels_enabled) RETURNING b.id
     ), audit AS (
       INSERT INTO admin_audit_logs(id,actor_id,actor_name,action,entity_type,entity_id,entity_name,reason)
       SELECT ${randomUUID()},${actor.id},${actor.name},'business_options_change','business',p.id,p.name,
         CONCAT('Business activation: quantity=',${body.custom_stamp_quantity}::text,', messages=',${body.stamp_messages}::text,', reward levels=',${body.reward_levels_enabled}::text)
       FROM previous p JOIN updated u ON u.id=p.id
      ) SELECT id FROM updated` as Array<{id:string}>;
-  if (!rows.length) return reply({message:"Administrator access is required. Save at least one reward level before enabling customer goals."},403);
+  if (!rows.length) return reply({message:"Administrator access is required to enable this business option."},403);
   await reconcileRewardGoals(sql,businessId);
   return reply({features:await readBusinessFeatures(sql,businessId),message:"Business options saved."});
 }
