@@ -152,7 +152,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
           <div aria-hidden="true" className="h-16 lg:hidden" />
 
           {isMobileMenuOpen ? (
-            <div className="fixed inset-0 z-40 lg:hidden">
+            <div className="fixed inset-0 z-[120] lg:hidden">
               <button
                 aria-label="Close mobile menu overlay"
                 className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
@@ -445,7 +445,7 @@ function TopNav({
   };
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl lg:sticky lg:inset-x-auto lg:z-20">
+    <header className="app-topbar fixed inset-x-0 top-0 z-30 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl lg:sticky lg:inset-x-auto lg:z-20">
       <div className="flex h-16 items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <Button

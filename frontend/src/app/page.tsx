@@ -40,7 +40,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#070807] text-white">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-md">
+      <header className="app-topbar fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-md">
         <div className="relative mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:px-5 lg:px-8">
           <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="relative size-10 shrink-0 sm:size-12"><Image src="/brand/logo.png" alt="LOYVANCE" fill className="object-contain" /></div>

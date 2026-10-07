@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { GlobalEchoProvider } from "@/components/echo/global-echo-provider";
+
+import { InstallAppBanner } from "@/components/pwa/install-app-banner";
 
 import "./globals.css";
 
@@ -17,6 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "LOYVANCE", statusBarStyle: "black-translucent" },
   title: "LOYVANCE",
   description:
     "A multi-tenant loyalty card platform for customer stamps, rewards, and QR-based visits.",
@@ -36,6 +40,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = { themeColor: "#080907" };
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -47,7 +53,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <GlobalEchoProvider>{children}</GlobalEchoProvider>
+          <GlobalEchoProvider>
+            <InstallAppBanner />
+            {children}
+          </GlobalEchoProvider>
         </ThemeProvider>
       </body>
     </html>

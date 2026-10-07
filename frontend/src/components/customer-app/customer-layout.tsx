@@ -72,7 +72,7 @@ export function CustomerLayout({
       </aside>
 
       <div className="min-w-0 flex-1 lg:ml-[280px]">
-        <header className="sticky top-0 z-30 border-b border-[#d8a63f]/10 bg-[#080907]/90 backdrop-blur-xl">
+        <header className="app-topbar sticky top-0 z-30 border-b border-[#d8a63f]/10 bg-[#080907]/90 backdrop-blur-xl">
           <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3 lg:max-w-[1440px] lg:px-8 lg:py-2">
             <div className="flex min-w-0 items-center gap-2.5">
               <Link href="/user/dashboard" aria-label="LOYVANCE home" className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[#e7b354]/5 outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] lg:hidden">

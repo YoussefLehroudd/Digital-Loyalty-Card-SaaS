@@ -286,3 +286,9 @@ input.loyvance-gold-range[type="range"]:focus-visible,
     font-size: 14px;
   }
 }
+
+/* The mobile install banner reserves space above the existing navigation. */
+@media (max-width: 1023px) {
+  body { padding-top: var(--app-install-height, 0px); }
+  .app-topbar { top: var(--app-install-height, 0px); }
+}
