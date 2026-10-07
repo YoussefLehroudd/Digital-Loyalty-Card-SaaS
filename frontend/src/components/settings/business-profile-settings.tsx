@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BusinessPrivacySettings } from "@/components/settings/business-privacy-settings";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -412,6 +413,8 @@ export function BusinessProfileSettings() {
             </p>
           </div>
         </div>
+
+        <BusinessPrivacySettings token={token} />
 
         {success ? (
           <Alert className="border-success/30 text-foreground">{success}</Alert>

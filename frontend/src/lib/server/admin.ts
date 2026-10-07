@@ -36,6 +36,7 @@ function pageOptions(req: Request) {
 }
 
 export async function ensureAdminSchema(sql: Sql) {
+  await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS admin_contact_access boolean NOT NULL DEFAULT false`;
   await sql`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'`;
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active'`;
   await sql`CREATE TABLE IF NOT EXISTS admin_audit_logs (
@@ -253,18 +254,18 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     if (path[2]) {
       if (!uuid.test(path[2])) return reply({ message: "Invalid identifier." }, 422);
       const [users, cards] = await Promise.all([
-        sql`SELECT u.id, u.name, u.email, u.status, u.created_at::text, cp.phone FROM app_users u LEFT JOIN customer_profiles cp ON cp.user_id = u.id WHERE u.id = ${path[2]} AND u.role = 'customer' LIMIT 1`,
+        sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, u.status, u.created_at::text, CASE WHEN privacy.visible THEN cp.phone ELSE NULL END AS phone, privacy.visible AS contact_details_visible FROM app_users u LEFT JOIN customer_profiles cp ON cp.user_id = u.id CROSS JOIN LATERAL (SELECT EXISTS (SELECT 1 FROM customers c WHERE c.user_id=u.id) AND NOT EXISTS (SELECT 1 FROM customers c LEFT JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND COALESCE(b.admin_contact_access,false)=false) AS visible) privacy WHERE u.id = ${path[2]} AND u.role = 'customer' LIMIT 1`,
         sql`SELECT c.id, b.name AS business_name, b.status AS business_status, cl.current_stamps, lc.required_stamps, lc.reward_name
           FROM customers c JOIN businesses b ON b.id = c.business_id LEFT JOIN customer_loyalties cl ON cl.customer_id = c.id LEFT JOIN loyalty_cards lc ON lc.id = cl.loyalty_card_id WHERE c.user_id = ${path[2]} ORDER BY c.created_at DESC`,
       ]);
       return users[0] ? reply({ data: { ...users[0], cards } }) : reply({ message: "Customer not found." }, 404);
     }
     const [rows, total] = await Promise.all([
-      sql`SELECT u.id, u.name, u.email, u.status, u.avatar_url, u.created_at::text,
+      sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, privacy.visible AS contact_details_visible, u.status, u.avatar_url, u.created_at::text,
         (SELECT count(*)::int FROM customers WHERE user_id = u.id) AS cards
-        FROM app_users u WHERE u.role = 'customer' AND (u.name ILIKE ${query} OR u.email ILIKE ${query}) AND (${status} = '' OR u.status = ${status})
+        FROM app_users u CROSS JOIN LATERAL (SELECT EXISTS (SELECT 1 FROM customers c WHERE c.user_id=u.id) AND NOT EXISTS (SELECT 1 FROM customers c LEFT JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND COALESCE(b.admin_contact_access,false)=false) AS visible) privacy WHERE u.role = 'customer' AND (u.name ILIKE ${query} OR (privacy.visible AND u.email ILIKE ${query})) AND (${status} = '' OR u.status = ${status})
         ORDER BY u.created_at DESC, u.id LIMIT 25 OFFSET ${offset}`,
-      sql`SELECT count(*)::int AS total FROM app_users u WHERE u.role = 'customer' AND (u.name ILIKE ${query} OR u.email ILIKE ${query}) AND (${status} = '' OR u.status = ${status})`,
+      sql`SELECT count(*)::int AS total FROM app_users u CROSS JOIN LATERAL (SELECT EXISTS (SELECT 1 FROM customers c WHERE c.user_id=u.id) AND NOT EXISTS (SELECT 1 FROM customers c LEFT JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND COALESCE(b.admin_contact_access,false)=false) AS visible) privacy WHERE u.role = 'customer' AND (u.name ILIKE ${query} OR (privacy.visible AND u.email ILIKE ${query})) AND (${status} = '' OR u.status = ${status})`,
     ]);
     return reply({ data: rows, total: total[0].total, page, per_page: 25 });
   }
@@ -278,7 +279,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
         CASE WHEN r.status = 'redeemed' THEN 'Reward redeemed' ELSE 'Reward unlocked' END, '', COALESCE(r.redeemed_at, r.earned_at)
       FROM reward_redemptions r JOIN customers c ON c.id = r.customer_id JOIN businesses b ON b.id = r.business_id
       UNION ALL SELECT CONCAT('admin-', a.id), 'admin', a.actor_name, a.entity_name,
-        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'subscription_expiry_adjustment' THEN 'Subscription expiry adjusted for testing' WHEN a.action='renewal_rejected' THEN 'Renewal request rejected' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
+        CASE WHEN a.action = 'suspend' THEN 'Account suspended' WHEN a.action = 'subscription_activate' THEN 'Subscription activated · ' || COALESCE((SELECT e.duration_months FROM subscription_events e WHERE e.id = a.id),1)::text || ' month(s)' WHEN a.action = 'subscription_expiry_adjustment' THEN 'Subscription expiry adjusted for testing' WHEN a.action='renewal_rejected' THEN 'Renewal request rejected' WHEN a.action = 'customer_privacy_change' THEN 'Customer privacy updated' WHEN a.action = 'password_change' THEN 'Administrator password updated' ELSE 'Account activated' END, a.reason, a.created_at FROM admin_audit_logs a
     ) SELECT id, type, name, business_name, title, reason, date::text FROM events WHERE (${kind} = '' OR type = ${kind}) ORDER BY date DESC, id LIMIT 25 OFFSET ${offset}`;
     const total = sql`SELECT
       CASE WHEN ${kind} IN ('', 'stamp') THEN (SELECT count(*)::int FROM visits) ELSE 0 END +

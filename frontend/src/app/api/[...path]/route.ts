@@ -1,3 +1,4 @@
+import { businessPrivacy } from "@/lib/server/customer-privacy";
 import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
@@ -1133,6 +1134,10 @@ async function handleDashboard(path: string[], req: Request, sql: Sql) {
 }
 
 async function handleBusiness(path: string[], req: Request, sql: Sql) {
+  if (path[1] === "privacy" && path.length === 2) {
+    const auth = await requireAuth(req, sql);
+    return businessPrivacy(req, sql, auth.user, auth.business);
+  }
   const auth = await requireBusinessOwner(req, sql);
   if (!auth.business) return error("Business not found.", 404);
   const businessId = auth.business.id;
