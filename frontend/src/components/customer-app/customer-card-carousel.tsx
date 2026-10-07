@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Gift, Info, QrCode, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Gift, Info, QrCode, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -58,6 +58,8 @@ export function CustomerCardCarousel({
   const touchStartY = useRef<number | null>(null);
   const touchDeltaX = useRef(0);
   const touchDeltaY = useRef(0);
+  const [downloadingQr, setDownloadingQr] = useState(false);
+  const [qrDownloadError, setQrDownloadError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [addingToWallet, setAddingToWallet] = useState(false);
   const [addingToAppleWallet, setAddingToAppleWallet] = useState(false);
@@ -225,6 +227,19 @@ export function CustomerCardCarousel({
   const rewardName = current.loyalty_card?.reward_name ?? null;
   const rewardDescription = current.loyalty_card?.reward_description ?? null;
   const qrValue = current.qr?.qr_code ?? current.membership?.qr_code ?? null;
+  async function downloadQr() {
+    if (!qrValue || downloadingQr) return;
+    setDownloadingQr(true); setQrDownloadError(null);
+    try {
+      const { default: QRCode } = await import("qrcode");
+      const url = await QRCode.toDataURL(qrValue, { width: 800, margin: 4, errorCorrectionLevel: "M", color: { dark: "#000000", light: "#ffffff" } });
+      const link = document.createElement("a");
+      link.href = url; link.download = "loyvance-customer-qr.png";
+      document.body.appendChild(link); link.click(); link.remove();
+    } catch { setQrDownloadError("Could not download your QR. Please try again."); }
+    finally { setDownloadingQr(false); }
+  }
+
   const progressPercent = current.loyalty?.progress_percent ?? 0;
   const currentStamps = current.loyalty?.current_stamps ?? 0;
   const requiredStamps =
@@ -415,6 +430,9 @@ export function CustomerCardCarousel({
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5 lg:absolute lg:right-8 lg:top-[76px] lg:m-0 lg:w-[283px] lg:max-w-none lg:pt-0">
+            <Button type="button" variant="outline" className="h-11 w-full lg:rounded-full" disabled={!qrValue || downloadingQr} onClick={() => void downloadQr()}><Download className="size-4" />{downloadingQr ? "Preparing QR…" : "Download my QR"}</Button>
+            <p className="text-center text-xs text-muted-foreground">Share this QR with the business for an online order.</p>
+            {qrDownloadError ? <p role="alert" className="text-center text-xs text-rose-300">{qrDownloadError}</p> : null}
             <div className="flex flex-col items-center gap-2 p-2 lg:px-0">
               <button
                 type="button"

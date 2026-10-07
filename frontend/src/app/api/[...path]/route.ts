@@ -303,6 +303,9 @@ async function ensureSchema(sql: Sql) {
         created_at timestamptz DEFAULT now()
       )`;
 
+      await sql`ALTER TABLE visits ADD COLUMN IF NOT EXISTS order_reference text`;
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS visits_business_order_reference ON visits (business_id, order_reference) WHERE order_reference IS NOT NULL`;
+
       await sql`CREATE TABLE IF NOT EXISTS reward_redemptions (
         id uuid PRIMARY KEY,
         business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
@@ -1323,12 +1326,17 @@ async function handlePublic(path: string[], req: Request, sql: Sql) {
 }
 
 async function handleStamp(path: string[], req: Request, sql: Sql) {
+  if (req.method !== "POST") return error("Method not allowed.", 405);
   const auth = await requireBusinessOwner(req, sql);
   const limited = await rateLimit(sql, req, path[0] === "redeem-reward" ? "reward-action" : "stamp-action", 120, 60_000);
   if (limited) return limited;
   if (!auth.business) return error("Business not found.", 404);
   const body = await readJson(req);
   const qr = asString(body.qr_code);
+  const rawReference = asString(body.order_reference).trim();
+  if (rawReference.length > 120 || /[\u0000-\u001f\u007f]/.test(rawReference)) return error("Order reference must contain 1–120 printable characters.", 422);
+  const orderReference = rawReference ? rawReference.toUpperCase() : null;
+  if (body.source === "image" && path[0] === "stamp" && !orderReference) return error("Enter the confirmed order reference before adding a stamp.", 422);
   const customer = ((await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.qr_code = ${qr} AND c.business_id = ${auth.business.id} LIMIT 1`) as DbCustomer[])[0];
   if (!customer) {
     const otherCustomer = ((await sql`SELECT id, business_id FROM customers WHERE qr_code = ${qr} LIMIT 1`) as Array<{ id: string; business_id: string }>)[0];
@@ -1353,6 +1361,15 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     return error("Invalid QR code. Please scan a valid customer loyalty card.", 422);
   }
   const card = await defaultCard(sql, auth.business.id);
+  if (path[0] === "scan-preview") {
+    const loyalty = ((await sql`SELECT current_stamps FROM customer_loyalties WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as Array<{ current_stamps: number }>)[0];
+    const ready = ((await sql`SELECT id FROM reward_redemptions WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready' LIMIT 1`) as Array<{ id: string }>)[0];
+    return json({ customer_name: [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || "Customer", current_stamps: loyalty?.current_stamps ?? 0, required_stamps: card.required_stamps, reward_name: card.reward_name, reward_ready: Boolean(ready) });
+  }
+  if (orderReference && path[0] === "stamp") {
+    const previous = await sql`SELECT id FROM visits WHERE business_id = ${auth.business.id} AND order_reference = ${orderReference} LIMIT 1`;
+    if ((previous as Array<{ id: string }>).length) return error("This order reference has already received a stamp.", 409);
+  }
   const current = ((await sql`
     INSERT INTO customer_loyalties (id, customer_id, loyalty_card_id, current_stamps)
     VALUES (${randomUUID()}, ${customer.id}, ${card.id}, 0)
@@ -1398,17 +1415,31 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   // A completed cycle must be redeemed before another stamp can be added.
   // This prevents 10/10 from becoming 11/10 when the business chooses "Not now".
   const stampRows = (await sql`
-    WITH loyalty_update AS (
+    WITH locked_loyalty AS (
+      SELECT id, current_stamps FROM customer_loyalties WHERE id = ${current.id} FOR UPDATE
+    ),
+    order_claim AS (
+      INSERT INTO visits (id, business_id, customer_id, order_reference)
+      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${orderReference}
+      FROM locked_loyalty WHERE ${orderReference}::text IS NOT NULL AND current_stamps < ${card.required_stamps}
+      ON CONFLICT (business_id, order_reference) WHERE order_reference IS NOT NULL DO NOTHING
+      RETURNING id
+    ),
+    loyalty_update AS (
       UPDATE customer_loyalties
       SET current_stamps = current_stamps + 1, updated_at = now()
       WHERE id = ${current.id} AND current_stamps < ${card.required_stamps}
+        AND (${orderReference}::text IS NULL OR EXISTS (SELECT 1 FROM order_claim))
       RETURNING *
     ),
     visit_insert AS (
       INSERT INTO visits (id, business_id, customer_id)
       SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}
-      FROM loyalty_update
+      FROM loyalty_update WHERE ${orderReference}::text IS NULL
       RETURNING id
+    ),
+    credited_visit AS (
+      SELECT id FROM visit_insert UNION ALL SELECT id FROM order_claim
     ),
     reward_insert AS (
       INSERT INTO reward_redemptions (id, business_id, customer_id, loyalty_card_id, status)
@@ -1426,7 +1457,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
       SELECT CONCAT('stamp_added-', v.id::text), ${customer.id}, 'stamp_added', 'Stamp added',
              CONCAT('You received a stamp at ', ${auth.business.name}::text, '. ',
                     lu.current_stamps::text, '/', ${card.required_stamps}::text, ' stamps collected.')
-      FROM visit_insert v CROSS JOIN loyalty_update lu
+      FROM credited_visit v CROSS JOIN loyalty_update lu
     ),
     reward_notification AS (
       INSERT INTO customer_notifications (id, customer_id, type, title, message, reward_id)
@@ -1438,7 +1469,13 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     FROM loyalty_update lu
   `) as Array<DbLoyalty & { redemption_created: boolean }>;
   const updated = stampRows[0];
-  if (!updated) return error("Reward is ready. Redeem it before adding another stamp.", 409);
+  if (!updated) {
+    if (orderReference) {
+      const used = await sql`SELECT id FROM visits WHERE business_id = ${auth.business.id} AND order_reference = ${orderReference} LIMIT 1`;
+      if ((used as Array<{ id: string }>).length) return error("This order reference has already received a stamp.", 409);
+    }
+    return error("Reward is ready. Redeem it before adding another stamp.", 409);
+  }
   const unlocked = updated.current_stamps >= card.required_stamps;
   const redemptionCreated = updated.redemption_created;
   const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || customer.email || "A customer";
@@ -2206,7 +2243,7 @@ async function dispatch(req: Request, context: RouteContext) {
     else if (path[0] === "business") response = await handleBusiness(path, req, sql);
     else if (path[0] === "loyalty-card") response = await handleLoyaltyCard(req, sql);
     else if (path[0] === "public") response = await handlePublic(path, req, sql);
-    else if (path[0] === "stamp" || path[0] === "redeem-reward") response = await handleStamp(path, req, sql);
+    else if (path[0] === "stamp" || path[0] === "redeem-reward" || path[0] === "scan-preview") response = await handleStamp(path, req, sql);
     else if (path[0] === "user") response = await handleCustomerUser(path, req, sql);
 
     if(response?.ok && path[0]==="admin" && path[1]==="businesses" && path[3]==="subscription" && req.method==="POST") {

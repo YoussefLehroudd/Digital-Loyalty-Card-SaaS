@@ -9,6 +9,8 @@ import { Alert } from "@/components/ui/alert";
 
 import { apiFetch, ApiError } from "@/lib/api";
 import { StaffQrScanner } from "@/components/scanner/StaffQrScanner";
+import { OnlineOrderScanner } from "@/components/scanner/OnlineOrderScanner";
+import { Button } from "@/components/ui/button";
 import { StampResult } from "@/components/scanner/StampResult";
 
 type StampApiResponse = {
@@ -24,6 +26,7 @@ type StampApiResponse = {
 
 export default function ScannerPage() {
   const { token } = useAuth();
+  const [mode, setMode] = useState<"camera" | "image">("camera");
 
   const [error, setError] = useState<string | null>(null);
   const [stampResult, setStampResult] = useState<StampApiResponse["loyalty"] | null>(null);
@@ -125,7 +128,7 @@ export default function ScannerPage() {
                 Staff QR Scanner
               </h1>
               <p className="text-sm text-muted-foreground">
-                Scan a customer QR code to add a stamp.
+                Scan in person or upload a QR image for an online order.
               </p>
             </div>
           </div>
@@ -139,9 +142,13 @@ export default function ScannerPage() {
         </div>
 
         <div className="mx-auto mt-5 max-w-2xl">
-          <StaffQrScanner onQrScanned={handleQrScanned} onResetReady={handleResetReady} />
+          <div className="mb-4 grid grid-cols-2 gap-2" aria-label="Scan method">
+            <Button variant={mode === "camera" ? "default" : "outline"} aria-pressed={mode === "camera"} onClick={() => { clearResult(); setMode("camera"); }}>Camera scan</Button>
+            <Button variant={mode === "image" ? "default" : "outline"} aria-pressed={mode === "image"} onClick={() => { clearResult(); setMode("image"); }}>QR image / online</Button>
+          </div>
+          {mode === "camera" ? <StaffQrScanner onQrScanned={handleQrScanned} onResetReady={handleResetReady} /> : <OnlineOrderScanner token={token} />}
 
-          {stampResult ? (
+          {mode === "camera" && stampResult ? (
             <StampResult
               currentStamps={stampResult.current_stamps}
               requiredStamps={stampResult.required_stamps}
