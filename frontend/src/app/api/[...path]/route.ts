@@ -1,5 +1,5 @@
 import { effectiveRewardCard, validateRewardLevels, saveRewardLevels, selectRewardGoal } from "@/lib/server/reward-levels";
-import { readBusinessFeatures, stampOptions } from "@/lib/server/business-features";
+import { ownerBusinessFeatures, readBusinessFeatures, stampOptions } from "@/lib/server/business-features";
 import { businessPrivacy } from "@/lib/server/customer-privacy";
 import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -48,6 +48,9 @@ type DbBusiness = {
   google_wallet_show_background: boolean;
   custom_stamp_quantity?: boolean;
   stamp_messages?: boolean;
+  custom_stamp_quantity_active?: boolean;
+  stamp_messages_active?: boolean;
+  reward_levels_active?: boolean;
   reward_levels_enabled?: boolean;
   reward_levels?: import("@/lib/server/reward-levels").RewardLevel[];
   primary_color: string;
@@ -1163,7 +1166,11 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
     await syncGoogleWalletBusiness(sql,businessId);
     return json({message:"Reward levels saved. Customer goals and cards have been updated."});
   }
-  if (path[1] === "features" && req.method === "GET") return json({ features: await readBusinessFeatures(sql, businessId) });
+  if (path[1] === "features" && path.length === 2) {
+    const response = await ownerBusinessFeatures(req,sql,businessId,auth.user);
+    if (response.ok && req.method === "PATCH") await syncGoogleWalletBusiness(sql,businessId);
+    return response;
+  }
 
   if (path[1] === "profile") {
     if (req.method === "GET") return json({ business: publicBusiness(auth.business) });
@@ -1387,7 +1394,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   const body = await readJson(req);
   let stampCount = 1, stampMessage = "";
   if (path[0] === "stamp") {
-    try { const options = stampOptions(body, { custom_stamp_quantity: auth.business.custom_stamp_quantity === true, stamp_messages: auth.business.stamp_messages === true }); stampCount = options.count; stampMessage = options.message; }
+    try { const options = stampOptions(body, { custom_stamp_quantity: (auth.business.custom_stamp_quantity === true && auth.business.custom_stamp_quantity_active === true), stamp_messages: (auth.business.stamp_messages === true && auth.business.stamp_messages_active === true) }); stampCount = options.count; stampMessage = options.message; }
     catch (cause) { return error(cause instanceof Error ? cause.message : "Invalid stamp options.", 422); }
   }
   const qr = asString(body.qr_code);
@@ -1427,7 +1434,7 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (path[0] === "scan-preview") {
     const loyalty = ((await sql`SELECT current_stamps FROM customer_loyalties WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} LIMIT 1`) as Array<{ current_stamps: number }>)[0];
     const ready = ((await sql`SELECT id FROM reward_redemptions WHERE customer_id = ${customer.id} AND loyalty_card_id = ${card.id} AND status = 'ready' LIMIT 1`) as Array<{ id: string }>)[0];
-    return json({ customer_name: [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || "Customer", current_stamps: loyalty?.current_stamps ?? 0, required_stamps: card.required_stamps, reward_name: card.reward_name, reward_ready: Boolean(ready), features: { custom_stamp_quantity: auth.business.custom_stamp_quantity === true, stamp_messages: auth.business.stamp_messages === true } });
+    return json({ customer_name: [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || "Customer", current_stamps: loyalty?.current_stamps ?? 0, required_stamps: card.required_stamps, reward_name: card.reward_name, reward_ready: Boolean(ready), features: { custom_stamp_quantity: (auth.business.custom_stamp_quantity === true && auth.business.custom_stamp_quantity_active === true), stamp_messages: (auth.business.stamp_messages === true && auth.business.stamp_messages_active === true) } });
   }
   if (orderReference && path[0] === "stamp") {
     const previous = await sql`SELECT id FROM visits WHERE business_id = ${auth.business.id} AND order_reference = ${orderReference} LIMIT 1`;

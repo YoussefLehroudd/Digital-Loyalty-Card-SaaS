@@ -313,7 +313,7 @@ export function CustomerCardCarousel({
                   <div
                     key={card.id}
                     className={cn(
-                      "col-start-1 row-start-1 transform-gpu [backface-visibility:hidden] [transform-style:preserve-3d]",
+                      "relative col-start-1 row-start-1 transform-gpu [backface-visibility:hidden] [transform-style:preserve-3d]",
                       dragging && isActive ? "transition-none will-change-transform" : "transition-[transform,opacity] duration-[360ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
                       !isActive && "pointer-events-none",
                     )}
@@ -324,6 +324,7 @@ export function CustomerCardCarousel({
                       transformOrigin: "center center",
                     }}
                   >
+                    {isActive ? <RewardGoalChooser card={card} token={token} onSaved={()=>onRefresh?.()}/> : null}
                     <LoyaltyCardVisual
                       businessName={card.business.name}
                       businessLogoUrl={card.business.logo_url}
@@ -417,7 +418,7 @@ export function CustomerCardCarousel({
         </nav>
       ) : null}
 
-        <RewardGoalChooser card={current} token={token} onSaved={()=>onRefresh?.()}/>
+
 
         {dashboardMode ? (
           <div className="mx-auto grid max-w-[960px] gap-2.5 pt-1 sm:grid-cols-3 lg:pt-3">

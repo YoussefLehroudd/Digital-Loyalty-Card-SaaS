@@ -7,6 +7,7 @@ type BaseCard = { id: string; business_id: string; required_stamps: number; rewa
 
 export async function ensureRewardLevelSchema(sql: Sql) {
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_levels_enabled boolean NOT NULL DEFAULT false`;
+  await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_levels_active boolean NOT NULL DEFAULT false`;
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_levels jsonb NOT NULL DEFAULT '[]'::jsonb`;
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_config_version integer NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE customer_loyalties ADD COLUMN IF NOT EXISTS target_stamps integer`;
@@ -28,7 +29,7 @@ export function validateRewardLevels(value: unknown): RewardLevel[] {
 }
 
 export async function effectiveRewardCard<T extends BaseCard>(sql: Sql, customerId: string, card: T) {
-  const rows = await sql`SELECT b.reward_levels_enabled, b.reward_levels, b.reward_config_version,
+  const rows = await sql`SELECT (b.reward_levels_enabled AND b.reward_levels_active) AS reward_levels_enabled, b.reward_levels, b.reward_config_version,
     (SELECT target_stamps FROM customer_loyalties WHERE customer_id=${customerId} AND loyalty_card_id=${card.id} LIMIT 1) AS target_stamps
     FROM businesses b WHERE b.id=${card.business_id}` as Array<{ reward_levels_enabled: boolean; reward_levels: RewardLevel[]; reward_config_version: number; target_stamps: number | null }>;
   const config = rows[0];
@@ -61,7 +62,7 @@ export async function reconcileRewardGoals(sql: Sql, businessId: string, levels?
     JOIN loyalty_cards lc ON lc.id=l.loyalty_card_id
     LEFT JOIN LATERAL (
       SELECT t.* FROM jsonb_to_recordset(b.reward_levels) AS t(stamps integer,name text,message text)
-      WHERE b.reward_levels_enabled ORDER BY (t.stamps=l.target_stamps) DESC NULLS LAST,t.stamps LIMIT 1
+      WHERE b.reward_levels_enabled AND b.reward_levels_active ORDER BY (t.stamps=l.target_stamps) DESC NULLS LAST,t.stamps LIMIT 1
     ) tier ON true FOR UPDATE OF l
   ), updated AS (
     UPDATE customer_loyalties l SET target_stamps=CASE WHEN l.target_stamps IS NULL THEN NULL ELSE d.target END, updated_at=now() FROM desired d WHERE l.id=d.id RETURNING l.id
@@ -87,7 +88,7 @@ export async function selectRewardGoal(sql: Sql, userId: string, customerId: str
     SELECT b.* FROM businesses b JOIN customers c ON c.business_id=b.id WHERE c.id=${customerId} AND c.user_id=${userId} AND b.status='active' FOR SHARE OF b
   ), choice AS (
     SELECT b.id AS business_id,b.name AS business_name,t.* FROM business b CROSS JOIN LATERAL jsonb_to_recordset(b.reward_levels) AS t(stamps integer,name text,message text)
-    WHERE b.reward_levels_enabled AND t.stamps=${stamps}
+    WHERE b.reward_levels_enabled AND b.reward_levels_active AND t.stamps=${stamps}
   ), locked AS (
     SELECT l.* FROM customer_loyalties l WHERE l.customer_id=${customerId} AND EXISTS(SELECT 1 FROM choice) FOR UPDATE
   ), changed AS (
