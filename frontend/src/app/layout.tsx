@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "LOYVANCE", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "LOYVANCE", statusBarStyle: "black" },
   title: "LOYVANCE",
   description:
     "A multi-tenant loyalty card platform for customer stamps, rewards, and QR-based visits.",
