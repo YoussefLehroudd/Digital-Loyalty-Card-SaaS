@@ -1169,6 +1169,7 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
       const base=await defaultCard(sql,businessId);
       const mainReward=body.main_reward_at_one === true ? levels.find(level=>level.stamps===1) : undefined;
       if (body.main_reward_at_one === true && !mainReward) return error("Enter a reward for the first stamp.",422);
+      if (mainReward && mainReward.message.length>80) return error("Main reward description must be 80 characters or fewer.",422);
       await saveRewardLevels(sql,businessId,auth.user,levels.filter(level=>level.stamps!==(mainReward ? 1 : base.required_stamps)),mainReward);
     }
     catch (cause) { if (cause instanceof Error && /Configure|Each reward|Enter a reward/.test(cause.message)) return error(cause.message,422); throw cause; }
@@ -1318,6 +1319,7 @@ async function handleLoyaltyCard(req: Request, sql: Sql) {
     const rewardName = asString(body.reward_name, existing.reward_name);
     const requiredStamps = Math.max(1, Math.min(10, Math.floor(asNumber(body.required_stamps, existing.required_stamps))));
     const rewardDescription = asNullableString(body.reward_description);
+    if (rewardDescription && rewardDescription.length>80) return error("Reward description must be 80 characters or fewer.",422);
     const updated = ((await sql`
       WITH locked_business AS (
         SELECT id FROM businesses WHERE id=${auth.business.id} FOR UPDATE
