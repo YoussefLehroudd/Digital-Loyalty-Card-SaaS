@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Crown, Clock3, LockKeyhole, MessageCircle } from "lucide-react";
+import { ArrowUpRight, Crown, Clock3, LockKeyhole, MessageCircle, CalendarDays, Download } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SubscriptionBadge, SubscriptionDetailsView } from "@/components/subscriptions/subscription-details";
+import { SubscriptionBadge } from "@/components/subscriptions/subscription-details";
+import { downloadPaymentReceipt } from "@/lib/payment-receipt";
 import { BusinessRenewalRequest } from "./renewal-tools";
 import { apiFetch } from "@/lib/api";
-import { subscriptionDate, subscriptionDuration, subscriptionUrgency, subscriptionRemaining, subscriptionContact, type SubscriptionDetails } from "@/lib/subscription";
+import { subscriptionDate, subscriptionDuration, subscriptionUrgency, subscriptionRemaining, subscriptionContact, money, type SubscriptionDetails } from "@/lib/subscription";
 
 export function useBusinessSubscription(token: string | null) {
   const [revision,setRevision]=useState(0);
@@ -53,9 +54,27 @@ export function BusinessSubscriptionCard({ data, error, onOpen }: { data: Subscr
   </button>;
 }
 
+function BusinessSubscriptionSummary({ data, name }: { data: SubscriptionDetails; name: string }) {
+  const [receiptError, setReceiptError] = useState("");
+  const s = data.subscription;
+  const current = data.history.find(event => event.revision === s.revision);
+  const receipt = [...data.history].filter(event => event.amount_centimes && event.receipt_number && event.paid_at).sort((a, b) => b.revision - a.revision)[0];
+  const date = (value: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Casablanca", day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
+  return <div className="space-y-4">
+    <section className="rounded-2xl border border-[#edbc62]/20 bg-gradient-to-br from-[#edbc62]/10 to-transparent p-5 sm:p-6">
+      <div className="flex items-center justify-between gap-3"><span className="text-xs font-medium text-white/55">LOYVANCE membership</span><SubscriptionBadge subscription={s} /></div>
+      <h3 className="mt-5 text-2xl font-semibold tracking-tight">{s.state === "trial" ? "14-day free trial" : current ? `${subscriptionDuration(current.duration_months)} subscription` : "Your subscription"}</h3>
+      <p className={`mt-2 text-sm ${s.state === "expired" ? "text-rose-300" : "text-[#edbc62]"}`}>{subscriptionRemaining(s.remaining_seconds)}</p>
+      <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-white/10 pt-4">{[["Started", s.period_started_at], [s.state === "expired" ? "Expired on" : "Valid until", s.period_ends_at]].map(([label, value]) => <div key={label}><dt className="flex items-center gap-1.5 text-[11px] text-white/45"><CalendarDays className="size-3.5" />{label}</dt><dd className="mt-2 text-sm font-medium">{date(value)}</dd></div>)}</dl>
+    </section>
+    {receipt ? <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 p-4"><div><p className="text-[11px] text-white/45">Last payment</p><p className="mt-1 text-sm font-semibold">{money(receipt.amount_centimes!)} <span className="ml-1 text-xs font-normal text-white/45">· {date(receipt.paid_at!)}</span></p></div><button type="button" onClick={() => { setReceiptError(""); void downloadPaymentReceipt(receipt, name).catch(() => setReceiptError("Unable to download your receipt. Please try again.")); }} className="inline-flex items-center gap-2 rounded-lg border border-[#edbc62]/20 bg-[#edbc62]/5 px-3 py-2.5 text-xs font-semibold text-[#edbc62]"><Download className="size-4" />Receipt PDF</button></section> : null}
+    {receiptError ? <p role="alert" className="text-xs text-rose-300">{receiptError}</p> : null}
+  </div>;
+}
+
 export function BusinessSubscriptionModal({ data, name, open, onClose, token, onSaved }: { data: SubscriptionDetails | null; name: string; open: boolean; onClose: () => void; token: string; onSaved: () => void }) {
-  return <Modal className="sm:max-w-5xl" isOpen={open} onClose={onClose} title="Your subscription" description={name} icon={<Crown className="size-6" />}>
-    {data ? <><SubscriptionDetailsView data={data} businessName={name} /><BusinessRenewalRequest token={token} requests={data.requests??[]} onSaved={onSaved}/><p className="mt-5 rounded-xl border border-white/10 p-3 text-xs leading-5 text-white/45">Activation is managed by the platform administrator. There is no automatic charge or automatic renewal.</p></> : <Skeleton className="h-64 rounded-2xl" />}
+  return <Modal className="sm:max-w-xl" isOpen={open} onClose={onClose} title="Your subscription" description={name} icon={<Crown className="size-6" />}>
+    {data ? <><BusinessSubscriptionSummary data={data} name={name} /><BusinessRenewalRequest token={token} requests={data.requests ?? []} onSaved={onSaved} /><a href={subscriptionContact(name)} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center gap-2 py-2 text-xs font-medium text-white/55 hover:text-[#edbc62]"><MessageCircle className="size-4" />Need help? Contact us</a></> : <Skeleton className="h-64 rounded-2xl" />}
   </Modal>;
 }
 
