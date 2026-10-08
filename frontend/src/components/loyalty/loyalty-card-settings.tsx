@@ -46,7 +46,7 @@ const schema = z.object({
     .max(10, "Maximum is 10."),
   reward_description: z
     .string()
-    .max(80, "Maximum 80 characters.")
+    .max(160, "Maximum 160 characters.")
     .optional()
     .or(z.literal("")),
 });
@@ -350,11 +350,11 @@ export function LoyaltyCardSettings() {
                       <div className="space-y-1.5">
                         <Input
                           {...register("reward_description")}
-                          maxLength={80}
+                          maxLength={160}
                           placeholder="What does the reward unlock? (shown under reward name)"
                         />
                         <div className="flex justify-end text-[11px] text-muted-foreground">
-                          {(watched.reward_description ?? "").length}/80
+                          {(watched.reward_description ?? "").length}/160
                         </div>
                       </div>
                     </Field>
@@ -374,7 +374,11 @@ export function LoyaltyCardSettings() {
               </CardContent>
             </Card>
 
-            <BusinessLoyaltyTools token={token} baseCard={loyaltyCard ?? undefined} />
+            <BusinessLoyaltyTools token={token} baseCard={loyaltyCard ?? undefined} onCardSaved={async()=>{
+              const response=await getLoyaltyCard(token);
+              setLoyaltyCard(response.loyalty_card);
+              reset({reward_name:response.loyalty_card.reward_name??"",required_stamps:response.loyalty_card.required_stamps,reward_description:response.loyalty_card.reward_description??""});
+            }} />
             </div>
 
             <PremiumLoyaltyCardPreview

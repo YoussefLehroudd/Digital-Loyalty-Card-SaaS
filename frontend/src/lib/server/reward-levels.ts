@@ -54,8 +54,9 @@ export async function effectiveRewardCard<T extends BaseCard>(sql: Sql, customer
 
 // Business/configuration mutations and goal selection share the same lock order:
 // business first, loyalty second. Completed rewards retain their original promise.
-export async function reconcileRewardGoals(sql: Sql, businessId: string, levels?: RewardLevel[], actor?: {id:string;name:string}) {
+export async function reconcileRewardGoals(sql: Sql, businessId: string, levels?: RewardLevel[], actor?: {id:string;name:string}, mainReward?: RewardLevel) {
   const encoded = levels ? JSON.stringify(levels) : null;
+  const mainEncoded = mainReward ? JSON.stringify(mainReward) : null;
   await sql`WITH locked_business AS (
     SELECT * FROM businesses WHERE id=${businessId} FOR UPDATE
   ), business AS (
@@ -63,17 +64,24 @@ export async function reconcileRewardGoals(sql: Sql, businessId: string, levels?
       reward_config_version=b.reward_config_version+CASE WHEN ${encoded}::text IS NOT NULL OR NOT lb.reward_main_integrated THEN 1 ELSE 0 END,
       reward_main_integrated=true,updated_at=now()
     FROM locked_business lb WHERE b.id=lb.id AND (${encoded}::text IS NULL OR lb.reward_levels_enabled) RETURNING b.*
+  ), main_card AS (
+    UPDATE loyalty_cards lc SET required_stamps=1,
+      reward_name=(${mainEncoded}::jsonb)->>'name',reward_description=(${mainEncoded}::jsonb)->>'message',updated_at=now()
+    FROM business b WHERE lc.business_id=b.id AND ${mainEncoded}::text IS NOT NULL RETURNING lc.*
+  ), cards AS (
+    SELECT * FROM main_card
+    UNION ALL SELECT lc.* FROM loyalty_cards lc WHERE lc.business_id=${businessId} AND NOT EXISTS(SELECT 1 FROM main_card m WHERE m.id=lc.id)
   ), audit AS (
     INSERT INTO admin_audit_logs(id,actor_id,actor_name,action,entity_type,entity_id,entity_name,reason)
     SELECT ${randomUUID()},${actor?.id ?? null},${actor?.name ?? "Platform"},'reward_levels_change','business',id,name,
-      CONCAT('Previous: ',(SELECT reward_levels::text FROM locked_business),'; new: ',${encoded}::text)
+      CONCAT('Previous: ',(SELECT reward_levels::text FROM locked_business),'; new: ',${encoded}::text,'; main reward: ',${mainEncoded}::text)
     FROM business WHERE ${encoded}::text IS NOT NULL
   ), desired AS (
     SELECT l.id, c.id AS customer_id, lc.id AS card_id, l.current_stamps,
       tier.stamps AS target, COALESCE(tier.stamps,lc.required_stamps) AS required,
       COALESCE(tier.name,lc.reward_name) AS name, COALESCE(tier.message,lc.reward_description) AS message
     FROM business b JOIN customers c ON c.business_id=b.id JOIN customer_loyalties l ON l.customer_id=c.id
-    JOIN loyalty_cards lc ON lc.id=l.loyalty_card_id
+    JOIN cards lc ON lc.id=l.loyalty_card_id
     LEFT JOIN LATERAL (
       SELECT t.* FROM (
         SELECT * FROM jsonb_to_recordset(b.reward_levels) AS extra(stamps integer,name text,message text) WHERE extra.stamps<>lc.required_stamps
@@ -96,8 +104,8 @@ export async function reconcileRewardGoals(sql: Sql, businessId: string, levels?
     SELECT CONCAT('reward_ready-',id::text),customer_id,'reward_ready','Reward unlocked',CONCAT('Your reward (',reward_name_snapshot,') is ready. You can choose a higher goal to keep collecting.'),id FROM ready`;
 }
 
-export async function saveRewardLevels(sql: Sql, businessId: string, actor: { id: string; name: string }, levels: RewardLevel[]) {
-  await reconcileRewardGoals(sql,businessId,levels,actor);
+export async function saveRewardLevels(sql: Sql, businessId: string, actor: { id: string; name: string }, levels: RewardLevel[], mainReward?: RewardLevel) {
+  await reconcileRewardGoals(sql,businessId,levels,actor,mainReward);
 }
 
 export async function selectRewardGoal(sql: Sql, userId: string, customerId: string, stamps: number) {

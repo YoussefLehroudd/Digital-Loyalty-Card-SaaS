@@ -1164,7 +1164,13 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
     }
     if (req.method !== "PUT") return error("Method not allowed.",405);
     const body = await readJson(req);
-    try { const levels=validateRewardLevels(body.levels); const base=await defaultCard(sql,businessId); await saveRewardLevels(sql,businessId,auth.user,levels.filter(level=>level.stamps!==base.required_stamps)); }
+    try {
+      const levels=validateRewardLevels(body.levels);
+      const base=await defaultCard(sql,businessId);
+      const mainReward=body.main_reward_at_one === true ? levels.find(level=>level.stamps===1) : undefined;
+      if (body.main_reward_at_one === true && !mainReward) return error("Enter a reward for the first stamp.",422);
+      await saveRewardLevels(sql,businessId,auth.user,levels.filter(level=>level.stamps!==(mainReward ? 1 : base.required_stamps)),mainReward);
+    }
     catch (cause) { if (cause instanceof Error && /Configure|Each reward|Enter a reward/.test(cause.message)) return error(cause.message,422); throw cause; }
     await syncGoogleWalletBusiness(sql,businessId);
     return json({message:"Reward levels saved. Customer goals and cards have been updated."});
