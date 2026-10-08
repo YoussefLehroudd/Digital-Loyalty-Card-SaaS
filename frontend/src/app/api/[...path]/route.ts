@@ -1,4 +1,4 @@
-import { effectiveRewardCard, validateRewardLevels, saveRewardLevels, selectRewardGoal } from "@/lib/server/reward-levels";
+import { combinedRewardLevels, reconcileRewardGoals, effectiveRewardCard, validateRewardLevels, saveRewardLevels, selectRewardGoal } from "@/lib/server/reward-levels";
 import { ownerBusinessFeatures, readBusinessFeatures, stampOptions } from "@/lib/server/business-features";
 import { businessPrivacy } from "@/lib/server/customer-privacy";
 import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
@@ -1158,10 +1158,13 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
 
   if (path[1] === "reward-levels") {
     if (!auth.business.reward_levels_enabled) return error("Reward levels are not enabled for your business.",403);
-    if (req.method === "GET") return json({levels:auth.business.reward_levels ?? []});
+    if (req.method === "GET") {
+      const base = await defaultCard(sql,businessId);
+      return json({levels:combinedRewardLevels(base,auth.business.reward_levels ?? []),base_stamps:base.required_stamps});
+    }
     if (req.method !== "PUT") return error("Method not allowed.",405);
     const body = await readJson(req);
-    try { const levels=validateRewardLevels(body.levels); await defaultCard(sql,businessId); await saveRewardLevels(sql,businessId,auth.user,levels); }
+    try { const levels=validateRewardLevels(body.levels); const base=await defaultCard(sql,businessId); await saveRewardLevels(sql,businessId,auth.user,levels.filter(level=>level.stamps!==base.required_stamps)); }
     catch (cause) { if (cause instanceof Error && /Configure|Each reward|Enter a reward/.test(cause.message)) return error(cause.message,422); throw cause; }
     await syncGoogleWalletBusiness(sql,businessId);
     return json({message:"Reward levels saved. Customer goals and cards have been updated."});
@@ -1310,10 +1313,16 @@ async function handleLoyaltyCard(req: Request, sql: Sql) {
     const requiredStamps = Math.max(1, Math.min(10, Math.floor(asNumber(body.required_stamps, existing.required_stamps))));
     const rewardDescription = asNullableString(body.reward_description);
     const updated = ((await sql`
-      UPDATE loyalty_cards SET reward_name = ${rewardName}, required_stamps = ${requiredStamps}, reward_description = ${rewardDescription}, updated_at = now()
-      WHERE id = ${existing.id}
-      RETURNING *
+      WITH locked_business AS (
+        SELECT id FROM businesses WHERE id=${auth.business.id} FOR UPDATE
+      ), versioned AS (
+        UPDATE businesses b SET reward_config_version=b.reward_config_version+1,updated_at=now()
+        FROM locked_business lb WHERE b.id=lb.id RETURNING b.id
+      ) UPDATE loyalty_cards lc SET reward_name = ${rewardName}, required_stamps = ${requiredStamps}, reward_description = ${rewardDescription}, updated_at = now()
+      FROM versioned b WHERE lc.id = ${existing.id} AND lc.business_id=b.id
+      RETURNING lc.*
     `) as DbLoyaltyCard[])[0];
+    await reconcileRewardGoals(sql,auth.business.id);
     await syncGoogleWalletBusiness(sql, auth.business.id);
     return json({ message: "Loyalty card saved.", loyalty_card: publicLoyaltyCard(updated) });
   }

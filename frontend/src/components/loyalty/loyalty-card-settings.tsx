@@ -374,7 +374,7 @@ export function LoyaltyCardSettings() {
               </CardContent>
             </Card>
 
-            <BusinessLoyaltyTools token={token} />
+            <BusinessLoyaltyTools token={token} baseCard={loyaltyCard ?? undefined} />
             </div>
 
             <PremiumLoyaltyCardPreview

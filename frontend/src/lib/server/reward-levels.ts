@@ -3,13 +3,14 @@ import type { getSql } from "@/lib/server/db";
 
 type Sql = ReturnType<typeof getSql>;
 export type RewardLevel = { stamps: number; name: string; message: string };
-type BaseCard = { id: string; business_id: string; required_stamps: number; reward_name: string; reward_description: string | null };
+export type BaseCard = { id: string; business_id: string; required_stamps: number; reward_name: string; reward_description: string | null };
 
 export async function ensureRewardLevelSchema(sql: Sql) {
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_levels_enabled boolean NOT NULL DEFAULT false`;
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_levels_active boolean NOT NULL DEFAULT false`;
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_levels jsonb NOT NULL DEFAULT '[]'::jsonb`;
   await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_config_version integer NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS reward_main_integrated boolean NOT NULL DEFAULT false`;
   await sql`ALTER TABLE customer_loyalties ADD COLUMN IF NOT EXISTS target_stamps integer`;
   await sql`ALTER TABLE reward_redemptions ADD COLUMN IF NOT EXISTS required_stamps_snapshot integer`;
   await sql`ALTER TABLE reward_redemptions ADD COLUMN IF NOT EXISTS reward_name_snapshot text`;
@@ -18,7 +19,7 @@ export async function ensureRewardLevelSchema(sql: Sql) {
 }
 
 export function validateRewardLevels(value: unknown): RewardLevel[] {
-  if (!Array.isArray(value) || value.length < 1 || value.length > 10) throw new Error("Configure between 1 and 10 reward levels.");
+  if (!Array.isArray(value) || value.length > 10) throw new Error("Configure up to 10 reward levels.");
   const seen = new Set<number>();
   return value.map(level => {
     if (!level || typeof level !== "object" || !Number.isInteger(level.stamps) || level.stamps < 1 || level.stamps > 10 || seen.has(level.stamps)) throw new Error("Each reward level needs a unique stamp count from 1 to 10.");
@@ -28,14 +29,26 @@ export function validateRewardLevels(value: unknown): RewardLevel[] {
   }).sort((a, b) => a.stamps - b.stamps);
 }
 
+export function combinedRewardLevels(card: BaseCard, extras: RewardLevel[]): RewardLevel[] {
+  return [...extras.filter(level => level.stamps !== card.required_stamps), {
+    stamps: card.required_stamps, name: card.reward_name, message: card.reward_description ?? "",
+  }].sort((a, b) => a.stamps - b.stamps);
+}
+
 export async function effectiveRewardCard<T extends BaseCard>(sql: Sql, customerId: string, card: T) {
-  const rows = await sql`SELECT (b.reward_levels_enabled AND b.reward_levels_active) AS reward_levels_enabled, b.reward_levels, b.reward_config_version,
+  const load = async () => await sql`SELECT (b.reward_levels_enabled AND b.reward_levels_active) AS reward_levels_enabled, b.reward_levels, b.reward_config_version,b.reward_main_integrated,
+    lc.required_stamps AS base_required_stamps,lc.reward_name AS base_reward_name,lc.reward_description AS base_reward_description,
     (SELECT target_stamps FROM customer_loyalties WHERE customer_id=${customerId} AND loyalty_card_id=${card.id} LIMIT 1) AS target_stamps
-    FROM businesses b WHERE b.id=${card.business_id}` as Array<{ reward_levels_enabled: boolean; reward_levels: RewardLevel[]; reward_config_version: number; target_stamps: number | null }>;
-  const config = rows[0];
-  const levels = config?.reward_levels_enabled && Array.isArray(config.reward_levels) ? config.reward_levels : [];
+    FROM businesses b JOIN loyalty_cards lc ON lc.business_id=b.id AND lc.id=${card.id} WHERE b.id=${card.business_id}` as Array<{ base_required_stamps:number; base_reward_name:string; base_reward_description:string|null; reward_levels_enabled: boolean; reward_levels: RewardLevel[]; reward_config_version: number; reward_main_integrated:boolean; target_stamps: number | null }>;
+  let config = (await load())[0];
+  if (config?.reward_levels_enabled && !config.reward_main_integrated) {
+    await reconcileRewardGoals(sql,card.business_id);
+    config = (await load())[0];
+  }
+  const base = config ? {...card,required_stamps:config.base_required_stamps,reward_name:config.base_reward_name,reward_description:config.base_reward_description} : card;
+  const levels = config?.reward_levels_enabled ? combinedRewardLevels(base, Array.isArray(config.reward_levels) ? config.reward_levels : []) : [];
   const chosen = levels.find(level => level.stamps === config.target_stamps) ?? levels[0];
-  return { ...card, ...(chosen ? { required_stamps: chosen.stamps, reward_name: chosen.name, reward_description: chosen.message || null } : {}),
+  return { ...base, ...(chosen ? { required_stamps: chosen.stamps, reward_name: chosen.name, reward_description: chosen.message || null } : {}),
     reward_levels: levels, selected_goal: chosen?.stamps ?? null, goal_selection: config?.target_stamps ?? null, reward_config_version: config?.reward_config_version ?? 0 };
 }
 
@@ -47,7 +60,8 @@ export async function reconcileRewardGoals(sql: Sql, businessId: string, levels?
     SELECT * FROM businesses WHERE id=${businessId} FOR UPDATE
   ), business AS (
     UPDATE businesses b SET reward_levels=COALESCE(${encoded}::jsonb,b.reward_levels),
-      reward_config_version=b.reward_config_version+CASE WHEN ${encoded}::text IS NULL THEN 0 ELSE 1 END,updated_at=now()
+      reward_config_version=b.reward_config_version+CASE WHEN ${encoded}::text IS NOT NULL OR NOT lb.reward_main_integrated THEN 1 ELSE 0 END,
+      reward_main_integrated=true,updated_at=now()
     FROM locked_business lb WHERE b.id=lb.id AND (${encoded}::text IS NULL OR lb.reward_levels_enabled) RETURNING b.*
   ), audit AS (
     INSERT INTO admin_audit_logs(id,actor_id,actor_name,action,entity_type,entity_id,entity_name,reason)
@@ -61,8 +75,11 @@ export async function reconcileRewardGoals(sql: Sql, businessId: string, levels?
     FROM business b JOIN customers c ON c.business_id=b.id JOIN customer_loyalties l ON l.customer_id=c.id
     JOIN loyalty_cards lc ON lc.id=l.loyalty_card_id
     LEFT JOIN LATERAL (
-      SELECT t.* FROM jsonb_to_recordset(b.reward_levels) AS t(stamps integer,name text,message text)
-      WHERE b.reward_levels_enabled AND b.reward_levels_active ORDER BY (t.stamps=l.target_stamps) DESC NULLS LAST,t.stamps LIMIT 1
+      SELECT t.* FROM (
+        SELECT * FROM jsonb_to_recordset(b.reward_levels) AS extra(stamps integer,name text,message text) WHERE extra.stamps<>lc.required_stamps
+        UNION ALL SELECT lc.required_stamps,lc.reward_name,COALESCE(lc.reward_description,'')
+      ) t WHERE b.reward_levels_enabled AND b.reward_levels_active
+      ORDER BY (t.stamps=l.target_stamps) DESC NULLS LAST,t.stamps LIMIT 1
     ) tier ON true FOR UPDATE OF l
   ), updated AS (
     UPDATE customer_loyalties l SET target_stamps=CASE WHEN l.target_stamps IS NULL THEN NULL ELSE d.target END, updated_at=now() FROM desired d WHERE l.id=d.id RETURNING l.id
@@ -87,7 +104,12 @@ export async function selectRewardGoal(sql: Sql, userId: string, customerId: str
   const rows = await sql`WITH business AS (
     SELECT b.* FROM businesses b JOIN customers c ON c.business_id=b.id WHERE c.id=${customerId} AND c.user_id=${userId} AND b.status='active' FOR SHARE OF b
   ), choice AS (
-    SELECT b.id AS business_id,b.name AS business_name,t.* FROM business b CROSS JOIN LATERAL jsonb_to_recordset(b.reward_levels) AS t(stamps integer,name text,message text)
+    SELECT b.id AS business_id,b.name AS business_name,t.* FROM business b
+    JOIN loyalty_cards lc ON lc.business_id=b.id
+    CROSS JOIN LATERAL (
+      SELECT * FROM jsonb_to_recordset(b.reward_levels) AS extra(stamps integer,name text,message text) WHERE extra.stamps<>lc.required_stamps
+      UNION ALL SELECT lc.required_stamps,lc.reward_name,COALESCE(lc.reward_description,'')
+    ) t
     WHERE b.reward_levels_enabled AND b.reward_levels_active AND t.stamps=${stamps}
   ), locked AS (
     SELECT l.* FROM customer_loyalties l WHERE l.customer_id=${customerId} AND EXISTS(SELECT 1 FROM choice) FOR UPDATE

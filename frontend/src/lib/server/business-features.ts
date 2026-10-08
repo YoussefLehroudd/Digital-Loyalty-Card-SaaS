@@ -20,11 +20,12 @@ export async function ensureFeatureSchema(sql: Sql) {
 
 export async function readBusinessFeatures(sql: Sql, businessId: string): Promise<FeatureState | null> {
   const rows = await sql`SELECT custom_stamp_quantity,stamp_messages,reward_levels_enabled,
-    custom_stamp_quantity_active,stamp_messages_active,reward_levels_active,reward_levels FROM businesses WHERE id=${businessId} LIMIT 1` as Array<Record<string,unknown>>;
+    custom_stamp_quantity_active,stamp_messages_active,reward_levels_active,reward_levels,
+    EXISTS(SELECT 1 FROM loyalty_cards WHERE business_id=${businessId}) AS base_card_configured FROM businesses WHERE id=${businessId} LIMIT 1` as Array<Record<string,unknown>>;
   const row = rows[0]; if (!row) return null;
   const access = { custom_stamp_quantity:row.custom_stamp_quantity === true,stamp_messages:row.stamp_messages === true,reward_levels_enabled:row.reward_levels_enabled === true };
   const preferences = {custom_stamp_quantity:row.custom_stamp_quantity_active === true,stamp_messages:row.stamp_messages_active === true,reward_levels_enabled:row.reward_levels_active === true};
-  return {access,preferences,reward_levels_configured:Array.isArray(row.reward_levels)&&row.reward_levels.length>0,custom_stamp_quantity:access.custom_stamp_quantity && preferences.custom_stamp_quantity,
+  return {access,preferences,reward_levels_configured:row.base_card_configured === true || (Array.isArray(row.reward_levels)&&row.reward_levels.length>0),custom_stamp_quantity:access.custom_stamp_quantity && preferences.custom_stamp_quantity,
     stamp_messages:access.stamp_messages && preferences.stamp_messages,reward_levels_enabled:access.reward_levels_enabled && preferences.reward_levels_enabled};
 }
 
