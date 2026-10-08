@@ -206,34 +206,32 @@ export default function LoyaltyCardVisual({
       )}
 
       <div className={dashboardCompact ? "relative z-[2] p-3.5 lg:p-4" : "relative z-[2] p-5"}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="mt-0 flex items-center gap-3">
-              {businessLogoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={businessLogoUrl}
-                  alt={`${businessName} logo`}
-                  className="h-12 w-12 rounded-lg bg-white/10 object-contain p-1.5"
-                />
-              ) : (
-                <div className="h-12 w-12 rounded-lg bg-white/10 object-contain p-1.5" />
-              )}
-
-              <div className="min-w-0 flex-1 pr-1 text-base font-semibold leading-tight sm:text-xl"><span className="block break-words sm:truncate">{businessName}</span></div>
-            </div>
-
-            <div className="text-sm text-white/80 mt-1">
-              {rewardName ? `Reward: ${rewardName}` : "Keep earning stamps"}
+        <div className="flex items-start gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {businessLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={businessLogoUrl}
+                alt={`${businessName} logo`}
+                className="size-12 shrink-0 rounded-lg bg-white/10 object-contain p-1.5"
+              />
+            ) : (
+              <div className="size-12 shrink-0 rounded-lg bg-white/10 p-1.5" />
+            )}
+            <div className="min-w-0 flex-1 text-base font-semibold leading-tight sm:text-xl">
+              <span className="block break-words [overflow-wrap:anywhere]">{businessName}</span>
             </div>
           </div>
+          {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
+        </div>
 
-          <div className="flex shrink-0 items-start gap-2">
-            <div className="text-right">
-              <div className="text-xs text-white/80">Progress</div>
-              <div className="text-lg font-semibold">{progress}%</div>
-            </div>
-            {headerAction}
+        <div className="mt-2 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 break-words text-sm text-white/80">
+            {rewardName ? `Reward: ${rewardName}` : "Keep earning stamps"}
+          </div>
+          <div className="shrink-0 text-right">
+            <div className="text-xs text-white/80">Progress</div>
+            <div className="text-lg font-semibold">{progress}%</div>
           </div>
         </div>
 
