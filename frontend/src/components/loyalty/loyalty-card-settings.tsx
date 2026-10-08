@@ -300,6 +300,7 @@ export function LoyaltyCardSettings() {
           <LoyaltyCardSettingsSkeleton />
         ) : (
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+            <div className="min-w-0 space-y-5">
             <Card className="rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
               <CardHeader>
                 <CardTitle>{loyaltyCard ? "Edit loyalty card" : "Create loyalty card"}</CardTitle>
@@ -373,6 +374,9 @@ export function LoyaltyCardSettings() {
               </CardContent>
             </Card>
 
+            <BusinessLoyaltyTools token={token} />
+            </div>
+
             <PremiumLoyaltyCardPreview
               business={business}
               preview={preview}
@@ -381,7 +385,6 @@ export function LoyaltyCardSettings() {
           </div>
         )}
 
-        {!isLoading ? <BusinessLoyaltyTools token={token} /> : null}
       </div>
 
       <Modal
