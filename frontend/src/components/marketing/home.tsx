@@ -1,76 +1,17 @@
 "use client";
 
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { useI18n, translate } from "@/components/i18n/language-provider";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, BarChart3, Building2, CreditCard, Gift, Layers3, Menu, Palette, Play, QrCode, Send, Sparkles, Store, Users, Zap, Settings, type LucideIcon } from "lucide-react";
-const french: Record<string, string> = {
-  "Home": "Accueil",
-  "Features": "Fonctionnalités",
-  "How it works": "Comment ça marche",
-  "Businesses": "Commerces",
-  "Sign in": "Connexion",
-  "Create account": "Créer un compte",
-  "Join": "Créer",
-  "Loyalty Platform": "Plateforme de fidélité",
-  "Modern Loyalty Platform": "Plateforme de fidélité digitale",
-  "Turn your customers into": "Transformez vos clients en",
-  "loyal fans.": "clients fidèles.",
-  "Create digital loyalty cards, rewards, and personalized experiences for your business. Easy, fast, and professional.": "Créez des cartes de fidélité digitales avec QR code pour votre café, restaurant, boutique ou salon. Personnalisez les tampons et les récompenses de votre commerce.",
-  "Create your free account": "Créer mon compte gratuit",
-  "See how it works": "Découvrir le fonctionnement",
-  "No technical skills required": "Aucune compétence technique requise",
-  "Quick setup in minutes": "Configuration en quelques minutes",
-  "Everything in one platform": "Tout sur une seule plateforme",
-  "Perfect for": "Une solution pour",
-  "any type of business": "chaque type de commerce",
-  "Restaurants": "Restaurants",
-  "Cafés": "Cafés",
-  "Retail Stores": "Boutiques",
-  "Beauty & Wellness": "Beauté et bien-être",
-  "Hotels": "Hôtels",
-  "Gyms & Fitness": "Salles de sport",
-  "Get started in": "Lancez-vous en",
-  "3 simple steps": "3 étapes simples",
-  "Launch your digital loyalty program in minutes.": "Lancez votre programme de fidélité digital en quelques minutes.",
-  "Create your account": "Créez votre compte",
-  "Sign up and set up your business in a few clicks.": "Inscrivez-vous et configurez votre commerce en quelques clics.",
-  "Customize your loyalty card": "Personnalisez votre carte de fidélité",
-  "Add your logo, colors, and rewards that fit your business.": "Ajoutez votre logo, vos couleurs et les récompenses adaptées à votre commerce.",
-  "Share with your customers": "Partagez avec vos clients",
-  "Let customers scan, collect stamps, and get rewarded.": "Vos clients scannent le QR code, cumulent des tampons et obtiennent leurs récompenses.",
-  "Powerful features": "Les fonctionnalités",
-  "Everything you need to": "Tout pour",
-  "grow your business.": "développer votre commerce.",
-  "A complete loyalty solution designed for modern businesses.": "Un logiciel de fidélisation client pour les cafés, restaurants, boutiques et salons, en Europe et au-delà.",
-  "Digital Loyalty Cards": "Cartes de fidélité digitales",
-  "Create branded digital cards with QR codes.": "Créez des cartes digitales à votre image avec un QR code.",
-  "Stamps & Rewards": "Tampons et récompenses",
-  "Set custom rewards and incentives.": "Définissez vos propres récompenses et avantages.",
-  "Customer Management": "Gestion des clients",
-  "Track customers and their activity.": "Suivez vos clients et leur activité.",
-  "Analytics & Insights": "Statistiques et suivi",
-  "See what works and grow faster.": "Identifiez ce qui fonctionne pour votre commerce.",
-  "Multi-location Support": "Gestion de plusieurs établissements",
-  "Manage multiple branches easily.": "Gérez facilement plusieurs établissements.",
-  "Custom Branding": "Votre identité visuelle",
-  "Use your logo, colors, and style.": "Utilisez votre logo, vos couleurs et votre style.",
-  "Ready to grow your business": "Prêt à développer votre commerce",
-  "with": "avec la",
-  "loyalty?": "fidélité ?",
-  "Create your free account today and start building": "Créez votre compte gratuit et développez",
-  "stronger customer relationships.": "des relations durables avec vos clients.",
-  "No credit card required": "Sans carte bancaire",
-  "Setup in minutes": "Prêt en quelques minutes",
-  "© LOYVANCE. Digital loyalty, made simple.": "© LOYVANCE. La fidélité digitale, tout simplement.",
-  "Close navigation menu": "Fermer le menu",
-  "Open navigation menu": "Ouvrir le menu"
-};
-
 import { Button } from "@/components/ui/button";
 
-export default function MarketingHome({ locale = "en" }: { locale?: "en" | "fr" }) {
-  const t = (value: string) => locale === "fr" ? (french[value] ?? value) : value;
+export default function MarketingHome({ locale: initialLocale = "en" }: { locale?: "en" | "fr" | "ar" }) {
+  const { language, ready } = useI18n();
+  const locale = ready ? language : initialLocale;
+  const t = (value: string) => translate(value, locale);
 const businesses = [
   [t("Restaurants"),"/brand/Restaurant chic aux accents dorés.png"],
   [t("Cafés"),"/brand/Café doré au latte artistique.png"],
@@ -104,10 +45,10 @@ const features: Array<[LucideIcon, string, string]> = [
   }, [mobileMenuOpen]);
 
   return (
-    <main lang={locale} className="min-h-screen overflow-hidden bg-[#070807] text-white">
+    <main lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className="min-h-screen overflow-hidden bg-[#070807] text-white">
       <header className="app-topbar fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/20 backdrop-blur-md">
         <div className="relative mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-2 px-4 sm:h-20 sm:px-5 lg:px-8">
-          <Link href={locale === "fr" ? "/fr" : "/"} className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Link href={locale === "en" ? "/" : `/${locale}`} className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="relative size-10 shrink-0 sm:size-12"><Image src="/brand/logo.png" alt="LOYVANCE" fill className="object-contain" /></div>
             <div className="min-w-0"><div className="truncate text-sm font-bold tracking-wide sm:text-base">LOYVANCE</div><div className="hidden text-xs text-white/45 min-[390px]:block">{t("Loyalty Platform")}</div></div>
           </Link>
@@ -118,7 +59,7 @@ const features: Array<[LucideIcon, string, string]> = [
             <a href="#businesses" className="rounded-full border-2 border-transparent px-4 py-2 transition-all duration-300 hover:border-[#f3bd55] hover:bg-[#f3bd55]/[.04] hover:text-[#f3bd55] hover:shadow-[0_0_10px_rgba(243,189,85,.18)]">{t("Businesses")}</a>
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <Link href={locale === "fr" ? "/" : "/fr"} hrefLang={locale === "fr" ? "en" : "fr"} lang={locale === "fr" ? "en" : "fr"} aria-label={locale === "fr" ? "English version" : "Version française"} className="rounded-lg px-2 py-2 text-xs font-semibold text-[#f3bd55] hover:bg-white/10">{locale === "fr" ? "EN" : "FR"}</Link>
+            <LanguageSwitcher />
             <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link href="/login">{t("Sign in")}</Link></Button>
             <Button asChild className="hidden bg-[#f3bd55] text-black hover:bg-[#ffd16f] min-[390px]:inline-flex sm:px-4"><Link href="/register"><span className="hidden min-[430px]:inline">{t("Create account")}</span><span className="min-[430px]:hidden">{t("Join")}</span> <ArrowRight className="size-4"/></Link></Button>
             <Button
@@ -134,7 +75,7 @@ const features: Array<[LucideIcon, string, string]> = [
             </Button>
           </div>
           {mobileMenuOpen ? (
-            <div className="absolute left-4 right-4 top-[78px] z-[60] overflow-hidden rounded-2xl border border-[#f3bd55]/25 bg-[#090a08]/[.98] p-2 shadow-[0_18px_55px_rgba(0,0,0,.6)] backdrop-blur-xl lg:hidden">
+            <div className="absolute start-4 end-4 top-[78px] z-[60] overflow-hidden rounded-2xl border border-[#f3bd55]/25 bg-[#090a08]/[.98] p-2 shadow-[0_18px_55px_rgba(0,0,0,.6)] backdrop-blur-xl lg:hidden">
               <nav className="grid gap-1 text-sm font-semibold text-white/80">
                 <a href="#home" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">{t("Home")}</a>
                 <a href="#features" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">{t("Features")}</a>
@@ -160,10 +101,10 @@ const features: Array<[LucideIcon, string, string]> = [
           <div className="max-w-[610px]">
             <div className="mb-5 gold-flow-border inline-flex items-center gap-2.5 rounded-full bg-[linear-gradient(180deg,rgba(31,24,10,.88),rgba(8,8,7,.92))] px-5 py-2.5 text-xs font-extrabold uppercase tracking-[.08em] text-[#f5c34f] backdrop-blur"><Sparkles className="size-4"/> {t("Modern Loyalty Platform")}</div>
             <h1 className="text-5xl font-black leading-[1.02] tracking-[-.045em] drop-shadow-[0_3px_14px_rgba(0,0,0,.65)] sm:text-6xl lg:text-7xl">{t("Turn your customers into")} <span className="text-[#f3bd55]">{t("loyal fans.")}</span></h1>
-            <p className="mt-6 max-w-xl text-base leading-7 text-white/80 drop-shadow-[0_2px_8px_rgba(0,0,0,.8)] sm:text-lg">{(locale === "fr" ? "Créez des cartes de fidélité digitales avec QR code pour votre café, restaurant, boutique ou salon. Personnalisez les tampons et les récompenses de votre commerce." : "Create digital loyalty cards with QR codes for your coffee shop, restaurant, retail store or salon. Customize stamps and rewards for your business.")}</p>
+            <p className="mt-6 max-w-xl text-base leading-7 text-white/80 drop-shadow-[0_2px_8px_rgba(0,0,0,.8)] sm:text-lg">{t("Create digital loyalty cards with QR codes for your coffee shop, restaurant, retail store or salon. Customize stamps and rewards for your business.")}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="h-14 rounded-xl border border-[#ffd36d] bg-[#f3bd55] px-8 font-bold text-black shadow-[0_0_24px_rgba(243,189,85,.34),inset_0_1px_0_rgba(255,255,255,.4)] hover:bg-[#ffd16f]"><Link href="/register">{t("Create your free account")} <ArrowRight className="size-4"/></Link></Button>
-              <Button asChild size="lg" variant="outline" className="h-14 rounded-xl border-[#f3bd55]/25 bg-black/55 px-7 font-semibold text-white shadow-[0_0_20px_rgba(0,0,0,.25)] backdrop-blur hover:border-[#f3bd55]/55 hover:bg-black/70"><a href="#how"><span className="mr-2 flex size-8 shrink-0 items-center justify-center rounded-full border border-[#f3bd55]/80 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[0_0_12px_rgba(243,189,85,.18)]"><Play className="size-4 fill-[#f3bd55] stroke-[2.2]"/></span>{t("See how it works")}</a></Button>
+              <Button asChild size="lg" variant="outline" className="h-14 rounded-xl border-[#f3bd55]/25 bg-black/55 px-7 font-semibold text-white shadow-[0_0_20px_rgba(0,0,0,.25)] backdrop-blur hover:border-[#f3bd55]/55 hover:bg-black/70"><a href="#how"><span className="me-2 flex size-8 shrink-0 items-center justify-center rounded-full border border-[#f3bd55]/80 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[0_0_12px_rgba(243,189,85,.18)]"><Play className="size-4 fill-[#f3bd55] stroke-[2.2]"/></span>{t("See how it works")}</a></Button>
             </div>
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
               {([[Settings,t("No technical skills required")],[Zap,t("Quick setup in minutes")],[Layers3,t("Everything in one platform")]] as Array<[LucideIcon,string]>).map(([Icon,label])=><div key={label} className="flex min-h-[68px] items-center gap-3 rounded-xl border border-[#e7b354]/20 bg-black/55 px-3 py-3 text-xs font-semibold shadow-[0_8px_24px_rgba(0,0,0,.25)] backdrop-blur-md"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#f3bd55]/35 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[0_0_14px_rgba(243,189,85,.12)]"><Icon className="size-5"/></span><span className="leading-4">{label}</span></div>)}
@@ -204,7 +145,7 @@ const features: Array<[LucideIcon, string, string]> = [
           </div>
           <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-11">
             {([[1,Users,t("Create your account"),t("Sign up and set up your business in a few clicks.")],[2,Palette,t("Customize your loyalty card"),t("Add your logo, colors, and rewards that fit your business.")],[3,Send,t("Share with your customers"),t("Let customers scan, collect stamps, and get rewarded.")]] as Array<[number, LucideIcon, string, string]>).map(([n,I,t,d],idx)=><div key={n} className="how-step-card gold-flow-border group relative flex min-h-[220px] sm:min-h-[250px] flex-col items-center justify-center overflow-visible rounded-2xl bg-black/70 px-6 py-6 sm:px-7 sm:py-8 text-center shadow-[inset_0_0_42px_rgba(243,189,85,.075),0_15px_50px_rgba(0,0,0,.3)] sm:backdrop-blur-sm after:absolute after:-left-10 after:-top-10 after:h-28 after:w-28 after:rounded-full after:bg-[#f3bd55]/10 after:blur-2xl">
-              <div className="absolute left-4 top-4 z-10 flex size-11 items-center justify-center rounded-full border border-[#ffd15c]/80 bg-[radial-gradient(circle_at_38%_32%,#8a621b_0%,#4a340d_46%,#241805_100%)] text-lg font-bold text-[#ffd15c] shadow-[0_0_10px_2px_rgba(243,189,85,.48),0_0_28px_rgba(243,189,85,.32),inset_0_0_12px_rgba(255,211,100,.16)] before:absolute before:-inset-2 before:-z-10 before:rounded-full before:bg-[#f3bd55]/15 before:blur-md before:animate-pulse">{n}</div>
+              <div className="absolute start-4 top-4 z-10 flex size-11 items-center justify-center rounded-full border border-[#ffd15c]/80 bg-[radial-gradient(circle_at_38%_32%,#8a621b_0%,#4a340d_46%,#241805_100%)] text-lg font-bold text-[#ffd15c] shadow-[0_0_10px_2px_rgba(243,189,85,.48),0_0_28px_rgba(243,189,85,.32),inset_0_0_12px_rgba(255,211,100,.16)] before:absolute before:-inset-2 before:-z-10 before:rounded-full before:bg-[#f3bd55]/15 before:blur-md before:animate-pulse">{n}</div>
               <div className="flex size-20 items-center justify-center rounded-full border border-[#f3bd55]/55 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[inset_0_0_18px_rgba(243,189,85,.08),0_0_20px_rgba(243,189,85,.18)] transition-all duration-700 group-hover:border-[#ffd66f]/90 group-hover:shadow-[inset_0_0_20px_rgba(243,189,85,.12),0_0_30px_rgba(243,189,85,.38)]"><I className="size-9 stroke-[1.8]"/></div>
               <h3 className="mt-6 text-lg font-bold">{t}</h3>
               <p className="mt-2 max-w-[280px] text-sm leading-6 text-white/65">{d}</p>

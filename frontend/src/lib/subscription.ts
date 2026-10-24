@@ -1,3 +1,4 @@
+import { getFormattingLocale } from "@/lib/i18n/format";
 export const SUBSCRIPTION_PLANS = [
   { months: 1, price: 149, label: "1 month" },
   { months: 3, price: 399, label: "3 months" },
@@ -57,13 +58,13 @@ export function paymentAmount(value: unknown): number | null {
   const amount = Number(whole)*100 + Number(fraction.padEnd(2,"0"));
   return amount > 0 && amount <= 10000000 ? amount : null;
 }
-export function money(centimes: number) { return new Intl.NumberFormat("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2}).format(centimes/100)+" DH"; }
+export function money(centimes: number) { return new Intl.NumberFormat(getFormattingLocale(),{minimumFractionDigits:2,maximumFractionDigits:2}).format(centimes/100)+" DH"; }
 export function subscriptionDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Casablanca", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(value));
+  return new Intl.DateTimeFormat(getFormattingLocale(), { timeZone: "Africa/Casablanca", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(value));
 }
 
 export function subscriptionExactDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hour12: false }).format(new Date(value)) + " UTC";
+  return new Intl.DateTimeFormat(getFormattingLocale(), { timeZone: "UTC", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", fractionalSecondDigits: 3, hour12: false }).format(new Date(value)) + " UTC";
 }
 
 export function subscriptionUrgency(s: Pick<BusinessSubscription, "state" | "remaining_seconds">) {

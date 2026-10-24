@@ -292,3 +292,12 @@ input.loyvance-gold-range[type="range"]:focus-visible,
   body { padding-top: var(--app-install-height, 0px); }
   .app-topbar { top: var(--app-install-height, 0px); }
 }
+
+
+/* Arabic follows the same layouts with logical sides, keeping identifiers readable. */
+html[lang="ar"] body { font-family: Tahoma, Arial, sans-serif; }
+html[dir="rtl"] :is(h1,h2,h3,label,button) { letter-spacing: normal; }
+html[dir="rtl"] input:is([type="email"],[type="tel"],[type="url"],[inputmode="numeric"]),
+html[dir="rtl"] [data-ltr] { direction: ltr; unicode-bidi: isolate; }
+html[dir="rtl"] table { text-align: right; }
+@media (prefers-reduced-motion: reduce) { [data-language-switcher] * { transition: none; } }
