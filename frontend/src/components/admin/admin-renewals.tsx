@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useState } from "react";
 import { useAdmin, useAdminLive } from "@/components/admin/admin-shell";
 import { AdminSubscription } from "./admin-subscription";
@@ -6,15 +7,36 @@ import { ProofPreview } from "@/components/subscriptions/renewal-tools";
 import { Modal } from "@/components/ui/modal";
 import { adminRequest } from "@/lib/admin";
 import { subscriptionDate, type RenewalRequest } from "@/lib/subscription";
-export function AdminRenewals(){
- const {token}=useAdmin();const [status,setStatus]=useState("pending"),[page,setPage]=useState(1),[selected,setSelected]=useState<RenewalRequest|null>(null),[proof,setProof]=useState<string|null>(null),[reject,setReject]=useState<RenewalRequest|null>(null),[note,setNote]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState("");
- const {data,error:loadError,refresh}=useAdminLive<{data:RenewalRequest[];total:number}>(`renewals?status=${status}&page=${page}`);
- async function rejectRequest(){if(!reject||busy)return;setBusy(true);setError("");try{await adminRequest(`renewals/${reject.id}`,token,{method:"PATCH",body:JSON.stringify({note})});setReject(null);refresh();}catch(e){setError(e instanceof Error?e.message:"Unable to reject request.");}finally{setBusy(false);}}
- return <section className="mb-6 rounded-2xl border border-[#edbc62]/20 bg-[#101319] p-4 sm:p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-sm font-semibold">Renewal requests</h2><p className="mt-1 text-xs text-white/45">Review submitted proofs before approving access.</p></div><div className="flex flex-wrap gap-1">{["pending","approved","rejected","all"].map(s=><button key={s} type="button" onClick={()=>{setStatus(s);setPage(1);}} className={`rounded-lg px-3 py-2 text-[11px] font-semibold ${status===s?"bg-[#edbc62]/10 text-[#edbc62]":"text-white/45 hover:bg-white/5"}`}>{s}</button>)}</div></div>
- {loadError?<p role="alert" className="mt-3 text-xs text-rose-300">{loadError}</p>:null}<div className="mt-4 space-y-3">{data?.data.length?data.data.map(r=><article key={r.id} className="flex flex-col justify-between gap-4 rounded-xl border border-white/10 p-3 sm:flex-row"><div className="min-w-0"><p className="break-words text-xs font-semibold">{r.business_name} · {r.duration_months} months · {r.plan_price_dh} DH</p><p className="mt-1 text-[10px] text-white/40">{subscriptionDate(r.created_at)} · {r.status}</p><p className="mt-2 break-words text-xs text-white/55">{r.reference||"No reference"}{r.note?` · ${r.note}`:""}</p>{r.review_note?<p className="mt-2 text-xs text-white/55">Review: {r.review_note}</p>:null}</div><div className="flex shrink-0 flex-wrap items-center gap-2"><button type="button" onClick={()=>setProof(r.id)} className="rounded-lg border border-white/10 px-3 py-2 text-[11px]">View proof</button>{r.status==="pending"?<><button type="button" onClick={()=>setSelected(r)} className="rounded-lg bg-[#edbc62] px-3 py-2 text-[11px] font-bold text-black">Verify & approve</button><button type="button" onClick={()=>{setReject(r);setNote("");setError("");}} className="rounded-lg bg-rose-400/10 px-3 py-2 text-[11px] text-rose-300">Reject</button></>:null}</div></article>):<p className="py-5 text-center text-xs text-white/40">{data?"No renewal requests in this view.":"Loading requests…"}</p>}</div>
- {data&&data.total>25?<div className="mt-4 flex justify-between text-xs"><button disabled={page===1} onClick={()=>setPage(v=>v-1)} className="disabled:opacity-30">Previous</button><span className="text-white/40">Page {page} / {Math.ceil(data.total/25)}</span><button disabled={page*25>=data.total} onClick={()=>setPage(v=>v+1)} className="disabled:opacity-30">Next</button></div>:null}
- {selected?<AdminSubscription business={{id:selected.business_id,name:selected.business_name||"Business"}} renewal={selected} onSaved={refresh} onClose={()=>setSelected(null)}/>:null}
- {proof?<ProofPreview token={token} path={`/admin/renewals/${proof}/proof`} onClose={()=>setProof(null)}/>:null}
- <Modal isOpen={!!reject} closeDisabled={busy} onClose={()=>setReject(null)} title="Reject renewal request" description={reject?.business_name}><form onSubmit={e=>{e.preventDefault();void rejectRequest();}}><label className="block text-xs text-white/65">Reason shown to the business<textarea required maxLength={1000} value={note} onChange={e=>setNote(e.target.value)} className="mt-2 min-h-24 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-sm"/></label>{error?<p role="alert" className="mt-3 text-xs text-rose-300">{error}</p>:null}<button disabled={busy||!note.trim()} className="mt-4 rounded-xl bg-rose-400/15 px-4 py-3 text-xs font-semibold text-rose-300 disabled:opacity-40">{busy?"Saving…":"Reject request"}</button></form></Modal>
+export function AdminRenewals() {
+    const { t: tr } = useI18n();
+    const { token } = useAdmin();
+    const [status, setStatus] = useState("pending"), [page, setPage] = useState(1), [selected, setSelected] = useState<RenewalRequest | null>(null), [proof, setProof] = useState<string | null>(null), [reject, setReject] = useState<RenewalRequest | null>(null), [note, setNote] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState("");
+    const { data, error: loadError, refresh } = useAdminLive<{
+        data: RenewalRequest[];
+        total: number;
+    }>(`renewals?status=${status}&page=${page}`);
+    async function rejectRequest() {
+        if (!reject || busy)
+            return;
+        setBusy(true);
+        setError("");
+        try {
+            await adminRequest(`renewals/${reject.id}`, token, { method: "PATCH", body: JSON.stringify({ note }) });
+            setReject(null);
+            refresh();
+        }
+        catch (e) {
+            setError(e instanceof Error ? e.message : "Unable to reject request.");
+        }
+        finally {
+            setBusy(false);
+        }
+    }
+    return <section className="mb-6 rounded-2xl border border-[#edbc62]/20 bg-[#101319] p-4 sm:p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-sm font-semibold">{tr("Renewal requests")}</h2><p className="mt-1 text-xs text-white/45">{tr("Review submitted proofs before approving access.")}</p></div><div className="flex flex-wrap gap-1">{["pending", "approved", "rejected", "all"].map(s => <button key={s} type="button" onClick={() => { setStatus(s); setPage(1); }} className={`rounded-lg px-3 py-2 text-[11px] font-semibold ${status === s ? "bg-[#edbc62]/10 text-[#edbc62]" : "text-white/45 hover:bg-white/5"}`}>{s}</button>)}</div></div>
+ {loadError ? <p role="alert" className="mt-3 text-xs text-rose-300">{tr(loadError)}</p> : null}<div className="mt-4 space-y-3">{data?.data.length ? data.data.map(r => <article key={r.id} className="flex flex-col justify-between gap-4 rounded-xl border border-white/10 p-3 sm:flex-row"><div className="min-w-0"><p className="break-words text-xs font-semibold">{r.business_name} · {r.duration_months}{tr(" months \u00B7 ")}{r.plan_price_dh}{tr(" DH")}</p><p className="mt-1 text-[10px] text-white/40">{subscriptionDate(r.created_at)} · {tr(r.status)}</p><p className="mt-2 break-words text-xs text-white/55">{r.reference || tr("No reference")}{r.note ? tr(" \u00B7 {0}", { "0": r.note }) : ""}</p>{r.review_note ? <p className="mt-2 text-xs text-white/55">{tr("Review: ")}{r.review_note}</p> : null}</div><div className="flex shrink-0 flex-wrap items-center gap-2"><button type="button" onClick={() => setProof(r.id)} className="rounded-lg border border-white/10 px-3 py-2 text-[11px]">{tr("View proof")}</button>{r.status === "pending" ? <><button type="button" onClick={() => setSelected(r)} className="rounded-lg bg-[#edbc62] px-3 py-2 text-[11px] font-bold text-black">{tr("Verify & approve")}</button><button type="button" onClick={() => { setReject(r); setNote(""); setError(""); }} className="rounded-lg bg-rose-400/10 px-3 py-2 text-[11px] text-rose-300">{tr("Reject")}</button></> : null}</div></article>) : <p className="py-5 text-center text-xs text-white/40">{data ? tr("No renewal requests in this view.") : tr("Loading requests…")}</p>}</div>
+ {data && data.total > 25 ? <div className="mt-4 flex justify-between text-xs"><button disabled={page === 1} onClick={() => setPage(v => v - 1)} className="disabled:opacity-30">{tr("Previous")}</button><span className="text-white/40">{tr("Page ")}{page} / {Math.ceil(data.total / 25)}</span><button disabled={page * 25 >= data.total} onClick={() => setPage(v => v + 1)} className="disabled:opacity-30">{tr("Next")}</button></div> : null}
+ {selected ? <AdminSubscription business={{ id: selected.business_id, name: selected.business_name || "Business" }} renewal={selected} onSaved={refresh} onClose={() => setSelected(null)}/> : null}
+ {proof ? <ProofPreview token={token} path={`/admin/renewals/${proof}/proof`} onClose={() => setProof(null)}/> : null}
+ <Modal isOpen={!!reject} closeDisabled={busy} onClose={() => setReject(null)} title={tr("Reject renewal request")} description={reject?.business_name}><form onSubmit={e => { e.preventDefault(); void rejectRequest(); }}><label className="block text-xs text-white/65">{tr("Reason shown to the business")}<textarea required maxLength={1000} value={note} onChange={e => setNote(e.target.value)} className="mt-2 min-h-24 w-full rounded-xl border border-white/10 bg-white/5 p-3 text-sm"/></label>{error ? <p role="alert" className="mt-3 text-xs text-rose-300">{tr(error)}</p> : null}<button disabled={busy || !note.trim()} className="mt-4 rounded-xl bg-rose-400/15 px-4 py-3 text-xs font-semibold text-rose-300 disabled:opacity-40">{busy ? tr("Saving…") : tr("Reject request")}</button></form></Modal>
  </section>;
 }

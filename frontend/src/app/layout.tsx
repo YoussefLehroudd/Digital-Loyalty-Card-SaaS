@@ -6,6 +6,8 @@ import { GlobalEchoProvider } from "@/components/echo/global-echo-provider";
 
 import { InstallAppBanner } from "@/components/pwa/install-app-banner";
 
+import { LanguageProvider } from "@/components/i18n/language-provider";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -52,12 +54,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider>
+        <LanguageProvider><ThemeProvider>
           <GlobalEchoProvider>
             <InstallAppBanner />
             {children}
           </GlobalEchoProvider>
-        </ThemeProvider>
+        </ThemeProvider></LanguageProvider>
       </body>
     </html>
   );

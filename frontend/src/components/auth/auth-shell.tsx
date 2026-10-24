@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/components/i18n/language-provider";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 type AuthShellProps = {
   eyebrow: string;
   title: string;
@@ -7,6 +10,7 @@ type AuthShellProps = {
 };
 
 export function AuthShell({ eyebrow, title, description, children, footer }: AuthShellProps) {
+  const { t } = useI18n();
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#080a0b] text-white">
       <div
@@ -19,10 +23,11 @@ export function AuthShell({ eyebrow, title, description, children, footer }: Aut
         <div className="relative w-full max-w-[470px]">
           <div className="pointer-events-none absolute -inset-10 rounded-full bg-[#d29b3d]/10 blur-3xl" />
           <div className="relative w-full rounded-[26px] border border-[#d4a24a]/35 bg-[#0b0d0e]/72 p-6 shadow-[0_30px_90px_rgba(0,0,0,.45)] backdrop-blur-lg sm:p-8">
+            <div className="mb-5 flex justify-end"><LanguageSwitcher /></div>
             <div className="mb-7 space-y-2">
-              <p className="text-sm font-semibold text-[#efbd5d]">{eyebrow}</p>
-              <h2 className="text-3xl font-bold tracking-[-.025em]">{title}</h2>
-              <p className="max-w-md text-sm leading-6 text-white/60">{description}</p>
+              <p className="text-sm font-semibold text-[#efbd5d]">{t(eyebrow)}</p>
+              <h2 className="text-3xl font-bold tracking-[-.025em]">{t(title)}</h2>
+              <p className="max-w-md text-sm leading-6 text-white/60">{t(description)}</p>
             </div>
             {children}
             <div className="mt-6 border-t border-white/10 pt-5 text-sm text-white/55">{footer}</div>
