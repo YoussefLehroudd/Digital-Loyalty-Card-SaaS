@@ -22,6 +22,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
+  verification: { google: "LYy7SB-mYH30uvXi7EQKQxGK06FD_hhxLq3owiyGib4" },
   appleWebApp: { capable: true, title: "LOYVANCE", statusBarStyle: "black" },
   title: "LOYVANCE",
   description:
