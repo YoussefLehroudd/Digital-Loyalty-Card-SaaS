@@ -13,6 +13,7 @@ import { appleWalletAvailable, createAppleWalletLink, ensureAppleWalletSchema, h
 
 import { renewalProof, submitRenewal } from "@/lib/server/renewal-requests";
 import { runSubscriptionEmails } from "@/lib/server/subscription-emails";
+import { ensureCampaignSchema, handleBusinessCampaigns, handleAutomations, runCampaignAutomation, runCampaignQueue, runCampaignEmails, unsubscribeCampaignEmail } from "@/lib/server/campaigns";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -416,6 +417,7 @@ async function ensureSchema(sql: Sql) {
       await sql`CREATE INDEX IF NOT EXISTS idx_business_notifications_business_created ON business_notifications(business_id, created_at DESC)`;
       await ensureAdminSchema(sql);
       await ensureSubscriptionSchema(sql);
+      await ensureCampaignSchema(sql);
       await ensureAffiliateSchema(sql);
       await ensureVisitorAnalyticsSchema(sql);
     })();
@@ -2524,6 +2526,23 @@ async function dispatch(req: Request, context: RouteContext) {
       const secret=process.env.CRON_SECRET;
       if(req.method!=="GET" || !secret || req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
       response=json(await runSubscriptionEmails(sql,email=>sendLoyvanceEmail({...email,category:"notifications"})));
+    }
+    else if(path[0]==="cron" && path[1]==="campaigns") {
+      const secret=process.env.CRON_SECRET;
+      if(req.method!=="GET"||!secret||req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
+      const automation=await runCampaignAutomation(sql,3);
+      const scheduled=await runCampaignQueue(sql,12);
+      const emails=await runCampaignEmails(sql,35,new URL(req.url).origin);
+      response=json({automation,scheduled,emails});
+    }
+    else if(path[0]==="campaigns") {
+      if(path[1]==="unsubscribe") response=await unsubscribeCampaignEmail(req,sql);
+      else {
+        const owner=await requireBusinessOwner(req,sql);
+        if(path[1]==="automations")response=await handleAutomations(path,req,sql,owner.business!.id);
+        else if(path[1]==="business")response=await handleBusinessCampaigns(path,req,sql,owner.business!.id,owner.user.id);
+        else response=error("API route not found.",404);
+      }
     }
     else if(path[0]==="subscription" && path[1]==="requests") {
       const auth=await requireAuth(req,sql);
