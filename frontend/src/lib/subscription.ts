@@ -48,7 +48,8 @@ export type SubscriptionEvent = {
   receipt_number: string | null;
   renewal_request_id: string | null;
 };
-export type RenewalRequest = { id: string; business_id: string; business_name?: string; duration_months: SubscriptionMonths; plan_price_dh: number; reference: string; note: string; status: "pending" | "approved" | "rejected"; created_at: string; reviewed_at: string | null; review_note: string; actor_name: string | null; has_proof: boolean };
+export type RenewalMode = "extend" | "replace";
+export type RenewalRequest = { id: string; business_id: string; business_name?: string; duration_months: SubscriptionMonths; mode: RenewalMode; plan_price_dh: number; reference: string; note: string; status: "pending" | "approved" | "rejected"; created_at: string; reviewed_at: string | null; review_note: string; actor_name: string | null; has_proof: boolean };
 export type SubscriptionDetails = { subscription: BusinessSubscription; history: SubscriptionEvent[]; requests: RenewalRequest[] };
 export const PAYMENT_METHODS = [{value:"bank_transfer",label:"Bank transfer"},{value:"cash_plus",label:"Cash Plus"},{value:"cash",label:"Cash"},{value:"other",label:"Other"}] as const;
 export function paymentAmount(value: unknown): number | null {
