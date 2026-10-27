@@ -289,7 +289,7 @@ export async function runCampaignEmails(sql:Sql,limit=12,origin=""){
   FROM (SELECT campaign_id,user_id FROM marketing_campaign_recipients
     WHERE (email_state IN ('pending','failed')
         OR (email_state='sending' AND claimed_at<now()-interval '15 minutes')) AND email_attempts<3
-    ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT ${limit}) todo
+    ORDER BY created_at LIMIT ${limit} FOR UPDATE SKIP LOCKED) todo
   WHERE r.campaign_id=todo.campaign_id AND r.user_id=todo.user_id
   RETURNING r.campaign_id,r.user_id`;
  let sent=0;
