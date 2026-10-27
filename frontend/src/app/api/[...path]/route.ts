@@ -2456,6 +2456,7 @@ async function dispatch(req: Request, context: RouteContext) {
     else if (path[0] === "apple-wallet") response = await handleAppleWallet(path, req, sql);
     else if (path[0] === "affiliate") {
       if(path[1]==="login" && req.method==="POST"){ const limited=await rateLimit(sql,req,"affiliate-login",10,15*60*1000);if(limited)return limited; }
+      if(path[1]==="visit" && req.method==="POST"){ const limited=await rateLimit(sql,req,"affiliate-referral-visit",80,15*60*1000);if(limited)return limited; }
       response = await handleAffiliate(path,req,sql);
     }
     else if (path[0] === "admin") response = await handleAdmin(path, req, sql, {
