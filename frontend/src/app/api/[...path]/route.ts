@@ -1,7 +1,7 @@
 import { combinedRewardLevels, reconcileRewardGoals, effectiveRewardCard, validateRewardLevels, saveRewardLevels, selectRewardGoal } from "@/lib/server/reward-levels";
 import { ownerBusinessFeatures, readBusinessFeatures, stampOptions } from "@/lib/server/business-features";
 import { businessPrivacy } from "@/lib/server/customer-privacy";
-import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
+import { createHash, createSign, randomBytes, randomInt, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
 import { ensureSubscriptionSchema, requireSubscription, subscriptionDetails } from "@/lib/server/subscriptions";
@@ -353,6 +353,18 @@ async function ensureSchema(sql: Sql) {
         created_at timestamptz DEFAULT now()
       )`;
       await sql`CREATE INDEX IF NOT EXISTS idx_business_email_verifications_expires ON business_email_verifications(expires_at)`;
+      // Customer accounts are not created until email OTP has been verified.
+      // Save a password hash, never a plaintext password, in the pending-registration table.
+      await sql`CREATE TABLE IF NOT EXISTS customer_email_verifications (
+        email text PRIMARY KEY,
+        code_hash text NOT NULL,
+        password_hash text NOT NULL,
+        payload jsonb NOT NULL,
+        attempts integer NOT NULL DEFAULT 0,
+        expires_at timestamptz NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      )`;
+      await sql`CREATE INDEX IF NOT EXISTS idx_customer_email_verifications_expires ON customer_email_verifications(expires_at)`;
       await ensureAppleWalletSchema(sql);
       await sql`CREATE TABLE IF NOT EXISTS notification_reads (
         user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
@@ -1888,26 +1900,109 @@ async function customerNotificationEvents(sql: Sql, userId: string) {
 }
 
 async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
-  if ((path[1] === "register" || path[1] === "login") && req.method === "POST") {
+  if (path[1] === "register" && req.method === "POST") {
+    const limited = await rateLimit(sql,req,"customer-register",8,15*60*1000);
+    if(limited)return limited;
     const body = await readJson(req);
+    const first = asString(body.first_name).slice(0,100);
+    const last = asString(body.last_name).slice(0,100);
     const email = asString(body.email).toLowerCase();
     const password = asString(body.password);
-    if (path[1] === "register") {
-      const first = asString(body.first_name);
-      const last = asString(body.last_name);
-      if (!first || !last || !email || password.length < 6) return error("Please fill all required fields.", 422);
-      const duplicate = ((await sql`SELECT id FROM app_users WHERE email = ${email} LIMIT 1`) as Array<{ id: string }>)[0];
-      if (duplicate) return error("This email is already registered.", 422, { email: ["This email is already registered."] });
-      const user = ((await sql`
-        INSERT INTO app_users (id, name, email, password_hash, role)
-        VALUES (${randomUUID()}, ${`${first} ${last}`}, ${email}, ${await hashPassword(password)}, 'customer')
-        RETURNING *
-      `) as DbUser[])[0];
-      await sql`INSERT INTO customer_profiles (user_id, first_name, last_name, phone, avatar_url, preferences) VALUES (${user.id}, ${first}, ${last}, ${asNullableString(body.phone)}, ${asNullableString(body.avatar_url)}, ${JSON.stringify(body.preferences ?? {})}::jsonb)`;
-      const token = await createSession(sql, user.id);
-      return json({ token, token_type: "Bearer", user: publicUser(user, null, { first_name: first, last_name: last, email, phone: asNullableString(body.phone), avatar_url: asNullableString(body.avatar_url), preferences: body.preferences ?? null }) }, { status: 201 });
+    const confirmation = asString(body.password_confirmation);
+    const emailValid = email.length <= 200 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+    if (!first || !last || !emailValid || password.length<10 || password.length>200)
+      return error("Enter your name, a valid email and a password of at least 10 characters.",422);
+    if(password !== confirmation) return error("Password confirmation does not match.",422);
+    const duplicate = (await sql`SELECT id FROM app_users WHERE email=${email} LIMIT 1`) as Array<{id:string}>;
+    if(duplicate.length) return error("This email is already registered.",422,{email:["This email is already registered."]});
+    // Account-scoped resend cooldown works across devices and prevents OTP flooding.
+    const old = (await sql`SELECT created_at::text FROM customer_email_verifications WHERE email=${email} LIMIT 1`) as Array<{created_at:string}>;
+    if(old.length && Date.now()-new Date(old[0].created_at).getTime()<60_000)
+      return error("Please wait 60 seconds before requesting another code.",429);
+    const code=String(randomInt(100000,1000000));
+    const codeHash=createHash("sha256").update(code).digest("hex");
+    const passwordHash=await hashPassword(password);
+    const payload={
+      first_name:first,last_name:last,phone:asNullableString(body.phone),
+      avatar_url:asNullableString(body.avatar_url),
+      preferences:body.preferences && typeof body.preferences==="object" && !Array.isArray(body.preferences)
+        ? body.preferences : {}
+    };
+    await sql`
+      INSERT INTO customer_email_verifications(email,code_hash,password_hash,payload,attempts,expires_at,created_at)
+      VALUES(${email},${codeHash},${passwordHash},${JSON.stringify(payload)}::jsonb,0,now()+interval '10 minutes',now())
+      ON CONFLICT(email) DO UPDATE SET
+        code_hash=excluded.code_hash,password_hash=excluded.password_hash,
+        payload=excluded.payload,attempts=0,expires_at=excluded.expires_at,created_at=now()
+    `;
+    const sent=await sendLoyvanceEmail({
+      to:email,subject:`${code} is your LOYVANCE verification code`,category:"security",
+      html:loyvanceEmailTemplate({
+        title:"Verify your customer email",
+        preheader:`${code} is your LOYVANCE verification code.`,
+        message:"Enter this code in LOYVANCE to verify your email and create your customer account.",
+        code,footerNote:"This code expires in 10 minutes. If you did not request an account, you can ignore this email."
+      })
+    });
+    if(!sent){
+      await sql`DELETE FROM customer_email_verifications WHERE email=${email} AND code_hash=${codeHash}`;
+      return error("Could not send the verification email. Please try again.",503);
     }
+    return json({verification_required:true,email,expires_in:600},{status:202});
+  }
 
+  if(path[1]==="verify-email" && req.method==="POST"){
+    const limited=await rateLimit(sql,req,"customer-email-verify",12,15*60*1000);
+    if(limited)return limited;
+    const body=await readJson(req);
+    const email=asString(body.email).toLowerCase();
+    const code=asString(body.code);
+    if(!/^\\d{6}$/.test(code) || !email || email.length>200)
+      return error("Enter the six-digit verification code.",422);
+    const row=(await sql`SELECT code_hash,attempts,expires_at::text,payload FROM customer_email_verifications WHERE email=${email} LIMIT 1`) as
+      Array<{code_hash:string;attempts:number;expires_at:string;payload:JsonRecord}>)[0];
+    if(!row || new Date(row.expires_at).getTime()<=Date.now())
+      return error("This code has expired. Request a new verification email.",422);
+    if(row.attempts>=5)return error("Too many incorrect codes. Request a new one.",429);
+    const codeHash=createHash("sha256").update(code).digest("hex");
+    if(codeHash !== row.code_hash){
+      await sql`UPDATE customer_email_verifications SET attempts=attempts+1 WHERE email=${email} AND code_hash=${row.code_hash} AND attempts<5`;
+      return error("Incorrect verification code.",422);
+    }
+    const first=asString(row.payload.first_name),last=asString(row.payload.last_name);
+    if(!first||!last)return error("Registration information is missing. Start again.",422);
+    const phone=asNullableString(row.payload.phone);
+    const avatar=asNullableString(row.payload.avatar_url);
+    const preferences=row.payload.preferences && typeof row.payload.preferences==="object" && !Array.isArray(row.payload.preferences)
+      ? row.payload.preferences : {};
+    const id=randomUUID(),token=randomBytes(32).toString("hex");
+    // Entire operation is atomic: only a valid, unexpired, unused OTP can create
+    // a user, profile and authenticated session. Concurrent replays insert nothing.
+    const [users] = await sql.transaction([
+      sql`INSERT INTO app_users(id,name,email,password_hash,role)
+        SELECT ${id}::uuid,${first+" "+last},v.email,v.password_hash,'customer'
+        FROM customer_email_verifications v
+        WHERE v.email=${email} AND v.code_hash=${codeHash} AND v.attempts<5 AND v.expires_at>now()
+        ON CONFLICT(email) DO NOTHING RETURNING *`,
+      sql`INSERT INTO customer_profiles(user_id,first_name,last_name,phone,avatar_url,preferences)
+        SELECT ${id}::uuid,${first},${last},${phone},${avatar},${JSON.stringify(preferences)}::jsonb
+        WHERE EXISTS(SELECT 1 FROM app_users WHERE id=${id}::uuid)`,
+      sql`INSERT INTO user_sessions(token,user_id)
+        SELECT ${token},${id}::uuid WHERE EXISTS(SELECT 1 FROM app_users WHERE id=${id}::uuid)`,
+      sql`DELETE FROM customer_email_verifications WHERE email=${email} AND code_hash=${codeHash}
+        AND EXISTS(SELECT 1 FROM app_users WHERE id=${id}::uuid)`
+    ]);
+    const user=(users as DbUser[])[0];
+    if(!user)return error("This code has already been used or the email is registered. Start again.",409);
+    return json({token,token_type:"Bearer",user:publicUser(user,null,{
+      first_name:first,last_name:last,email,phone,avatar_url:avatar,preferences
+    })},{status:201});
+  }
+
+  if(path[1]==="login" && req.method==="POST"){
+    const body=await readJson(req);
+    const email=asString(body.email).toLowerCase();
+    const password=asString(body.password);
     const user = ((await sql`SELECT * FROM app_users WHERE email = ${email} AND role = 'customer' LIMIT 1`) as DbUser[])[0];
     if (!user || !(await verifyPassword(password, user.password_hash))) return error("Invalid credentials.", 401);
     if (user.status === "suspended") return error("Your account has been suspended. Please contact support for assistance.", 403);
