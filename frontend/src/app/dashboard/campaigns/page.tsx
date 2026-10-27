@@ -9,7 +9,7 @@ type Segment="all"|"inactive_30"|"one_away"|"new_7";
 type Channel="inapp"|"inapp_email";
 type Campaign={id:string;title:string;message:string;segment:Segment;channel:Channel;status:string;scheduled_at:string|null;sent_at:string|null;created_at:string};
 type Automation={id:string;name:string;title:string;message:string;segment:Segment;channel:Channel;interval_days:number;is_active:boolean;next_run_at:string|null};
-type Analytics={recipients:number;emails_sent:number;emails_waiting:number;viewed:number};
+type Analytics={recipients:number;emails_sent:number;emails_waiting:number;viewed:number;returned_7d:number};
 const segments:{value:Segment;name:string;description:string;icon:typeof Users}[]=[
  {value:"all",name:"All opted-in customers",description:"Customers who enabled Promotions",icon:Users},
  {value:"inactive_30",name:"Win back after 30 days",description:"Joined 30+ days ago, no recent visits",icon:Clock},
@@ -142,9 +142,10 @@ export default function BusinessCampaignsPage(){
       <h2 className="break-words text-base font-semibold text-white">{selectedCampaign.title}</h2>
       <p className="mt-2 break-words text-sm leading-6 text-white/60">{selectedCampaign.message}</p>
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-       {([{label:"Eligible",value:audience?.eligible??"…",icon:Users},{label:"Notified",value:analytics?.recipients??"…",icon:Bell},{label:"Viewed",value:analytics?.viewed??"…",icon:CheckCheck},{label:"Emails sent",value:analytics?.emails_sent??"…",icon:Mail}]).map(k=><div key={k.label} className="min-w-0 rounded-xl border border-white/10 bg-black/15 p-2.5"><k.icon className="size-4 text-[#efbd5d]"/><p className="mt-2 break-words text-lg font-bold text-white">{k.value}</p><p className="text-[10px] text-white/45">{k.label}</p></div>)}
+       {([{label:"Eligible",value:audience?.eligible??"…",icon:Users},{label:"Notified",value:analytics?.recipients??"…",icon:Bell},{label:"Viewed",value:analytics?.viewed??"…",icon:CheckCheck},{label:"Emails sent",value:analytics?.emails_sent??"…",icon:Mail},{label:"Visited in 7d",value:analytics?.returned_7d??"…",icon:Users}]).map(k=><div key={k.label} className="min-w-0 rounded-xl border border-white/10 bg-black/15 p-2.5"><k.icon className="size-4 text-[#efbd5d]"/><p className="mt-2 break-words text-lg font-bold text-white">{k.value}</p><p className="text-[10px] text-white/45">{k.label}</p></div>)}
       </div>
       {audience?.limited?<p className="mt-3 text-xs text-amber-200">Audience exceeds the 500-recipient limit; narrow the segment before sending.</p>:null}
+      <p className="mt-3 text-[11px] leading-5 text-white/40">7-day visits show observed activity after notification, not proof the campaign caused the visit.</p>
       {selectedCampaign.status==="draft"?<div className="mt-4 space-y-3">
         <button disabled={busy||!audience||audience.limited} className={primary+" w-full"} type="button" onClick={()=>void action(selectedCampaign.id,"send")}><Play className="size-4"/>Send now</button>
         <label className="block text-xs text-white/55">Schedule delivery (local time)<input type="datetime-local" className={input} value={schedule} onChange={e=>setSchedule(e.target.value)}/></label>
