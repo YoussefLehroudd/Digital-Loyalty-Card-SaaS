@@ -224,16 +224,31 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
       return reply({ affiliate: existing[0], linked_existing: true });
     }
     const name = String(account.name).trim().slice(0,120);
-    const code = String(body.code || name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || `partner-${randomBytes(4).toString("hex")}`).trim().toLowerCase();
-    if (!codePattern.test(code)) return reply({ message: "Referral code must be 3-40 lowercase letters, digits or hyphens." },422);
+    const requestedCode = String(body.code ?? "").trim().toLowerCase();
+    if (requestedCode && !codePattern.test(requestedCode)) return reply({ message: "Referral code must be 3-40 lowercase letters, digits or hyphens." },422);
+    const nameCode = name.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40).replace(/-$/g,"");
+    const baseCode = nameCode.length >= 3 ? nameCode : "partner";
     // Legacy password field is kept for historical compatibility, but linked users sign in ONLY with their normal account.
     const disabledLegacyPasswordHash = await hashPassword(randomBytes(32).toString("hex"));
     const id = randomUUID();
-    const found = await q`INSERT INTO affiliate_partners(id,user_id,name,email,code,password_hash,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps)
-      VALUES(${id},${account.id}::uuid,${name},${String(account.email)},${code},${disabledLegacyPasswordHash},${rates["1"]},${rates["3"]},${rates["6"]},${rates["12"]})
-      ON CONFLICT DO NOTHING RETURNING id,user_id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
-    if (!found.length) return reply({ message: "Email or referral code already belongs to another partner." },409);
-    return reply({ affiliate: found[0], resolved_login_email: account.email, matched_business_contact: Boolean(email) && email !== account.email },201);
+    // Names are not unique. Let the database arbitrate each insert, then retry only
+    // generated codes with a suffix. Never silently change a custom code or reassign a profile.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = requestedCode || (attempt === 0 ? baseCode : `${baseCode.slice(0,31).replace(/-$/g,"")}-${randomBytes(4).toString("hex")}`);
+      const found = await q`INSERT INTO affiliate_partners(id,user_id,name,email,code,password_hash,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps)
+        VALUES(${id},${account.id}::uuid,${name},${String(account.email)},${code},${disabledLegacyPasswordHash},${rates["1"]},${rates["3"]},${rates["6"]},${rates["12"]})
+        ON CONFLICT DO NOTHING RETURNING id,user_id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
+      if (found.length) return reply({ affiliate: found[0], resolved_login_email: account.email, matched_business_contact: Boolean(email) && email !== account.email },201);
+      const conflict = (await q`SELECT user_id,archived_at FROM affiliate_partners
+        WHERE user_id=${account.id}::uuid OR email=${String(account.email)} ORDER BY created_at ASC LIMIT 1`)[0];
+      if (conflict) return reply({ message: conflict.archived_at
+        ? "This account email belongs to an archived affiliate. Restore that partner from Archived partners."
+        : conflict.user_id === account.id
+          ? "This account already has an affiliate profile. Select it from the list."
+          : "This account email already belongs to another affiliate profile. Review the existing partner before granting access." },409);
+      if (requestedCode) return reply({ message: "This referral code is already in use. Leave it empty to generate a unique link or choose another code." },409);
+    }
+    return reply({ message: "Could not generate a unique referral code. Please try again." },503);
   }
   const id = segments[0];
   if (!uuidPattern.test(id)) return reply({ message: "Invalid affiliate." },422);

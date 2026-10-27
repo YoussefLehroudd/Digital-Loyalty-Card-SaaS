@@ -1201,5 +1201,10 @@
   "+{0}px": "+{0}px",
   "{0}px": "{0}px",
   "owner@business.com": "owner@business.com",
-  "you@example.com": "you@example.com"
+  "you@example.com": "you@example.com",
+  "This referral code is already in use. Leave it empty to generate a unique link or choose another code.": "Ce code de parrainage est déjà utilisé. Laissez le champ vide pour générer un lien unique ou choisissez un autre code.",
+  "This account email belongs to an archived affiliate. Restore that partner from Archived partners.": "L’adresse de ce compte appartient à un partenaire archivé. Restaurez-le depuis les partenaires archivés.",
+  "This account email already belongs to another affiliate profile. Review the existing partner before granting access.": "L’adresse de ce compte appartient déjà à un autre profil partenaire. Vérifiez ce partenaire avant d’accorder l’accès.",
+  "Could not generate a unique referral code. Please try again.": "Impossible de générer un code de parrainage unique. Réessayez.",
+  "Leave empty to generate a unique code automatically.": "Laissez le champ vide pour générer automatiquement un code unique."
 }

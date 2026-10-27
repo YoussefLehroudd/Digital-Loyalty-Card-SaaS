@@ -140,7 +140,7 @@ export default function AdminAffiliatesPage(){
  return <div className="w-full min-w-0 max-w-full space-y-5 overflow-x-clip text-white sm:space-y-6">
   <header className="min-w-0"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.16em] text-[#efbd5d] sm:text-xs sm:tracking-[.2em]">{tr("Partner program")}</p><h1 className="flex min-w-0 items-center gap-2.5 text-2xl font-semibold sm:gap-3 sm:text-3xl"><Handshake className="size-6 shrink-0 text-[#efbd5d] sm:size-7"/><span className="min-w-0 break-words">{tr("Affiliate partners")}</span></h1>
   <p className="mt-2 text-sm text-white/50">{tr("Referral links, confirmed subscriptions, commission earnings and monthly settlements.")}</p></header>
-  {error&&<p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">{error}</p>}
+  {error&&<p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">{tr(error)}</p>}
   {message&&<p role="status" className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-4 text-sm text-emerald-200">{message}</p>}
   {tempPassword&&<section className="rounded-2xl border border-amber-400/50 bg-amber-400/10 p-5"><h2 className="font-semibold text-amber-200">One-time login password — copy now</h2><p className="mt-1 text-xs text-white/60">For security this password is never displayed again. The affiliate should change it after login.</p><div className="mt-3 flex flex-wrap gap-2"><code className="break-all rounded-lg bg-black/40 px-4 py-3 text-amber-100">{tempPassword}</code><button className={secondary} onClick={()=>void copy(tempPassword,"password")}><Copy className="size-4"/>Copy password</button><button className={secondary} onClick={()=>void copy(affiliateUrl(),"portal")}>Copy legacy partner login</button></div></section>}
   <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-[minmax(0,350px)_minmax(0,1fr)]">
@@ -151,7 +151,8 @@ export default function AdminAffiliatesPage(){
      <label className="block text-xs text-white/60">Or enter a login / business contact email manually
        <input type="email" className={`${field} mt-2`} placeholder="person@example.com" value={email} onChange={e=>{setEmail(e.target.value);setSelectedCandidate(null);}} required={!selectedCandidate}/>
      </label>
-     <label className="block text-xs text-white/60">Custom referral code (optional)<input className={`${field} mt-2`} placeholder="mohamed-sales" pattern="[a-z0-9][a-z0-9-]{2,39}" value={code} onChange={e=>setCode(e.target.value.toLowerCase())}/></label>
+     <label className="block text-xs text-white/60">{tr("Custom referral code (optional)")}<input className={`${field} mt-2`} placeholder="mohamed-sales" pattern="[a-z0-9][a-z0-9-]{2,39}" value={code} onChange={e=>setCode(e.target.value.toLowerCase())}/></label>
+     <p className="text-[11px] leading-5 text-white/45">{tr("Leave empty to generate a unique code automatically.")}</p>
      <RateFields rates={createRates} setRates={setCreateRates}/>
      <button className={`${primary} min-h-11 w-full min-w-0 px-2.5 text-center text-xs sm:px-4 sm:text-sm`} disabled={busy||(!selectedCandidate&&!email.trim())}><Plus className="size-4 shrink-0"/><span className="min-w-0 break-words">Grant Affiliate & generate link</span></button>
     </form>
