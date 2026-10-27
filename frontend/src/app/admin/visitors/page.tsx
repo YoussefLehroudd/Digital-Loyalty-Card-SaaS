@@ -118,7 +118,7 @@ export default function AdminVisitorsPage(){
      {!report.sessions.length&&<p className="py-8 text-center text-xs text-white/40">No visits yet. New sessions will appear here.</p>}
     </div>
    </section>
-   <p className="text-[11px] leading-5 text-white/35">Analytics records are stored for up to 90 days. No raw IP addresses, GPS, typed form values or URL query parameters are retained. Do Not Track / Global Privacy Control signals are respected. Referrers and geo headers may be absent.</p>
+   <p className="text-[11px] leading-5 text-white/35">Analytics records are purged after 90 days when reporting runs. Analytics tables do not contain raw IP addresses, GPS, typed form values or URL query parameters. Do Not Track / Global Privacy Control signals are respected. Referrers and geo headers may be absent.</p>
   </div>:null}
   {selected?<div role="dialog" aria-modal="true" aria-label="Visitor session timeline" className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={()=>{setSelected(null);setEvents(null);}}>
     <div className="max-h-[90dvh] w-full min-w-0 max-w-xl overflow-y-auto rounded-t-2xl border border-white/15 bg-[#12151b] p-4 shadow-2xl sm:rounded-2xl sm:p-6" onClick={e=>e.stopPropagation()}>
@@ -128,7 +128,8 @@ export default function AdminVisitorsPage(){
        <p className="mt-1 text-xs text-white/45">{selected.city||"Unknown city"}, {nameCountry(selected.country_code)} · {selected.device} · {selected.browser}</p>
       </div><button type="button" aria-label="Close details" onClick={()=>{setSelected(null);setEvents(null);}} className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/15 text-white/75"><X className="size-4"/></button></div>
       <div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-xl border border-white/10 bg-white/[.025] p-3"><p className="text-[11px] text-white/40">Active time</p><p className="mt-1 font-bold">{seconds(number(selected.active_seconds))}</p></div><div className="rounded-xl border border-white/10 bg-white/[.025] p-3"><p className="text-[11px] text-white/40">Arrival source</p><p className="mt-1 break-words text-xs font-semibold">{selected.traffic_source}</p></div></div>
-      <p className="mt-5 mb-3 text-sm font-semibold">Page & click timeline</p>
+      <div className="mt-4 space-y-1 text-[11px] leading-5 text-white/45"><p className="break-all"><strong className="text-white/70">Entry page:</strong> {selected.entry_path}</p><p className="break-all"><strong className="text-white/70">Referring URL:</strong> {selected.referrer||"Direct / unavailable"}</p><p><strong className="text-white/70">Last seen:</strong> {date(selected.last_seen)}</p></div>
+       <p className="mt-5 mb-3 text-sm font-semibold">Page & click timeline</p>
       {detailError?<p className="text-sm text-rose-300">{detailError}</p>:events===null?<p className="flex items-center gap-2 text-xs text-white/40"><Loader2 className="size-4 animate-spin"/>Loading timeline...</p>:
        <div className="space-y-2">{events.map((event,i)=><div key={i} className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-3"><div className="flex items-start gap-3">
         {event.event_type==="page"?<Globe2 className="mt-0.5 size-4 shrink-0 text-sky-300"/>:<MousePointerClick className="mt-0.5 size-4 shrink-0 text-[#efbd5d]"/>}
