@@ -54,6 +54,7 @@ export async function ensureAffiliateSchema(sql: Sql) {
   )`;
   await q`ALTER TABLE affiliate_partners ADD COLUMN IF NOT EXISTS user_id uuid UNIQUE REFERENCES app_users(id) ON DELETE SET NULL`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS idx_affiliate_partners_user_id ON affiliate_partners(user_id) WHERE user_id IS NOT NULL`;
+  await q`ALTER TABLE affiliate_partners ADD COLUMN IF NOT EXISTS archived_at timestamptz`;
   await q`CREATE TABLE IF NOT EXISTS affiliate_businesses (
     business_id uuid PRIMARY KEY REFERENCES businesses(id) ON DELETE CASCADE,
     affiliate_id uuid NOT NULL REFERENCES affiliate_partners(id),
@@ -91,7 +92,7 @@ export async function ensureAffiliateSchema(sql: Sql) {
 export async function affiliateCodeIsValid(sql: Sql, code: string) {
   const q = rowSql(sql);
   if (!codePattern.test(code)) return false;
-  const found = await q`SELECT id FROM affiliate_partners WHERE code=${code} AND is_active=true LIMIT 1`;
+  const found = await q`SELECT id FROM affiliate_partners WHERE code=${code} AND is_active=true AND archived_at IS NULL LIMIT 1`;
   return found.length > 0;
 }
 
@@ -147,33 +148,75 @@ async function resolveAffiliateAccount(sql: Sql, email: string) {
 export async function handleAdminAffiliates(path: string[], req: Request, sql: Sql, admin: { id: string }) {
   const q = rowSql(sql);
   const segments = path.slice(2);
+  if (segments.length === 1 && segments[0] === "candidates") {
+    if (req.method !== "GET") return reply({ message: "Method not allowed." },405);
+    const params = new URL(req.url).searchParams;
+    const query = (params.get("q") ?? "").trim().slice(0,90);
+    const type = params.get("type") ?? "all";
+    if (!["all","business","customer"].includes(type)) return reply({ message: "Invalid account type." },422);
+    const pattern = `%${query.replace(/[\\%_]/g, "\\$&")}%`;
+
+    // Search only already registered active accounts. Never return a protected customer's email.
+    // This endpoint is reached exclusively through the platform-admin guarded route.
+    const candidates = await q`SELECT u.id,u.name,u.role,
+      CASE WHEN u.role='customer' AND NOT privacy.visible THEN NULL ELSE u.email END AS email,
+      CASE WHEN u.role='business_owner' THEN b.name ELSE NULL END AS business_name,
+      CASE WHEN u.role='business_owner' THEN b.email ELSE NULL END AS business_email,
+      COALESCE(p.code,'') AS affiliate_code, p.archived_at IS NOT NULL AS archived_affiliate,
+      CASE WHEN u.role='customer' THEN privacy.visible ELSE true END AS contact_visible
+      FROM app_users u
+      LEFT JOIN businesses b ON b.id=u.business_id AND u.role='business_owner'
+      LEFT JOIN affiliate_partners p ON p.user_id=u.id
+      CROSS JOIN LATERAL (
+        SELECT NOT EXISTS(
+          SELECT 1 FROM customers c JOIN businesses cb ON cb.id=c.business_id
+          WHERE c.user_id=u.id AND cb.admin_contact_private=true
+        ) AS visible
+      ) privacy
+      WHERE u.role IN ('customer','business_owner') AND u.status='active'
+        AND (u.role='customer' OR (b.id IS NOT NULL AND COALESCE(b.status,'active')='active'))
+        AND (${type}='all' OR (${type}='business' AND u.role='business_owner') OR (${type}='customer' AND u.role='customer'))
+        AND (u.name ILIKE ${pattern}
+          OR (u.role='business_owner' AND (b.name ILIKE ${pattern} OR b.email ILIKE ${pattern} OR u.email ILIKE ${pattern}))
+          OR (u.role='customer' AND privacy.visible AND u.email ILIKE ${pattern}))
+      ORDER BY u.created_at DESC,u.id LIMIT 15`;
+    return reply({ data: candidates });
+  }
   if (!segments.length) {
     if (req.method === "GET") {
-      const partners = await q`SELECT p.id,p.name,p.email,p.code,p.user_id,u.role AS account_role,u.email AS account_email,p.is_active,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text,
+      const archived = new URL(req.url).searchParams.get("archived")==="true";
+      const partners = await q`SELECT p.id,p.name,p.email,p.code,p.user_id,u.role AS account_role,u.email AS account_email,p.is_active,p.archived_at::text,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text,
         (SELECT count(*)::int FROM affiliate_businesses b WHERE b.affiliate_id=p.id) AS businesses,
         (SELECT COALESCE(sum(c.commission_centimes),0)::bigint::text FROM affiliate_commissions c WHERE c.affiliate_id=p.id) AS earned_centimes,
         (SELECT COALESCE(sum(c.commission_centimes),0)::bigint::text FROM affiliate_commissions c WHERE c.affiliate_id=p.id AND c.payout_id IS NULL) AS unpaid_centimes
-        FROM affiliate_partners p LEFT JOIN app_users u ON u.id=p.user_id ORDER BY p.created_at DESC LIMIT 300`;
+        FROM affiliate_partners p LEFT JOIN app_users u ON u.id=p.user_id WHERE (p.archived_at IS NOT NULL)=${archived} ORDER BY p.created_at DESC LIMIT 300`;
       return reply({ data: partners });
     }
     if (req.method !== "POST") return reply({ message: "Method not allowed." },405);
     const body = await req.json().catch(() => ({})) as Row;
     // Affiliate access is an *additional permission* on an existing customer or business account.
     // The account keeps its original role, credentials, cards and business workspace.
+    const userId = String(body.user_id ?? "").trim();
     const email = String(body.user_email ?? "").trim().toLowerCase();
     const rates = validateRates(body.rates ?? ratesDefault);
-    if (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !rates)
-      return reply({ message: "Enter the registered LOYVANCE user's email and valid commission percentages." },422);
-    const resolved = await resolveAffiliateAccount(sql,email);
+    if ((userId && !uuidPattern.test(userId)) || (!userId && (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) || !rates)
+      return reply({ message: "Select an existing account and valid commission percentages." },422);
+    const resolved = userId
+      ? { account:(await q`SELECT u.id,u.name,u.email,u.role,u.status,b.email AS business_email
+           FROM app_users u LEFT JOIN businesses b ON b.id=u.business_id AND u.role='business_owner'
+           WHERE u.id=${userId}::uuid AND u.role IN ('customer','business_owner') LIMIT 1`)[0] ?? null, ambiguous:false }
+      : await resolveAffiliateAccount(sql,email);
     if (resolved.ambiguous) return reply({ message: "Multiple business owners use this contact email. Enter the owner's login email to select the correct account." },409);
     const account = resolved.account;
-    if (!account) return reply({ message: "No customer or business-owner login matches this email or its business contact. Check the business owner's registered login email." },404);
+    if (!account) return reply({ message: "The selected Customer or Business account could not be found." },404);
     if (account.status !== 'active') return reply({ message: "Activate this account before granting affiliate access." },409);
     const previouslyLinked = await q`SELECT id FROM affiliate_partners WHERE user_id=${account.id}::uuid LIMIT 1`;
     if (previouslyLinked.length) return reply({ message: "This account already has an affiliate profile. Select it from the list." },409);
     // Preserve older standalone partners (and their financial ledger) when the same email signs up normally.
     const existing = await q`UPDATE affiliate_partners SET user_id=${account.id}::uuid
-      WHERE email IN (${email},${String(account.email)}) AND user_id IS NULL
+      WHERE id=(SELECT id FROM affiliate_partners
+        WHERE archived_at IS NULL AND email IN (${email || String(account.email)},${String(account.email)},${String(account.business_email || account.email)})
+          AND user_id IS NULL ORDER BY created_at ASC LIMIT 1)
       AND NOT EXISTS (SELECT 1 FROM affiliate_partners WHERE user_id=${account.id}::uuid)
       RETURNING id,name,email,code,user_id,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
     if (existing.length) {
@@ -190,13 +233,29 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
       VALUES(${id},${account.id}::uuid,${name},${String(account.email)},${code},${disabledLegacyPasswordHash},${rates["1"]},${rates["3"]},${rates["6"]},${rates["12"]})
       ON CONFLICT DO NOTHING RETURNING id,user_id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
     if (!found.length) return reply({ message: "Email or referral code already belongs to another partner." },409);
-    return reply({ affiliate: found[0], resolved_login_email: account.email, matched_business_contact: email !== account.email },201);
+    return reply({ affiliate: found[0], resolved_login_email: account.email, matched_business_contact: Boolean(email) && email !== account.email },201);
   }
   const id = segments[0];
   if (!uuidPattern.test(id)) return reply({ message: "Invalid affiliate." },422);
-  const partner = (await q`SELECT p.id,p.name,p.email,p.code,p.user_id,u.role AS account_role,u.email AS account_email,p.is_active,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text FROM affiliate_partners p LEFT JOIN app_users u ON u.id=p.user_id WHERE p.id=${id}`)[0];
+  const partner = (await q`SELECT p.id,p.name,p.email,p.code,p.user_id,u.role AS account_role,u.email AS account_email,p.is_active,p.archived_at::text,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text FROM affiliate_partners p LEFT JOIN app_users u ON u.id=p.user_id WHERE p.id=${id}`)[0];
   if (!partner) return reply({ message: "Affiliate not found." },404);
+  // "Delete" removes access immediately and hides the profile from the active directory.
+  // Never delete commission, referral or payout rows: they are accounting records.
+  if (segments.length === 1 && req.method === "DELETE") {
+    if (partner.archived_at) return reply({ message: "Partner was already removed." },409);
+    await sql.transaction([
+      sql`UPDATE affiliate_partners SET archived_at=now(),is_active=false WHERE id=${id}::uuid AND archived_at IS NULL`,
+      sql`DELETE FROM affiliate_sessions WHERE affiliate_id=${id}::uuid`,
+    ]);
+    return reply({ message: "Partner removed from the active directory; referral access stopped. Referral, commission and payout history is preserved in Archived partners." });
+  }
+  if (segments.length === 2 && segments[1] === "restore" && req.method === "POST") {
+    if (!partner.archived_at) return reply({ message: "Partner is not archived." },409);
+    const restored=await q`UPDATE affiliate_partners SET archived_at=NULL,is_active=true WHERE id=${id}::uuid AND archived_at IS NOT NULL RETURNING id,name,code`;
+    return reply({ affiliate: restored[0], message: "Affiliate restored. Referral and dashboard access is active again." });
+  }
   if (segments.length === 1 && req.method === "GET") return reply({ affiliate: partner, ...(await affiliateReport(sql,id)) });
+  if (partner.archived_at && !(segments.length===2 && segments[1]==="payouts" && req.method==="POST")) return reply({ message: "This partner has been archived. Restore it before changing permissions." },409);
   if (segments.length === 1 && req.method === "PATCH") {
     const body = await req.json().catch(() => ({})) as Row;
     const rates = validateRates(body.rates ?? {1:Number(partner.rate_1_bps)/100,3:Number(partner.rate_3_bps)/100,6:Number(partner.rate_6_bps)/100,12:Number(partner.rate_12_bps)/100});
@@ -213,7 +272,11 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
   if (segments.length === 2 && segments[1] === "link-account" && req.method === "POST") {
     const body = await req.json().catch(() => ({})) as Row;
     const email = String(body.user_email ?? "").trim().toLowerCase();
-    const resolved = await resolveAffiliateAccount(sql,email);
+    const userId = String(body.user_id ?? "").trim();
+    if (userId && !uuidPattern.test(userId)) return reply({ message: "Invalid account selection." },422);
+    const resolved = userId
+      ? { account:(await q`SELECT id,name,role,status,email FROM app_users WHERE id=${userId}::uuid AND role IN ('customer','business_owner') LIMIT 1`)[0] ?? null,ambiguous:false }
+      : await resolveAffiliateAccount(sql,email);
     if (resolved.ambiguous) return reply({ message: "More than one business uses this email. Specify the owner's login email." },409);
     const account = resolved.account;
     if (!account) return reply({ message: "No matching active customer or business owner found. Verify the login email or business contact email." },404);
@@ -277,7 +340,7 @@ async function currentAffiliate(req: Request, sql: Sql) {
   const linked = await q`SELECT a.id,a.name,a.email,a.code,a.is_active,a.rate_1_bps,a.rate_3_bps,a.rate_6_bps,a.rate_12_bps
     FROM user_sessions s JOIN app_users u ON u.id=s.user_id
     JOIN affiliate_partners a ON a.user_id=u.id LEFT JOIN businesses b ON b.id=u.business_id
-    WHERE s.token=${token} AND s.expires_at>now() AND a.is_active=true AND u.status='active'
+    WHERE s.token=${token} AND s.expires_at>now() AND a.is_active=true AND a.archived_at IS NULL AND u.status='active'
       AND u.role IN ('customer','business_owner')
       AND (u.role<>'business_owner' OR (b.id IS NOT NULL AND COALESCE(b.status,'active')='active'))
     LIMIT 1`;
@@ -285,7 +348,7 @@ async function currentAffiliate(req: Request, sql: Sql) {
   // Existing unlinked affiliates retain their previous portal until the admin links their account.
   const legacy = await q`SELECT a.id,a.name,a.email,a.code,a.is_active,a.rate_1_bps,a.rate_3_bps,a.rate_6_bps,a.rate_12_bps
     FROM affiliate_sessions s JOIN affiliate_partners a ON a.id=s.affiliate_id
-    WHERE s.token_hash=${codeHash(token)} AND s.expires_at>now() AND a.is_active=true AND a.user_id IS NULL LIMIT 1`;
+    WHERE s.token_hash=${codeHash(token)} AND s.expires_at>now() AND a.is_active=true AND a.archived_at IS NULL AND a.user_id IS NULL LIMIT 1`;
   return legacy[0] ?? null;
 }
 
@@ -300,7 +363,7 @@ export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
     const email = String(body.email ?? "").toLowerCase().trim();
     const password = String(body.password ?? "");
     if (email.length > 200 || password.length > 200) return reply({ message: "Invalid credentials." },401);
-    const users = await q`SELECT id,name,email,code,user_id,password_hash,is_active FROM affiliate_partners WHERE email=${email} LIMIT 1`;
+    const users = await q`SELECT id,name,email,code,user_id,password_hash,is_active FROM affiliate_partners WHERE email=${email} AND archived_at IS NULL LIMIT 1`;
     const user = users[0];
     if (!user || user.is_active !== true || user.user_id || !(await verifyPassword(password,String(user.password_hash))))
       return reply({ message: "Invalid credentials or inactive affiliate account." },401);

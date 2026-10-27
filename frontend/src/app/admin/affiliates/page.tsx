@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Check, Copy, Handshake, Loader2, Plus, RefreshCcw, Save, Wallet } from "lucide-react";
+import { ArchiveRestore, ArrowRight, Check, Copy, Handshake, Plus, RefreshCcw, Save, Trash2, Wallet } from "lucide-react";
+import { AffiliateAccountPicker, type AffiliateCandidate } from "@/components/admin/affiliate-account-picker";
+import { Modal } from "@/components/ui/modal";
 import { adminRequest } from "@/lib/admin";
 import { useAdmin } from "@/components/admin/admin-shell";
 import { useI18n } from "@/components/i18n/language-provider";
 
 type Partner = {
-  id: string; name: string; email: string; code: string; is_active: boolean; user_id?: string|null; account_role?: string|null; account_email?: string|null;
+  id: string; name: string; email: string; code: string; is_active: boolean; archived_at?: string|null; user_id?: string|null; account_role?: string|null; account_email?: string|null;
   rate_1_bps: number; rate_3_bps: number; rate_6_bps: number; rate_12_bps: number;
   businesses?: number; earned_centimes?: string; unpaid_centimes?: string;
 };
@@ -36,6 +38,10 @@ export default function AdminAffiliatesPage(){
  const [message,setMessage]=useState("");
  const [linkEmail,setLinkEmail]=useState("");
  const [email,setEmail]=useState("");
+ const [selectedCandidate,setSelectedCandidate]=useState<AffiliateCandidate|null>(null);
+ const [showArchived,setShowArchived]=useState(false);
+ const [pendingRemove,setPendingRemove]=useState<Partner|null>(null);
+ const [confirmRemoveCode,setConfirmRemoveCode]=useState("");
  const [code,setCode]=useState("");
  const [createRates,setCreateRates]=useState<Rates>(initialRates);
  const [editRates,setEditRates]=useState<Rates>(initialRates);
@@ -46,9 +52,9 @@ export default function AdminAffiliatesPage(){
  const [payoutReference,setPayoutReference]=useState("");
  const [copied,setCopied]=useState("");
  const load=useCallback(async ()=>{
-  try { const res=await adminRequest<{data:Partner[]}>("affiliates",token);setPartners(res.data); }
+  try { const res=await adminRequest<{data:Partner[]}>(`affiliates?archived=${showArchived}`,token);setPartners(res.data); }
   catch(e){setError(e instanceof Error?e.message:"Unable to load affiliates.");}
- },[token]);
+ },[token,showArchived]);
  const loadDetail=useCallback(async (id:string)=>{
   try{const res=await adminRequest<Report>(`affiliates/${id}`,token);setReport(res);setEditName(res.affiliate.name);setEditRates(fromPartner(res.affiliate));}
   catch(e){setError(e instanceof Error?e.message:"Unable to load affiliate.");}
@@ -65,11 +71,31 @@ export default function AdminAffiliatesPage(){
   e.preventDefault();setBusy(true);setError("");setMessage("");setTempPassword("");
   try{
    const res=await adminRequest<{affiliate:Partner;linked_existing?:boolean;matched_business_contact?:boolean;resolved_login_email?:string}>("affiliates",token,{
-    method:"POST",body:JSON.stringify({user_email:email,code:code||undefined,rates:createRates})
+    method:"POST",body:JSON.stringify({user_id:selectedCandidate?.id,user_email:email,code:code||undefined,rates:createRates})
    });
-   setMessage(res.linked_existing?"Existing affiliate earnings preserved and account linked.":res.matched_business_contact?`Affiliate granted to the business owner account (${res.resolved_login_email}). Their login is different from the business contact email.`:"Affiliate permission granted to the existing account.");setEmail("");setCode("");
+   setMessage(res.linked_existing?"Existing affiliate earnings preserved and account linked.":res.matched_business_contact?`Affiliate granted to the business owner account (${res.resolved_login_email}). Their login is different from the business contact email.`:"Affiliate permission granted to the existing account.");setEmail("");setCode("");setSelectedCandidate(null);
    await load();setSelected(res.affiliate.id);
   }catch(e){setError(e instanceof Error?e.message:"Could not create affiliate.");}
+  finally{setBusy(false);}
+ }
+ async function removePartner(e:React.FormEvent){
+  e.preventDefault();
+  if(!pendingRemove || confirmRemoveCode!==pendingRemove.code || busy)return;
+  setBusy(true);setError("");setMessage("");
+  try {
+    const result=await adminRequest<{message:string}>(`affiliates/${pendingRemove.id}`,token,{method:"DELETE"});
+    setMessage(result.message);setPendingRemove(null);setConfirmRemoveCode("");
+    setSelected(null);setReport(null);await load();
+  }catch(e){setError(e instanceof Error?e.message:"Unable to remove affiliate.");}
+  finally{setBusy(false);}
+ }
+ async function restorePartner(p:Partner){
+  if(busy)return;
+  setBusy(true);setError("");setMessage("");
+  try{
+    const result=await adminRequest<{message:string}>(`affiliates/${p.id}/restore`,token,{method:"POST"});
+    setMessage(result.message);setSelected(null);await load();
+  }catch(e){setError(e instanceof Error?e.message:"Unable to restore affiliate.");}
   finally{setBusy(false);}
  }
  async function save(isActive:boolean){
@@ -122,16 +148,38 @@ export default function AdminAffiliatesPage(){
     <form onSubmit={e=>void create(e)} className={`${panel} space-y-4`}>
      <h2 className="flex items-center gap-2 font-semibold"><Plus className="size-4 text-[#efbd5d]"/> {tr("Grant affiliate access")}</h2>
      <p className="text-xs leading-5 text-white/50">Choose an existing Customer or Business Owner. You can enter their login email or the business contact email shown in the Businesses list. Affiliate will appear inside their original dashboard; their password and business access stay unchanged.</p>
-     <label className="block text-xs text-white/60">User login or business contact email<input type="email" className={`${field} mt-2`} placeholder="person@example.com" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
+     <AffiliateAccountPicker token={token} selected={selectedCandidate} onSelect={candidate=>{setSelectedCandidate(candidate);setEmail(candidate?.email||candidate?.business_email||"");}}/>
+     <label className="block text-xs text-white/60">Or enter a login / business contact email manually
+       <input type="email" className={`${field} mt-2`} placeholder="person@example.com" value={email} onChange={e=>{setEmail(e.target.value);setSelectedCandidate(null);}} required={!selectedCandidate}/>
+     </label>
      <label className="block text-xs text-white/60">Custom referral code (optional)<input className={`${field} mt-2`} placeholder="mohamed-sales" pattern="[a-z0-9][a-z0-9-]{2,39}" value={code} onChange={e=>setCode(e.target.value.toLowerCase())}/></label>
      <RateFields rates={createRates} setRates={setCreateRates}/>
-     <button className={`${primary} w-full`} disabled={busy}><Plus className="size-4"/>Grant Affiliate & generate link</button>
+     <button className={`${primary} w-full`} disabled={busy||(!selectedCandidate&&!email.trim())}><Plus className="size-4"/>Grant Affiliate & generate link</button>
     </form>
     <section className={panel}>
-     <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">All partners ({partners.length})</h2><button aria-label="Reload partners" className={secondary} onClick={()=>void load()}><RefreshCcw className="size-4"/></button></div>
-     {partners.length===0?<p className="text-xs text-white/45">No affiliate partners yet.</p>:<div className="space-y-2">{partners.map(p=><button key={p.id} onClick={()=>{setSelected(p.id);setTempPassword("");setMessage("");}} className={`w-full rounded-xl border p-3 text-left transition ${selected===p.id?"border-[#efbd5d]/40 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
-      <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">{p.name}</span><span className={`text-xs ${p.is_active?"text-emerald-400":"text-rose-300"}`}>{p.is_active?"Active":"Paused"}</span></div>
-      <p className="mt-1 text-xs text-white/45">{p.code} · {p.businesses} businesses · {p.account_role?p.account_role==="customer"?"Customer account":"Business account":"Legacy / not linked"}</p><p className="mt-2 text-sm text-[#efbd5d]">Outstanding: {formatMoney(p.unpaid_centimes)}</p></button>)}</div>}
+     <div className="mb-3 flex items-center justify-between gap-2">
+      <h2 className="font-semibold">{showArchived?"Archived partners":"All partners"} ({partners.length})</h2>
+      <button type="button" aria-label="Reload partners" title="Refresh list" className={secondary} onClick={()=>void load()}><RefreshCcw className="size-4"/></button>
+     </div>
+     <button type="button" className="mb-4 text-xs font-medium text-[#efbd5d] underline-offset-4 hover:underline" onClick={()=>{setShowArchived(v=>!v);setSelected(null);setReport(null);}}>
+       {showArchived?"Back to active partners":"View archived partners"}
+     </button>
+     {partners.length===0?<p className="text-xs text-white/45">{showArchived?"No archived partners.":"No active affiliate partners yet."}</p>:
+     <div className="space-y-2">{partners.map(p=>
+       <div key={p.id} className={`flex min-w-0 items-stretch gap-1 rounded-xl border p-1 transition ${selected===p.id?"border-[#efbd5d]/40 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
+        <button type="button" onClick={()=>{setSelected(p.id);setTempPassword("");setMessage("");}} className="min-w-0 flex-1 rounded-lg p-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efbd5d]/70">
+         <div className="flex items-center justify-between gap-2"><span className="truncate text-sm font-semibold">{p.name}</span>
+          <span className={`shrink-0 text-[11px] ${p.archived_at?"text-amber-300":p.is_active?"text-emerald-400":"text-rose-300"}`}>{p.archived_at?"Archived":p.is_active?"Active":"Paused"}</span>
+         </div>
+         <p className="mt-1 truncate text-xs text-white/45">{p.code} · {p.businesses} businesses · {p.account_role?p.account_role==="customer"?"Customer":"Business":"Legacy"}</p>
+         <p className="mt-2 text-xs text-[#efbd5d]">Outstanding: {formatMoney(p.unpaid_centimes)}</p>
+        </button>
+        <button type="button" disabled={busy} title={p.archived_at?"Restore affiliate":"Remove affiliate"} aria-label={p.archived_at?`Restore ${p.name}`:`Remove ${p.name}`}
+          onClick={()=>{if(p.archived_at){void restorePartner(p);}else{setPendingRemove(p);setConfirmRemoveCode("");}}}
+          className={`my-auto grid size-10 shrink-0 place-items-center rounded-lg border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efbd5d] disabled:opacity-40 ${p.archived_at?"border-emerald-400/20 text-emerald-300 hover:bg-emerald-400/10":"border-rose-400/20 text-rose-300 hover:bg-rose-400/10"}`}>
+          {p.archived_at?<ArchiveRestore className="size-4" aria-hidden="true"/>:<Trash2 className="size-4" aria-hidden="true"/>}
+        </button>
+       </div>)}</div>}
     </section>
    </div>
    <div className="space-y-5">
@@ -142,7 +190,7 @@ export default function AdminAffiliatesPage(){
       <div className="mt-2 flex gap-2"><button className={secondary} onClick={()=>void copy(affiliateUrl(report.affiliate),"portal")}><ArrowRight className="size-4"/>Copy partner dashboard URL</button></div>
       <div className="mt-5 grid gap-3 sm:grid-cols-3"><Mini label="Referred businesses" value={String(report.summary.referred_businesses)}/><Mini label="Earned total" value={formatMoney(report.summary.total_centimes)}/><Mini label="Unpaid balance" value={formatMoney(report.summary.unpaid_centimes)}/></div>
      </section>
-     <section className={panel}><h3 className="mb-4 text-lg font-semibold">Partner settings</h3><label className="text-xs text-white/60">Display name<input className={`${field} mt-2 mb-4`} value={editName} onChange={e=>setEditName(e.target.value)}/></label><RateFields rates={editRates} setRates={setEditRates}/><div className="mt-4 flex flex-wrap gap-2"><button className={primary} disabled={busy} onClick={()=>void save(report.affiliate.is_active)}><Save className="size-4"/>Save changes</button><button className={secondary} disabled={busy} onClick={()=>void save(!report.affiliate.is_active)}>{report.affiliate.is_active?"Pause partner":"Reactivate partner"}</button></div>{!report.affiliate.user_id?<div className="mt-4 space-y-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4"><p className="text-sm font-semibold text-amber-200">Link this existing affiliate to a normal account</p><p className="text-xs text-white/55">Preserves all previous referrals, commissions and payouts. The account must register in LOYVANCE first.</p><input type="email" value={linkEmail} onChange={e=>setLinkEmail(e.target.value)} placeholder="Registered LOYVANCE email" aria-label="Account email to link" className={field}/><button className={primary} disabled={busy||!linkEmail.trim()} onClick={()=>void linkAccount()}>Grant access to account</button><button className={secondary} disabled={busy} onClick={()=>void resetPassword()}>Reset legacy portal password</button></div>:<p className="mt-3 text-xs text-emerald-300">Linked account · Sign in normally using the original customer or business password.</p>}<p className="mt-3 text-xs text-white/40">Pausing prevents new referrals, login and future commission accrual. Existing earnings stay in the ledger.</p></section>
+     <section className={panel}><h3 className="mb-4 text-lg font-semibold">Partner settings</h3><label className="text-xs text-white/60">Display name<input className={`${field} mt-2 mb-4`} value={editName} onChange={e=>setEditName(e.target.value)}/></label><RateFields rates={editRates} setRates={setEditRates}/><div className="mt-4 flex flex-wrap gap-2"><button className={primary} disabled={busy||Boolean(report.affiliate.archived_at)} onClick={()=>void save(report.affiliate.is_active)}><Save className="size-4"/>Save changes</button><button className={secondary} disabled={busy||Boolean(report.affiliate.archived_at)} onClick={()=>void save(!report.affiliate.is_active)}>{report.affiliate.is_active?"Pause partner":"Reactivate partner"}</button><button type="button" disabled={busy} title={report.affiliate.archived_at?"Restore affiliate":"Remove affiliate"} aria-label={report.affiliate.archived_at?"Restore affiliate":"Remove affiliate"} onClick={()=>{if(report.affiliate.archived_at){void restorePartner(report.affiliate);}else{setPendingRemove(report.affiliate);setConfirmRemoveCode("");}}} className="grid size-10 shrink-0 place-items-center rounded-xl border border-rose-400/25 bg-rose-400/5 text-rose-300 transition hover:bg-rose-400/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efbd5d] disabled:opacity-40">{report.affiliate.archived_at?<ArchiveRestore className="size-4"/>:<Trash2 className="size-4"/>}</button></div>{!report.affiliate.user_id?<div className="mt-4 space-y-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4"><p className="text-sm font-semibold text-amber-200">Link this existing affiliate to a normal account</p><p className="text-xs text-white/55">Preserves all previous referrals, commissions and payouts. The account must register in LOYVANCE first.</p><input type="email" value={linkEmail} onChange={e=>setLinkEmail(e.target.value)} placeholder="Registered LOYVANCE email" aria-label="Account email to link" className={field}/><button className={primary} disabled={busy||!linkEmail.trim()} onClick={()=>void linkAccount()}>Grant access to account</button><button className={secondary} disabled={busy} onClick={()=>void resetPassword()}>Reset legacy portal password</button></div>:<p className="mt-3 text-xs text-emerald-300">Linked account · Sign in normally using the original customer or business password.</p>}<p className="mt-3 text-xs text-white/40">Pausing prevents new referrals, login and future commission accrual. Existing earnings stay in the ledger.</p></section>
      <section className={panel}><h3 className="mb-1 flex items-center gap-2 text-lg font-semibold"><Wallet className="size-5 text-[#efbd5d]"/>Record monthly payout</h3><p className="mb-4 text-xs text-white/45">Only mark paid after you really transfer the money. Unpaid commissions for the selected Morocco month are settled together.</p>
        <div className="grid gap-3 sm:grid-cols-3"><label className="text-xs text-white/60">Commission month<input type="month" className={`${field} mt-2`} value={payoutMonth} onChange={e=>setPayoutMonth(e.target.value)}/></label><label className="text-xs text-white/60">Payment method<input className={`${field} mt-2`} value={payoutMethod} onChange={e=>setPayoutMethod(e.target.value)} placeholder="Bank transfer"/></label><label className="text-xs text-white/60">Transfer reference<input className={`${field} mt-2`} value={payoutReference} onChange={e=>setPayoutReference(e.target.value)} placeholder="Transaction ID"/></label></div><button className={`${primary} mt-4`} disabled={busy||!payoutReference.trim()} onClick={()=>void pay()}><Check className="size-4"/>Confirm money sent & record payout</button>
       <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[410px] text-left text-xs"><thead><tr className="text-white/40"><th className="py-2">Paid date</th><th>Month</th><th>Amount</th><th>Reference</th></tr></thead><tbody>{report.payouts.map(p=><tr className="border-t border-white/10" key={p.id}><td className="py-2">{formatDate(p.paid_at)}</td><td>{p.month}</td><td>{formatMoney(p.amount_centimes)}</td><td>{p.reference}</td></tr>)}</tbody></table></div>
@@ -152,6 +200,24 @@ export default function AdminAffiliatesPage(){
     </>}
    </div>
   </div>
+  <Modal isOpen={!!pendingRemove} onClose={()=>{if(!busy){setPendingRemove(null);setConfirmRemoveCode("");}}} closeDisabled={busy}
+    title="Remove affiliate partner" description={pendingRemove?.name} icon={<Trash2 className="size-6 text-rose-300"/>}>
+    <form className="space-y-4" onSubmit={e=>void removePartner(e)}>
+      <p className="rounded-xl border border-rose-400/20 bg-rose-400/5 p-3 text-xs leading-6 text-white/70">
+        Removing a partner immediately disables their referral link and affiliate dashboard. The profile disappears from the active list. Businesses, payment commissions, pending earnings and payout history remain securely recorded in Archived partners. Their normal LOYVANCE account stays active.
+      </p>
+      <label className="block text-xs font-medium text-white/70">
+        Type the referral code <strong className="text-[#efbd5d]">{pendingRemove?.code}</strong> to confirm
+        <input autoComplete="off" spellCheck={false} className={`${field} mt-2`} value={confirmRemoveCode} onChange={e=>setConfirmRemoveCode(e.target.value)}/>
+      </label>
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="button" className={secondary} disabled={busy} onClick={()=>{setPendingRemove(null);setConfirmRemoveCode("");}}>Cancel</button>
+        <button type="submit" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/20 disabled:opacity-40" disabled={busy||!pendingRemove||confirmRemoveCode!==pendingRemove.code}>
+          <Trash2 className="size-4"/>Remove affiliate
+        </button>
+      </div>
+    </form>
+  </Modal>
  </div>;
 }
 function Mini({label,value}:{label:string;value:string}){return <div className="rounded-xl border border-white/10 bg-black/20 p-3"><p className="text-xs text-white/45">{label}</p><p className="mt-2 break-all text-xl font-semibold text-[#efbd5d]">{value}</p></div>;}
