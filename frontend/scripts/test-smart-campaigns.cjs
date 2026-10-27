@@ -22,7 +22,7 @@ async function setup(){
   CREATE TABLE app_users (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),role text,status text DEFAULT 'active',email text,name text);
   CREATE TABLE business_subscriptions (business_id uuid PRIMARY KEY REFERENCES businesses(id),trial_ends_at timestamptz,paid_ends_at timestamptz);
   CREATE TABLE customers (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),user_id uuid REFERENCES app_users(id),created_at timestamptz DEFAULT now());
-  CREATE TABLE customer_profiles (user_id uuid PRIMARY KEY REFERENCES app_users(id),preferences jsonb DEFAULT '{}'::jsonb,updated_at timestamptz DEFAULT now());
+  CREATE TABLE customer_profiles (user_id uuid PRIMARY KEY REFERENCES app_users(id),first_name text,last_name text,preferences jsonb DEFAULT '{}'::jsonb,updated_at timestamptz DEFAULT now());
   CREATE TABLE loyalty_cards (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),required_stamps int);
   CREATE TABLE customer_loyalties (id uuid PRIMARY KEY,customer_id uuid REFERENCES customers(id),loyalty_card_id uuid REFERENCES loyalty_cards(id),current_stamps int);
   CREATE TABLE visits (id uuid PRIMARY KEY, business_id uuid REFERENCES businesses(id),customer_id uuid REFERENCES customers(id),created_at timestamptz DEFAULT now());
@@ -83,6 +83,8 @@ async function main(){
  assert.equal(theirs.status,404,'Business B cannot see A campaigns');
  const preview=await api(businessA,ownerA,'GET',campaignId+'/audience');
  assert.equal(preview.data.eligible,1,'only opted-in customer A is eligible');
+ assert.equal((await api(businessA,ownerA,'GET',campaignId+'/recipients')).data.recipients.length,0,'No names before delivery');
+ assert.equal((await api(businessB,ownerB,'GET',campaignId+'/recipients')).status,404,'Different business cannot see recipients');
  const sent=await api(businessA,ownerA,'POST',campaignId+'/send',{});
  assert.equal(sent.status,200,JSON.stringify(sent));
  const rows=await sql`SELECT customer_id,type FROM customer_notifications`;
@@ -94,10 +96,17 @@ async function main(){
  const info=await api(businessA,ownerA,'GET',campaignId);
  assert.equal(info.data.analytics.recipients,1);
  assert.equal(info.data.analytics.viewed,0);
+ const notifiedCustomers=await api(businessA,ownerA,'GET',campaignId+'/recipients');
+ assert.equal(notifiedCustomers.status,200,JSON.stringify(notifiedCustomers));
+ assert.equal(notifiedCustomers.data.recipients.length,1);
+ assert.equal(notifiedCustomers.data.recipients[0].customer_id,member1);
+ assert.equal(notifiedCustomers.data.recipients[0].customer_name,'Opted in');
+ assert.equal(notifiedCustomers.data.recipients[0].read_at,null);
  await sql`INSERT INTO customer_notification_reads(user_id,notification_key)
   SELECT user_id,notification_id FROM marketing_campaign_recipients WHERE campaign_id=${campaignId}`;
  const viewed=await api(businessA,ownerA,'GET',campaignId);
  assert.equal(viewed.data.analytics.viewed,1,'tracking uses existing read table');
+ assert.ok((await api(businessA,ownerA,'GET',campaignId+'/recipients')).data.recipients[0].read_at,'Reading status updates');
  assert.equal((await api(businessA,ownerA,'PATCH',campaignId,reqBody)).status,409,'Sent campaign immutable');
  const archiveSent=await api(businessA,ownerA,'DELETE',campaignId);
  assert.equal(archiveSent.status,200);
