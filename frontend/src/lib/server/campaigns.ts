@@ -90,12 +90,17 @@ async function stats(sql:Sql,businessId:string,id:string) {
  const records=await q`SELECT COUNT(r.user_id)::int AS recipients,
  COUNT(r.user_id) FILTER(WHERE r.email_state='sent')::int AS emails_sent,
  COUNT(r.user_id) FILTER(WHERE r.email_state IN ('pending','sending','failed'))::int AS emails_waiting,
- COUNT(cr.user_id)::int AS viewed
+ COUNT(cr.user_id)::int AS viewed,
+ COUNT(r.user_id) FILTER(WHERE EXISTS(
+   SELECT 1 FROM visits v JOIN customers linked ON linked.id=v.customer_id
+   WHERE linked.user_id=r.user_id AND v.business_id=c.business_id
+     AND v.created_at > r.created_at AND v.created_at <= r.created_at + interval '7 days'
+ ))::int AS returned_7d
  FROM marketing_campaigns c
  LEFT JOIN marketing_campaign_recipients r ON r.campaign_id=c.id
  LEFT JOIN customer_notification_reads cr ON cr.user_id=r.user_id AND cr.notification_key=r.notification_id
  WHERE c.id=${id}::uuid AND c.business_id=${businessId}::uuid`;
- return records[0]??{recipients:0,emails_sent:0,emails_waiting:0,viewed:0};
+ return records[0]??{recipients:0,emails_sent:0,emails_waiting:0,viewed:0,returned_7d:0};
 }
 export async function handleBusinessCampaigns(path:string[],req:Request,sql:Sql,businessId:string,userId:string){
  const q=qsql(sql);
