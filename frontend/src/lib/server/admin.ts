@@ -106,7 +106,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     const body = await req.json().catch(() => ({}));
     const plan = subscriptionPlan(body.duration_months ?? 1);
     // Direct admin activations preserve remaining time. For submitted payments, only the owner's stored mode may be used.
-    const mode = body.mode === undefined ? "extend" : body.mode;
+    const mode = body.renewal_request_id ? body.mode : "extend";
     const paymentRecorded = body.payment_recorded === true;
     const amount = paymentRecorded ? paymentAmount(body.paid_amount) : null;
     const paymentMethod = paymentRecorded && PAYMENT_METHODS.some(m=>m.value===body.payment_method) ? body.payment_method : null;
