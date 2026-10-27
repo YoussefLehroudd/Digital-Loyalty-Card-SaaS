@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArchiveRestore, Building2, CheckCircle2, Clock3, Handshake, Loader2, RefreshCcw, Search, ShieldCheck, Users, X } from "lucide-react";
 import { useAdmin } from "@/components/admin/admin-shell";
 import { adminRequest } from "@/lib/admin";
-import { useI18n } from "@/components/i18n/language-provider";
 
 type Kind="all"|"business"|"customer"|"affiliate";
 type ArchivedItem={
@@ -36,7 +35,6 @@ function date(value:string){
 }
 export default function ArchivedAdminPage(){
  const {token}=useAdmin();
- const {t:tr}=useI18n();
  const [kind,setKind]=useState<Kind>("all");
  const [search,setSearch]=useState("");
  const [query,setQuery]=useState("");
