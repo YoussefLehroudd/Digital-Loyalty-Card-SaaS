@@ -1909,7 +1909,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const email = asString(body.email).toLowerCase();
     const password = asString(body.password);
     const confirmation = asString(body.password_confirmation);
-    const emailValid = email.length <= 200 && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+    const emailValid = email.length <= 200 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if (!first || !last || !emailValid || password.length<10 || password.length>200)
       return error("Enter your name, a valid email and a password of at least 10 characters.",422);
     if(password !== confirmation) return error("Password confirmation does not match.",422);
@@ -1957,7 +1957,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const body=await readJson(req);
     const email=asString(body.email).toLowerCase();
     const code=asString(body.code);
-    if(!/^\\d{6}$/.test(code) || !email || email.length>200)
+    if(!/^\d{6}$/.test(code) || !email || email.length>200)
       return error("Enter the six-digit verification code.",422);
     const row=(await sql`SELECT code_hash,attempts,expires_at::text,payload FROM customer_email_verifications WHERE email=${email} LIMIT 1`) as
       Array<{code_hash:string;attempts:number;expires_at:string;payload:JsonRecord}>)[0];
