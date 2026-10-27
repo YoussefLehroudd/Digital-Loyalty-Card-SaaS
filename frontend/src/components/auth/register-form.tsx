@@ -13,7 +13,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { registerBusinessOwner, storeToken, verifyBusinessEmail } from "@/lib/auth";
-import { customerRegister, storeCustomerToken } from "@/lib/customerAuth";
+import { customerRegister, storeCustomerToken, verifyCustomerEmail } from "@/lib/customerAuth";
 const passwordSchema = z
     .string()
     .min(10, "Use at least 10 characters.")
@@ -40,7 +40,8 @@ export function RegisterForm() {
     useEffect(() => { if (new URLSearchParams(window.location.search).has("ref")) setAccountType("business"); }, []);
     const [error, setError] = useState<string | null>(null);
     const [otpEmail, setOtpEmail] = useState<string | null>(null);
-    const { register, handleSubmit, formState: { errors, isSubmitting }, } = useForm<RegisterValues>({
+    const [otpAccountType, setOtpAccountType] = useState<"customer" | "business">("business");
+    const { register, handleSubmit, getValues, formState: { errors, isSubmitting }, } = useForm<RegisterValues>({
         resolver: zodResolver(accountType === "customer" ? baseSchema.extend({ businessName: z.string(), businessEmail: z.string() }).refine(values => values.password === values.passwordConfirmation, { message: "Passwords do not match.", path: ["passwordConfirmation"] }) : schema),
         defaultValues: {
             businessName: "",
@@ -66,12 +67,10 @@ export function RegisterForm() {
                     password_confirmation: values.passwordConfirmation,
                     device_name: "web-unified-register",
                 });
-                storeCustomerToken(response.token);
-                const query = new URLSearchParams(window.location.search);
-                const join = query.get("join");
-                const businessId = query.get("join_business_id");
-                router.replace(join ? `/user/join?auto=${encodeURIComponent(join)}` : businessId ? `/user/join?auto_business_id=${encodeURIComponent(businessId)}` : "/user/dashboard");
-                router.refresh();
+                // Do not authenticate until a six-digit code has verified the email.
+                setOtpAccountType("customer");
+                setOtpAccountType("business");
+            setOtpEmail(response.email);
                 return;
             }
             const response = await registerBusinessOwner({
@@ -96,7 +95,35 @@ export function RegisterForm() {
         }
     }
     if (otpEmail) {
-        return <BusinessOtpVerification email={otpEmail} onBack={() => { setOtpEmail(null); setError(null); }}/>;
+        return <EmailOtpVerification
+            email={otpEmail}
+            accountType={otpAccountType}
+            onBack={() => { setOtpEmail(null); setError(null); }}
+            onResend={async () => {
+                const values = getValues();
+                if (otpAccountType === "customer") {
+                    const names = values.name.trim().split(/\s+/);
+                    await customerRegister({
+                        first_name: names.shift() || values.name.trim(),
+                        last_name: names.join(" ") || "-",
+                        email: values.email,
+                        password: values.password,
+                        password_confirmation: values.passwordConfirmation,
+                        device_name: "web-unified-register",
+                    });
+                } else {
+                    await registerBusinessOwner({
+                        business_name: values.businessName,
+                        business_email: values.businessEmail,
+                        name: values.name,
+                        email: values.email,
+                        password: values.password,
+                        password_confirmation: values.passwordConfirmation,
+                        affiliate_code: new URLSearchParams(window.location.search).get("ref")?.trim().toLowerCase() || undefined,
+                    });
+                }
+            }}
+        />;
     }
     return (<form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
       <FormError message={tr(error)}/>
@@ -137,9 +164,11 @@ function Field({ label, error, type = "text", registration }: FieldProps) {
       {error ? <p className="text-xs text-red-600">{tr(error)}</p> : null}
     </div>);
 }
-function BusinessOtpVerification({ email, onBack }: {
+function EmailOtpVerification({ email, accountType, onBack, onResend }: {
     email: string;
+    accountType: "customer" | "business";
     onBack: () => void;
+    onResend: () => Promise<void>;
 }) {
     const { t: tr } = useI18n();
     const router = useRouter();
@@ -147,6 +176,7 @@ function BusinessOtpVerification({ email, onBack }: {
     const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error">("idle");
     const [message, setMessage] = useState<string | null>(null);
     const [seconds, setSeconds] = useState(60);
+    const [resending, setResending] = useState(false);
     const refs = useRef<Array<HTMLInputElement | null>>([]);
     useEffect(() => {
         if (seconds <= 0)
@@ -179,11 +209,18 @@ function BusinessOtpVerification({ email, onBack }: {
         setStatus("verifying");
         setMessage(null);
         try {
-            const response = await verifyBusinessEmail({ email, code });
+            const response = accountType === "customer"
+                ? await verifyCustomerEmail({ email, code })
+                : await verifyBusinessEmail({ email, code });
             setStatus("success");
-            storeToken(response.token);
+            if (accountType === "customer") storeCustomerToken(response.token);
+            else storeToken(response.token);
             window.setTimeout(() => {
-                router.replace("/dashboard");
+                if(accountType === "customer"){
+                    const query = new URLSearchParams(window.location.search);
+                    const join = query.get("join"), businessId = query.get("join_business_id");
+                    router.replace(join ? `/user/join?auto=${encodeURIComponent(join)}` : businessId ? `/user/join?auto_business_id=${encodeURIComponent(businessId)}` : "/user/dashboard");
+                } else router.replace("/dashboard");
                 router.refresh();
             }, 1150);
         }
@@ -198,7 +235,7 @@ function BusinessOtpVerification({ email, onBack }: {
         <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-[#efbd5d]/25 bg-[#efbd5d]/10 text-[#f4c45e] shadow-[0_0_35px_rgba(239,189,93,.1)]">
           <MailCheck className="size-6"/>
         </div>
-        <h3 className="text-xl font-bold text-white">{tr("Verify your business email")}</h3>
+        <h3 className="text-xl font-bold text-white">{tr(accountType === "customer" ? "Verify your email" : "Verify your business email")}</h3>
         <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{tr("We sent a 6-digit code to ")}<span className="font-medium text-white">{email}</span></p>
       </div>
 
@@ -226,8 +263,16 @@ function BusinessOtpVerification({ email, onBack }: {
 
       <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
         <button type="button" onClick={onBack} className="transition hover:text-white">{tr("Change email")}</button>
-        <button type="button" disabled={seconds > 0} onClick={() => { setSeconds(60); onBack(); }} className="inline-flex items-center gap-1.5 transition enabled:text-[#efbd5d] disabled:opacity-50">
-          <RotateCcw className="size-3.5"/>{seconds > 0 ? tr("Resend in {0}s", { "0": seconds }) : tr("Resend code")}
+        <button type="button" disabled={seconds > 0 || resending || status === "verifying" || status === "success"} onClick={() => {
+            setResending(true); setMessage(null);
+            void onResend().then(() => {
+                setDigits(["", "", "", "", "", ""]);setSeconds(60);setStatus("idle");
+                refs.current[0]?.focus();
+            }).catch((cause) => {
+                setMessage(cause instanceof ApiError ? cause.message : "Could not resend the code. Try again.");
+            }).finally(() => setResending(false));
+        }} className="inline-flex items-center gap-1.5 transition enabled:text-[#efbd5d] disabled:opacity-50">
+          <RotateCcw className={`size-3.5 ${resending ? "animate-spin" : ""}`}/>{resending ? tr("Sending...") : seconds > 0 ? tr("Resend in {0}s", { "0": seconds }) : tr("Resend code")}
         </button>
       </div>
     </div>);
