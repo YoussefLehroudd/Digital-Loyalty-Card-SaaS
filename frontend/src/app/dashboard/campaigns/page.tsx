@@ -10,6 +10,7 @@ type Channel="inapp"|"inapp_email";
 type Campaign={id:string;title:string;message:string;segment:Segment;channel:Channel;status:string;scheduled_at:string|null;sent_at:string|null;created_at:string};
 type Automation={id:string;name:string;title:string;message:string;segment:Segment;channel:Channel;interval_days:number;is_active:boolean;next_run_at:string|null};
 type Analytics={recipients:number;emails_sent:number;emails_waiting:number;viewed:number;returned_7d:number};
+type DeliveredRecipient={customer_id:string;customer_name:string;notified_at:string;read_at:string|null;email_state:string};
 const segments:{value:Segment;name:string;description:string;icon:typeof Users}[]=[
  {value:"all",name:"All opted-in customers",description:"Customers who enabled Promotions",icon:Users},
  {value:"inactive_30",name:"Win back after 30 days",description:"Joined 30+ days ago, no recent visits",icon:Clock},
@@ -37,6 +38,7 @@ export default function BusinessCampaignsPage(){
  const [selected,setSelected]=useState<string|null>(null);
  const [analytics,setAnalytics]=useState<Analytics|null>(null);
  const [audience,setAudience]=useState<{eligible:number;limited:boolean}|null>(null);
+ const [delivered,setDelivered]=useState<DeliveredRecipient[]|null>(null);
  const [schedule,setSchedule]=useState("");
  const [editingId,setEditingId]=useState<string|null>(null);
  const [copyFrom,setCopyFrom]=useState<string|null>(null);
@@ -53,13 +55,14 @@ export default function BusinessCampaignsPage(){
  },[token]);
  useEffect(()=>{void refresh();},[refresh]);
  const inspect=useCallback(async(id:string)=>{
-  setSelected(id);setAudience(null);setAnalytics(null);
+  setSelected(id);setAudience(null);setAnalytics(null);setDelivered(null);
   try{
-   const [detail,preview]=await Promise.all([
-    apiFetch<{analytics:Analytics}>(`/campaigns/business/${id}`,{token}),
-    apiFetch<{eligible:number;limited:boolean}>(`/campaigns/business/${id}/audience`,{token})
+   const [detail,preview,delivery]=await Promise.all([
+    apiFetch<{analytics:Analytics}>(`/campaigns/business/${id}`,{token,cache:"no-store"}),
+    apiFetch<{eligible:number;limited:boolean}>(`/campaigns/business/${id}/audience`,{token,cache:"no-store"}),
+    apiFetch<{recipients:DeliveredRecipient[]}>(`/campaigns/business/${id}/recipients`,{token,cache:"no-store"})
    ]);
-   setAnalytics(detail.analytics);setAudience(preview);
+   setAnalytics(detail.analytics);setAudience(preview);setDelivered(delivery.recipients);
   }catch(e){setError(e instanceof Error?e.message:"Unable to load campaign details.");}
  },[token]);
  const perform=async(task:()=>Promise<unknown>,messageText:string)=>{
@@ -97,7 +100,7 @@ export default function BusinessCampaignsPage(){
   void perform(async()=>{
    const result=await apiFetch<{deleted:boolean}>(`/campaigns/business/${c.id}`,{token,method:"DELETE"});
    if(!result.deleted)throw Error("Campaign was not deleted. Refresh and try again.");
-   if(selected===c.id){setSelected(null);setAnalytics(null);setAudience(null);}
+   if(selected===c.id){setSelected(null);setAnalytics(null);setAudience(null);setDelivered(null);}
    if(editingId===c.id||copyFrom===c.id)clearEditor();
   },c.status==="sent"?"Campaign removed from history. Previously delivered messages remain.":"Campaign deleted from history.");
  };
@@ -179,7 +182,29 @@ export default function BusinessCampaignsPage(){
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
        {([{label:"Eligible",value:audience?.eligible??"…",icon:Users},{label:"Notified",value:analytics?.recipients??"…",icon:Bell},{label:"Viewed",value:analytics?.viewed??"…",icon:CheckCheck},{label:"Emails sent",value:analytics?.emails_sent??"…",icon:Mail},{label:"Visited in 7d",value:analytics?.returned_7d??"…",icon:Users}]).map(k=><div key={k.label} className="min-w-0 rounded-xl border border-white/10 bg-black/15 p-2.5"><k.icon className="size-4 text-[#efbd5d]"/><p className="mt-2 break-words text-lg font-bold text-white">{k.value}</p><p className="text-[10px] text-white/45">{k.label}</p></div>)}
       </div>
-      {audience?.limited?<p className="mt-3 text-xs text-amber-200">Audience exceeds the 500-recipient limit; narrow the segment before sending.</p>:null}
+      <section className="mt-5 min-w-0 rounded-xl border border-white/10 bg-black/15 p-3 sm:p-4" aria-label="Delivered recipients">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+         <h3 className="flex items-center gap-2 text-sm font-semibold text-white"><Users className="size-4 text-[#efbd5d]"/>Notified customers</h3>
+         <span className="rounded-full bg-[#efbd5d]/10 px-2.5 py-1 text-xs font-semibold text-[#efbd5d]">{delivered?.length??"…"} notified</span>
+        </div>
+        <p className="mt-1 text-[11px] leading-5 text-white/45">Customers from your business who received an in-app notification. No contact details exposed.</p>
+        {delivered===null?<p className="mt-3 flex items-center gap-2 text-xs text-white/50"><Loader2 className="size-4 animate-spin"/>Loading recipients…</p>:
+         delivered.length===0?<p className="mt-3 rounded-lg border border-white/10 p-3 text-xs text-white/50">No customers were notified for this campaign.</p>:
+         <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
+          {delivered.map((recipient,idx)=><div key={recipient.customer_id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[.025] p-3">
+           <div className="flex min-w-0 items-center gap-3">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#efbd5d]/10 text-xs font-bold text-[#efbd5d]">{idx+1}</span>
+            <div className="min-w-0">
+             <p className="break-words text-sm font-medium text-white">{recipient.customer_name}</p>
+             <p className="text-[11px] text-white/45">Notified: {date(recipient.notified_at)}</p>
+             {selectedCampaign.channel==="inapp_email"?<p className="text-[11px] text-white/45">Email: {recipient.email_state==="sent"?"Sent":recipient.email_state==="pending"||recipient.email_state==="sending"?"Queued":recipient.email_state==="failed"?"Retry pending":recipient.email_state==="skipped"?"Skipped":"Not requested"}</p>:null}
+            </div>
+           </div>
+           <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${recipient.read_at?"bg-emerald-400/10 text-emerald-300":"bg-white/10 text-white/55"}`}>{recipient.read_at?"Viewed":"Not viewed"}</span>
+          </div>)}
+         </div>}
+       </section>
+       {audience?.limited?<p className="mt-3 text-xs text-amber-200">Audience exceeds the 500-recipient limit; narrow the segment before sending.</p>:null}
       <p className="mt-3 text-[11px] leading-5 text-white/40">7-day visits show observed activity after notification, not proof the campaign caused the visit.</p>
       {selectedCampaign.status==="draft"?<div className="mt-4 space-y-3">
         <button disabled={busy||!audience||audience.limited} className={primary+" w-full"} type="button" onClick={()=>void action(selectedCampaign.id,"send")}><Play className="size-4"/>Send now</button>
