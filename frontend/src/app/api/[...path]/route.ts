@@ -2525,11 +2525,15 @@ async function dispatch(req: Request, context: RouteContext) {
     if(path[0]==="cron" && path[1]==="subscription-reminders") {
       const secret=process.env.CRON_SECRET;
       if(req.method!=="GET" || !secret || req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
-      const reminders=await runSubscriptionEmails(sql,email=>sendLoyvanceEmail({...email,category:"notifications"}));
+      response=json(await runSubscriptionEmails(sql,email=>sendLoyvanceEmail({...email,category:"notifications"})));
+    }
+    else if(path[0]==="cron" && path[1]==="campaigns") {
+      const secret=process.env.CRON_SECRET;
+      if(req.method!=="GET"||!secret||req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
       const automation=await runCampaignAutomation(sql,3);
-      const campaigns=await runCampaignQueue(sql,12);
-      const emails=await runCampaignEmails(sql,10,new URL(req.url).origin);
-      response=json({reminders,automation,campaigns,emails});
+      const scheduled=await runCampaignQueue(sql,12);
+      const emails=await runCampaignEmails(sql,35,new URL(req.url).origin);
+      response=json({automation,scheduled,emails});
     }
     else if(path[0]==="campaigns") {
       if(path[1]==="unsubscribe") response=await unsubscribeCampaignEmail(req,sql);
