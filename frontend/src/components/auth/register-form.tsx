@@ -69,8 +69,7 @@ export function RegisterForm() {
                 });
                 // Do not authenticate until a six-digit code has verified the email.
                 setOtpAccountType("customer");
-                setOtpAccountType("business");
-            setOtpEmail(response.email);
+                setOtpEmail(response.email);
                 return;
             }
             const response = await registerBusinessOwner({
