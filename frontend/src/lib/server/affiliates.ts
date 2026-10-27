@@ -131,6 +131,19 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
   return { summary: summary[0], businesses, commissions, payouts, history };
 }
 
+// The public business directory displays businesses.email, which can differ from the owner's login email.
+// Resolve either address server-side without changing account credentials or reassigning ownership.
+async function resolveAffiliateAccount(sql: Sql, email: string) {
+  const q = rowSql(sql);
+  const direct = await q`SELECT id,name,email,role,status FROM app_users WHERE lower(email)=${email} AND role IN ('customer','business_owner') LIMIT 1`;
+  if (direct.length) return { account: direct[0], ambiguous: false };
+  const owners = await q`SELECT DISTINCT u.id,u.name,u.email,u.role,u.status
+    FROM businesses b JOIN app_users u ON u.business_id=b.id AND u.role='business_owner'
+    WHERE lower(b.email)=${email} LIMIT 2`;
+  if (owners.length > 1) return { account: null, ambiguous: true };
+  return { account: owners[0] ?? null, ambiguous: false };
+}
+
 export async function handleAdminAffiliates(path: string[], req: Request, sql: Sql, admin: { id: string }) {
   const q = rowSql(sql);
   const segments = path.slice(2);
@@ -151,14 +164,16 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
     const rates = validateRates(body.rates ?? ratesDefault);
     if (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !rates)
       return reply({ message: "Enter the registered LOYVANCE user's email and valid commission percentages." },422);
-    const account = (await q`SELECT id,name,email,role,status FROM app_users WHERE email=${email} AND role IN ('customer','business_owner') LIMIT 1`)[0];
-    if (!account) return reply({ message: "This account does not exist yet. Ask the person to register normally first." },404);
+    const resolved = await resolveAffiliateAccount(sql,email);
+    if (resolved.ambiguous) return reply({ message: "Multiple business owners use this contact email. Enter the owner's login email to select the correct account." },409);
+    const account = resolved.account;
+    if (!account) return reply({ message: "No customer or business-owner login matches this email or its business contact. Check the business owner's registered login email." },404);
     if (account.status !== 'active') return reply({ message: "Activate this account before granting affiliate access." },409);
     const previouslyLinked = await q`SELECT id FROM affiliate_partners WHERE user_id=${account.id}::uuid LIMIT 1`;
     if (previouslyLinked.length) return reply({ message: "This account already has an affiliate profile. Select it from the list." },409);
     // Preserve older standalone partners (and their financial ledger) when the same email signs up normally.
     const existing = await q`UPDATE affiliate_partners SET user_id=${account.id}::uuid
-      WHERE email=${email} AND user_id IS NULL
+      WHERE email IN (${email},${String(account.email)}) AND user_id IS NULL
       AND NOT EXISTS (SELECT 1 FROM affiliate_partners WHERE user_id=${account.id}::uuid)
       RETURNING id,name,email,code,user_id,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
     if (existing.length) {
@@ -172,10 +187,10 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
     const disabledLegacyPasswordHash = await hashPassword(randomBytes(32).toString("hex"));
     const id = randomUUID();
     const found = await q`INSERT INTO affiliate_partners(id,user_id,name,email,code,password_hash,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps)
-      VALUES(${id},${account.id}::uuid,${name},${email},${code},${disabledLegacyPasswordHash},${rates["1"]},${rates["3"]},${rates["6"]},${rates["12"]})
+      VALUES(${id},${account.id}::uuid,${name},${String(account.email)},${code},${disabledLegacyPasswordHash},${rates["1"]},${rates["3"]},${rates["6"]},${rates["12"]})
       ON CONFLICT DO NOTHING RETURNING id,user_id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
     if (!found.length) return reply({ message: "Email or referral code already belongs to another partner." },409);
-    return reply({ affiliate: found[0] },201);
+    return reply({ affiliate: found[0], resolved_login_email: account.email, matched_business_contact: email !== account.email },201);
   }
   const id = segments[0];
   if (!uuidPattern.test(id)) return reply({ message: "Invalid affiliate." },422);
@@ -198,8 +213,10 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
   if (segments.length === 2 && segments[1] === "link-account" && req.method === "POST") {
     const body = await req.json().catch(() => ({})) as Row;
     const email = String(body.user_email ?? "").trim().toLowerCase();
-    const account = (await q`SELECT id,name,role,status,email FROM app_users WHERE email=${email} AND role IN ('customer','business_owner') LIMIT 1`)[0];
-    if (!account) return reply({ message: "User not found. Ask them to create a normal account first." },404);
+    const resolved = await resolveAffiliateAccount(sql,email);
+    if (resolved.ambiguous) return reply({ message: "More than one business uses this email. Specify the owner's login email." },409);
+    const account = resolved.account;
+    if (!account) return reply({ message: "No matching active customer or business owner found. Verify the login email or business contact email." },404);
     if (account.status !== "active") return reply({ message: "The selected user is suspended." },409);
     if (partner.user_id) return reply({ message: "This partner is already connected to a LOYVANCE account." },409);
     const linked = await q`UPDATE affiliate_partners SET user_id=${account.id}::uuid WHERE id=${id}::uuid AND user_id IS NULL
