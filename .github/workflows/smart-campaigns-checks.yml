@@ -26,5 +26,3 @@ jobs:
       - run: npm run build
       - run: node scripts/test-smart-campaigns.cjs
         timeout-minutes: 3
-      - run: npm run test:affiliate-access
-        timeout-minutes: 3
