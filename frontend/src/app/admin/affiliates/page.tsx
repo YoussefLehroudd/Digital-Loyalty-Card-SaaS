@@ -204,7 +204,7 @@ export default function AdminAffiliatesPage(){
     title="Remove affiliate partner" description={pendingRemove?.name} icon={<Trash2 className="size-6 text-rose-300"/>}>
     <form className="space-y-4" onSubmit={e=>void removePartner(e)}>
       <p className="rounded-xl border border-rose-400/20 bg-rose-400/5 p-3 text-xs leading-6 text-white/70">
-        Removing a partner immediately disables their referral link and affiliate dashboard. The profile disappears from the active list. Businesses, payment commissions, pending earnings and payout history remain securely recorded in Archived partners. The person's normal LOYVANCE account stays active.
+        Removing a partner immediately disables their referral link and affiliate dashboard. The profile disappears from the active list. Businesses, payment commissions, pending earnings and payout history remain securely recorded in Archived partners. Their normal LOYVANCE account stays active.
       </p>
       <label className="block text-xs font-medium text-white/70">
         Type the referral code <strong className="text-[#efbd5d]">{pendingRemove?.code}</strong> to confirm
