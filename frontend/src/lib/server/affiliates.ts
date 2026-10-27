@@ -145,7 +145,7 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
     const body = await req.json().catch(() => ({})) as Row;
     const name = String(body.name ?? "").trim().slice(0,120);
     const email = String(body.email ?? "").trim().toLowerCase();
-    const code = String(body.code || name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")).trim().toLowerCase();
+    const code = String(body.code || name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || `partner-${randomBytes(4).toString("hex")}`).trim().toLowerCase();
     const rates = validateRates(body.rates ?? ratesDefault);
     if (name.length < 2 || email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !codePattern.test(code) || !rates)
       return reply({ message: "Enter a name, valid email, unique code (3-40 lowercase letters, digits or hyphens), and rates from 0 to 50%." },422);
@@ -175,6 +175,13 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
       WHERE id=${id} RETURNING id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
     if (!isActive) await q`DELETE FROM affiliate_sessions WHERE affiliate_id=${id}`;
     return reply({ affiliate: updated[0] });
+  }
+  if (segments.length === 2 && segments[1] === "reset-password" && req.method === "POST") {
+    const temporaryPassword = `${randomBytes(12).toString("base64url")}aA1!`;
+    const passwordHash = await hashPassword(temporaryPassword);
+    await q`UPDATE affiliate_partners SET password_hash=${passwordHash} WHERE id=${id}::uuid`;
+    await q`DELETE FROM affiliate_sessions WHERE affiliate_id=${id}::uuid`;
+    return reply({ temporary_password: temporaryPassword });
   }
   if (segments.length === 2 && segments[1] === "payouts" && req.method === "POST") {
     const body = await req.json().catch(() => ({})) as Row;
