@@ -33,6 +33,8 @@ export async function ensureSubscriptionSchema(sql: Sql) {
     created_at timestamptz NOT NULL DEFAULT now(), reviewed_at timestamptz,
     actor_id uuid REFERENCES app_users(id) ON DELETE SET NULL, actor_name text, review_note text NOT NULL DEFAULT ''
   )`;
+  // Business owners choose how an approved period applies. Earlier requests default to extend to preserve remaining paid/trial days.
+  await sql`ALTER TABLE subscription_renewal_requests ADD COLUMN IF NOT EXISTS mode text NOT NULL DEFAULT 'extend' CHECK(mode IN ('extend','replace'))`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS one_pending_renewal_per_business ON subscription_renewal_requests(business_id) WHERE status='pending'`;
   await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS mode text NOT NULL DEFAULT 'replace' CHECK(mode IN ('extend','replace'))`;
   await sql`ALTER TABLE subscription_events ADD COLUMN IF NOT EXISTS amount_centimes integer CHECK(amount_centimes > 0)`;
@@ -82,7 +84,7 @@ export async function subscriptionDetails(sql: Sql, businessId: string): Promise
   const rows = await sql`SELECT id, actor_id, actor_name, action, started_at::text, ends_at::text,
     previous_started_at::text, previous_ends_at::text, previous_state, note, reference, duration_months, amount_dh, revision, created_at::text, mode, amount_centimes, payment_method, paid_at::text, receipt_number, renewal_request_id
     FROM subscription_events WHERE business_id = ${businessId} ORDER BY revision DESC`;
-  const requests = await sql`SELECT id,business_id,duration_months,plan_price_dh,note,reference,status,created_at::text,reviewed_at::text,actor_name,review_note,true AS has_proof
+  const requests = await sql`SELECT id,business_id,duration_months,mode,plan_price_dh,note,reference,status,created_at::text,reviewed_at::text,actor_name,review_note,true AS has_proof
     FROM subscription_renewal_requests WHERE business_id=${businessId} ORDER BY created_at DESC LIMIT 100`;
   return { subscription, history: rows as unknown as SubscriptionDetails['history'], requests: requests as unknown as SubscriptionDetails['requests'] };
 }

@@ -108,7 +108,7 @@ export function BusinessSubscriptionModal({ data, name, open, onClose, token, on
 }) {
     const { t: tr } = useI18n();
     return <Modal className="sm:max-w-xl" isOpen={open} onClose={onClose} title={tr("Your subscription")} description={name} icon={<Crown className="size-6"/>}>
-    {data ? <><BusinessSubscriptionSummary data={data} name={name}/><BusinessRenewalRequest token={token} requests={data.requests ?? []} onSaved={onSaved}/><a href={subscriptionContact(name)} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center gap-2 py-2 text-xs font-medium text-white/55 hover:text-[#edbc62]"><MessageCircle className="size-4"/>{tr("Need help? Contact us")}</a></> : <Skeleton className="h-64 rounded-2xl"/>}
+    {data ? <><BusinessSubscriptionSummary data={data} name={name}/><BusinessRenewalRequest token={token} requests={data.requests ?? []} currentExpiry={data.subscription.period_ends_at} onSaved={onSaved}/><a href={subscriptionContact(name)} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center gap-2 py-2 text-xs font-medium text-white/55 hover:text-[#edbc62]"><MessageCircle className="size-4"/>{tr("Need help? Contact us")}</a></> : <Skeleton className="h-64 rounded-2xl"/>}
   </Modal>;
 }
 export function BusinessSubscriptionAlert({ data, name, onOpen }: {

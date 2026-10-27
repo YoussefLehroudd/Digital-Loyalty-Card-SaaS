@@ -92,7 +92,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     if(req.method!=="GET")return reply({message:"Method not allowed."},405);
     const {page,offset}=pageOptions(req);const status=new URL(req.url).searchParams.get("status")||"pending";
     if(!["pending","approved","rejected","all"].includes(status))return reply({message:"Choose a valid request status."},422);
-    const [rows,count]=await Promise.all([sql`SELECT r.id,r.business_id,b.name AS business_name,r.duration_months,r.plan_price_dh,r.note,r.reference,r.status,r.created_at::text,r.reviewed_at::text,r.actor_name,r.review_note,true AS has_proof
+    const [rows,count]=await Promise.all([sql`SELECT r.id,r.business_id,b.name AS business_name,r.duration_months,r.mode,r.plan_price_dh,r.note,r.reference,r.status,r.created_at::text,r.reviewed_at::text,r.actor_name,r.review_note,true AS has_proof
       FROM subscription_renewal_requests r JOIN businesses b ON b.id=r.business_id WHERE (${status}='all' OR r.status=${status}) ORDER BY r.created_at DESC LIMIT 25 OFFSET ${offset}`,
       sql`SELECT count(*)::int AS total FROM subscription_renewal_requests WHERE (${status}='all' OR status=${status})`]);
     return reply({data:rows,total:count[0].total,page,per_page:25});
@@ -105,7 +105,8 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     if (req.method !== "POST") return reply({ message: "Method not allowed." }, 405);
     const body = await req.json().catch(() => ({}));
     const plan = subscriptionPlan(body.duration_months ?? 1);
-    const mode = body.mode === undefined ? "replace" : body.mode;
+    // Direct admin activations preserve remaining time. For submitted payments, only the owner's stored mode may be used.
+    const mode = body.renewal_request_id ? body.mode : "extend";
     const paymentRecorded = body.payment_recorded === true;
     const amount = paymentRecorded ? paymentAmount(body.paid_amount) : null;
     const paymentMethod = paymentRecorded && PAYMENT_METHODS.some(m=>m.value===body.payment_method) ? body.payment_method : null;
@@ -122,7 +123,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     }
     await subscriptionFor(database,path[2]);
     const result=await sql`WITH request_match AS MATERIALIZED (
-      SELECT id,business_id,duration_months FROM subscription_renewal_requests WHERE id=${renewalId}::uuid AND business_id=${path[2]} AND status='pending' AND duration_months=${plan.months} FOR UPDATE
+      SELECT id,business_id,duration_months FROM subscription_renewal_requests WHERE id=${renewalId}::uuid AND business_id=${path[2]} AND status='pending' AND duration_months=${plan.months} AND mode=${mode} FOR UPDATE
     ), previous AS MATERIALIZED (
       SELECT s.*,COALESCE(paid_started_at,trial_started_at) AS old_start,COALESCE(paid_ends_at,trial_ends_at) AS old_end,
         CASE WHEN COALESCE(paid_ends_at,trial_ends_at)<=now() THEN 'expired' WHEN paid_ends_at IS NULL THEN 'trial' ELSE 'active' END AS old_state
