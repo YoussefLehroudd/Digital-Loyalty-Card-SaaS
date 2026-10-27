@@ -63,12 +63,15 @@ export function CustomerLayout({ children, title, subtitle, }: {
 
       <div className="min-w-0 flex-1 lg:ms-[280px]">
         <header className="app-topbar sticky top-0 z-30 min-w-0 border-b border-[#d8a63f]/10 bg-[#080907]/95 backdrop-blur-xl">
-          <div className="mx-auto grid w-full min-w-0 max-w-md grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 px-3 py-3 sm:px-4 lg:max-w-[1440px] lg:gap-x-5 lg:px-8 lg:py-3">
+          <div className="mx-auto grid w-full min-w-0 max-w-md grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 px-3 py-2.5 sm:px-4 lg:max-w-[1440px] lg:gap-x-5 lg:px-8 lg:py-3">
             <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2.5">
-              <Link href="/user/dashboard" aria-label={tr("LOYVANCE home")} className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[#e7b354]/5 outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] lg:hidden">
+              <Link href="/user/dashboard" aria-label={tr("LOYVANCE home")} className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[#e7b354]/5 outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] lg:hidden">
                 <img src="/brand/icon.png" alt="" width={32} height={32} className="size-8 object-contain"/>
               </Link>
-              <span className="hidden min-w-0 truncate text-xs font-bold tracking-[.12em] text-white/85 min-[380px]:block lg:hidden">LOYVANCE</span>
+              <div className="min-w-0 lg:hidden">
+                <h1 title={tr(title)} className="truncate text-sm font-bold leading-5 text-white min-[380px]:text-base">{tr(title)}</h1>
+                {subtitle ? <p title={tr(subtitle)} className="truncate text-[11px] leading-4 text-muted-foreground">{tr(subtitle)}</p> : null}
+              </div>
               <div className="hidden min-w-0 lg:flex lg:items-center lg:gap-3">
                 <h1 className="shrink-0 text-xl font-bold tracking-tight text-white">{tr(title)}</h1>
                 {subtitle ? (<>
@@ -83,10 +86,6 @@ export function CustomerLayout({ children, title, subtitle, }: {
               <Button type="button" variant="outline" size="icon" onClick={logout} aria-label={tr("Logout")} title={tr("Logout")} className="size-10 shrink-0 border-[#d8a63f]/15 lg:hidden">
                 <LogOut aria-hidden="true" className="size-4"/>
               </Button>
-            </div>
-            <div className="col-span-2 row-start-2 min-w-0 border-t border-[#d8a63f]/10 pt-2 lg:hidden">
-              <h1 className="truncate text-lg font-bold leading-6 text-white">{tr(title)}</h1>
-              {subtitle ? <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-muted-foreground">{tr(subtitle)}</p> : null}
             </div>
           </div>
         </header>
