@@ -30,7 +30,7 @@ export function VisitorAnalyticsTracker(){
  const send=useRef<(kind:"page"|"click"|"heartbeat",target?:string)=>void>(()=>{});
  useEffect(()=>{
   const nav=navigator as Navigator&{globalPrivacyControl?:boolean};
-  if(nav.globalPrivacyControl||nav.doNotTrack==="1")return;
+  if(nav.globalPrivacyControl||nav.doNotTrack==="1"||localStorage.getItem("loyvance.analytics.optout")==="1")return;
   visitor.current=sessionId();
   page.current=location.pathname;
   const sendEvent=(kind:"page"|"click"|"heartbeat",target?:string)=>{
@@ -86,7 +86,7 @@ export function VisitorAnalyticsTracker(){
   lastPath.current=pathname;
   page.current=pathname;
   const nav=navigator as Navigator&{globalPrivacyControl?:boolean};
-  if(nav.globalPrivacyControl||nav.doNotTrack==="1")return;
+  if(nav.globalPrivacyControl||nav.doNotTrack==="1"||localStorage.getItem("loyvance.analytics.optout")==="1")return;
   send.current("page");
  },[pathname]);
  return null;
