@@ -7,13 +7,14 @@ import { Modal } from "@/components/ui/modal";
 import { apiFetch, API_BASE_URL } from "@/lib/api";
 import { SUBSCRIPTION_PLANS, subscriptionDate, type RenewalRequest, type RenewalMode, type SubscriptionMonths } from "@/lib/subscription";
 const field = "mt-2 w-full rounded-xl border border-white/10 bg-white/[.025] px-3 py-3 text-sm outline-none focus:border-[#edbc62]/50";
-export function DurationChoices({ months, onChange, disabled }: {
+export function DurationChoices({ months, onChange, disabled, showPrices = true }: {
     months: SubscriptionMonths;
     onChange: (v: SubscriptionMonths) => void;
     disabled?: boolean;
+    showPrices?: boolean;
 }) {
     const { t: tr } = useI18n();
-    return <fieldset disabled={disabled}><legend className="mb-3 text-xs text-white/65">{tr("Duration and total plan price")}</legend><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{SUBSCRIPTION_PLANS.map(plan => <label key={plan.months} className={`relative cursor-pointer rounded-xl border p-3 transition focus-within:ring-2 focus-within:ring-[#edbc62] ${months === plan.months ? "border-[#edbc62]/60 bg-[#edbc62]/10" : "border-white/10 bg-white/[.025] hover:border-[#edbc62]/30"}`}><input type="radio" name="subscription-duration" value={plan.months} checked={months === plan.months} onChange={() => onChange(plan.months)} className="sr-only"/><span className="block text-xs font-semibold text-white/75">{tr(plan.label)}</span><span className="mt-2 block text-lg font-bold text-[#edbc62]">{plan.price.toLocaleString(getFormattingLocale())} <span className="text-xs">{tr("DH")}</span></span><span className="mt-1 block text-[10px] text-white/45">{(plan.price / plan.months).toFixed(2)}{tr(" DH / month")}</span>{months === plan.months ? <Check className="absolute end-2 top-2 size-3 text-[#edbc62]"/> : null}</label>)}</div></fieldset>;
+    return <fieldset disabled={disabled}><legend className="mb-3 text-xs text-white/65">{tr(showPrices ? "Duration and total plan price" : "Subscription duration")}</legend><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{SUBSCRIPTION_PLANS.map(plan => <label key={plan.months} className={`relative cursor-pointer rounded-xl border p-3 transition focus-within:ring-2 focus-within:ring-[#edbc62] ${months === plan.months ? "border-[#edbc62]/60 bg-[#edbc62]/10" : "border-white/10 bg-white/[.025] hover:border-[#edbc62]/30"}`}><input type="radio" name="subscription-duration" value={plan.months} checked={months === plan.months} onChange={() => onChange(plan.months)} className="sr-only"/><span className="block text-xs font-semibold text-white/75">{tr(plan.label)}</span>{showPrices ? <><span className="mt-2 block text-lg font-bold text-[#edbc62]">{plan.price.toLocaleString(getFormattingLocale())} <span className="text-xs">{tr("DH")}</span></span><span className="mt-1 block text-[10px] text-white/45">{(plan.price / plan.months).toFixed(2)}{tr(" DH / month")}</span></> : null}{months === plan.months ? <Check className="absolute end-2 top-2 size-3 text-[#edbc62]"/> : null}</label>)}</div></fieldset>;
 }
 export function ProofPreview({ path, token, onClose }: {
     path: string;
