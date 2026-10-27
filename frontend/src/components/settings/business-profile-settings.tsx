@@ -4,7 +4,7 @@ import Link from "next/link";
 import { BusinessPrivacySettings } from "@/components/settings/business-privacy-settings";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BadgeCheck, Building2, ExternalLink, ImageUp, KeyRound, Trash2, Loader2, Mail, MapPin, MessageSquareStar, Palette, Phone, Save, ShieldCheck, UserRound, ZoomIn, MoveHorizontal, MoveVertical, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, } from "lucide-react";
+import { BadgeCheck, Building2, ExternalLink, ImageUp, KeyRound, Trash2, Loader2, Mail, MapPin, Star, Palette, Phone, Save, ShieldCheck, UserRound, ZoomIn, MoveHorizontal, MoveVertical, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "@/components/auth/auth-guard";
