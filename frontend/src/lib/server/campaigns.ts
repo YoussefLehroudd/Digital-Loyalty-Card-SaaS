@@ -216,26 +216,30 @@ async function deliverCampaign(sql:Sql,campaignId:string){
  // The campaign snapshot is calculated at send time; no cross-business targeting possible.
  const audience=await recipients(sql,businessId,segment,501);
  if(audience.length>500){await q`UPDATE marketing_campaigns SET status='cancelled' WHERE id=${campaignId}::uuid`;return false;}
- const eligible=audience.map(x=>({customerId:String(x.customer_id),userId:String(x.user_id),pref:x.preferences as Row}));
- for(const a of eligible){
-  const notifyId=`campaign-${campaignId}-${a.userId}`;
-  // Suppress promotional blasts for this business within seven days per recipient.
-  // Also enforce at most one marketing notification every 48 hours platform-wide.
-  const inserted=await q`INSERT INTO marketing_campaign_recipients(campaign_id,customer_id,user_id,notification_id,email_state)
-   SELECT ${campaignId}::uuid,${a.customerId}::uuid,${a.userId}::uuid,${notifyId},
-     CASE WHEN ${c.channel}='inapp_email' AND COALESCE(p.preferences->'notifications'->>'email_updates','false')='true' THEN 'pending' ELSE 'none' END
-   FROM customer_profiles p
-   WHERE p.user_id=${a.userId}::uuid AND COALESCE(p.preferences->'notifications'->>'promotions','false')='true'
+ const userIds=audience.map(x=>String(x.user_id));
+ const customerIds=audience.map(x=>String(x.customer_id));
+ if(userIds.length){
+  // One atomic statement for recipients and inbox events; avoids hundreds of serverless DB round trips.
+  await q`WITH targets AS (
+    SELECT customer_id,user_id FROM unnest(${customerIds}::uuid[],${userIds}::uuid[]) AS x(customer_id,user_id)
+  ), inserted AS (
+    INSERT INTO marketing_campaign_recipients(campaign_id,customer_id,user_id,notification_id,email_state)
+    SELECT ${campaignId}::uuid,t.customer_id,t.user_id,
+      concat('campaign-',${campaignId}::text,'-',t.user_id::text),
+      CASE WHEN ${String(c.channel)}='inapp_email'
+        AND COALESCE(p.preferences->'notifications'->>'email_updates','false')='true' THEN 'pending' ELSE 'none' END
+    FROM targets t JOIN customers member ON member.id=t.customer_id AND member.business_id=${businessId}::uuid AND member.user_id=t.user_id
+      JOIN app_users u ON u.id=t.user_id AND u.role='customer' AND COALESCE(u.status,'active')='active'
+      JOIN customer_profiles p ON p.user_id=t.user_id
+    WHERE COALESCE(p.preferences->'notifications'->>'promotions','false')='true'
      AND NOT EXISTS(SELECT 1 FROM marketing_campaign_recipients prev JOIN marketing_campaigns old ON old.id=prev.campaign_id
-        WHERE prev.user_id=${a.userId}::uuid AND old.business_id=${businessId}::uuid AND prev.created_at>now()-interval '7 days')
-     AND NOT EXISTS(SELECT 1 FROM marketing_campaign_recipients prev WHERE prev.user_id=${a.userId}::uuid AND prev.created_at>now()-interval '48 hours')
-   ON CONFLICT DO NOTHING RETURNING customer_id`;
-  if(inserted.length){
-   await q`INSERT INTO customer_notifications(id,customer_id,type,title,message)
-    SELECT ${notifyId},${a.customerId}::uuid,'campaign',${String(c.title)},${String(c.message)}
-    WHERE EXISTS(SELECT 1 FROM marketing_campaign_recipients r WHERE r.campaign_id=${campaignId}::uuid AND r.user_id=${a.userId}::uuid)
+       WHERE prev.user_id=t.user_id AND old.business_id=${businessId}::uuid AND prev.created_at>now()-interval '7 days')
+     AND NOT EXISTS(SELECT 1 FROM marketing_campaign_recipients prev WHERE prev.user_id=t.user_id AND prev.created_at>now()-interval '48 hours')
+    ON CONFLICT DO NOTHING RETURNING customer_id,user_id,notification_id
+  )
+  INSERT INTO customer_notifications(id,customer_id,type,title,message)
+    SELECT notification_id,customer_id,'campaign',${String(c.title)},${String(c.message)} FROM inserted
     ON CONFLICT(id) DO NOTHING`;
-  }
  }
  return true;
 }
@@ -275,8 +279,8 @@ export async function runCampaignEmails(sql:Sql,limit=12,origin=""){
  if(!key||!from||!origin)return { sent:0, skipped:"Email not configured" };
  const jobs=await q`UPDATE marketing_campaign_recipients r SET email_state='sending',claimed_at=now(),email_attempts=email_attempts+1
   FROM (SELECT campaign_id,user_id FROM marketing_campaign_recipients
-    WHERE email_state IN ('pending','failed') AND email_attempts<3
-       OR email_state='sending' AND claimed_at<now()-interval '15 minutes' AND email_attempts<3
+    WHERE (email_state IN ('pending','failed')
+        OR (email_state='sending' AND claimed_at<now()-interval '15 minutes')) AND email_attempts<3
     ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT ${limit}) todo
   WHERE r.campaign_id=todo.campaign_id AND r.user_id=todo.user_id
   RETURNING r.campaign_id,r.user_id`;
