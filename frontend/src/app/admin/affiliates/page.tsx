@@ -147,7 +147,6 @@ export default function AdminAffiliatesPage(){
    <div className="space-y-5">
     <form onSubmit={e=>void create(e)} className={`${panel} space-y-4`}>
      <h2 className="flex items-center gap-2 font-semibold"><Plus className="size-4 text-[#efbd5d]"/> {tr("Grant affiliate access")}</h2>
-     <p className="text-xs leading-5 text-white/50">Choose an existing Customer or Business Owner. You can enter their login email or the business contact email shown in the Businesses list. Affiliate will appear inside their original dashboard; their password and business access stay unchanged.</p>
      <AffiliateAccountPicker token={token} selected={selectedCandidate} onSelect={candidate=>{setSelectedCandidate(candidate);setEmail(candidate?.email||candidate?.business_email||"");}}/>
      <label className="block text-xs text-white/60">Or enter a login / business contact email manually
        <input type="email" className={`${field} mt-2`} placeholder="person@example.com" value={email} onChange={e=>{setEmail(e.target.value);setSelectedCandidate(null);}} required={!selectedCandidate}/>
