@@ -6,6 +6,7 @@ import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
 import { ensureSubscriptionSchema, requireSubscription, subscriptionDetails } from "@/lib/server/subscriptions";
 import { ensureAdminSchema, handleAdmin, isPlatformAdmin } from "@/lib/server/admin";
+import { affiliateCodeIsValid, ensureAffiliateSchema, handleAffiliate } from "@/lib/server/affiliates";
 import { appleWalletAvailable, createAppleWalletLink, ensureAppleWalletSchema, handleAppleWallet, syncAppleWalletCustomer } from "@/lib/server/apple-wallet";
 
 import { renewalProof, submitRenewal } from "@/lib/server/renewal-requests";
@@ -393,6 +394,7 @@ async function ensureSchema(sql: Sql) {
       await sql`CREATE INDEX IF NOT EXISTS idx_business_notifications_business_created ON business_notifications(business_id, created_at DESC)`;
       await ensureAdminSchema(sql);
       await ensureSubscriptionSchema(sql);
+      await ensureAffiliateSchema(sql);
     })();
   }
   await schemaReady;
@@ -675,6 +677,8 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     const email = asString(body.email).toLowerCase();
     const password = asString(body.password);
     const passwordConfirmation = asString(body.password_confirmation);
+    const affiliateCode = asString(body.affiliate_code).trim().toLowerCase();
+    if (affiliateCode && !(await affiliateCodeIsValid(sql,affiliateCode))) return error("This affiliate referral link is invalid or inactive.",422);
 
     if (!businessName || !businessEmail || !name || !email || password.length < 10) {
       return error("Please fill all required fields and use a password of at least 10 characters.", 422);
@@ -687,7 +691,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
 
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const codeHash = (await import("crypto")).createHash("sha256").update(code).digest("hex");
-    const payload = { business_name: businessName, business_email: businessEmail, name, email, password, password_confirmation: passwordConfirmation };
+    const payload = { business_name: businessName, business_email: businessEmail, name, email, password, password_confirmation: passwordConfirmation, affiliate_code: affiliateCode };
     await sql`
       INSERT INTO business_email_verifications (email, code_hash, payload, attempts, expires_at, created_at)
       VALUES (${businessEmail}, ${codeHash}, ${JSON.stringify(payload)}::jsonb, 0, now() + interval '10 minutes', now())
@@ -726,6 +730,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
     }
     const payload = verification.payload;
     const businessName = asString(payload.business_name);
+    const affiliateCode = asString(payload.affiliate_code).trim().toLowerCase();
     const name = asString(payload.name);
     const email = asString(payload.email).toLowerCase();
     const password = asString(payload.password);
@@ -743,6 +748,7 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
       sql`INSERT INTO loyalty_cards (id, business_id, reward_name, required_stamps, reward_description) VALUES (${cardId}, ${businessId}, 'Free Coffee', 10, 'Collect stamps to unlock your reward.')`,
       sql`INSERT INTO user_sessions (token, user_id) VALUES (${token}, ${userId})`,
       sql`INSERT INTO business_subscriptions(business_id, trial_started_at, trial_ends_at) VALUES (${businessId}, now(), now() + interval '14 days')`,
+      sql`INSERT INTO affiliate_businesses(business_id,affiliate_id) SELECT ${businessId}::uuid,id FROM affiliate_partners WHERE code=${affiliateCode} AND is_active=true ON CONFLICT(business_id) DO NOTHING`,
       sql`DELETE FROM business_email_verifications WHERE email = ${businessEmail}`,
     ]);
     return json({ token, token_type: "Bearer", user: publicUser((userRows as DbUser[])[0], (businessRows as DbBusiness[])[0]) }, { status: 201 });
@@ -2345,6 +2351,10 @@ async function dispatch(req: Request, context: RouteContext) {
       else return error("API route not found.",404);
     }
     else if (path[0] === "apple-wallet") response = await handleAppleWallet(path, req, sql);
+    else if (path[0] === "affiliate") {
+      if(path[1]==="login" && req.method==="POST"){ const limited=await rateLimit(sql,req,"affiliate-login",10,15*60*1000);if(limited)return limited; }
+      response = await handleAffiliate(path,req,sql);
+    }
     else if (path[0] === "admin") response = await handleAdmin(path, req, sql, {
       authenticate: (request) => getAuth(request, sql), verifyPassword, hashPassword,
       createSession: (id) => createSession(sql, id),
