@@ -1,7 +1,6 @@
 "use client";
 import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useMemo, useState } from "react";
-import { LogOut } from "lucide-react";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { customerUpdateProfile, defaultCustomerPreferences, type CustomerPreferences, } from "@/lib/customerAuth";
@@ -27,7 +26,7 @@ function ToggleRow({ title, description, checked, onToggle }: ToggleRowProps) {
 }
 export default function UserSettingsPage() {
     const { t: tr } = useI18n();
-    const { user, token, logout, refresh } = useCustomerAuth();
+    const { user, token, refresh } = useCustomerAuth();
     const preferences = useMemo(() => defaultCustomerPreferences((user?.customer_profile?.preferences as CustomerPreferences | null) ?? null), [user]);
     const [emailUpdates, setEmailUpdates] = useState(preferences.notifications.email_updates);
     const [rewardAlerts, setRewardAlerts] = useState(preferences.notifications.reward_alerts);
@@ -36,7 +35,6 @@ export default function UserSettingsPage() {
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [confirmLogout, setConfirmLogout] = useState(false);
     useEffect(() => {
         setEmailUpdates(preferences.notifications.email_updates);
         setRewardAlerts(preferences.notifications.reward_alerts);
@@ -78,7 +76,7 @@ export default function UserSettingsPage() {
             setSaving(false);
         }
     }
-    return (<CustomerLayout title={tr("Settings")} subtitle={tr("Notification and account settings")}>
+    return (<CustomerLayout title={tr("Settings")} subtitle={tr("Manage notification preferences")}>
       <div className="space-y-4">
         <Card>
           <CardHeader>
@@ -99,21 +97,6 @@ export default function UserSettingsPage() {
           {saving ? tr("Saving...") : tr("Save settings")}
         </Button>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{tr("Account")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {confirmLogout ? (<div className="rounded-md border border-destructive/30 p-3">
-                <p className="text-sm">{tr("Are you sure you want to logout?")}</p>
-                <div className="mt-3 flex gap-2">
-                  <Button className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={logout}>{tr(" Confirm logout ")}</Button>
-                  <Button variant="outline" className="flex-1" onClick={() => setConfirmLogout(false)}>{tr(" Cancel ")}</Button>
-                </div>
-              </div>) : (<Button variant="outline" className="w-full" onClick={() => setConfirmLogout(true)}>
-                <LogOut className="me-2 h-4 w-4"/>{tr(" Logout ")}</Button>)}
-          </CardContent>
-        </Card>
       </div>
     </CustomerLayout>);
 }
