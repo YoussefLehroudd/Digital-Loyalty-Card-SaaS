@@ -21,7 +21,7 @@ async function setup(){
   CREATE TABLE businesses (id uuid PRIMARY KEY, name text, status text DEFAULT 'active');
   CREATE TABLE app_users (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),role text,status text DEFAULT 'active',email text,name text);
   CREATE TABLE business_subscriptions (business_id uuid PRIMARY KEY REFERENCES businesses(id),trial_ends_at timestamptz,paid_ends_at timestamptz);
-  CREATE TABLE customers (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),user_id uuid REFERENCES app_users(id),created_at timestamptz DEFAULT now());
+  CREATE TABLE customers (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),user_id uuid REFERENCES app_users(id),first_name text,last_name text,created_at timestamptz DEFAULT now());
   CREATE TABLE customer_profiles (user_id uuid PRIMARY KEY REFERENCES app_users(id),first_name text,last_name text,preferences jsonb DEFAULT '{}'::jsonb,updated_at timestamptz DEFAULT now());
   CREATE TABLE loyalty_cards (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),required_stamps int);
   CREATE TABLE customer_loyalties (id uuid PRIMARY KEY,customer_id uuid REFERENCES customers(id),loyalty_card_id uuid REFERENCES loyalty_cards(id),current_stamps int);
