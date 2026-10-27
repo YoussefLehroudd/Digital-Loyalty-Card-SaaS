@@ -135,7 +135,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
       CROSS JOIN LATERAL (SELECT CASE e.duration_months
         WHEN 1 THEN a.rate_1_bps WHEN 3 THEN a.rate_3_bps
         WHEN 6 THEN a.rate_6_bps ELSE a.rate_12_bps END AS rate_bps) r
-      WHERE e.amount_centimes IS NOT NULL AND e.amount_centimes>0 AND a.is_active=true
+      WHERE e.amount_centimes IS NOT NULL AND e.amount_centimes>0 AND a.is_active=true AND r.rate_bps>0
       ON CONFLICT(subscription_event_id) DO NOTHING RETURNING subscription_event_id
     ), reviewed AS (
       UPDATE subscription_renewal_requests r SET status='approved',reviewed_at=now(),actor_id=${auth.user.id},actor_name=${auth.user.name},review_note=${note}
