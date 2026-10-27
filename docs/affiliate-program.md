@@ -1,5 +1,15 @@
 # Affiliate partners and commission accounting
 
+## Admin account search and partner removal
+
+At `/admin/affiliates`, an administrator can search existing active accounts by name, company name, business contact email or visible user login email, with Business / Customer filters. Assign by the selected `app_users.id`, not by a guessed email. If an associated business has opted to keep customer contact data private, the selector hides that customer's email and allows assigning by opaque ID. The admin can still paste a known email manually. Already affiliated accounts are labeled and disabled in the selector.
+
+The red trash icon beside each partner (and in Partner settings) removes their Affiliate access **reversibly**: it records `affiliate_partners.archived_at`, sets `is_active=false`, revokes legacy sessions, disables referral-code validation, and hides the partner from the active list. It **does not delete the user's normal account, referred businesses, existing commissions or payout records**. Confirm removal by typing the exact referral code.
+
+Use **View archived partners** to inspect historical commissions and payouts or restore a partner (which clears `archived_at` and re-enables access). Archived partners cannot change settings until restored, but confirmed prior commissions can still be settled through the admin finance workflow.
+
+Smoke tests: choose a Business and a Customer through search; verify protected customers' contacts remain redacted; grant affiliate by selected ID; remove through both trash buttons and confirm referral validation rejects removed code; check original user account still works and historical commissions remain; restore, and verify referral validation works again.
+
 ## Integrated LOYVANCE account authorization (2026-10-27)
 
 Affiliation is now an **additional, admin-managed permission on an existing LOYVANCE customer or business-owner account**. It does **not** replace the original `app_users.role`, password, account data or subscription. This means a partner can still run a business workspace or use the customer wallet normally.
