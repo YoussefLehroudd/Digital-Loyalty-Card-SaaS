@@ -1,7 +1,8 @@
 "use client";
 import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useMemo, useState } from "react";
-import { CreditCard, Gift, Plus, QrCode, Sparkles, Ticket } from "lucide-react";
+import { CalendarDays, CreditCard, Gift, Plus, QrCode, Sparkles, Ticket, Zap } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CustomerPageSkeleton } from "@/components/customer-app/customer-skeletons";
@@ -11,6 +12,8 @@ import { useCustomerAuth } from "@/components/customer-app/customer-auth-provide
 import { customerActivity, customerCards, customerRewards, type CustomerCardItem, } from "@/lib/customerAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEcho } from "@/components/echo/echo-provider";
+type CustomerOffer={id:string;business_id:string;business_name:string;title:string;description:string;kind:"weekday_double"|"first_visit_double";weekday:number|null;starts_at:string;ends_at:string;max_uses:number;uses_count:number;eligible:boolean;applicable_today:boolean};
+const offerWeekdays=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 export default function UserDashboardPage() {
     const { t: tr } = useI18n();
     const { token, user } = useCustomerAuth();
@@ -18,10 +21,21 @@ export default function UserDashboardPage() {
     const { echo, connected } = useEcho();
     const [loading, setLoading] = useState(true);
     const [cards, setCards] = useState<CustomerCardItem[]>([]);
+    const [specialOffers,setSpecialOffers]=useState<CustomerOffer[]>([]);
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [activitiesCount, setActivitiesCount] = useState(0);
     const [availableRewards, setAvailableRewards] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    useEffect(()=>{
+      if(!token)return;
+      let active=true;
+      const load=()=>{void apiFetch<{offers:CustomerOffer[]}>("/special-offers/mine",{token,cache:"no-store"})
+        .then(result=>{if(active)setSpecialOffers(result.offers??[]);})
+        .catch(()=>{if(active)setSpecialOffers([]);});};
+      load();const onVisible=()=>{if(document.visibilityState==="visible")load();};
+      document.addEventListener("visibilitychange",onVisible);
+      return ()=>{active=false;document.removeEventListener("visibilitychange",onVisible);};
+    },[token]);
     const totalStamps = useMemo(() => cards.reduce((sum, card) => sum + (card.loyalty?.current_stamps ?? 0), 0), [cards]);
     useEffect(() => {
         if (!token)
@@ -131,6 +145,21 @@ export default function UserDashboardPage() {
             })}
           </div>
 
+          {specialOffers.length>0?<section className="rounded-2xl border border-[#e7b354]/25 bg-[linear-gradient(145deg,#15150e,#090b09)] p-4 shadow-[0_10px_35px_rgba(0,0,0,.2)] sm:p-5">
+           <div className="flex items-center gap-2"><Zap className="size-5 text-[#ffc857]"/><h2 className="text-base font-bold text-white">{tr("Special Offers & Double Stamps")}</h2></div>
+           <p className="mt-1 text-xs text-white/50">{tr("Special rewards from businesses you follow. Bonus stamps apply automatically when eligible.")}</p>
+           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {specialOffers.map(offer=><article key={offer.id} className="rounded-xl border border-[#e7b354]/15 bg-black/25 p-4">
+             <div className="flex items-start justify-between gap-2"><p className="min-w-0 break-words text-sm font-bold text-white">{offer.title}</p><span className="shrink-0 rounded-full bg-[#e7b354]/15 px-2 py-1 text-[11px] font-bold text-[#ffc857]">×2 STAMPS</span></div>
+             <p className="mt-1 text-xs font-semibold text-[#e7b354]">{offer.business_name}</p>
+             {offer.description?<p className="mt-2 break-words text-xs leading-5 text-white/65">{offer.description}</p>:null}
+             <p className="mt-3 text-xs text-white/70">{offer.kind==="weekday_double"?tr("Every")+" "+tr(offerWeekdays[offer.weekday??2]):tr("Your first visit")}</p>
+             <p className="mt-1 flex items-center gap-1.5 text-[11px] text-white/50"><CalendarDays className="size-3.5"/>{tr("Until")} {new Date(offer.ends_at).toLocaleDateString("fr-MA")}</p>
+             <p className="mt-1 text-[11px] text-white/50">{Math.max(0,offer.max_uses-offer.uses_count)} {tr("uses left")}</p>
+             <p className={`mt-3 text-xs font-semibold ${offer.eligible&&offer.applicable_today&&new Date(offer.starts_at)<=new Date()?"text-emerald-300":"text-[#e7b354]"}`}>{!offer.eligible?tr("First visit only — already used"):!offer.applicable_today?tr("Available on the scheduled weekday"):new Date(offer.starts_at)>new Date()?tr("Starts soon"):tr("Available now")}</p>
+            </article>)}
+           </div>
+          </section>:null}
           {cards.length === 0 ? (<Card className="overflow-hidden border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.92))]">
               <CardContent className="flex flex-col items-center px-5 py-8 text-center">
                 <div className="flex size-12 items-center justify-center rounded-2xl border border-[#e7b354]/25 bg-[#8b5d12]/20 text-[#ffc857]">
