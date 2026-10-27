@@ -27,7 +27,7 @@ export async function ensureCampaignSchema(sql:Sql){
   title text NOT NULL, message text NOT NULL,
   segment text NOT NULL CHECK(segment IN ('all','inactive_30','one_away','new_7')),
   channel text NOT NULL CHECK(channel IN ('inapp','inapp_email')),
-  status text NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','scheduled','sent','cancelled')),
+  status text NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','scheduled','processing','sent','cancelled')),
   scheduled_at timestamptz, sent_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
   created_by uuid REFERENCES app_users(id) ON DELETE SET NULL
@@ -99,7 +99,7 @@ async function stats(sql:Sql,businessId:string,id:string) {
 }
 export async function handleBusinessCampaigns(path:string[],req:Request,sql:Sql,businessId:string,userId:string){
  const q=qsql(sql);
- const id=path[2],action=path[3],url=new URL(req.url);
+ const id=path[2],action=path[3];
  if(id&&!uuid.test(id))return reply({message:"Invalid campaign ID."},422);
  if(req.method==="GET"&&!id){
   const campaigns=await q`SELECT id,title,message,segment,channel,status,scheduled_at::text,sent_at::text,created_at::text
@@ -205,8 +205,8 @@ export async function handleAutomations(path:string[],req:Request,sql:Sql,busine
 async function deliverCampaign(sql:Sql,campaignId:string){
  const q=qsql(sql);
  // Atomically claim once, preventing concurrent cron ticks and manual sends from repeating work.
- const claimed=await q`UPDATE marketing_campaigns SET status='sent',sent_at=now(),updated_at=now()
-   WHERE id=${campaignId}::uuid AND status='scheduled' AND scheduled_at<=now()
+ const claimed=await q`UPDATE marketing_campaigns SET status='processing',updated_at=now()
+   WHERE id=${campaignId}::uuid AND ((status='scheduled' AND scheduled_at<=now()) OR (status='processing' AND updated_at<now()-interval '15 minutes'))
    AND EXISTS(SELECT 1 FROM businesses b JOIN business_subscriptions s ON s.business_id=b.id
       WHERE b.id=marketing_campaigns.business_id AND COALESCE(b.status,'active')='active'
         AND COALESCE(s.paid_ends_at,s.trial_ends_at)>now())
@@ -215,7 +215,7 @@ async function deliverCampaign(sql:Sql,campaignId:string){
  const c=claimed[0],businessId=String(c.business_id),segment=c.segment as Segment;
  // The campaign snapshot is calculated at send time; no cross-business targeting possible.
  const audience=await recipients(sql,businessId,segment,501);
- if(audience.length>500){await q`UPDATE marketing_campaigns SET status='cancelled' WHERE id=${campaignId}::uuid`;return false;}
+ if(audience.length>500){await q`UPDATE marketing_campaigns SET status='cancelled',updated_at=now() WHERE id=${campaignId}::uuid`;return false;}
  const userIds=audience.map(x=>String(x.user_id));
  const customerIds=audience.map(x=>String(x.customer_id));
  if(userIds.length){
@@ -241,6 +241,7 @@ async function deliverCampaign(sql:Sql,campaignId:string){
     SELECT notification_id,customer_id,'campaign',${String(c.title)},${String(c.message)} FROM inserted
     ON CONFLICT(id) DO NOTHING`;
  }
+ await q`UPDATE marketing_campaigns SET status='sent',sent_at=now(),updated_at=now() WHERE id=${campaignId}::uuid AND status='processing'`;
  return true;
 }
 
@@ -267,7 +268,7 @@ export async function runCampaignAutomation(sql:Sql,limit=3){
 
 export async function runCampaignQueue(sql:Sql,limit=15){
  const q=qsql(sql);
- const rows=await q`SELECT id FROM marketing_campaigns WHERE status='scheduled' AND scheduled_at<=now() ORDER BY scheduled_at LIMIT ${limit}`;
+ const rows=await q`SELECT id FROM marketing_campaigns WHERE (status='scheduled' AND scheduled_at<=now()) OR (status='processing' AND updated_at<now()-interval '15 minutes') ORDER BY scheduled_at LIMIT ${limit}`;
  let delivered=0;
  for(const row of rows) if(await deliverCampaign(sql,String(row.id)))delivered++;
  return delivered;
