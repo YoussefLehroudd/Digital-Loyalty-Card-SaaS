@@ -10,7 +10,7 @@ const validId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab
 
 export async function ensureSpecialOfferSchema(sql: Sql) {
  const q=qsql(sql);
- await q\`CREATE TABLE IF NOT EXISTS special_offers (
+ await q`CREATE TABLE IF NOT EXISTS special_offers (
   id uuid PRIMARY KEY,
   business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
   title varchar(80) NOT NULL,
@@ -24,9 +24,9 @@ export async function ensureSpecialOfferSchema(sql: Sql) {
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
   CHECK (ends_at>starts_at)
- )\`;
- await q\`CREATE INDEX IF NOT EXISTS special_offers_business_idx ON special_offers (business_id,starts_at,ends_at)\`;
- await q\`CREATE TABLE IF NOT EXISTS special_offer_redemptions (
+ )`;
+ await q`CREATE INDEX IF NOT EXISTS special_offers_business_idx ON special_offers (business_id,starts_at,ends_at)`;
+ await q`CREATE TABLE IF NOT EXISTS special_offer_redemptions (
   id uuid PRIMARY KEY,
   offer_id uuid NOT NULL REFERENCES special_offers(id) ON DELETE CASCADE,
   business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
@@ -34,8 +34,8 @@ export async function ensureSpecialOfferSchema(sql: Sql) {
   visit_id uuid NOT NULL UNIQUE REFERENCES visits(id) ON DELETE CASCADE,
   bonus_stamps integer NOT NULL CHECK(bonus_stamps>0),
   created_at timestamptz NOT NULL DEFAULT now()
- )\`;
- await q\`CREATE INDEX IF NOT EXISTS special_offer_redemptions_offer_idx ON special_offer_redemptions (offer_id,created_at DESC)\`;
+ )`;
+ await q`CREATE INDEX IF NOT EXISTS special_offer_redemptions_offer_idx ON special_offer_redemptions (offer_id,created_at DESC)`;
 }
 
 export async function handleBusinessOffers(path:string[],req:Request,sql:Sql,businessId:string) {
@@ -43,14 +43,14 @@ export async function handleBusinessOffers(path:string[],req:Request,sql:Sql,bus
  const id=path[2];
  if(id&&!validId(id))return json({message:"Invalid offer."},422);
  if(req.method==="GET"&&!id) {
-  const offers=await q\`SELECT id,title,description,kind,weekday,starts_at::text,ends_at::text,max_uses,uses_count,is_active,created_at::text
-  FROM special_offers WHERE business_id=\${businessId}::uuid ORDER BY created_at DESC LIMIT 100\`;
+  const offers=await q`SELECT id,title,description,kind,weekday,starts_at::text,ends_at::text,max_uses,uses_count,is_active,created_at::text
+  FROM special_offers WHERE business_id=${businessId}::uuid ORDER BY created_at DESC LIMIT 100`;
   return json({offers});
  }
  if(req.method==="POST"&&!id) {
-  const sub=await q\`SELECT EXISTS(SELECT 1 FROM business_subscriptions s JOIN businesses b ON b.id=s.business_id
-   WHERE b.id=\${businessId}::uuid AND COALESCE(b.status,'active')='active'
-   AND COALESCE(s.paid_ends_at,s.trial_ends_at)>now()) AS active\`;
+  const sub=await q`SELECT EXISTS(SELECT 1 FROM business_subscriptions s JOIN businesses b ON b.id=s.business_id
+   WHERE b.id=${businessId}::uuid AND COALESCE(b.status,'active')='active'
+   AND COALESCE(s.paid_ends_at,s.trial_ends_at)>now()) AS active`;
   if(!sub[0]?.active)return json({message:"Active business subscription required."},403);
   const data=await req.json().catch(()=>null) as Row|null;
   const title=typeof data?.title==="string"?data.title.trim():"";
@@ -66,25 +66,25 @@ export async function handleBusinessOffers(path:string[],req:Request,sql:Sql,bus
    || !Number.isFinite(start)||!Number.isFinite(end)||end<=start||end<Date.now()
    || end-start>180*86400000||start>Date.now()+180*86400000)
     return json({message:"Enter a valid title, offer type, weekday, dates (up to 180 days) and use limit (1–5000)."},422);
-  const existing=await q\`SELECT count(*)::int AS count FROM special_offers WHERE business_id=\${businessId}::uuid AND is_active AND ends_at>now()\`;
+  const existing=await q`SELECT count(*)::int AS count FROM special_offers WHERE business_id=${businessId}::uuid AND is_active AND ends_at>now()`;
   if(Number(existing[0]?.count??0)>=20)return json({message:"Maximum 20 active offers per business."},429);
-  const inserted=await q\`INSERT INTO special_offers(id,business_id,title,description,kind,weekday,starts_at,ends_at,max_uses)
-   VALUES(\${randomUUID()},\${businessId}::uuid,\${title},\${description},\${kind},\${kind==="weekday_double"?weekday:null},\${new Date(start).toISOString()}::timestamptz,\${new Date(end).toISOString()}::timestamptz,\${maxUses})
-   RETURNING id,title,description,kind,weekday,starts_at::text,ends_at::text,max_uses,uses_count,is_active\`;
+  const inserted=await q`INSERT INTO special_offers(id,business_id,title,description,kind,weekday,starts_at,ends_at,max_uses)
+   VALUES(${randomUUID()},${businessId}::uuid,${title},${description},${kind},${kind==="weekday_double"?weekday:null},${new Date(start).toISOString()}::timestamptz,${new Date(end).toISOString()}::timestamptz,${maxUses})
+   RETURNING id,title,description,kind,weekday,starts_at::text,ends_at::text,max_uses,uses_count,is_active`;
   return json({offer:inserted[0]},201);
  }
  if(!id)return json({message:"Not found."},404);
  if(req.method==="PATCH"){
   const body=await req.json().catch(()=>null) as Row|null;
   if(typeof body?.is_active!=="boolean")return json({message:"Only offer active status can be changed."},422);
-  const changed=await q\`UPDATE special_offers SET is_active=\${body.is_active}
-    WHERE id=\${id}::uuid AND business_id=\${businessId}::uuid
-    AND (\${!body.is_active} OR (ends_at>now() AND uses_count<max_uses))
-    RETURNING id,is_active\`;
+  const changed=await q`UPDATE special_offers SET is_active=${body.is_active}
+    WHERE id=${id}::uuid AND business_id=${businessId}::uuid
+    AND (${!body.is_active} OR (ends_at>now() AND uses_count<max_uses))
+    RETURNING id,is_active`;
   return changed.length?json({offer:changed[0]}):json({message:"Offer unavailable or expired."},404);
  }
  if(req.method==="DELETE"){
-  const changed=await q\`UPDATE special_offers SET is_active=false WHERE id=\${id}::uuid AND business_id=\${businessId}::uuid RETURNING id\`;
+  const changed=await q`UPDATE special_offers SET is_active=false WHERE id=${id}::uuid AND business_id=${businessId}::uuid RETURNING id`;
   return changed.length?json({deleted:true}):json({message:"Offer not found."},404);
  }
  return json({message:"Method not allowed."},405);
@@ -93,7 +93,7 @@ export async function handleBusinessOffers(path:string[],req:Request,sql:Sql,bus
 export async function handleCustomerOffers(req:Request,sql:Sql,userId:string) {
  if(req.method!=="GET")return json({message:"Method not allowed."},405);
  const q=qsql(sql);
- const offers=await q\`SELECT o.id,o.business_id,b.name AS business_name,o.title,o.description,o.kind,o.weekday,
+ const offers=await q`SELECT o.id,o.business_id,b.name AS business_name,o.title,o.description,o.kind,o.weekday,
    o.starts_at::text,o.ends_at::text,o.max_uses,o.uses_count,
    CASE WHEN o.kind='first_visit_double' THEN NOT EXISTS(
      SELECT 1 FROM visits v WHERE v.business_id=o.business_id AND v.customer_id=c.id
@@ -103,8 +103,8 @@ export async function handleCustomerOffers(req:Request,sql:Sql,userId:string) {
   FROM special_offers o
   JOIN businesses b ON b.id=o.business_id AND COALESCE(b.status,'active')='active'
   JOIN business_subscriptions s ON s.business_id=b.id AND COALESCE(s.paid_ends_at,s.trial_ends_at)>now()
-  JOIN customers c ON c.business_id=b.id AND c.user_id=\${userId}::uuid
+  JOIN customers c ON c.business_id=b.id AND c.user_id=${userId}::uuid
   WHERE o.is_active=true AND o.ends_at>now() AND o.uses_count<o.max_uses
-  ORDER BY o.ends_at ASC LIMIT 100\`;
+  ORDER BY o.ends_at ASC LIMIT 100`;
  return json({offers});
 }
