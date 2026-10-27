@@ -7,6 +7,7 @@ import { subscriptionDetails, subscriptionFor, subscriptionsFor } from "@/lib/se
 
 import { rejectRenewal, renewalProof } from "@/lib/server/renewal-requests";
 import { handleAdminAffiliates } from "@/lib/server/affiliates";
+import { handleAdminAccounts } from "@/lib/server/admin-accounts";
 
 type Sql = ReturnType<typeof getSql>;
 type RowSql = {
@@ -83,6 +84,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   if (!isPlatformAdmin(auth.user)) return reply({ message: "Administrator access required." }, 403);
   if (path[1] === "me" && req.method === "GET") return reply({ user: safeUser(auth.user) });
   if (path[1] === "affiliates") return handleAdminAffiliates(path,req,database,auth.user);
+  if (["businesses","customers"].includes(path[1]) && ((req.method==="POST"&&!path[2]) || (path[2] && ["PUT","DELETE"].includes(req.method) && path.length===3))) return handleAdminAccounts(path,req,database,auth.user,deps);
   if (path[1] === "businesses" && path[3] === "features" && path.length === 4) return adminBusinessFeatures(req, database, path[2], auth.user);
   if(path[1]==="renewals"){
     if(path[2] && path[3]==="proof" && req.method==="GET")return renewalProof(database,path[2]);
@@ -253,6 +255,9 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     if (path[2]) {
       if (!uuid.test(path[2])) return reply({ message: "Invalid identifier." }, 422);
       const rows = await sql`SELECT b.id, b.name, b.email, b.slug, b.status, b.logo_url, b.phone, b.address, b.created_at::text,
+        (SELECT u.id FROM app_users u WHERE u.business_id=b.id AND u.role='business_owner' ORDER BY u.created_at LIMIT 1) AS owner_id,
+        (SELECT u.name FROM app_users u WHERE u.business_id=b.id AND u.role='business_owner' ORDER BY u.created_at LIMIT 1) AS owner_name,
+        (SELECT u.email FROM app_users u WHERE u.business_id=b.id AND u.role='business_owner' ORDER BY u.created_at LIMIT 1) AS owner_email,
         lc.reward_name, lc.required_stamps,
         (SELECT count(*)::int FROM customers WHERE business_id = b.id) AS cards,
         (SELECT COALESCE(sum(stamp_count),0)::int FROM visits WHERE business_id = b.id) AS stamps,
@@ -283,7 +288,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     if (path[2]) {
       if (!uuid.test(path[2])) return reply({ message: "Invalid identifier." }, 422);
       const [users, cards] = await Promise.all([
-        sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, u.status, u.created_at::text, CASE WHEN privacy.visible THEN cp.phone ELSE NULL END AS phone, privacy.visible AS contact_details_visible FROM app_users u LEFT JOIN customer_profiles cp ON cp.user_id = u.id CROSS JOIN LATERAL (SELECT NOT EXISTS (SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND b.admin_contact_private=true) AS visible) privacy WHERE u.id = ${path[2]} AND u.role = 'customer' LIMIT 1`,
+        sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, u.status, u.created_at::text, CASE WHEN privacy.visible THEN cp.phone ELSE NULL END AS phone, privacy.visible AS contact_details_visible, CASE WHEN privacy.visible THEN cp.first_name ELSE NULL END AS first_name, CASE WHEN privacy.visible THEN cp.last_name ELSE NULL END AS last_name FROM app_users u LEFT JOIN customer_profiles cp ON cp.user_id = u.id CROSS JOIN LATERAL (SELECT NOT EXISTS (SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND b.admin_contact_private=true) AS visible) privacy WHERE u.id = ${path[2]} AND u.role = 'customer' LIMIT 1`,
         sql`SELECT c.id, c.business_id,lc.id AS card_id,lc.reward_description, b.name AS business_name, b.status AS business_status, cl.current_stamps, lc.required_stamps, lc.reward_name
           FROM customers c JOIN businesses b ON b.id = c.business_id LEFT JOIN customer_loyalties cl ON cl.customer_id = c.id LEFT JOIN loyalty_cards lc ON lc.id = cl.loyalty_card_id WHERE c.user_id = ${path[2]} ORDER BY c.created_at DESC`,
       ]);
