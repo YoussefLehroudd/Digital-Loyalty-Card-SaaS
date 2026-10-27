@@ -61,24 +61,31 @@ export function CustomerLayout({ children, title, subtitle, }: {
       </aside>
 
       <div className="min-w-0 flex-1 lg:ms-[280px]">
-        <header className="app-topbar sticky top-0 z-30 border-b border-[#d8a63f]/10 bg-[#080907]/90 backdrop-blur-xl">
-          <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3 lg:max-w-[1440px] lg:px-8 lg:py-2">
-            <div className="flex min-w-0 items-center gap-2.5">
+        <header className="app-topbar sticky top-0 z-30 min-w-0 border-b border-[#d8a63f]/10 bg-[#080907]/95 backdrop-blur-xl">
+          <div className="mx-auto grid w-full min-w-0 max-w-md grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 px-3 py-3 sm:px-4 lg:max-w-[1440px] lg:gap-x-5 lg:px-8 lg:py-3">
+            <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2.5">
               <Link href="/user/dashboard" aria-label={tr("LOYVANCE home")} className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[#e7b354]/5 outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] lg:hidden">
                 <img src="/brand/icon.png" alt="" width={32} height={32} className="size-8 object-contain"/>
               </Link>
-              <div className="min-w-0 lg:flex lg:items-center lg:gap-3">
-                <p className="text-[9px] font-semibold tracking-[.15em] text-[#e7b354]/70 lg:hidden">LOYVANCE</p>
-              <h1 className="text-base font-bold text-white lg:shrink-0 lg:text-xl lg:tracking-tight">{tr(title)}</h1>
-              {subtitle ? (<>
-                  <span aria-hidden="true" className="hidden text-[#d8a63f]/40 lg:block">|</span>
-                  <p className="text-xs text-muted-foreground lg:truncate lg:text-sm">{tr(subtitle)}</p>
+              <span className="hidden min-w-0 truncate text-xs font-bold tracking-[.12em] text-white/85 min-[380px]:block lg:hidden">LOYVANCE</span>
+              <div className="hidden min-w-0 lg:flex lg:items-center lg:gap-3">
+                <h1 className="shrink-0 text-xl font-bold tracking-tight text-white">{tr(title)}</h1>
+                {subtitle ? (<>
+                  <span aria-hidden="true" className="text-[#d8a63f]/40">|</span>
+                  <p className="min-w-0 truncate text-sm text-muted-foreground">{tr(subtitle)}</p>
                 </>) : null}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2 ps-3">
-              <LanguageSwitcher /><CustomerNotificationBell />
-              <Button variant="outline" size="sm" onClick={logout} className="lg:hidden">{tr("Logout")}</Button>
+            <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <LanguageSwitcher/>
+              <CustomerNotificationBell/>
+              <Button type="button" variant="outline" size="icon" onClick={logout} aria-label={tr("Logout")} title={tr("Logout")} className="size-10 shrink-0 border-[#d8a63f]/15 lg:hidden">
+                <LogOut aria-hidden="true" className="size-4"/>
+              </Button>
+            </div>
+            <div className="col-span-2 row-start-2 min-w-0 border-t border-[#d8a63f]/10 pt-2 lg:hidden">
+              <h1 className="truncate text-lg font-bold leading-6 text-white">{tr(title)}</h1>
+              {subtitle ? <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-muted-foreground">{tr(subtitle)}</p> : null}
             </div>
           </div>
         </header>
@@ -92,8 +99,8 @@ export function CustomerLayout({ children, title, subtitle, }: {
             {visibleNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
-            return (<Link key={item.href} href={item.href} className={cn("flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[11px] transition-colors", active ? "bg-[#d79b16]/12 text-[#ffc857]" : "text-muted-foreground")}>
-                  <Icon className="h-4 w-4"/><span>{tr(item.label)}</span>
+            return (<Link key={item.href} href={item.href} className={cn("flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-0.5 py-1.5 text-[10px] transition-colors sm:px-2 sm:text-[11px]", active ? "bg-[#d79b16]/12 text-[#ffc857]" : "text-muted-foreground")}>
+                  <Icon className="h-4 w-4 shrink-0"/><span className="max-w-full truncate">{tr(item.label)}</span>
                 </Link>);
         })}
           </div>
