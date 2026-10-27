@@ -25,3 +25,4 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm run test:affiliate-access
+      - run: node scripts/test-smart-campaigns.cjs
