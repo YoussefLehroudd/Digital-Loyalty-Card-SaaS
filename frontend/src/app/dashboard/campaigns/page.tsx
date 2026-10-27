@@ -133,8 +133,10 @@ export default function BusinessCampaignsPage(){
    {error?<p role="alert" className="break-words rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-200">{error}</p>:null}
    {success?<p role="status" className="break-words rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-sm text-emerald-200">{success}</p>:null}
    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,.95fr)]">
-    <section className={panel}>
-     <h2 className="flex items-center gap-2 text-lg font-semibold text-white"><Megaphone className="size-5 text-[#efbd5d]"/>Create a campaign</h2>
+    <section id="campaign-editor" className={panel+" scroll-mt-24"}>
+     <h2 className="flex items-center gap-2 text-lg font-semibold text-white"><Megaphone className="size-5 text-[#efbd5d]"/>{editingId?"Edit campaign":copyFrom?"Edit as new draft":"Create a campaign"}</h2>
+     {copyFrom?<p className="mt-2 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-xs text-amber-100">Previously delivered messages cannot be changed. This creates a new editable draft.</p>:null}
+     {editingId?<p className="mt-2 text-xs text-white/55">Scheduled campaigns keep the original delivery time.</p>:null}
      <form onSubmit={e=>void create(e)} className="mt-4 space-y-4">
       <label className="block text-xs font-medium text-white/60">Campaign title<input className={input} maxLength={80} minLength={3} required value={title} onChange={e=>setTitle(e.target.value)} placeholder="A special offer from your business"/></label>
       <label className="block text-xs font-medium text-white/60">Message<textarea className={input+" min-h-28 resize-y"} maxLength={300} minLength={10} required value={message} onChange={e=>setMessage(e.target.value)}/><span className="mt-1 block text-right text-[11px] text-white/40">{message.length}/300</span></label>
@@ -151,17 +153,24 @@ export default function BusinessCampaignsPage(){
        </div>
       </fieldset>
       <p className="flex items-start gap-2 rounded-xl bg-[#efbd5d]/5 p-3 text-xs leading-5 text-white/60"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#efbd5d]"/>Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.</p>
-      <button type="submit" disabled={busy||title.trim().length<3||message.trim().length<10} className={primary+" w-full"}>{busy?<Loader2 className="size-4 animate-spin"/>:<Megaphone className="size-4"/>}Save draft campaign</button>
+      <button type="submit" disabled={busy||title.trim().length<3||message.trim().length<10} className={primary+" w-full"}>{busy?<Loader2 className="size-4 animate-spin"/>:<Megaphone className="size-4"/>}{editingId?"Save changes":copyFrom?"Create edited draft":"Save draft campaign"}</button>
+      {(editingId||copyFrom)?<button type="button" className={secondary+" w-full"} disabled={busy} onClick={clearEditor}><X className="size-4"/>Cancel editing</button>:null>
      </form>
     </section>
     <div className="min-w-0 space-y-4">
      <section className={panel}>
       <h2 className="flex items-center gap-2 text-base font-semibold text-white"><CalendarClock className="size-5 text-[#efbd5d]"/>Campaign history</h2>
       {loading?<p className="mt-4 flex items-center gap-2 text-sm text-white/50"><Loader2 className="size-4 animate-spin"/>Loading…</p>:!campaigns.length?<p className="mt-4 text-sm text-white/45">No campaigns created yet. Save a draft to start.</p>:<div className="mt-4 max-h-[460px] space-y-2 overflow-y-auto">
-        {campaigns.map(c=><button key={c.id} type="button" onClick={()=>void inspect(c.id)} className={`flex w-full min-w-0 items-start justify-between gap-2 rounded-xl border p-3 text-left transition ${selected===c.id?"border-[#efbd5d]/45 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
-         <span className="min-w-0"><span className="block break-words text-sm font-semibold text-white">{c.title}</span><span className="mt-1 block text-[11px] text-white/45">{labelOf(c.segment)} · {date(c.created_at)}</span></span>
-         <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${c.status==="sent"?"bg-emerald-400/10 text-emerald-300":c.status==="scheduled"?"bg-blue-400/10 text-blue-300":"bg-white/10 text-white/60"}`}>{c.status}</span>
-        </button>)}
+        {campaigns.map(c=><div key={c.id} className={`min-w-0 rounded-xl border p-3 transition ${selected===c.id?"border-[#efbd5d]/45 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
+         <button type="button" onClick={()=>void inspect(c.id)} className="flex w-full min-w-0 items-start justify-between gap-2 text-left" aria-label={`View campaign ${c.title}`}>
+          <span className="min-w-0"><span className="block break-words text-sm font-semibold text-white">{c.title}</span><span className="mt-1 block text-[11px] text-white/45">{labelOf(c.segment)} · {date(c.created_at)}</span></span>
+          <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${c.status==="sent"?"bg-emerald-400/10 text-emerald-300":c.status==="scheduled"?"bg-blue-400/10 text-blue-300":"bg-white/10 text-white/60"}`}>{c.status}</span>
+         </button>
+         <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-2">
+          <button type="button" disabled={busy||c.status==="processing"} onClick={()=>editCampaign(c)} className={secondary+" min-h-9 px-3 py-1.5"} aria-label={`Edit campaign ${c.title}`} title={c.status==="sent"||c.status==="cancelled"?"Create editable copy":"Edit this campaign"}><Pencil className="size-3.5"/>Edit</button>
+          <button type="button" disabled={busy||c.status==="processing"} onClick={()=>deleteCampaign(c)} className={secondary+" min-h-9 border-rose-400/20 px-3 py-1.5 text-rose-300"} aria-label={`Delete campaign ${c.title}`}><Trash2 className="size-3.5"/>Delete</button>
+         </div>
+        </div>)}
        </div>}
      </section>
      {selectedCampaign?<section className={panel}>
@@ -176,8 +185,7 @@ export default function BusinessCampaignsPage(){
         <button disabled={busy||!audience||audience.limited} className={primary+" w-full"} type="button" onClick={()=>void action(selectedCampaign.id,"send")}><Play className="size-4"/>Send now</button>
         <label className="block text-xs text-white/55">Schedule delivery (local time)<input type="datetime-local" className={input} value={schedule} onChange={e=>setSchedule(e.target.value)}/></label>
         <button disabled={busy||!schedule} className={secondary+" w-full"} type="button" onClick={()=>void action(selectedCampaign.id,"schedule")}><CalendarClock className="size-4"/>Schedule campaign</button>
-        <button disabled={busy} className={secondary+" w-full text-rose-300"} onClick={()=>void perform(async()=>{await apiFetch(`/campaigns/business/${selectedCampaign.id}`,{token,method:"DELETE"});setSelected(null);},"Draft deleted.")} type="button"><Trash2 className="size-4"/>Delete draft</button>
-       </div>:selectedCampaign.status==="scheduled"?<div className="mt-4"><p className="text-xs text-white/55">Scheduled: {date(selectedCampaign.scheduled_at)}. The daily delivery processor runs campaigns at or after the chosen time.</p><button type="button" disabled={busy} className={secondary+" mt-3 w-full"} onClick={()=>void action(selectedCampaign.id,"cancel")}>Cancel scheduled campaign</button></div>:<p className="mt-4 text-xs text-white/45">{selectedCampaign.status==="sent"?"Delivered to opted-in members; email processing may continue on the next run.":"Campaign cancelled."} Email jobs pending: {analytics?.emails_waiting??0}.</p>}
+        </div>:selectedCampaign.status==="scheduled"?<div className="mt-4"><p className="text-xs text-white/55">Scheduled: {date(selectedCampaign.scheduled_at)}. The daily delivery processor runs campaigns at or after the chosen time.</p><button type="button" disabled={busy} className={secondary+" mt-3 w-full"} onClick={()=>void action(selectedCampaign.id,"cancel")}>Cancel scheduled campaign</button></div>:<p className="mt-4 text-xs text-white/45">{selectedCampaign.status==="sent"?"Delivered to opted-in members; email processing may continue on the next run.":"Campaign cancelled."} Email jobs pending: {analytics?.emails_waiting??0}.</p>}
      </section>:null}
      <section className={panel}>
       <h2 className="flex items-center gap-2 text-base font-semibold text-white"><Zap className="size-5 text-[#efbd5d]"/>Smart automations</h2>
