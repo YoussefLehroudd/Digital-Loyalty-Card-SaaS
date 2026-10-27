@@ -1,5 +1,21 @@
 # Affiliate partners and commission accounting
 
+## Integrated LOYVANCE account authorization (2026-10-27)
+
+Affiliation is now an **additional, admin-managed permission on an existing LOYVANCE customer or business-owner account**. It does **not** replace the original `app_users.role`, password, account data or subscription. This means a partner can still run a business workspace or use the customer wallet normally.
+
+**Admin flow:** the partner registers their regular account first (as Business or Customer). From `/admin/affiliates`, the admin enters that **registered email** and optionally chooses a referral code and plan rates. No second password is generated. After reloading their normal dashboard, the partner sees an **Affiliate** navigation entry.
+
+- Business-owner dashboard: `/dashboard/affiliate`
+- Customer dashboard: `/user/affiliate`
+- The partner uses their **existing** business/customer login and can access the normal workspace concurrently. Access to the private affiliate API is authorized by the same ordinary session.
+- The additional permission is stored as `affiliate_partners.user_id` with a unique constraint and an active flag. If the admin pauses the affiliate, affiliate-only pages and API reports are denied, but the original business/customer access remains intact.
+- To migrate legacy standalone affiliate accounts, select the old partner in the admin list and use **Link this existing affiliate to a normal account**. This keeps referral codes, attributed businesses, commission history, and payout records. It invalidates old affiliate-only sessions; password changes thereafter use normal account settings. Unlinked legacy partners retain old access until they are linked.
+- The admin must never assign a partner to a different normal account merely because the user claims an email; verify ownership before granting the commission role.
+
+**Production checks:** test with an existing active business user and an existing active customer user, including fresh normal logins, Affiliate navigation visibility, successful report, retention of original dashboard functions, denial for regular users, revocation by pausing, and no cross-partner access.
+
+
 This feature runs on the application's existing Neon database and uses the existing business-owner subscription activation workflow. It **does not** create or transfer funds automatically.
 
 ## Access and referral attribution
