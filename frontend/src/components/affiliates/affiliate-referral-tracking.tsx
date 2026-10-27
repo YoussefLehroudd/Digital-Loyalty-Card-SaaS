@@ -65,13 +65,14 @@ function TrackingCard({business:b}:{business:ReferredBusiness}){
   </div>
  </article>;
 }
-export function AffiliateReferralTracking({visits,signups,activePaid,businesses}:{visits:number;signups:number;activePaid:number;businesses:ReferredBusiness[]}){
+export function AffiliateReferralTracking({visits,signups,activePaid,lastVisit,businesses}:{visits:number;signups:number;activePaid:number;lastVisit:string|null;businesses:ReferredBusiness[]}){
  return <div className="min-w-0 space-y-4">
   <div className="grid min-w-0 grid-cols-1 gap-2 min-[340px]:grid-cols-2 lg:grid-cols-3">
    <Step icon={Eye} label="Referral link opened" value={visits} note="Tracked opens since activation"/>
    <Step icon={Users} label="Signed-up businesses" value={signups} note="Completed account and email verification"/>
    <Step icon={BadgeCheck} label="Active paid subscriptions" value={activePaid} note="Currently paid and not expired"/>
   </div>
+  <p className="text-[11px] font-medium text-[#efbd5d]/80">Last recorded referral link open: {lastVisit?day(lastVisit):"None recorded yet"}</p>
   <p className="text-[11px] leading-5 text-white/40">An opened link does not identify the visitor. A business appears below only after account creation and email verification. Link visits are approximate; private browsing, opt-outs and reloads may affect the count. Earlier visits cannot be recovered.</p>
   {businesses.length?<div className="space-y-3">{businesses.map(b=><TrackingCard key={b.id} business={b}/>)}</div>:
    <div className="rounded-xl border border-dashed border-white/15 px-4 py-8 text-center">
