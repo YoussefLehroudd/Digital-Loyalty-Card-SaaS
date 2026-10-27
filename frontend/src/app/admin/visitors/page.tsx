@@ -1,6 +1,7 @@
 "use client";
 import "flag-icons/css/flag-icons.min.css";
 import { CountryFlag } from "@/components/ui/country-flag";
+import { DailyVisitsChart } from "@/components/admin/daily-visits-chart";
 import { useCallback, useEffect, useState } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, Clock3, Computer, ExternalLink, Globe2, Link2, Loader2, MapPin, MousePointerClick, RefreshCw, Smartphone, Users, X } from "lucide-react";
 import { useAdmin } from "@/components/admin/admin-shell";
@@ -87,15 +88,7 @@ export default function AdminVisitorsPage(){
     <Metric icon={Clock3} label="Average active time" value={seconds(number(summary.avg_seconds))} note="Approx. foreground time"/>
     <Metric icon={Users} label="Logged-in sessions" value={formatNumber(summary.signed_in_sessions)} note="Recognized authenticated users"/>
    </div>
-   <section className={card}>
-    <h2 className="mb-4 text-base font-semibold">Daily visits</h2>
-    {report.daily.length? <div className="flex h-40 min-w-0 items-end gap-1 overflow-x-auto pb-6 sm:h-44">
-     {report.daily.map(d=>{const max=Math.max(1,...report.daily.map(x=>number(x.sessions)));return <div key={d.day} title={d.day+": "+d.sessions+" sessions · "+d.pageviews+" pageviews"} className="group relative flex h-full min-w-[8px] flex-1 flex-col justify-end">
-      <div className="w-full rounded-t bg-[#efbd5d]/75 transition group-hover:bg-[#efbd5d]" style={{height:Math.max(4,d.sessions/max*100)+"%"}}/>
-     </div>;})}
-    </div>:<p className="py-9 text-xs text-white/40">Visit data will appear after the first tracked visitor.</p>}
-    <p className="text-[11px] text-white/35">Daily sessions · UTC · last {days} days</p>
-   </section>
+   <DailyVisitsChart data={report.daily} days={days}/>
    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
     <Ranking title="Most visited pages" items={report.pages.map(p=>({label:p.name,value:number(p.views),subtitle:p.sessions+" sessions"}))}/>
     <Ranking title="Links visitors clicked" items={report.clicks.map(p=>({label:p.name,value:number(p.clicks)}))}/>
