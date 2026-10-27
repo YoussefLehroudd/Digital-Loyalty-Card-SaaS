@@ -218,7 +218,7 @@ async function deliverCampaign(sql:Sql,campaignId:string){
  if(audience.length>500){await q`UPDATE marketing_campaigns SET status='cancelled' WHERE id=${campaignId}::uuid`;return false;}
  const eligible=audience.map(x=>({customerId:String(x.customer_id),userId:String(x.user_id),pref:x.preferences as Row}));
  for(const a of eligible){
-  const notifyId=\`campaign-\${campaignId}-\${a.userId}\`;
+  const notifyId=`campaign-${campaignId}-${a.userId}`;
   // Suppress promotional blasts for this business within seven days per recipient.
   // Also enforce at most one marketing notification every 48 hours platform-wide.
   const inserted=await q`INSERT INTO marketing_campaign_recipients(campaign_id,customer_id,user_id,notification_id,email_state)
@@ -303,10 +303,10 @@ export async function runCampaignEmails(sql:Sql,limit=12,origin=""){
   const token=randomBytes(32).toString("hex"),unsub=origin+"/api/campaigns/unsubscribe?token="+token;
   await q`INSERT INTO marketing_unsubscribe_tokens(token_hash,business_id,user_id) VALUES(${hash(token)},${String(recipient.business_id)}::uuid,${String(recipient.user_id)}::uuid)`;
   try{
-   const subject=\`\${String(recipient.business_name).slice(0,45)}: \${String(recipient.title)}\`;
-   const html=\`<div style="font-family:Arial,sans-serif;max-width:580px;margin:auto"><h2>\${esc(String(recipient.title))}</h2><p>\${esc(String(recipient.message))}</p><p style="color:#666;font-size:12px">\${esc(String(recipient.business_name))} via LOYVANCE</p><p><a href="\${esc(unsub)}">Unsubscribe from promotional emails</a></p></div>\`;
-   const resp=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":\`Bearer \${key}\`,"Content-Type":"application/json","Idempotency-Key":\`campaign-\${job.campaign_id}-\${job.user_id}\`},
-     body:JSON.stringify({from,to:[String(recipient.email)],subject,html,headers:{"List-Unsubscribe":\`<\${unsub}>\`},tags:[{name:"category",value:"campaign"}]})});
+   const subject=`${String(recipient.business_name).slice(0,45)}: ${String(recipient.title)}`;
+   const html=`<div style="font-family:Arial,sans-serif;max-width:580px;margin:auto"><h2>${esc(String(recipient.title))}</h2><p>${esc(String(recipient.message))}</p><p style="color:#666;font-size:12px">${esc(String(recipient.business_name))} via LOYVANCE</p><p><a href="${esc(unsub)}">Unsubscribe from promotional emails</a></p></div>`;
+   const resp=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":`Bearer ${key}`,"Content-Type":"application/json","Idempotency-Key":`campaign-${job.campaign_id}-${job.user_id}`},
+     body:JSON.stringify({from,to:[String(recipient.email)],subject,html,headers:{"List-Unsubscribe":`<${unsub}>`},tags:[{name:"category",value:"campaign"}]})});
    if(!resp.ok)throw Error("Resend rejected email with HTTP "+resp.status);
    await q`UPDATE marketing_campaign_recipients SET email_state='sent',email_sent_at=now(),claimed_at=NULL,last_error='' WHERE campaign_id=${job.campaign_id}::uuid AND user_id=${job.user_id}::uuid`;
    sent++;
