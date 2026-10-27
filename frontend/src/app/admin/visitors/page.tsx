@@ -71,7 +71,7 @@ export default function AdminVisitorsPage(){
     <p className="mt-2 max-w-2xl text-xs leading-6 text-white/45 sm:text-sm">Page visits, traffic sources, link clicks and time spent. Locations are approximate IP-based estimates; exact city or GPS position cannot be determined.</p>
    </div>
    <div className="flex min-w-0 flex-wrap items-center gap-2">
-    <div className="flex rounded-xl border border-white/10 bg-[#101318] p-1">{([7,30,90] as const).map(d=><button key={d} type="button" onClick={()=>setDays(d)} className={\`min-h-9 rounded-lg px-3 text-xs font-bold transition \${days===d?"bg-[#efbd5d] text-black":"text-white/55 hover:text-white"}\`}>{d} days</button>)}</div>
+    <div className="flex rounded-xl border border-white/10 bg-[#101318] p-1">{([7,30,90] as const).map(d=><button key={d} type="button" onClick={()=>setDays(d)} className={`min-h-9 rounded-lg px-3 text-xs font-bold transition ${days===d?"bg-[#efbd5d] text-black":"text-white/55 hover:text-white"}`}>{d} days</button>)}</div>
     <button onClick={()=>void load()} type="button" aria-label="Refresh visitors" className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[.03] text-[#efbd5d] hover:bg-white/10"><RefreshCw className="size-4"/></button>
    </div>
   </div>
