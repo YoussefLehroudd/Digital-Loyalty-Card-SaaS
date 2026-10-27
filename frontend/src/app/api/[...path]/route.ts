@@ -2111,6 +2111,73 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     return error("API route not found.", 404);
   }
 
+  // Discover all non-suspended LOYVANCE businesses. Show whether a card can
+  // currently be issued; expired subscriptions are visible but cannot be joined.
+  // Only marketing-safe fields are exposed, never login/contact email or customers.
+  if (path[1] === "explore" && req.method === "GET" && path.length===2) {
+    const rows=await sql`
+      SELECT b.id::text,b.slug,b.name,b.logo_url,b.hero_image_url,b.primary_color,
+        b.address,b.created_at::text,
+        COALESCE(lc.reward_name,'Loyalty rewards') AS reward_name,
+        COALESCE(lc.required_stamps,10)::int AS required_stamps,
+        COALESCE(lc.reward_description,'Collect stamps with this business.') AS reward_description,
+        (existing.id IS NOT NULL) AS has_card,existing.id::text AS membership_id,
+        CASE WHEN s.paid_ends_at>now() OR (s.paid_ends_at IS NULL AND s.trial_ends_at>now())
+           THEN true ELSE false END AS available,
+        CASE WHEN s.paid_ends_at>now() THEN 'active'
+          WHEN s.paid_ends_at IS NULL AND s.trial_ends_at>now() THEN 'trial'
+          ELSE 'expired' END AS subscription_state
+      FROM businesses b
+      LEFT JOIN loyalty_cards lc ON lc.business_id=b.id
+      LEFT JOIN business_subscriptions s ON s.business_id=b.id
+      LEFT JOIN LATERAL (
+        SELECT id FROM customers WHERE user_id=${auth.user.id} AND business_id=b.id
+        LIMIT 1
+      ) existing ON true
+      WHERE COALESCE(b.status,'active')<>'suspended'
+      ORDER BY (existing.id IS NOT NULL) DESC,
+        (CASE WHEN s.paid_ends_at>now() OR (s.paid_ends_at IS NULL AND s.trial_ends_at>now()) THEN 1 ELSE 0 END) DESC,
+        b.created_at DESC
+      LIMIT 500
+    `;
+    return json({data:rows});
+  }
+
+  if (path[1] === "explore" && path[2] && path[3] === "join" && path.length === 4 && req.method === "POST") {
+    const businessId=path[2];
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(businessId))
+      return error("Invalid business.",422);
+    const limited=await rateLimit(sql,req,"customer-explore-join",30,15*60*1000);
+    if(limited)return limited;
+    const business=((await sql`SELECT * FROM businesses WHERE id=${businessId} LIMIT 1`) as DbBusiness[])[0];
+    if(!business||business.status==="suspended")return error("This loyalty program is not available.",404);
+    await requireSubscription(sql,business.id);
+    const p=profile as JsonRecord;
+    // Unique index idx_customers_user_business ensures one card per business,
+    // including concurrent requests or retrying after an interrupted response.
+    const inserted=(await sql`
+      INSERT INTO customers(id,business_id,user_id,first_name,last_name,email,phone,qr_code)
+      VALUES (${randomUUID()},${business.id},${auth.user.id},
+        ${asNullableString(p.first_name)},${asNullableString(p.last_name)},${auth.user.email},
+        ${asNullableString(p.phone)},${"cust_"+randomBytes(16).toString("hex")})
+      ON CONFLICT (user_id,business_id) WHERE user_id IS NOT NULL DO NOTHING
+      RETURNING id
+    `) as Array<{id:string}>;
+    const membershipId=inserted[0]?.id ??
+      ((await sql`SELECT id FROM customers WHERE user_id=${auth.user.id} AND business_id=${business.id} LIMIT 1`) as Array<{id:string}>)[0]?.id;
+    if(!membershipId)return error("Could not create your loyalty card. Try again.",500);
+    const card=await defaultCard(sql,business.id);
+    await sql`
+      INSERT INTO customer_loyalties(id,customer_id,loyalty_card_id,current_stamps)
+      VALUES(${randomUUID()},${membershipId},${card.id},0)
+      ON CONFLICT (customer_id,loyalty_card_id) DO NOTHING
+    `;
+    return json({
+      message:inserted.length?"Loyalty card created.":"You already have this loyalty card.",
+      membership_id:membershipId,already_joined:!inserted.length
+    },{status:inserted.length?201:200});
+  }
+
   const memberships = (await sql`SELECT c.*, c.created_at::text AS created_at, c.updated_at::text AS updated_at FROM customers c WHERE c.user_id = ${auth.user.id} ORDER BY c.created_at DESC`) as DbCustomer[];
   const cards = await Promise.all(memberships.map(async (m) => {
     const business = ((await sql`SELECT * FROM businesses WHERE id = ${m.business_id} LIMIT 1`) as DbBusiness[])[0];

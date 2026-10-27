@@ -3,7 +3,7 @@ import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartSpline, CreditCard, Handshake, Home, LogOut, Mail, Trophy, User } from "lucide-react";
+import { ChartSpline, Compass, CreditCard, Handshake, Home, LogOut, Mail, Trophy, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { CustomerNotificationBell } from "@/components/customer-app/customer-notification-bell";
 const nav = [
     { href: "/user/dashboard", label: "Home", icon: Home },
+    { href: "/user/explore", label: "Explore", icon: Compass },
     { href: "/user/cards", label: "Cards", icon: CreditCard },
     { href: "/user/rewards", label: "Rewards", icon: Trophy },
     { href: "/user/activity", label: "Activity", icon: ChartSpline },
@@ -95,7 +96,7 @@ export function CustomerLayout({ children, title, subtitle, }: {
         </main>
 
         <nav className="fixed inset-x-0 bottom-0 z-[100] translate-z-0 border-t border-[#d8a63f]/15 bg-[#0b0c0a]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden [transform:translate3d(0,0,0)]">
-          <div className={`mx-auto grid w-full max-w-md ${isAffiliate?"grid-cols-6":"grid-cols-5"} gap-1 px-2 py-2`}>
+          <div className={`mx-auto grid w-full max-w-md ${isAffiliate?"grid-cols-7":"grid-cols-6"} gap-1 px-2 py-2`}>
             {visibleNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
