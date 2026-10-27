@@ -114,7 +114,8 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
       COALESCE(SUM(c.commission_centimes),0)::bigint::text AS earned_centimes,
       bs.trial_started_at::text,bs.trial_ends_at::text,
       bs.paid_started_at::text,bs.paid_ends_at::text,
-      CASE WHEN bs.paid_ends_at IS NOT NULL AND bs.paid_ends_at>now() THEN 'subscribed'
+      CASE WHEN bs.paid_ends_at IS NOT NULL AND bs.paid_ends_at>now() AND latest.paid_at IS NOT NULL THEN 'subscribed'
+           WHEN bs.paid_ends_at IS NOT NULL AND bs.paid_ends_at>now() THEN 'access_granted'
            WHEN bs.paid_ends_at IS NOT NULL THEN 'subscription_expired'
            WHEN bs.trial_ends_at>now() THEN 'trial'
            ELSE 'trial_expired' END AS subscription_status,
@@ -128,8 +129,8 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
       LEFT JOIN affiliate_commissions c ON c.business_id=b.id AND c.affiliate_id=ab.affiliate_id
       LEFT JOIN LATERAL (
         SELECT e.duration_months,e.paid_at FROM subscription_events e
-        WHERE e.business_id=b.id AND e.paid_at IS NOT NULL AND e.amount_centimes>0
-        ORDER BY e.paid_at DESC LIMIT 1
+        WHERE e.business_id=b.id
+        ORDER BY e.revision DESC LIMIT 1
       ) latest ON true
       LEFT JOIN LATERAL (
         SELECT r.duration_months,r.created_at FROM subscription_renewal_requests r
@@ -154,7 +155,9 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
       (SELECT count(*)::int FROM affiliate_businesses b JOIN business_subscriptions s ON s.business_id=b.business_id
        WHERE b.affiliate_id=${affiliateId} AND s.paid_ends_at IS NULL AND s.trial_ends_at>now()) AS active_trials,
       (SELECT count(*)::int FROM affiliate_businesses b JOIN business_subscriptions s ON s.business_id=b.business_id
-       WHERE b.affiliate_id=${affiliateId} AND s.paid_ends_at>now()) AS active_subscriptions,
+       WHERE b.affiliate_id=${affiliateId} AND s.paid_ends_at>now()
+       AND EXISTS (SELECT 1 FROM subscription_events e WHERE e.business_id=b.business_id AND e.revision=s.revision
+         AND e.paid_at IS NOT NULL AND e.amount_centimes>0)) AS active_subscriptions,
       (SELECT count(*)::int FROM affiliate_commissions WHERE affiliate_id=${affiliateId}) AS paid_orders,
       (SELECT COALESCE(sum(commission_centimes),0)::bigint::text FROM affiliate_commissions WHERE affiliate_id=${affiliateId}) AS total_centimes,
       (SELECT COALESCE(sum(commission_centimes),0)::bigint::text FROM affiliate_commissions WHERE affiliate_id=${affiliateId} AND payout_id IS NULL) AS unpaid_centimes,
