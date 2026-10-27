@@ -155,7 +155,7 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
     const type = params.get("type") ?? "all";
     if (!["all","business","customer"].includes(type)) return reply({ message: "Invalid account type." },422);
     const pattern = `%${query.replace(/[\\%_]/g, "\\$&")}%`;
-  if (!segments.length) {")}%`;
+
     // Search only already registered active accounts. Never return a protected customer's email.
     // This endpoint is reached exclusively through the platform-admin guarded route.
     const candidates = await q`SELECT u.id,u.name,u.role,
