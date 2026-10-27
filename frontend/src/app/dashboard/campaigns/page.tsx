@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Bell, CalendarClock, CheckCheck, Clock, Gift, Loader2, Mail, Megaphone, Play, RefreshCcw, ShieldCheck, Trash2, Users, Zap } from "lucide-react";
+import { Bell, CalendarClock, CheckCheck, Clock, Gift, Loader2, Mail, Megaphone, Play, Pencil, RefreshCcw, ShieldCheck, Trash2, Users, X, Zap } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { useAuth } from "@/components/auth/auth-guard";
 import { apiFetch } from "@/lib/api";
@@ -38,6 +38,8 @@ export default function BusinessCampaignsPage(){
  const [analytics,setAnalytics]=useState<Analytics|null>(null);
  const [audience,setAudience]=useState<{eligible:number;limited:boolean}|null>(null);
  const [schedule,setSchedule]=useState("");
+ const [editingId,setEditingId]=useState<string|null>(null);
+ const [copyFrom,setCopyFrom]=useState<string|null>(null);
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
@@ -67,13 +69,37 @@ export default function BusinessCampaignsPage(){
   catch(e){setError(e instanceof Error?e.message:"Action failed.");}
   finally{setBusy(false);}
  };
+ const clearEditor=()=>{setEditingId(null);setCopyFrom(null);setTitle("");setMessage(defaultMessage);setSegment("inactive_30");setChannel("inapp");};
+ const editCampaign=(c:Campaign)=>{
+  if(busy||c.status==="processing")return;
+  setError("");setSuccess("");setTitle(c.title);setMessage(c.message);setSegment(c.segment);setChannel(c.channel);
+  if(c.status==="draft"||c.status==="scheduled"){setEditingId(c.id);setCopyFrom(null);}
+  else {setEditingId(null);setCopyFrom(c.id);}
+  window.requestAnimationFrame(()=>document.getElementById("campaign-editor")?.scrollIntoView({behavior:"smooth",block:"start"}));
+ };
  const create=async(e:FormEvent)=>{
-  e.preventDefault();
-  await perform(async()=>{
-   const result=await apiFetch<{campaign:Campaign}>("/campaigns/business",{token,method:"POST",body:JSON.stringify({title,message,segment,channel})});
-   setTitle("");setMessage(defaultMessage);
-   await inspect(result.campaign.id);
-  },"Draft campaign created. Review your eligible audience before sending or scheduling.");
+  e.preventDefault();if(busy)return;
+  setBusy(true);setError("");setSuccess("");
+  const isEdit=Boolean(editingId),isCopy=Boolean(copyFrom);
+  try{
+   const result=await apiFetch<{campaign:Campaign}>(editingId?`/campaigns/business/${editingId}`:"/campaigns/business",
+    {token,method:isEdit?"PATCH":"POST",body:JSON.stringify({title,message,segment,channel})});
+   clearEditor();
+   await refresh();await inspect(result.campaign.id);
+   setSuccess(isEdit?"Campaign updated.":isCopy?"An editable draft copy was created; previously sent notifications stay unchanged.":"Draft campaign created. Review your eligible audience before sending or scheduling.");
+  }catch(e){setError(e instanceof Error?e.message:"Unable to save campaign.");}
+  finally{setBusy(false);}
+ };
+ const deleteCampaign=(c:Campaign)=>{
+  if(busy)return;
+  const explanation=c.status==="sent"?" This removes it from history but cannot recall delivered notifications or emails; queued email jobs may still run.":c.status==="scheduled"?" This cancels its scheduled delivery.":"";
+  if(!window.confirm(`Delete campaign "${c.title}"?${explanation}`))return;
+  void perform(async()=>{
+   const result=await apiFetch<{deleted:boolean}>(`/campaigns/business/${c.id}`,{token,method:"DELETE"});
+   if(!result.deleted)throw Error("Campaign was not deleted. Refresh and try again.");
+   if(selected===c.id){setSelected(null);setAnalytics(null);setAudience(null);}
+   if(editingId===c.id||copyFrom===c.id)clearEditor();
+  },c.status==="sent"?"Campaign removed from history. Previously delivered messages remain.":"Campaign deleted from history.");
  };
  const action=(id:string,name:"send"|"cancel"|"schedule")=>{
   const note=name==="send"?"Send this campaign to eligible customers now? Only opted-in customers will be notified.":null;
