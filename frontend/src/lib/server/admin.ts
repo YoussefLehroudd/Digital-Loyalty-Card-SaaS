@@ -6,6 +6,7 @@ import type { getSql } from "@/lib/server/db";
 import { subscriptionDetails, subscriptionFor, subscriptionsFor } from "@/lib/server/subscriptions";
 
 import { rejectRenewal, renewalProof } from "@/lib/server/renewal-requests";
+import { handleAdminAffiliates } from "@/lib/server/affiliates";
 
 type Sql = ReturnType<typeof getSql>;
 type RowSql = {
@@ -69,6 +70,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   if (!auth) return reply({ message: "Unauthenticated." }, 401);
   if (!isPlatformAdmin(auth.user)) return reply({ message: "Administrator access required." }, 403);
   if (path[1] === "me" && req.method === "GET") return reply({ user: safeUser(auth.user) });
+  if (path[1] === "affiliates") return handleAdminAffiliates(path,req,database,auth.user);
   if (path[1] === "businesses" && path[3] === "features" && path.length === 4) return adminBusinessFeatures(req, database, path[2], auth.user);
   if(path[1]==="renewals"){
     if(path[2] && path[3]==="proof" && req.method==="GET")return renewalProof(database,path[2]);
@@ -124,6 +126,17 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
         CASE WHEN ${mode}='extend' AND old_end>now() THEN old_end ELSE paid_started_at END,paid_ends_at,old_start,old_end,old_state,
         ${note},${reference},${plan.months},${plan.price},revision,${mode},${amount},${paymentMethod},${paidAt}::timestamptz,
         CASE WHEN ${paymentRecorded} THEN 'LV-'||upper(replace(${body.request_id}::text,'-','')) ELSE NULL END,${renewalId}::uuid FROM changed RETURNING *
+    ), commission AS (
+      INSERT INTO affiliate_commissions(subscription_event_id,affiliate_id,business_id,duration_months,amount_centimes,rate_bps,commission_centimes)
+      SELECT e.id,ab.affiliate_id,e.business_id,e.duration_months,e.amount_centimes,r.rate_bps,
+        round(e.amount_centimes::numeric * r.rate_bps / 10000)::integer
+      FROM event e JOIN affiliate_businesses ab ON ab.business_id=e.business_id
+      JOIN affiliate_partners a ON a.id=ab.affiliate_id
+      CROSS JOIN LATERAL (SELECT CASE e.duration_months
+        WHEN 1 THEN a.rate_1_bps WHEN 3 THEN a.rate_3_bps
+        WHEN 6 THEN a.rate_6_bps ELSE a.rate_12_bps END AS rate_bps) r
+      WHERE e.amount_centimes IS NOT NULL AND e.amount_centimes>0 AND a.is_active=true
+      ON CONFLICT(subscription_event_id) DO NOTHING RETURNING subscription_event_id
     ), reviewed AS (
       UPDATE subscription_renewal_requests r SET status='approved',reviewed_at=now(),actor_id=${auth.user.id},actor_name=${auth.user.name},review_note=${note}
       FROM event e WHERE r.id=e.renewal_request_id RETURNING r.id
