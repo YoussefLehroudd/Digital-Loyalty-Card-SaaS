@@ -36,7 +36,11 @@ function deviceFrom(ua:string){
 }
 
 export async function ensureVisitorAnalyticsSchema(sql:Sql){
- await sql`CREATE TABLE IF NOT EXISTS visitor_analytics_sessions(
+ // DDL IF NOT EXISTS alone is unsafe under concurrent Vercel cold starts.
+ // A transaction-level Postgres advisory lock serializes table/type/index creation.
+ await sql.transaction([
+  sql`SELECT pg_advisory_xact_lock(229001, 22)`,
+  sql`CREATE TABLE IF NOT EXISTS visitor_analytics_sessions(
   id uuid PRIMARY KEY, first_seen timestamptz NOT NULL DEFAULT now(),
   last_seen timestamptz NOT NULL DEFAULT now(), active_seconds integer NOT NULL DEFAULT 0,
   entry_path text NOT NULL, current_path text NOT NULL,
@@ -45,18 +49,19 @@ export async function ensureVisitorAnalyticsSchema(sql:Sql){
   device text NOT NULL DEFAULT 'Other', browser text NOT NULL DEFAULT 'Other', os text NOT NULL DEFAULT 'Other',
   user_id uuid REFERENCES app_users(id) ON DELETE SET NULL,
   pageviews integer NOT NULL DEFAULT 0, clicks integer NOT NULL DEFAULT 0
- )`;
- await sql`CREATE TABLE IF NOT EXISTS visitor_analytics_events(
+ )`,
+  sql`CREATE TABLE IF NOT EXISTS visitor_analytics_events(
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   session_id uuid NOT NULL REFERENCES visitor_analytics_sessions(id) ON DELETE CASCADE,
   event_type text NOT NULL CHECK(event_type IN ('page','click')),
   page_path text NOT NULL,target text,
   happened_at timestamptz NOT NULL DEFAULT now()
- )`;
- await sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_first ON visitor_analytics_sessions(first_seen DESC)`;
- await sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_last ON visitor_analytics_sessions(last_seen DESC)`;
- await sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_events_session ON visitor_analytics_events(session_id,happened_at DESC)`;
- await sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_events_recent ON visitor_analytics_events(happened_at DESC)`;
+ )`,
+  sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_first ON visitor_analytics_sessions(first_seen DESC)`,
+  sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_last ON visitor_analytics_sessions(last_seen DESC)`,
+  sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_events_session ON visitor_analytics_events(session_id,happened_at DESC)`,
+  sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_events_recent ON visitor_analytics_events(happened_at DESC)`
+ ]);
 }
 
 export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|null):Promise<Response>{
