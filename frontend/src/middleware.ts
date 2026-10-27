@@ -7,6 +7,11 @@ const guestOnlyAuthRoutes = ["/login", "/register"];
 export function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_TOKEN_STORAGE_KEY)?.value;
   const { pathname, search } = request.nextUrl;
+  if (pathname.startsWith("/r/")) {
+    const code = pathname.slice(3);
+    if (!/^[a-z0-9][a-z0-9-]{2,47}$/.test(code)) return NextResponse.redirect(new URL("/register", request.url));
+    return NextResponse.rewrite(new URL(`/api/referrals/${code}`, request.url));
+  }
   if ((pathname === "/admin" || pathname.startsWith("/admin/")) && pathname !== "/admin/login" && !request.cookies.get("loyvance_admin_token")?.value) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
@@ -28,5 +33,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*", "/login", "/register", "/forgot-password", "/reset-password"],
+  matcher: ["/r/:path*", "/admin/:path*", "/dashboard/:path*", "/login", "/register", "/forgot-password", "/reset-password"],
 };

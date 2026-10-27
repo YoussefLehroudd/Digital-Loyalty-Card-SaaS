@@ -5,6 +5,8 @@ import { createSign, randomBytes, randomUUID, scrypt as scryptCallback, timingSa
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
 import { ensureSubscriptionSchema, requireSubscription, subscriptionDetails } from "@/lib/server/subscriptions";
+import { ensureAffiliateSchema } from "@/lib/server/affiliate-schema";
+import { captureAffiliate, registrationAffiliate } from "@/lib/server/affiliates";
 import { ensureAdminSchema, handleAdmin, isPlatformAdmin } from "@/lib/server/admin";
 import { appleWalletAvailable, createAppleWalletLink, ensureAppleWalletSchema, handleAppleWallet, syncAppleWalletCustomer } from "@/lib/server/apple-wallet";
 
@@ -393,6 +395,7 @@ async function ensureSchema(sql: Sql) {
       await sql`CREATE INDEX IF NOT EXISTS idx_business_notifications_business_created ON business_notifications(business_id, created_at DESC)`;
       await ensureAdminSchema(sql);
       await ensureSubscriptionSchema(sql);
+      await ensureAffiliateSchema(sql);
     })();
   }
   await schemaReady;
@@ -687,7 +690,8 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
 
     const code = String(Math.floor(100000 + Math.random() * 900000));
     const codeHash = (await import("crypto")).createHash("sha256").update(code).digest("hex");
-    const payload = { business_name: businessName, business_email: businessEmail, name, email, password, password_confirmation: passwordConfirmation };
+    const affiliateId = await registrationAffiliate(sql, req, [email, businessEmail]);
+    const payload = { business_name: businessName, business_email: businessEmail, name, email, password, password_confirmation: passwordConfirmation, affiliate_id: affiliateId };
     await sql`
       INSERT INTO business_email_verifications (email, code_hash, payload, attempts, expires_at, created_at)
       VALUES (${businessEmail}, ${codeHash}, ${JSON.stringify(payload)}::jsonb, 0, now() + interval '10 minutes', now())
@@ -743,6 +747,9 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
       sql`INSERT INTO loyalty_cards (id, business_id, reward_name, required_stamps, reward_description) VALUES (${cardId}, ${businessId}, 'Free Coffee', 10, 'Collect stamps to unlock your reward.')`,
       sql`INSERT INTO user_sessions (token, user_id) VALUES (${token}, ${userId})`,
       sql`INSERT INTO business_subscriptions(business_id, trial_started_at, trial_ends_at) VALUES (${businessId}, now(), now() + interval '14 days')`,
+      sql`INSERT INTO affiliate_referrals(business_id,affiliate_id)
+        SELECT ${businessId},id FROM affiliates WHERE id=${typeof payload.affiliate_id === "string" ? payload.affiliate_id : null}::uuid AND active
+          AND (email='' OR lower(email) NOT IN (${email},${businessEmail})) ON CONFLICT(business_id) DO NOTHING`,
       sql`DELETE FROM business_email_verifications WHERE email = ${businessEmail}`,
     ]);
     return json({ token, token_type: "Bearer", user: publicUser((userRows as DbUser[])[0], (businessRows as DbBusiness[])[0]) }, { status: 201 });
@@ -2330,7 +2337,12 @@ async function dispatch(req: Request, context: RouteContext) {
     const path = params.path ?? [];
 
     let response: Response | null = null;
-    if(path[0]==="cron" && path[1]==="subscription-reminders") {
+    if (path[0] === "referrals" && path.length === 2 && req.method === "GET") {
+      const limited = await rateLimit(sql, req, "affiliate-visit", 120, 60 * 60 * 1000);
+      if (limited) return limited;
+      response = await captureAffiliate(sql, req, path[1]);
+    }
+    else if(path[0]==="cron" && path[1]==="subscription-reminders") {
       const secret=process.env.CRON_SECRET;
       if(req.method!=="GET" || !secret || req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
       response=json(await runSubscriptionEmails(sql,email=>sendLoyvanceEmail({...email,category:"notifications"})));
