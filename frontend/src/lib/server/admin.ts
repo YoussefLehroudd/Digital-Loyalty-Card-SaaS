@@ -283,7 +283,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     if (path[2]) {
       if (!uuid.test(path[2])) return reply({ message: "Invalid identifier." }, 422);
       const [users, cards] = await Promise.all([
-        sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, u.status, u.created_at::text, CASE WHEN privacy.visible THEN cp.phone ELSE NULL END AS phone, privacy.visible AS contact_details_visible FROM app_users u LEFT JOIN customer_profiles cp ON cp.user_id = u.id CROSS JOIN LATERAL (SELECT EXISTS NOT EXISTS (SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND b.admin_contact_private=true) AS visible) privacy WHERE u.id = ${path[2]} AND u.role = 'customer' LIMIT 1`,
+        sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, u.status, u.created_at::text, CASE WHEN privacy.visible THEN cp.phone ELSE NULL END AS phone, privacy.visible AS contact_details_visible FROM app_users u LEFT JOIN customer_profiles cp ON cp.user_id = u.id CROSS JOIN LATERAL (SELECT NOT EXISTS (SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND b.admin_contact_private=true) AS visible) privacy WHERE u.id = ${path[2]} AND u.role = 'customer' LIMIT 1`,
         sql`SELECT c.id, c.business_id,lc.id AS card_id,lc.reward_description, b.name AS business_name, b.status AS business_status, cl.current_stamps, lc.required_stamps, lc.reward_name
           FROM customers c JOIN businesses b ON b.id = c.business_id LEFT JOIN customer_loyalties cl ON cl.customer_id = c.id LEFT JOIN loyalty_cards lc ON lc.id = cl.loyalty_card_id WHERE c.user_id = ${path[2]} ORDER BY c.created_at DESC`,
       ]);
@@ -293,9 +293,9 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
     const [rows, total] = await Promise.all([
       sql`SELECT u.id, u.name, CASE WHEN privacy.visible THEN u.email ELSE NULL END AS email, privacy.visible AS contact_details_visible, u.status, u.avatar_url, u.created_at::text,
         (SELECT count(*)::int FROM customers WHERE user_id = u.id) AS cards
-        FROM app_users u CROSS JOIN LATERAL (SELECT EXISTS NOT EXISTS (SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND b.admin_contact_private=true) AS visible) privacy WHERE u.role = 'customer' AND (u.name ILIKE ${query} OR (privacy.visible AND u.email ILIKE ${query})) AND (${status} = '' OR u.status = ${status})
+        FROM app_users u CROSS JOIN LATERAL (SELECT NOT EXISTS (SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND b.admin_contact_private=true) AS visible) privacy WHERE u.role = 'customer' AND (u.name ILIKE ${query} OR (privacy.visible AND u.email ILIKE ${query})) AND (${status} = '' OR u.status = ${status})
         ORDER BY u.created_at DESC, u.id LIMIT 25 OFFSET ${offset}`,
-      sql`SELECT count(*)::int AS total FROM app_users u CROSS JOIN LATERAL (SELECT EXISTS NOT EXISTS (SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND b.admin_contact_private=true) AS visible) privacy WHERE u.role = 'customer' AND (u.name ILIKE ${query} OR (privacy.visible AND u.email ILIKE ${query})) AND (${status} = '' OR u.status = ${status})`,
+      sql`SELECT count(*)::int AS total FROM app_users u CROSS JOIN LATERAL (SELECT NOT EXISTS (SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=u.id AND b.admin_contact_private=true) AS visible) privacy WHERE u.role = 'customer' AND (u.name ILIKE ${query} OR (privacy.visible AND u.email ILIKE ${query})) AND (${status} = '' OR u.status = ${status})`,
     ]);
     return reply({ data: rows, total: total[0].total, page, per_page: 25 });
   }
