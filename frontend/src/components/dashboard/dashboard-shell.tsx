@@ -336,6 +336,7 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         scanner: "QR Scanner",
         rewards: "Rewards",
         settings: "Settings",
+        affiliate: "Affiliate",
     };
     return (<header className="app-topbar fixed inset-x-0 top-0 z-30 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl lg:sticky lg:inset-x-auto lg:z-20">
       <div className="flex h-16 items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
