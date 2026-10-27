@@ -4,6 +4,7 @@ import { businessPrivacy } from "@/lib/server/customer-privacy";
 import { createHash, createSign, randomBytes, randomInt, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
+import { collectVisitorAnalytics, ensureVisitorAnalyticsSchema } from "@/lib/server/visitor-analytics";
 import { ensureSubscriptionSchema, requireSubscription, subscriptionDetails } from "@/lib/server/subscriptions";
 import { ensureAdminSchema, handleAdmin, isPlatformAdmin } from "@/lib/server/admin";
 import { affiliateCodeIsValid, ensureAffiliateSchema, handleAffiliate } from "@/lib/server/affiliates";
@@ -407,6 +408,7 @@ async function ensureSchema(sql: Sql) {
       await ensureAdminSchema(sql);
       await ensureSubscriptionSchema(sql);
       await ensureAffiliateSchema(sql);
+      await ensureVisitorAnalyticsSchema(sql);
     })();
   }
   await schemaReady;
@@ -2444,6 +2446,12 @@ async function dispatch(req: Request, context: RouteContext) {
         response=await submitRenewal(sql,req,auth.business.id);
       }else if(req.method==="GET" && path[2] && path[3]==="proof")response=await renewalProof(sql,path[2],auth.business.id);
       else return error("API route not found.",404);
+    }
+    else if (path[0] === "visitors" && path[1] === "collect" && path.length===2) {
+      const limited=await rateLimit(sql,req,"visitor-collect",600,15*60*1000);
+      if(limited)return limited;
+      const user=(await getAuth(req,sql))?.user;
+      response=await collectVisitorAnalytics(req,sql,user?.id??null);
     }
     else if (path[0] === "apple-wallet") response = await handleAppleWallet(path, req, sql);
     else if (path[0] === "affiliate") {

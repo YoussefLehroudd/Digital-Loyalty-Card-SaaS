@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { GlobalEchoProvider } from "@/components/echo/global-echo-provider";
 
 import { InstallAppBanner } from "@/components/pwa/install-app-banner";
+import { VisitorAnalyticsTracker } from "@/components/analytics/visitor-analytics-tracker";
 
 import { LanguageProvider } from "@/components/i18n/language-provider";
 
@@ -57,6 +58,7 @@ export default function RootLayout({
       >
         <LanguageProvider><ThemeProvider>
           <GlobalEchoProvider>
+            <VisitorAnalyticsTracker />
             <InstallAppBanner />
             {children}
           </GlobalEchoProvider>

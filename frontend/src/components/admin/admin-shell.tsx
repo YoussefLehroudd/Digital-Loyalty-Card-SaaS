@@ -4,7 +4,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, ArrowUpRight, Building2, Handshake, LayoutDashboard, LogOut, Settings2, ShieldCheck, Users } from "lucide-react";
+import { Activity, ArrowUpRight, Building2, Handshake, LayoutDashboard, LogOut, Settings2, ShieldCheck, Users, ChartNoAxesCombined } from "lucide-react";
 import { ADMIN_TOKEN_KEY, adminRequest, clearAdminToken, type AdminUser } from "@/lib/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
@@ -23,6 +23,7 @@ export const adminNavigation = [
     { href: "/admin/affiliates", label: "Affiliates", icon: Handshake },
     { href: "/admin/customers", label: "Customers", icon: Users },
     { href: "/admin/activity", label: "Activity", icon: Activity },
+    { href: "/admin/visitors", label: "Visitors", icon: ChartNoAxesCombined },
     { href: "/admin/settings", label: "Settings", icon: Settings2 },
 ];
 export function useAdmin() {
@@ -117,7 +118,7 @@ function AdminWorkspace({ children }: {
         </header>
         <main className="mx-auto min-w-0 max-w-[1500px] px-3 pb-28 pt-6 sm:px-4 sm:px-8 sm:pt-8 lg:pb-10">{children}</main>
       </div>
-      <nav aria-label={tr("Mobile administration")} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-white/10 bg-[#0d1015]/95 px-2 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl lg:hidden">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex min-w-0 flex-col items-center gap-1.5 rounded-xl py-1 text-[9px] font-semibold ${active ? "text-[#edbc62]" : "text-white/45"}`}><item.icon className="size-5"/><span className="max-w-full truncate px-0.5">{tr(item.label)}</span></Link>; })}</nav>
+      <nav aria-label={tr("Mobile administration")} className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-white/10 bg-[#0d1015]/95 px-2 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl lg:hidden">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex min-w-0 flex-col items-center gap-1.5 rounded-xl py-1 text-[9px] font-semibold ${active ? "text-[#edbc62]" : "text-white/45"}`}><item.icon className="size-5"/><span className="max-w-full truncate px-0.5">{tr(item.label)}</span></Link>; })}</nav>
     </div>
   </AdminContext.Provider>;
 }
