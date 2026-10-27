@@ -64,10 +64,10 @@ export default function AdminAffiliatesPage(){
  async function create(e:React.FormEvent){
   e.preventDefault();setBusy(true);setError("");setMessage("");setTempPassword("");
   try{
-   const res=await adminRequest<{affiliate:Partner;linked_existing?:boolean}>("affiliates",token,{
+   const res=await adminRequest<{affiliate:Partner;linked_existing?:boolean;matched_business_contact?:boolean;resolved_login_email?:string}>("affiliates",token,{
     method:"POST",body:JSON.stringify({user_email:email,code:code||undefined,rates:createRates})
    });
-   setMessage(res.linked_existing?"Existing affiliate earnings preserved and account linked.":"Affiliate permission granted to the existing account.");setEmail("");setCode("");
+   setMessage(res.linked_existing?"Existing affiliate earnings preserved and account linked.":res.matched_business_contact?`Affiliate granted to the business owner account (${res.resolved_login_email}). Their login is different from the business contact email.`:"Affiliate permission granted to the existing account.");setEmail("");setCode("");
    await load();setSelected(res.affiliate.id);
   }catch(e){setError(e instanceof Error?e.message:"Could not create affiliate.");}
   finally{setBusy(false);}
@@ -121,8 +121,8 @@ export default function AdminAffiliatesPage(){
    <div className="space-y-5">
     <form onSubmit={e=>void create(e)} className={`${panel} space-y-4`}>
      <h2 className="flex items-center gap-2 font-semibold"><Plus className="size-4 text-[#efbd5d]"/> {tr("Grant affiliate access")}</h2>
-     <p className="text-xs leading-5 text-white/50">The person first creates a normal Business or Customer account. Enter their registered email to unlock Affiliate inside their own workspace. Their normal role, data and password stay unchanged.</p>
-     <label className="block text-xs text-white/60">Existing LOYVANCE account email<input type="email" className={`${field} mt-2`} placeholder="person@example.com" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
+     <p className="text-xs leading-5 text-white/50">Choose an existing Customer or Business Owner. You can enter their login email or the business contact email shown in the Businesses list. Affiliate will appear inside their original dashboard; their password and business access stay unchanged.</p>
+     <label className="block text-xs text-white/60">User login or business contact email<input type="email" className={`${field} mt-2`} placeholder="person@example.com" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
      <label className="block text-xs text-white/60">Custom referral code (optional)<input className={`${field} mt-2`} placeholder="mohamed-sales" pattern="[a-z0-9][a-z0-9-]{2,39}" value={code} onChange={e=>setCode(e.target.value.toLowerCase())}/></label>
      <RateFields rates={createRates} setRates={setCreateRates}/>
      <button className={`${primary} w-full`} disabled={busy}><Plus className="size-4"/>Grant Affiliate & generate link</button>
