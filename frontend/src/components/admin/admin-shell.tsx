@@ -92,11 +92,14 @@ function AdminWorkspace({ children }: {
         <div className="mt-auto space-y-4"><div className="rounded-2xl border border-white/[.07] bg-white/[.025] p-4"><ShieldCheck className="mb-2 size-5 text-[#edbc62]"/><p className="text-sm font-semibold">{tr("Your platform, in focus.")}</p><p className="mt-1 text-xs leading-5 text-white/40">{tr("One workspace for every business and customer.")}</p></div><button onClick={() => void logout()} className="flex w-full items-center gap-3 rounded-xl p-3 text-sm text-white/50 hover:bg-white/[.04] hover:text-white"><LogOut className="size-4"/>{tr("Sign out")}</button></div>
       </aside>
       <div className="lg:ps-64">
-        <header className="sticky top-0 z-30 border-b border-white/[.07] bg-[#090b0e]/95 px-3 py-3 backdrop-blur-xl sm:px-6 lg:flex lg:h-[76px] lg:items-center lg:px-8 lg:py-0">
-          <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 lg:flex lg:justify-between">
+        <header className="app-topbar sticky top-0 z-30 border-b border-white/[.07] bg-[#090b0e]/95 px-3 py-2.5 backdrop-blur-xl sm:px-6 lg:flex lg:h-[76px] lg:items-center lg:px-8 lg:py-0">
+          <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 lg:flex lg:justify-between">
             <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-2.5">
               <img src="/brand/icon.png" alt="LOYVANCE" className="size-9 shrink-0 object-contain lg:hidden"/>
-              <span className="min-w-0 truncate text-xs font-bold tracking-[.11em] text-[#edbc62] lg:hidden">LOYVANCE</span>
+              <div className="min-w-0 lg:hidden">
+                <h1 title={tr(title)} className="truncate text-sm font-semibold leading-5 text-white min-[380px]:text-base">{tr(title)}</h1>
+                <p className="truncate text-[10px] leading-4 text-white/40">{tr("Administration")}</p>
+              </div>
               <div className="hidden min-w-0 lg:block">
                 <p className="text-[10px] uppercase tracking-[.2em] text-white/35">{tr("Administration")}</p>
                 <p className="mt-1 truncate text-sm font-semibold">{tr(title)}</p>
@@ -110,10 +113,6 @@ function AdminWorkspace({ children }: {
               <div className="hidden text-end lg:block"><p className="text-xs font-semibold">{session.user.name}</p><p className="text-[10px] text-white/40">{tr("Super administrator")}</p></div>
               <Link href="/admin/settings" aria-label={tr("Administrator settings")} className="hidden size-9 shrink-0 place-items-center rounded-full border border-[#edbc62]/25 bg-[#edbc62]/10 text-xs font-bold text-[#edbc62] sm:grid">{session.user.name.slice(0, 2).toUpperCase()}</Link>
               <button type="button" onClick={() => void logout()} aria-label={tr("Log out")} title={tr("Log out")} className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[.025] text-white/70 transition hover:border-[#edbc62]/25 hover:bg-[#edbc62]/10 hover:text-[#f4cb80] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#edbc62] lg:hidden"><LogOut className="size-4" aria-hidden="true"/></button>
-            </div>
-            <div className="col-span-2 row-start-2 min-w-0 border-t border-white/[.07] pt-2 lg:hidden">
-              <p className="text-[10px] uppercase tracking-[.18em] text-white/35">{tr("Administration")}</p>
-              <h1 className="mt-0.5 truncate text-base font-semibold text-white">{tr(title)}</h1>
             </div>
           </div>
         </header>
