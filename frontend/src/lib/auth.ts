@@ -113,6 +113,7 @@ export type RegisterBusinessOwnerPayload = {
   email: string;
   password: string;
   password_confirmation: string;
+  affiliate_code?: string;
 };
 
 export type LoginPayload = {
