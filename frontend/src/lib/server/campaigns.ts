@@ -283,7 +283,7 @@ export async function runCampaignQueue(sql:Sql,limit=15){
 
 export async function runCampaignEmails(sql:Sql,limit=12,origin=""){
  const q=qsql(sql);
- const key=process.env.RESEND_API_KEY,from=process.env.RESEND_FROM_EMAIL||"";
+ const key=process.env.RESEND_API_KEY,from=process.env.RESEND_FROM_EMAIL||`LOYVANCE <hello@${process.env.RESEND_DOMAIN||"youssefhrd.com"}>`;
  if(!key||!from||!origin)return { sent:0, skipped:"Email not configured" };
  const jobs=await q`UPDATE marketing_campaign_recipients r SET email_state='sending',claimed_at=now(),email_attempts=email_attempts+1
   FROM (SELECT campaign_id,user_id FROM marketing_campaign_recipients
@@ -317,6 +317,7 @@ export async function runCampaignEmails(sql:Sql,limit=12,origin=""){
   try{
    const subject=`${String(recipient.business_name).slice(0,45)}: ${String(recipient.title)}`;
    const html=`<div style="font-family:Arial,sans-serif;max-width:580px;margin:auto"><h2>${esc(String(recipient.title))}</h2><p>${esc(String(recipient.message))}</p><p style="color:#666;font-size:12px">${esc(String(recipient.business_name))} via LOYVANCE</p><p><a href="${esc(unsub)}">Unsubscribe from promotional emails</a></p></div>`;
+   await new Promise(resolve=>setTimeout(resolve,600));
    const resp=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":`Bearer ${key}`,"Content-Type":"application/json","Idempotency-Key":`campaign-${job.campaign_id}-${job.user_id}`},
      body:JSON.stringify({from,to:[String(recipient.email)],subject,html,headers:{"List-Unsubscribe":`<${unsub}>`},tags:[{name:"category",value:"campaign"}]})});
    if(!resp.ok)throw Error("Resend rejected email with HTTP "+resp.status);
@@ -331,14 +332,18 @@ export async function runCampaignEmails(sql:Sql,limit=12,origin=""){
 }
 
 export async function unsubscribeCampaignEmail(req:Request,sql:Sql){
- if(req.method!=="GET")return reply({message:"Method not allowed."},405);
- const token=new URL(req.url).searchParams.get("token")??"";
+ if(req.method!=="GET"&&req.method!=="POST")return reply({message:"Method not allowed."},405);
+ const form=req.method==="POST"?await req.formData().catch(()=>null):null;
+ const token=req.method==="POST"?String(form?.get("token")??""):new URL(req.url).searchParams.get("token")??"";
  if(!/^[0-9a-f]{64}$/.test(token))return new Response("Invalid unsubscribe link.",{status:400,headers:{"Content-Type":"text/plain","Referrer-Policy":"no-referrer"}});
+ const headers={"Content-Type":"text/html; charset=utf-8","Referrer-Policy":"no-referrer","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'"};
+ if(req.method==="GET"){
+  // GET only displays confirmation: security scanners must not change customer consent.
+  return new Response('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LOYVANCE preferences</title><main style="font-family:system-ui;max-width:480px;margin:15vh auto;padding:24px"><h1>Unsubscribe from promotions?</h1><p>Essential account and loyalty notifications remain active.</p><form method="post"><input type="hidden" name="token" value="'+token+'"><button style="background:#eab95e;padding:12px 22px;border:0;border-radius:8px;font-weight:bold">Confirm unsubscribe</button></form></main></html>',{headers});
+ }
  const q=qsql(sql);
- const row=(await q`DELETE FROM marketing_unsubscribe_tokens WHERE token_hash=${hash(token)} AND expires_at>now()
-  RETURNING user_id`)[0];
- if(!row)return new Response("Link expired or already used. Change promotional settings in your LOYVANCE account.",{status:410,headers:{"Content-Type":"text/plain","Referrer-Policy":"no-referrer"}});
- await q`UPDATE customer_profiles SET preferences=jsonb_set(COALESCE(preferences,'{}'::jsonb),'{notifications,promotions}','false'::jsonb,true),updated_at=now()
-  WHERE user_id=${row.user_id}::uuid`;
- return new Response("Promotional notifications and emails have been disabled for your LOYVANCE account. You can change this in Settings.",{headers:{"Content-Type":"text/plain; charset=utf-8","Referrer-Policy":"no-referrer","Cache-Control":"no-store"}});
+ const row=(await q`DELETE FROM marketing_unsubscribe_tokens WHERE token_hash=${hash(token)} AND expires_at>now() RETURNING user_id`)[0];
+ if(!row)return new Response("This link expired or was already used. Manage promotions in your LOYVANCE settings.",{status:410,headers:{"Content-Type":"text/plain; charset=utf-8","Referrer-Policy":"no-referrer"}});
+ await q`UPDATE customer_profiles SET preferences=jsonb_set(COALESCE(preferences,'{}'::jsonb),'{notifications,promotions}','false'::jsonb,true),updated_at=now() WHERE user_id=${row.user_id}::uuid`;
+ return new Response("Promotional messages disabled. You can change this in your LOYVANCE account settings.",{headers:{"Content-Type":"text/plain; charset=utf-8","Referrer-Policy":"no-referrer","Cache-Control":"no-store"}});
 }
