@@ -3,7 +3,9 @@ import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartSpline, CreditCard, Home, LogOut, Mail, Trophy, User } from "lucide-react";
+import { ChartSpline, CreditCard, Handshake, Home, LogOut, Mail, Trophy, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { cn } from "@/lib/utils";
@@ -22,7 +24,10 @@ export function CustomerLayout({ children, title, subtitle, }: {
 }) {
     const { t: tr } = useI18n();
     const pathname = usePathname();
-    const { user, logout } = useCustomerAuth();
+    const { user, token, logout } = useCustomerAuth();
+    const [isAffiliate,setIsAffiliate] = useState(false);
+    useEffect(()=>{ if(!token){setIsAffiliate(false);return;} let valid=true;apiFetch("/affiliate/me",{token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
+    const visibleNav = isAffiliate?[...nav,{href:"/user/affiliate",label:"Affiliate",icon:Handshake}]:nav;
     return (<div className="relative min-h-dvh overflow-x-clip bg-[#080907] bg-fixed bg-center bg-no-repeat text-foreground lg:flex" style={{
             backgroundImage: "url('/brand/%C3%89l%C3%A9gance%20noire%20aux%20rubans%20dor%C3%A9s.png')",
             backgroundSize: "100% 100%",
@@ -40,7 +45,7 @@ export function CustomerLayout({ children, title, subtitle, }: {
           </Link>
         </div>
         <nav className="flex-1 space-y-1.5 p-4 pt-5">
-          {nav.map((item) => {
+          {visibleNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
             return (<Link key={item.href} href={item.href} className={cn("flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-all", active ? "border-[#e7b354]/25 bg-[#d79b16]/12 text-[#ffc857] shadow-[0_8px_24px_rgba(215,155,22,.08)]" : "border-transparent text-muted-foreground hover:border-white/5 hover:bg-white/[.035] hover:text-white")}>
@@ -83,8 +88,8 @@ export function CustomerLayout({ children, title, subtitle, }: {
         </main>
 
         <nav className="fixed inset-x-0 bottom-0 z-[100] translate-z-0 border-t border-[#d8a63f]/15 bg-[#0b0c0a]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden [transform:translate3d(0,0,0)]">
-          <div className="mx-auto grid w-full max-w-md grid-cols-5 gap-1 px-2 py-2">
-            {nav.map((item) => {
+          <div className={`mx-auto grid w-full max-w-md ${isAffiliate?"grid-cols-6":"grid-cols-5"} gap-1 px-2 py-2`}>
+            {visibleNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
             return (<Link key={item.href} href={item.href} className={cn("flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[11px] transition-colors", active ? "bg-[#d79b16]/12 text-[#ffc857]" : "text-muted-foreground")}>

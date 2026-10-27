@@ -5,7 +5,8 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CreditCard, Gift, Home, LogOut, Menu, ScanLine, Settings, Users, } from "lucide-react";
+import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Menu, ScanLine, Settings, Users, } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { BusinessSubscriptionAlert, BusinessSubscriptionCard, BusinessSubscripti
 import { cn } from "@/lib/utils";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 type DashboardShellProps = {
-    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards";
+    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate";
     children: React.ReactNode;
 };
 const sidebarItems = [
@@ -27,6 +28,7 @@ const sidebarItems = [
     },
     { key: "scanner", label: "Scanner", icon: ScanLine, href: "/dashboard/scanner" },
     { key: "rewards", label: "Rewards", icon: Gift, href: "/dashboard/rewards" },
+    { key: "affiliate", label: "Affiliate", icon: Handshake, href: "/dashboard/affiliate" },
     {
         key: "settings",
         label: "Settings",
@@ -43,6 +45,9 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
     const [subscriptionOpen, setSubscriptionOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [notifications, setNotifications] = useState<BusinessNotification[]>([]);
+    const [isAffiliate, setIsAffiliate] = useState(false);
+    useEffect(() => { let valid = true; apiFetch("/affiliate/me", {token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
+    const visibleItems = sidebarItems.filter(item => item.key !== "affiliate" || isAffiliate);
     useEffect(() => {
         if (!isMobileMenuOpen)
             return;
@@ -85,7 +90,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             </div>
 
             <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-5">
-              {sidebarItems.map((item) => (<SidebarItem active={item.key === activeItem} href={item.href} icon={item.icon} key={item.key} label={tr(item.label)}/>))}
+              {visibleItems.map((item) => (<SidebarItem active={item.key === activeItem} href={item.href} icon={item.icon} key={item.key} label={tr(item.label)}/>))}
             </nav>
 
             <div className="shrink-0 p-3">
@@ -118,7 +123,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
                   </Button>
                 </div>
                 <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-5">
-                  {sidebarItems.map((item) => (<MobileDrawerItem active={item.key === activeItem} href={item.href} icon={item.icon} key={item.key} label={tr(item.label)} onNavigate={() => setIsMobileMenuOpen(false)}/>))}
+                  {visibleItems.map((item) => (<MobileDrawerItem active={item.key === activeItem} href={item.href} icon={item.icon} key={item.key} label={tr(item.label)} onNavigate={() => setIsMobileMenuOpen(false)}/>))}
                 </nav>
                 <div className="shrink-0 border-t border-[#d9a52f]/15 bg-[#090a08]/85 p-3 backdrop-blur-sm">
                   <BusinessSubscriptionCard {...subscription} onOpen={() => { setIsMobileMenuOpen(false); setSubscriptionOpen(true); }}/>
@@ -134,7 +139,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
           <BusinessSubscriptionModal data={subscription.data} name={businessName} open={subscriptionOpen} token={token ?? ""} onSaved={subscription.refresh} onClose={() => setSubscriptionOpen(false)}/>
           <BusinessSubscriptionAlert data={subscription.data} name={businessName} onOpen={() => setSubscriptionOpen(true)}/>
           <EchoProvider token={token ?? null}>
-            <DashboardRealtimeContent><fieldset disabled={expired} aria-label={expired ? tr("Read-only business workspace") : tr("Business workspace")} className="min-w-0 border-0 p-0 [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-40">{children}</fieldset></DashboardRealtimeContent>
+            <DashboardRealtimeContent><fieldset disabled={expired && activeItem !== "affiliate"} aria-label={expired && activeItem !== "affiliate" ? tr("Read-only business workspace") : tr("Business workspace")} className="min-w-0 border-0 p-0 [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-40">{children}</fieldset></DashboardRealtimeContent>
           </EchoProvider>
           </div>
         </section>
@@ -211,6 +216,9 @@ function DashboardRealtimeContent({ children }: {
     const { token } = useAuth();
     const { echo } = useEcho();
     const [notifications, setNotifications] = useState<BusinessNotification[]>([]);
+    const [isAffiliate, setIsAffiliate] = useState(false);
+    useEffect(() => { let valid = true; apiFetch("/affiliate/me", {token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
+    const visibleItems = sidebarItems.filter(item => item.key !== "affiliate" || isAffiliate);
     useEffect(() => {
         if (!token)
             return;
@@ -328,6 +336,7 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         scanner: "QR Scanner",
         rewards: "Rewards",
         settings: "Settings",
+        affiliate: "Affiliate",
     };
     return (<header className="app-topbar fixed inset-x-0 top-0 z-30 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl lg:sticky lg:inset-x-auto lg:z-20">
       <div className="flex h-16 items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">

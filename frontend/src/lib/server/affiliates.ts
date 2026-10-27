@@ -52,6 +52,8 @@ export async function ensureAffiliateSchema(sql: Sql) {
     rate_12_bps integer NOT NULL DEFAULT 2200 CHECK(rate_12_bps BETWEEN 0 AND 5000),
     created_at timestamptz NOT NULL DEFAULT now()
   )`;
+  await q`ALTER TABLE affiliate_partners ADD COLUMN IF NOT EXISTS user_id uuid UNIQUE REFERENCES app_users(id) ON DELETE SET NULL`;
+  await q`CREATE UNIQUE INDEX IF NOT EXISTS idx_affiliate_partners_user_id ON affiliate_partners(user_id) WHERE user_id IS NOT NULL`;
   await q`CREATE TABLE IF NOT EXISTS affiliate_businesses (
     business_id uuid PRIMARY KEY REFERENCES businesses(id) ON DELETE CASCADE,
     affiliate_id uuid NOT NULL REFERENCES affiliate_partners(id),
@@ -134,33 +136,50 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
   const segments = path.slice(2);
   if (!segments.length) {
     if (req.method === "GET") {
-      const partners = await q`SELECT p.id,p.name,p.email,p.code,p.is_active,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text,
+      const partners = await q`SELECT p.id,p.name,p.email,p.code,p.user_id,u.role AS account_role,u.email AS account_email,p.is_active,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text,
         (SELECT count(*)::int FROM affiliate_businesses b WHERE b.affiliate_id=p.id) AS businesses,
         (SELECT COALESCE(sum(c.commission_centimes),0)::bigint::text FROM affiliate_commissions c WHERE c.affiliate_id=p.id) AS earned_centimes,
         (SELECT COALESCE(sum(c.commission_centimes),0)::bigint::text FROM affiliate_commissions c WHERE c.affiliate_id=p.id AND c.payout_id IS NULL) AS unpaid_centimes
-        FROM affiliate_partners p ORDER BY p.created_at DESC LIMIT 300`;
+        FROM affiliate_partners p LEFT JOIN app_users u ON u.id=p.user_id ORDER BY p.created_at DESC LIMIT 300`;
       return reply({ data: partners });
     }
     if (req.method !== "POST") return reply({ message: "Method not allowed." },405);
     const body = await req.json().catch(() => ({})) as Row;
-    const name = String(body.name ?? "").trim().slice(0,120);
-    const email = String(body.email ?? "").trim().toLowerCase();
-    const code = String(body.code || name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || `partner-${randomBytes(4).toString("hex")}`).trim().toLowerCase();
+    // Affiliate access is an *additional permission* on an existing customer or business account.
+    // The account keeps its original role, credentials, cards and business workspace.
+    const email = String(body.user_email ?? "").trim().toLowerCase();
     const rates = validateRates(body.rates ?? ratesDefault);
-    if (name.length < 2 || email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !codePattern.test(code) || !rates)
-      return reply({ message: "Enter a name, valid email, unique code (3-40 lowercase letters, digits or hyphens), and rates from 0 to 50%." },422);
-    const password = `${randomBytes(12).toString("base64url")}aA1!`;
-    const passwordHash = await hashPassword(password);
+    if (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !rates)
+      return reply({ message: "Enter the registered LOYVANCE user's email and valid commission percentages." },422);
+    const account = (await q`SELECT id,name,email,role,status FROM app_users WHERE email=${email} AND role IN ('customer','business_owner') LIMIT 1`)[0];
+    if (!account) return reply({ message: "This account does not exist yet. Ask the person to register normally first." },404);
+    if (account.status !== 'active') return reply({ message: "Activate this account before granting affiliate access." },409);
+    const previouslyLinked = await q`SELECT id FROM affiliate_partners WHERE user_id=${account.id}::uuid LIMIT 1`;
+    if (previouslyLinked.length) return reply({ message: "This account already has an affiliate profile. Select it from the list." },409);
+    // Preserve older standalone partners (and their financial ledger) when the same email signs up normally.
+    const existing = await q`UPDATE affiliate_partners SET user_id=${account.id}::uuid
+      WHERE email=${email} AND user_id IS NULL
+      AND NOT EXISTS (SELECT 1 FROM affiliate_partners WHERE user_id=${account.id}::uuid)
+      RETURNING id,name,email,code,user_id,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
+    if (existing.length) {
+      await q`DELETE FROM affiliate_sessions WHERE affiliate_id=${existing[0].id}::uuid`;
+      return reply({ affiliate: existing[0], linked_existing: true });
+    }
+    const name = String(account.name).trim().slice(0,120);
+    const code = String(body.code || name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || `partner-${randomBytes(4).toString("hex")}`).trim().toLowerCase();
+    if (!codePattern.test(code)) return reply({ message: "Referral code must be 3-40 lowercase letters, digits or hyphens." },422);
+    // Legacy password field is kept for historical compatibility, but linked users sign in ONLY with their normal account.
+    const disabledLegacyPasswordHash = await hashPassword(randomBytes(32).toString("hex"));
     const id = randomUUID();
-    const found = await q`INSERT INTO affiliate_partners(id,name,email,code,password_hash,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps)
-      VALUES(${id},${name},${email},${code},${passwordHash},${rates["1"]},${rates["3"]},${rates["6"]},${rates["12"]})
-      ON CONFLICT DO NOTHING RETURNING id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
-    if (!found.length) return reply({ message: "Affiliate email or referral code already exists." },409);
-    return reply({ affiliate: found[0], temporary_password: password },201);
+    const found = await q`INSERT INTO affiliate_partners(id,user_id,name,email,code,password_hash,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps)
+      VALUES(${id},${account.id}::uuid,${name},${email},${code},${disabledLegacyPasswordHash},${rates["1"]},${rates["3"]},${rates["6"]},${rates["12"]})
+      ON CONFLICT DO NOTHING RETURNING id,user_id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
+    if (!found.length) return reply({ message: "Email or referral code already belongs to another partner." },409);
+    return reply({ affiliate: found[0] },201);
   }
   const id = segments[0];
   if (!uuidPattern.test(id)) return reply({ message: "Invalid affiliate." },422);
-  const partner = (await q`SELECT id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps,created_at::text FROM affiliate_partners WHERE id=${id}`)[0];
+  const partner = (await q`SELECT p.id,p.name,p.email,p.code,p.user_id,u.role AS account_role,u.email AS account_email,p.is_active,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text FROM affiliate_partners p LEFT JOIN app_users u ON u.id=p.user_id WHERE p.id=${id}`)[0];
   if (!partner) return reply({ message: "Affiliate not found." },404);
   if (segments.length === 1 && req.method === "GET") return reply({ affiliate: partner, ...(await affiliateReport(sql,id)) });
   if (segments.length === 1 && req.method === "PATCH") {
@@ -176,7 +195,22 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
     if (!isActive) await q`DELETE FROM affiliate_sessions WHERE affiliate_id=${id}`;
     return reply({ affiliate: updated[0] });
   }
+  if (segments.length === 2 && segments[1] === "link-account" && req.method === "POST") {
+    const body = await req.json().catch(() => ({})) as Row;
+    const email = String(body.user_email ?? "").trim().toLowerCase();
+    const account = (await q`SELECT id,name,role,status,email FROM app_users WHERE email=${email} AND role IN ('customer','business_owner') LIMIT 1`)[0];
+    if (!account) return reply({ message: "User not found. Ask them to create a normal account first." },404);
+    if (account.status !== "active") return reply({ message: "The selected user is suspended." },409);
+    if (partner.user_id) return reply({ message: "This partner is already connected to a LOYVANCE account." },409);
+    const linked = await q`UPDATE affiliate_partners SET user_id=${account.id}::uuid WHERE id=${id}::uuid AND user_id IS NULL
+      AND NOT EXISTS(SELECT 1 FROM affiliate_partners WHERE user_id=${account.id}::uuid)
+      RETURNING id,name,email,code,user_id,is_active`;
+    if (!linked.length) return reply({ message: "This account is already associated with a different affiliate." },409);
+    await q`DELETE FROM affiliate_sessions WHERE affiliate_id=${id}::uuid`;
+    return reply({ affiliate: linked[0] });
+  }
   if (segments.length === 2 && segments[1] === "reset-password" && req.method === "POST") {
+    if (partner.user_id) return reply({ message: "Linked partners use their normal LOYVANCE account password. Reset it in account settings." },409);
     const temporaryPassword = `${randomBytes(12).toString("base64url")}aA1!`;
     const passwordHash = await hashPassword(temporaryPassword);
     await q`UPDATE affiliate_partners SET password_hash=${passwordHash} WHERE id=${id}::uuid`;
@@ -222,10 +256,20 @@ async function currentAffiliate(req: Request, sql: Sql) {
   const q = rowSql(sql);
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i,"").trim() ?? "";
   if (!/^[a-f0-9]{64}$/i.test(token)) return null;
-  const rows = await q`SELECT a.id,a.name,a.email,a.code,a.is_active,a.rate_1_bps,a.rate_3_bps,a.rate_6_bps,a.rate_12_bps
+  // The normal customer/business session is the primary credential. No second affiliate password.
+  const linked = await q`SELECT a.id,a.name,a.email,a.code,a.is_active,a.rate_1_bps,a.rate_3_bps,a.rate_6_bps,a.rate_12_bps
+    FROM user_sessions s JOIN app_users u ON u.id=s.user_id
+    JOIN affiliate_partners a ON a.user_id=u.id LEFT JOIN businesses b ON b.id=u.business_id
+    WHERE s.token=${token} AND s.expires_at>now() AND a.is_active=true AND u.status='active'
+      AND u.role IN ('customer','business_owner')
+      AND (u.role<>'business_owner' OR (b.id IS NOT NULL AND COALESCE(b.status,'active')='active'))
+    LIMIT 1`;
+  if (linked.length) return linked[0];
+  // Existing unlinked affiliates retain their previous portal until the admin links their account.
+  const legacy = await q`SELECT a.id,a.name,a.email,a.code,a.is_active,a.rate_1_bps,a.rate_3_bps,a.rate_6_bps,a.rate_12_bps
     FROM affiliate_sessions s JOIN affiliate_partners a ON a.id=s.affiliate_id
-    WHERE s.token_hash=${codeHash(token)} AND s.expires_at>now() AND a.is_active=true LIMIT 1`;
-  return rows[0] ?? null;
+    WHERE s.token_hash=${codeHash(token)} AND s.expires_at>now() AND a.is_active=true AND a.user_id IS NULL LIMIT 1`;
+  return legacy[0] ?? null;
 }
 
 export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
@@ -239,9 +283,9 @@ export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
     const email = String(body.email ?? "").toLowerCase().trim();
     const password = String(body.password ?? "");
     if (email.length > 200 || password.length > 200) return reply({ message: "Invalid credentials." },401);
-    const users = await q`SELECT id,name,email,code,password_hash,is_active FROM affiliate_partners WHERE email=${email} LIMIT 1`;
+    const users = await q`SELECT id,name,email,code,user_id,password_hash,is_active FROM affiliate_partners WHERE email=${email} LIMIT 1`;
     const user = users[0];
-    if (!user || user.is_active !== true || !(await verifyPassword(password,String(user.password_hash))))
+    if (!user || user.is_active !== true || user.user_id || !(await verifyPassword(password,String(user.password_hash))))
       return reply({ message: "Invalid credentials or inactive affiliate account." },401);
     const token = randomBytes(32).toString("hex");
     await q`INSERT INTO affiliate_sessions(token_hash,affiliate_id) VALUES(${codeHash(token)},${user.id}::uuid)`;
@@ -257,6 +301,8 @@ export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
     return reply({ message: "Signed out." });
   }
   if (path[1] === "password" && req.method === "POST") {
+    const legacyAccount = await q`SELECT user_id FROM affiliate_partners WHERE id=${affiliate.id}::uuid`;
+    if (legacyAccount[0]?.user_id) return reply({ message: "Use your normal LOYVANCE account password settings." },409);
     const body = await req.json().catch(() => ({})) as Row;
     const oldPassword = String(body.current_password ?? "");
     const newPassword = String(body.new_password ?? "");
