@@ -17,15 +17,16 @@ export async function submitRenewal(database: Sql, req: Request, businessId: str
   const form=await req.formData().catch(()=>null);
   const id=String(form?.get("request_id")??""), plan=subscriptionPlan(Number(form?.get("duration_months")));
   const note=String(form?.get("note")??"").trim(),reference=String(form?.get("reference")??"").trim(),file=form?.get("proof");
-  if (!uuid.test(id)||!plan||note.length>1000||reference.length>200||!(file instanceof File)||!file.size||file.size>2*1024*1024) return reply({message:"Select a duration and attach a JPG, PNG or WebP payment proof (maximum 2 MB)."},422);
+  const mode=String(form?.get("mode")??"");
+  if (!uuid.test(id)||!plan||!["extend","replace"].includes(mode)||note.length>1000||reference.length>200||!(file instanceof File)||!file.size||file.size>2*1024*1024) return reply({message:"Select a duration and attach a JPG, PNG or WebP payment proof (maximum 2 MB)."},422);
   const bytes=Buffer.from(await file.arrayBuffer());
   const mime=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))?"image/png":bytes[0]===255&&bytes[1]===216&&bytes[2]===255?"image/jpeg":bytes.toString("ascii",0,4)==="RIFF"&&bytes.toString("ascii",8,12)==="WEBP"?"image/webp":null;
   if (!mime) return reply({message:"The proof must be a valid JPG, PNG or WebP image."},422);
   const hash=createHash("sha256").update(bytes).digest("hex");
-  const existing=await sql`SELECT business_id,duration_months,note,reference,proof_hash FROM subscription_renewal_requests WHERE id=${id}`;
-  if(existing[0])return existing[0].business_id===businessId&&existing[0].duration_months===plan.months&&existing[0].note===note&&existing[0].reference===reference&&existing[0].proof_hash===hash?reply({message:"Renewal request submitted. The administrator will review your payment."}):reply({message:"This request identifier has already been used."},409);
-  const rows=await sql`INSERT INTO subscription_renewal_requests(id,business_id,duration_months,plan_price_dh,note,reference,proof_data,proof_mime,proof_hash)
-    VALUES(${id},${businessId},${plan.months},${plan.price},${note},${reference},decode(${bytes.toString("base64")},'base64'),${mime},${hash}) ON CONFLICT DO NOTHING RETURNING id`;
+  const existing=await sql`SELECT business_id,duration_months,mode,note,reference,proof_hash FROM subscription_renewal_requests WHERE id=${id}`;
+  if(existing[0])return existing[0].business_id===businessId&&existing[0].duration_months===plan.months&&existing[0].mode===mode&&existing[0].note===note&&existing[0].reference===reference&&existing[0].proof_hash===hash?reply({message:"Renewal request submitted. The administrator will review your payment."}):reply({message:"This request identifier has already been used."},409);
+  const rows=await sql`INSERT INTO subscription_renewal_requests(id,business_id,duration_months,mode,plan_price_dh,note,reference,proof_data,proof_mime,proof_hash)
+    VALUES(${id},${businessId},${plan.months},${mode},${plan.price},${note},${reference},decode(${bytes.toString("base64")},'base64'),${mime},${hash}) ON CONFLICT DO NOTHING RETURNING id`;
   if(!rows.length) return reply({message:"A renewal request is already pending. Please wait for the administrator's review."},409);
   return reply({message:"Renewal request submitted. Your access changes only after administrator approval."},201);
 }
