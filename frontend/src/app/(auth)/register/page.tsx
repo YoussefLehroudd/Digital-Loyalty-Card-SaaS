@@ -7,7 +7,7 @@ export default async function RegisterPage({ searchParams }: {
 }) {
     const params = await searchParams;
     const joinQuery = new URLSearchParams();
-    for (const key of ["join", "join_business_id"]) {
+    for (const key of ["join", "join_business_id", "ref"]) {
         const value = params[key];
         if (typeof value === "string" && value)
             joinQuery.set(key, value);
