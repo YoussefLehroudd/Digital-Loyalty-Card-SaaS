@@ -82,7 +82,7 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
        <label className={label}>Owner full name<input required minLength={2} className={field} value={creating?form.name:form.owner_name} onChange={e=>set(creating?"name":"owner_name",e.target.value)}/></label>
        <label className={label}>Owner login email (may differ from business contact)<input type="email" required className={field} value={form.email} onChange={e=>set("email",e.target.value)}/></label>
      </>:<><label className={label}>Customer full name<input required minLength={2} className={field} value={form.name} onChange={e=>set("name",e.target.value)}/></label>
-       {target?.contact_details_visible===false&&!creating?<div className="rounded-xl border border-[#efbd5d]/20 bg-[#efbd5d]/5 p-3 text-xs leading-5 text-[#efbd5d]">This customer's contact details are private. Email and phone cannot be read or edited by administrators; name and password changes are still available.</div>:<>
+       {target?.contact_details_visible===false&&!creating?<div className="rounded-xl border border-[#efbd5d]/20 bg-[#efbd5d]/5 p-3 text-xs leading-5 text-[#efbd5d]">This customer&apos;s contact details are private. Email and phone cannot be read or edited by administrators; name and password changes are still available.</div>:<>
          <label className={label}>Customer login email<input type="email" required className={field} value={form.email} onChange={e=>set("email",e.target.value)}/></label>
          <label className={label}>Phone<input className={field} value={form.phone} onChange={e=>set("phone",e.target.value)}/></label>
        </>}
