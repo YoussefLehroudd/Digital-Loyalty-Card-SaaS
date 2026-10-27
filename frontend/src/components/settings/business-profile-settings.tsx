@@ -475,7 +475,7 @@ export function BusinessProfileSettings() {
                     </ProfileField>
                     {watchedValues.google_maps_url && isGoogleBusinessLink(watchedValues.google_maps_url,"maps") ?
                       <a href={watchedValues.google_maps_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 break-all text-xs font-semibold text-[#efbd5d] hover:underline"><ExternalLink className="size-3.5 shrink-0"/>{tr("Preview location on Google Maps")}</a> : null}
-                    <ProfileField error={errors.google_reviews_url?.message} icon={MessageSquareStar} label={tr("Direct Google Reviews link")}>
+                    <ProfileField error={errors.google_reviews_url?.message} icon={Star} label={tr("Direct Google Reviews link")}>
                       <Input type="url" inputMode="url" autoComplete="url" placeholder="https://g.page/r/.../review" {...register("google_reviews_url")}/>
                     </ProfileField>
                     {watchedValues.google_reviews_url && isGoogleBusinessLink(watchedValues.google_reviews_url,"reviews") ?
