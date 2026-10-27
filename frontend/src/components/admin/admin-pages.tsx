@@ -4,7 +4,7 @@ import { AdminBusinessFeatures } from "@/components/admin/admin-business-feature
 import { AdminAccountManager } from "@/components/admin/admin-account-manager";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Activity, ArrowDownLeft, ArrowRight, ArrowUpRight, Building2, Check, Plus, ChevronLeft, ChevronRight, CreditCard, Gift, Globe2, LockKeyhole, LogOut, Mail, Search, ShieldCheck, Sparkles, Stamp, Users, Wallet, X } from "lucide-react";
+import { Activity, ArrowDownLeft, ArrowRight, ArrowUpRight, Building2, Check, Plus, ChevronLeft, ChevronRight, CreditCard, Gift, Globe2, Eye, EyeOff, LockKeyhole, LogOut, Mail, Search, ShieldCheck, Sparkles, Stamp, Users, Wallet, X } from "lucide-react";
 import { AdminRenewals } from "./admin-renewals";
 import { money } from "@/lib/subscription";
 import { AdminSubscription } from "@/components/admin/admin-subscription";
@@ -152,6 +152,44 @@ export function AdminActivityPage() {
     const { data, error } = useAdminLive<AdminActivity>(`activity?kind=${kind}&page=${page}`);
     return <><Heading eyebrow="Live platform feed" title={tr("Everything happening, in view.")} description={tr("Follow loyalty activity and administrator actions across the platform.")}/><ErrorBanner error={error}/><section className={panel}><div className="flex gap-2 overflow-x-auto border-b border-white/[.07] p-4 sm:p-5">{[['', 'All activity'], ['stamp', 'Stamps'], ['reward', 'Rewards'], ['admin', 'Admin actions']].map(([value, label]) => <button key={value} onClick={() => { setKind(value); setPage(1); }} aria-pressed={kind === value} className={`shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-xs font-semibold ${kind === value ? 'bg-[#edbc62] text-black' : 'border border-white/10 text-white/50 hover:bg-white/5'}`}>{tr(label)}</button>)}</div>{!data ? <div className="space-y-3 p-5">{[0, 1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16 rounded-xl"/>)}</div> : data.data.length ? <div className="divide-y divide-white/[.05]">{data.data.map(event => <article key={event.id} className="flex items-start gap-3 p-4 sm:gap-4 sm:px-6"><EventIcon type={event.type}/><div className="min-w-0 flex-1"><div className="flex flex-wrap justify-between gap-1"><p className="text-xs font-semibold">{tr(event.title)}</p><time dateTime={event.date} className="text-[10px] text-white/30">{new Date(event.date).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time></div><p className="mt-1.5 break-words text-[11px] text-white/45">{event.name || tr('Customer')} <span className="mx-1 text-white/20">/</span> {event.business_name}</p>{event.reason ? <p className="mt-2 rounded-lg bg-white/[.025] p-2 text-[11px] leading-5 text-white/50">{event.reason}</p> : null}</div></article>)}</div> : <Empty title={tr("No activity here yet")} description={tr("New stamps, rewards, and account changes will appear automatically.")}/>}{data ? <Pagination page={page} total={data.total} onPage={setPage}/> : null}</section></>;
 }
+
+function AdminSettingsPasswordInput({ id, label, value, onChange, autoComplete, minLength, disabled }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    autoComplete: "current-password" | "new-password";
+    minLength?: number;
+    disabled?: boolean;
+}) {
+    const [visible, setVisible] = useState(false);
+    useEffect(() => { if (!value) setVisible(false); }, [value]);
+    return <div className="relative">
+        <input
+            id={id}
+            type={visible ? "text" : "password"}
+            autoComplete={autoComplete}
+            minLength={minLength}
+            required
+            disabled={disabled}
+            value={value}
+            onChange={event => onChange(event.target.value)}
+            className={`${input} w-full pe-14`}
+        />
+        <button
+            type="button"
+            aria-label={`${visible ? "Hide" : "Show"} ${label.toLowerCase()}`}
+            aria-pressed={visible}
+            title={visible ? "Hide password" : "Show password"}
+            onClick={() => setVisible(previous => !previous)}
+            disabled={disabled}
+            className="absolute inset-y-0 end-1.5 grid w-11 place-items-center rounded-lg text-white/50 transition hover:bg-white/10 hover:text-[#edbc62] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#edbc62] disabled:opacity-40"
+        >
+            {visible ? <EyeOff className="size-4" aria-hidden="true"/> : <Eye className="size-4" aria-hidden="true"/>}
+        </button>
+    </div>;
+}
+
 export function AdminSettingsPage() {
     const { t: tr } = useI18n();
     const { token, logout } = useAdmin();
@@ -181,5 +219,5 @@ export function AdminSettingsPage() {
     const integrations = [{ key: 'google_wallet', label: 'Google Wallet', description: 'Digital loyalty passes', icon: Wallet }, { key: 'apple_wallet', label: 'Apple Wallet', description: 'Pass signing and device updates', icon: CreditCard }, { key: 'email', label: 'Transactional email', description: 'Verification and account recovery', icon: Mail }, { key: 'images', label: 'Image storage', description: 'Business branding and profile photos', icon: Globe2 }] as const;
     return <><Heading eyebrow="Workspace settings" title={tr("Your account. Your platform.")} description={tr("Manage administrator security and see which platform integrations are configured.")}/><ErrorBanner error={error}/><div className="grid gap-5 xl:grid-cols-2"><section className={`${panel} p-5 sm:p-6`}><div className="flex items-center gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-[#edbc62]/10 text-lg font-semibold text-[#edbc62]">{data.data.account.name.slice(0, 2).toUpperCase()}</span><div><h2 className="text-sm font-semibold">{data.data.account.name}</h2><p className="mt-1 break-all text-xs text-white/40">{data.data.account.email}</p></div></div><div className="mt-6 flex items-center gap-2 rounded-xl border border-[#edbc62]/20 bg-[#edbc62]/5 p-3 text-xs text-[#edbc62]"><ShieldCheck className="size-4"/>{tr("Super administrator")}</div><div className="mt-5 space-y-3 text-xs text-white/45"><p>{tr("Access is verified by the server on every request.")}</p><p>{tr("Account status changes are recorded in the administrator audit log.")}</p><p>{tr("Live data refreshes every ")}{data.data.refresh_seconds}{tr(" seconds while this workspace is visible.")}</p></div><button onClick={() => void logout()} className="mt-6 flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-xs font-semibold text-white/60 hover:bg-white/5"><LogOut className="size-4"/>{tr("Sign out of administration")}</button></section>
     <section className={`${panel} p-5 sm:p-6`}><h2 className="text-sm font-semibold">{tr("Platform integrations")}</h2><p className="mt-1 text-xs text-white/40">{tr("Configuration status from the server")}</p><div className="mt-6 divide-y divide-white/[.06]">{integrations.map(item => <div key={item.key} className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"><item.icon className="size-5 shrink-0 text-[#edbc62]"/><div className="min-w-0 flex-1"><p className="text-xs font-semibold">{tr(item.label)}</p><p className="mt-1 text-[10px] text-white/40">{tr(item.description)}</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] ${data.data.integrations[item.key] ? 'bg-emerald-400/10 text-emerald-300' : 'bg-white/5 text-white/40'}`}>{data.data.integrations[item.key] ? tr('Configured') : tr('Not configured')}</span></div>)}</div></section>
-    <section className={`${panel} p-5 sm:p-6 xl:col-span-2`}><div className="mb-6 flex items-center gap-3"><LockKeyhole className="size-5 text-[#edbc62]"/><div><h2 className="text-sm font-semibold">{tr("Password & security")}</h2><p className="mt-1 text-xs text-white/40">{tr("Keep your administrator account secure.")}</p></div></div><form onSubmit={save}><div className="grid gap-4 md:grid-cols-3"><div><div className="mb-2 flex flex-wrap justify-between gap-2"><label htmlFor="admin-current-password" className="text-xs text-white/60">{tr("Current password")}</label><Link href="/forgot-password" className="text-[11px] text-[#edbc62]">{tr("Forgot password?")}</Link></div><input id="admin-current-password" autoComplete="current-password" type="password" required value={current} onChange={e => setCurrent(e.target.value)} className={`${input} w-full`}/></div><div><label htmlFor="admin-new-password" className="mb-2 block text-xs text-white/60">{tr("New password")}</label><input id="admin-new-password" autoComplete="new-password" type="password" minLength={10} required value={password} onChange={e => setPassword(e.target.value)} className={`${input} w-full`}/></div><div><label htmlFor="admin-confirm-password" className="mb-2 block text-xs text-white/60">{tr("Confirm new password")}</label><input id="admin-confirm-password" autoComplete="new-password" type="password" minLength={10} required value={confirm} onChange={e => setConfirm(e.target.value)} className={`${input} w-full`}/></div></div><p className="mt-3 text-[10px] text-white/35">{tr("Use at least 10 characters. This updates the password for your account across LOYVANCE.")}</p>{message ? <p role="status" className="mt-3 text-xs text-emerald-300">{tr(message)}</p> : null}{saveError ? <p role="alert" className="mt-3 text-xs text-rose-300">{tr(saveError)}</p> : null}<div className="mt-5 flex justify-end"><button disabled={busy} className="rounded-xl bg-[#edbc62] px-5 py-3 text-xs font-bold text-black disabled:opacity-50">{busy ? tr('Updating…') : tr('Update password')}</button></div></form></section></div></>;
+    <section className={`${panel} p-5 sm:p-6 xl:col-span-2`}><div className="mb-6 flex items-center gap-3"><LockKeyhole className="size-5 text-[#edbc62]"/><div><h2 className="text-sm font-semibold">{tr("Password & security")}</h2><p className="mt-1 text-xs text-white/40">{tr("Keep your administrator account secure.")}</p></div></div><form onSubmit={save}><div className="grid gap-4 md:grid-cols-3"><div><div className="mb-2 flex flex-wrap justify-between gap-2"><label htmlFor="admin-current-password" className="text-xs text-white/60">{tr("Current password")}</label><Link href="/forgot-password" className="text-[11px] text-[#edbc62]">{tr("Forgot password?")}</Link></div><AdminSettingsPasswordInput id="admin-current-password" label="Current password" autoComplete="current-password" value={current} onChange={setCurrent} disabled={busy}/></div><div><label htmlFor="admin-new-password" className="mb-2 block text-xs text-white/60">{tr("New password")}</label><AdminSettingsPasswordInput id="admin-new-password" label="New password" autoComplete="new-password" minLength={10} value={password} onChange={setPassword} disabled={busy}/></div><div><label htmlFor="admin-confirm-password" className="mb-2 block text-xs text-white/60">{tr("Confirm new password")}</label><AdminSettingsPasswordInput id="admin-confirm-password" label="Confirm new password" autoComplete="new-password" minLength={10} value={confirm} onChange={setConfirm} disabled={busy}/></div></div><p className="mt-3 text-[10px] text-white/35">{tr("Use at least 10 characters. This updates the password for your account across LOYVANCE.")}</p>{message ? <p role="status" className="mt-3 text-xs text-emerald-300">{tr(message)}</p> : null}{saveError ? <p role="alert" className="mt-3 text-xs text-rose-300">{tr(saveError)}</p> : null}<div className="mt-5 flex justify-end"><button disabled={busy} className="rounded-xl bg-[#edbc62] px-5 py-3 text-xs font-bold text-black disabled:opacity-50">{busy ? tr('Updating…') : tr('Update password')}</button></div></form></section></div></>;
 }
