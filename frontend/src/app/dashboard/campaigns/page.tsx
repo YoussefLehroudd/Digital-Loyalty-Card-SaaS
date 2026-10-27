@@ -154,7 +154,7 @@ export default function BusinessCampaignsPage(){
       </fieldset>
       <p className="flex items-start gap-2 rounded-xl bg-[#efbd5d]/5 p-3 text-xs leading-5 text-white/60"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#efbd5d]"/>Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.</p>
       <button type="submit" disabled={busy||title.trim().length<3||message.trim().length<10} className={primary+" w-full"}>{busy?<Loader2 className="size-4 animate-spin"/>:<Megaphone className="size-4"/>}{editingId?"Save changes":copyFrom?"Create edited draft":"Save draft campaign"}</button>
-      {(editingId||copyFrom)?<button type="button" className={secondary+" w-full"} disabled={busy} onClick={clearEditor}><X className="size-4"/>Cancel editing</button>:null>
+      {(editingId||copyFrom)?<button type="button" className={secondary+" w-full"} disabled={busy} onClick={clearEditor}><X className="size-4"/>Cancel editing</button>:null}
      </form>
     </section>
     <div className="min-w-0 space-y-4">
