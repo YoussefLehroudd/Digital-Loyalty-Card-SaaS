@@ -87,6 +87,16 @@ export async function ensureAffiliateSchema(sql: Sql) {
   )`;
   await q`CREATE INDEX IF NOT EXISTS idx_affiliate_commissions_partner ON affiliate_commissions(affiliate_id,created_at DESC)`;
   await q`CREATE INDEX IF NOT EXISTS idx_affiliate_commissions_unpaid ON affiliate_commissions(affiliate_id) WHERE payout_id IS NULL`;
+  // Lock concurrent Vercel cold starts before adding the public, idempotent visit counter.
+  await sql.transaction([
+    sql`SELECT pg_advisory_xact_lock(229001,25)`,
+    sql`CREATE TABLE IF NOT EXISTS affiliate_link_visits (
+      visit_id uuid PRIMARY KEY,
+      affiliate_id uuid NOT NULL REFERENCES affiliate_partners(id) ON DELETE CASCADE,
+      visited_at timestamptz NOT NULL DEFAULT now()
+    )`,
+    sql`CREATE INDEX IF NOT EXISTS idx_affiliate_link_visits_partner ON affiliate_link_visits(affiliate_id,visited_at DESC)`
+  ]);
 }
 
 export async function affiliateCodeIsValid(sql: Sql, code: string) {
@@ -100,11 +110,36 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
   const q = rowSql(sql);
   const [businesses, commissions, payouts, summary, history] = await Promise.all([
     q`SELECT b.id,b.name,b.created_at::text,ab.attributed_at::text,
-      count(c.subscription_event_id)::int AS paid_orders,
-      COALESCE(sum(c.commission_centimes),0)::bigint::text AS earned_centimes
-      FROM affiliate_businesses ab JOIN businesses b ON b.id=ab.business_id
+      COUNT(c.subscription_event_id)::int AS paid_orders,
+      COALESCE(SUM(c.commission_centimes),0)::bigint::text AS earned_centimes,
+      bs.trial_started_at::text,bs.trial_ends_at::text,
+      bs.paid_started_at::text,bs.paid_ends_at::text,
+      CASE WHEN bs.paid_ends_at IS NOT NULL AND bs.paid_ends_at>now() THEN 'subscribed'
+           WHEN bs.paid_ends_at IS NOT NULL THEN 'subscription_expired'
+           WHEN bs.trial_ends_at>now() THEN 'trial'
+           ELSE 'trial_expired' END AS subscription_status,
+      GREATEST(0,CEIL(EXTRACT(EPOCH FROM bs.trial_ends_at-now())/86400))::int AS trial_days_left,
+      GREATEST(0,CEIL(EXTRACT(EPOCH FROM COALESCE(bs.paid_ends_at,bs.trial_ends_at)-now())/86400))::int AS days_remaining,
+      latest.duration_months AS latest_plan_months,latest.paid_at::text AS latest_paid_at,
+      pending.duration_months AS pending_plan_months,pending.created_at::text AS pending_since
+      FROM affiliate_businesses ab
+      JOIN businesses b ON b.id=ab.business_id
+      LEFT JOIN business_subscriptions bs ON bs.business_id=b.id
       LEFT JOIN affiliate_commissions c ON c.business_id=b.id AND c.affiliate_id=ab.affiliate_id
-      WHERE ab.affiliate_id=${affiliateId} GROUP BY b.id,ab.attributed_at ORDER BY ab.attributed_at DESC LIMIT 200`,
+      LEFT JOIN LATERAL (
+        SELECT e.duration_months,e.paid_at FROM subscription_events e
+        WHERE e.business_id=b.id AND e.paid_at IS NOT NULL AND e.amount_centimes>0
+        ORDER BY e.paid_at DESC LIMIT 1
+      ) latest ON true
+      LEFT JOIN LATERAL (
+        SELECT r.duration_months,r.created_at FROM subscription_renewal_requests r
+        WHERE r.business_id=b.id AND r.status='pending' ORDER BY r.created_at DESC LIMIT 1
+      ) pending ON true
+      WHERE ab.affiliate_id=${affiliateId}
+      GROUP BY b.id,ab.attributed_at,bs.trial_started_at,bs.trial_ends_at,
+        bs.paid_started_at,bs.paid_ends_at,latest.duration_months,latest.paid_at,
+        pending.duration_months,pending.created_at
+      ORDER BY ab.attributed_at DESC LIMIT 200`,
     q`SELECT c.subscription_event_id,c.business_id,b.name AS business_name,c.duration_months,
       c.amount_centimes,c.rate_bps,c.commission_centimes,c.payout_id,
       e.paid_at::text,p.paid_at::text AS payout_at
@@ -114,6 +149,12 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
     q`SELECT id,month,amount_centimes,method,reference,paid_at::text
       FROM affiliate_payouts WHERE affiliate_id=${affiliateId} ORDER BY paid_at DESC LIMIT 100`,
     q`SELECT count(DISTINCT ab.business_id)::int AS referred_businesses,
+      (SELECT count(*)::int FROM affiliate_link_visits WHERE affiliate_id=${affiliateId}) AS link_visits,
+      (SELECT max(visited_at)::text FROM affiliate_link_visits WHERE affiliate_id=${affiliateId}) AS last_link_visit,
+      (SELECT count(*)::int FROM affiliate_businesses b JOIN business_subscriptions s ON s.business_id=b.business_id
+       WHERE b.affiliate_id=${affiliateId} AND s.paid_ends_at IS NULL AND s.trial_ends_at>now()) AS active_trials,
+      (SELECT count(*)::int FROM affiliate_businesses b JOIN business_subscriptions s ON s.business_id=b.business_id
+       WHERE b.affiliate_id=${affiliateId} AND s.paid_ends_at>now()) AS active_subscriptions,
       (SELECT count(*)::int FROM affiliate_commissions WHERE affiliate_id=${affiliateId}) AS paid_orders,
       (SELECT COALESCE(sum(commission_centimes),0)::bigint::text FROM affiliate_commissions WHERE affiliate_id=${affiliateId}) AS total_centimes,
       (SELECT COALESCE(sum(commission_centimes),0)::bigint::text FROM affiliate_commissions WHERE affiliate_id=${affiliateId} AND payout_id IS NULL) AS unpaid_centimes,
@@ -369,6 +410,20 @@ async function currentAffiliate(req: Request, sql: Sql) {
 
 export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
   const q = rowSql(sql);
+  if (path[1] === "visit" && req.method === "POST") {
+    const body=await req.json().catch(()=>null) as Row|null;
+    if(!body||Array.isArray(body))return reply({message:"Invalid visit."},422);
+    const code=String(body.code??"").trim().toLowerCase();
+    const visitId=String(body.visit_id??"").trim();
+    if(!codePattern.test(code)||!uuidPattern.test(visitId))return reply({message:"Invalid referral."},422);
+    // Anonymous visit counter: one event per browser tab session and referral code.
+    // No IP, device ID, name, email or fingerprint enters the affiliate visit table.
+    await q`INSERT INTO affiliate_link_visits(visit_id,affiliate_id)
+      SELECT ${visitId}::uuid,p.id FROM affiliate_partners p
+      WHERE p.code=${code} AND p.is_active=true AND p.archived_at IS NULL
+      ON CONFLICT(visit_id) DO NOTHING`;
+    return reply({ok:true});
+  }
   if (path[1] === "validate" && req.method === "GET") {
     const code = new URL(req.url).searchParams.get("code")?.trim().toLowerCase() ?? "";
     return reply({ valid: await affiliateCodeIsValid(sql,code) });
