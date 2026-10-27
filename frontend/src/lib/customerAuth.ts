@@ -366,3 +366,38 @@ export function customerAppleWalletLink(token: string, membershipId: string) {
   return apiFetch<{ url: string }>(`/user/wallet/apple/${membershipId}`, { method: "POST", token });
 }
 
+
+
+export type DiscoverableBusiness = {
+  id: string;
+  slug: string;
+  name: string;
+  logo_url: string | null;
+  hero_image_url: string | null;
+  primary_color: string | null;
+  address: string | null;
+  created_at: string;
+  reward_name: string;
+  required_stamps: number;
+  reward_description: string | null;
+  has_card: boolean;
+  membership_id: string | null;
+  available: boolean;
+  subscription_state: "active" | "trial" | "expired";
+};
+
+export function customerExploreBusinesses(token: string) {
+  return apiFetch<{ data: DiscoverableBusiness[] }>("/user/explore", {
+    token,
+    cache: "no-store",
+  });
+}
+
+export function customerGetBusinessCard(token: string, businessId: string) {
+  return apiFetch<{ message: string; membership_id: string; already_joined: boolean }>(
+    "/user/explore/" + encodeURIComponent(businessId) + "/join", {
+      method: "POST",
+      token,
+    }
+  );
+}
