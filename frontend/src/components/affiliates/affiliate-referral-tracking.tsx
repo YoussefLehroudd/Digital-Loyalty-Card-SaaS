@@ -4,7 +4,7 @@ import { CalendarClock, Check, Clock3, Eye, Users, BadgeCheck } from "lucide-rea
 export type ReferredBusiness = {
  id:string;name:string;attributed_at:string;paid_orders:number;earned_centimes:string;
  trial_started_at:string|null;trial_ends_at:string|null;paid_started_at:string|null;paid_ends_at:string|null;
- subscription_status:"trial"|"trial_expired"|"subscribed"|"subscription_expired";
+ subscription_status:"trial"|"trial_expired"|"subscribed"|"subscription_expired"|"access_granted";
  trial_days_left:number;days_remaining:number;latest_plan_months:number|null;latest_paid_at:string|null;
  pending_plan_months:number|null;pending_since:string|null;
 };
@@ -20,8 +20,9 @@ function Step({icon:Icon,label,value,note}:{icon:typeof Users;label:string;value
 function TrackingCard({business:b}:{business:ReferredBusiness}){
  const trial=b.subscription_status==="trial",paid=b.subscription_status==="subscribed";
  const wasPaid=b.subscription_status==="subscription_expired";
- const state=paid?"Subscribed":trial?"Free trial active":wasPaid?"Subscription expired":"Trial expired";
- const badge=paid?"border-emerald-400/25 bg-emerald-400/10 text-emerald-300":trial?"border-sky-400/25 bg-sky-400/10 text-sky-300":"border-rose-400/25 bg-rose-400/10 text-rose-300";
+ const granted=b.subscription_status==="access_granted";
+ const state=paid?"Paid subscription active":granted?"Free access granted":trial?"Free trial active":wasPaid?"Subscription expired":"Trial expired";
+ const badge=paid?"border-emerald-400/25 bg-emerald-400/10 text-emerald-300":granted?"border-amber-400/25 bg-amber-400/10 text-amber-300":trial?"border-sky-400/25 bg-sky-400/10 text-sky-300":"border-rose-400/25 bg-rose-400/10 text-rose-300";
  const trialStart=b.trial_started_at?Date.parse(b.trial_started_at):NaN;
  const trialEnd=b.trial_ends_at?Date.parse(b.trial_ends_at):NaN;
  const trialProgress=Number.isFinite(trialStart)&&Number.isFinite(trialEnd)&&trialEnd>trialStart
@@ -42,13 +43,13 @@ function TrackingCard({business:b}:{business:ReferredBusiness}){
    </div>
    <div className="min-w-0 rounded-lg border border-white/5 bg-white/[.025] p-3">
     <p className="text-[11px] text-white/40">Payment & subscription</p>
-    <p className="mt-1 text-xs font-semibold text-white/85">{paid?`Paid · ${b.latest_plan_months||"—"}-month plan`:wasPaid?"Previously subscribed":trial?"Not subscribed yet":"No active subscription"}</p>
+    <p className="mt-1 text-xs font-semibold text-white/85">{paid?`Paid · ${b.latest_plan_months||"—"}-month plan`:granted?"Admin-granted access · no confirmed payment":wasPaid?"Previously subscribed":trial?"Not subscribed yet":"No active subscription"}</p>
     <p className="mt-1 text-[11px] leading-5 text-white/45">{b.latest_paid_at?`Last confirmed: ${day(b.latest_paid_at)}`:"No confirmed payment yet"}</p>
    </div>
    <div className="min-w-0 rounded-lg border border-white/5 bg-white/[.025] p-3">
-    <p className="text-[11px] text-white/40">{paid?"Paid plan expires":trial?"Trial expires":"Last access expired"}</p>
+    <p className="text-[11px] text-white/40">{paid?"Paid plan expires":granted?"Access expires":trial?"Trial expires":"Last access expired"}</p>
     <p className="mt-1 text-xs font-semibold text-[#efbd5d]">{day(b.paid_ends_at||b.trial_ends_at)}</p>
-    <p className="mt-1 text-[11px] text-white/45">{paid||trial?`${b.days_remaining} days remaining`:"Needs renewal"}</p>
+    <p className="mt-1 text-[11px] text-white/45">{paid||trial||granted?`${b.days_remaining} days remaining`:"Needs renewal"}</p>
    </div>
   </div>
   {trial&&<div className="mt-3">
