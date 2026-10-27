@@ -104,7 +104,7 @@ export function DailyVisitsChart({ data, days }: { data: DailyMetric[]; days: 7 
             <div className="relative z-10 flex h-full min-w-0 items-end justify-between gap-1 sm:gap-2">
               {buckets.map(bucket => {
                 const count = bucket[metric];
-                const height = count === 0 ? 0 : Math.max(3, count / scaleMax * 83);
+                const height = count === 0 ? 0 : Math.max(3, count / scaleMax * 100);
                 const range = bucket.first === bucket.last ? label(bucket.first, "date") : label(bucket.first, "date") + "–" + label(bucket.last, "date");
                 return (
                   <div
@@ -120,7 +120,7 @@ export function DailyVisitsChart({ data, days }: { data: DailyMetric[]; days: 7 
                       style={{ height: height + "%" }}
                     >
                       {days === 7 && count > 0 && (
-                        <span className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums text-[#efbd5d]">
+                        <span className={height >= 80 ? "absolute left-1/2 top-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums text-[#17130b]" : "absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold tabular-nums text-[#efbd5d]"}>
                           {count}
                         </span>
                       )}
