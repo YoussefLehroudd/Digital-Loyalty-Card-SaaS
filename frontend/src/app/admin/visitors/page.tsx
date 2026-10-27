@@ -118,7 +118,7 @@ export default function AdminVisitorsPage(){
      {!report.sessions.length&&<p className="py-8 text-center text-xs text-white/40">No visits yet. New sessions will appear here.</p>}
     </div>
    </section>
-   <p className="text-[11px] leading-5 text-white/35">Analytics records are purged after 90 days when reporting runs. Analytics tables do not contain raw IP addresses, GPS, typed form values or URL query parameters. Do Not Track / Global Privacy Control signals are respected. Referrers and geo headers may be absent.</p>
+   <p className="text-[11px] leading-5 text-white/35">Analytics records are purged after 90 days when reporting runs. Analytics tables do not contain raw IP addresses, GPS, typed form values or URL query parameters. Do Not Track and explicit browser opt-out disable collection. GPC does not disable first-party analytics: records are not sold or shared. Referrers and geo headers may be absent.</p>
   </div>:null}
   {selected?<div role="dialog" aria-modal="true" aria-label="Visitor session timeline" className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={()=>{setSelected(null);setEvents(null);}}>
     <div className="max-h-[90dvh] w-full min-w-0 max-w-xl overflow-y-auto rounded-t-2xl border border-white/15 bg-[#12151b] p-4 shadow-2xl sm:rounded-2xl sm:p-6" onClick={e=>e.stopPropagation()}>
