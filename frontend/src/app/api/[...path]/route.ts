@@ -1959,7 +1959,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const code=asString(body.code);
     if(!/^\d{6}$/.test(code) || !email || email.length>200)
       return error("Enter the six-digit verification code.",422);
-    const row=(await sql`SELECT code_hash,attempts,expires_at::text,payload FROM customer_email_verifications WHERE email=${email} LIMIT 1`) as
+    const row=((await sql`SELECT code_hash,attempts,expires_at::text,payload FROM customer_email_verifications WHERE email=${email} LIMIT 1`) as
       Array<{code_hash:string;attempts:number;expires_at:string;payload:JsonRecord}>)[0];
     if(!row || new Date(row.expires_at).getTime()<=Date.now())
       return error("This code has expired. Request a new verification email.",422);
