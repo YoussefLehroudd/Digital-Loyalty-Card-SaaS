@@ -132,12 +132,12 @@ export function CustomerNotificationBell() {
         <Bell className="h-5 w-5"/>
         {unread > 0 ? <span className="absolute end-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f3bd55] px-1 text-[9px] font-black text-black shadow-[0_0_8px_rgba(243,189,85,.8)]">{Math.min(unread, 99)}</span> : null}
       </button>
-      {open ? (<section id="customer-notifications-panel" aria-label={tr("Notifications")} className="absolute inset-x-3 top-full z-50 lg:start-auto lg:end-[max(2rem,calc((100%_-_1440px)/2_+_2rem))] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#090a08]/[.98] shadow-2xl backdrop-blur-xl lg:w-[360px]">
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+      {open ? (<section id="customer-notifications-panel" aria-label={tr("Notifications")} className="absolute inset-x-3 top-[calc(100%+0.375rem)] z-50 flex max-h-[min(32rem,calc(100dvh-var(--app-install-height,0px)-150px-env(safe-area-inset-bottom,0px)))] flex-col overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#090a08] shadow-2xl lg:start-auto lg:end-[max(2rem,calc((100%_-_1440px)/2_+_2rem))] lg:w-[360px] lg:max-h-[min(480px,calc(100dvh-96px))]">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
             <div className="min-w-0"><p className="font-bold text-white">{tr("Notifications")}</p><p className="text-xs text-white/45">{tr("Recent updates and reward alerts")}</p></div>
             {unread > 0 ? <button type="button" disabled={marking} onClick={() => void markRead()} className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#f3bd55] hover:bg-[#f3bd55]/10 disabled:opacity-50">{tr("Read all")}</button> : !loading && !error ? <span className="shrink-0 text-xs text-white/30">{tr("All read")}</span> : null}
           </div>
-          <div className="max-h-[min(420px,calc(100dvh-180px))] overflow-y-auto overscroll-contain p-2" onWheel={(event) => event.stopPropagation()} onTouchMove={(event) => event.stopPropagation()}>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2" onWheel={(event) => event.stopPropagation()} onTouchMove={(event) => event.stopPropagation()}>
             {error ? <div role="alert" className="px-3 py-2 text-xs text-rose-300">{tr(error)}<button type="button" onClick={() => void refreshRef.current()} className="ms-2 underline">{tr("Retry")}</button></div> : null}
             {loading ? <CustomerListSkeleton rows={3}/> : items.length ? items.map((item) => (<button key={item.id} type="button" disabled={marking} onClick={() => { if (!item.read)
                 void markRead(item.id); }} className={`block w-full rounded-xl px-3 py-3 text-start hover:bg-white/[.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55] ${item.read ? "opacity-55" : ""}`}>
