@@ -1224,8 +1224,8 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
       let googleMapsUrl: string | null;
       let googleReviewsUrl: string | null;
       try {
-        googleMapsUrl = normalizeGoogleBusinessLink(body.google_maps_url ?? null, "maps");
-        googleReviewsUrl = normalizeGoogleBusinessLink(body.google_reviews_url ?? null, "reviews");
+        googleMapsUrl = normalizeGoogleBusinessLink(body.google_maps_url === undefined ? auth.business.google_maps_url : body.google_maps_url, "maps");
+        googleReviewsUrl = normalizeGoogleBusinessLink(body.google_reviews_url === undefined ? auth.business.google_reviews_url : body.google_reviews_url, "reviews");
       } catch (cause) {
         return error(cause instanceof Error ? cause.message : "Invalid Google link.",422);
       }
