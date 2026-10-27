@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
-import { Copy, KeyRound, Pencil, Plus, Trash2, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Copy, Eye, EyeOff, KeyRound, Pencil, Plus, Trash2, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { useAdmin } from "@/components/admin/admin-shell";
 import { adminRequest, type AdminDetail, type AdminCustomerDetail, type AdminRow } from "@/lib/admin";
@@ -19,6 +19,8 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
  const [form,setForm]=useState<Values>(empty),[busy,setBusy]=useState(false),[error,setError]=useState("");
  const [temporaryPassword,setTemporaryPassword]=useState("");
  const [confirmName,setConfirmName]=useState(""),[adminPassword,setAdminPassword]=useState("");
+ const [showLoginPassword,setShowLoginPassword]=useState(false);
+ const [showAdminPassword,setShowAdminPassword]=useState(false);
  useEffect(()=>{
   const item=target as (AdminDetail & {owner_name?:string|null;owner_email?:string|null})|null;
   setForm({
@@ -29,6 +31,7 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
    owner_name:item?.owner_name??"",address:item?.address??"",password:""
   });
   setError("");setTemporaryPassword("");setBusy(false);setConfirmName("");setAdminPassword("");
+  setShowLoginPassword(false);setShowAdminPassword(false);
  },[mode,target,kind,isBusiness]);
  const set=(key:keyof Values,value:string)=>setForm(v=>({...v,[key]:value}));
  async function save(event:FormEvent){
@@ -69,8 +72,13 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
       <p className="mt-2 text-xs leading-6 text-white/65">{isBusiness?"Deleting a business also deletes its owner login, loyalty cards, membership records, visits and rewards. Other customers' accounts remain. Businesses with recorded payments/commissions cannot be deleted; suspend them instead.":"Deleting a customer removes their login, customer profile, loyalty cards, stamps, visits and rewards across associated businesses. This action cannot be undone."}</p></div>
     <label className={label}>Type the exact name to confirm: <strong className="text-white">{target?.name}</strong>
      <input className={field} autoComplete="off" required value={confirmName} onChange={e=>setConfirmName(e.target.value)}/></label>
-    <label className={label}>Confirm your own administrator password
-     <input type="password" autoComplete="current-password" className={field} required value={adminPassword} onChange={e=>setAdminPassword(e.target.value)}/></label>
+    <label className={label} htmlFor="admin-confirm-delete-password">Confirm your own administrator password</label>
+    <div className="relative">
+      <input id="admin-confirm-delete-password" type={showAdminPassword?"text":"password"} autoComplete="current-password" className={field+" pe-14"} required value={adminPassword} onChange={e=>setAdminPassword(e.target.value)}/>
+      <button type="button" disabled={busy} aria-label={showAdminPassword?"Hide administrator password":"Show administrator password"} aria-pressed={showAdminPassword} title={showAdminPassword?"Hide password":"Show password"} onClick={()=>setShowAdminPassword(v=>!v)} className="absolute inset-y-0 end-1.5 mt-1.5 flex w-11 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efbd5d]">
+        {showAdminPassword?<EyeOff className="size-4" aria-hidden="true"/>:<Eye className="size-4" aria-hidden="true"/>}
+      </button>
+    </div>
     <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={onClose} className={button}>Cancel</button>
       <button type="submit" disabled={busy||confirmName!==target?.name||!adminPassword} className={button+" border-rose-500/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25"}><Trash2 className="size-4"/>Delete permanently</button></div>
    </form>:<form onSubmit={e=>void save(e)} className="space-y-4">
@@ -87,8 +95,13 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
          <label className={label}>Phone<input className={field} value={form.phone} onChange={e=>set("phone",e.target.value)}/></label>
        </>}
      </>}
-    <label className={label}><span className="inline-flex items-center gap-2"><KeyRound className="size-4"/> {creating?"Initial password":"Set a new login password"}</span>
-     <input type="password" autoComplete="new-password" minLength={10} className={field} value={form.password} onChange={e=>set("password",e.target.value)} placeholder={creating?"Leave blank to generate a secure password":"Leave blank to keep the current password"}/></label>
+    <label className={label} htmlFor="admin-account-login-password"><span className="inline-flex items-center gap-2"><KeyRound className="size-4"/> {creating?"Initial password":"Set a new login password"}</span></label>
+    <div className="relative">
+      <input id="admin-account-login-password" type={showLoginPassword?"text":"password"} autoComplete="new-password" minLength={10} className={field+" pe-14"} value={form.password} onChange={e=>set("password",e.target.value)} placeholder={creating?"Leave blank to generate a secure password":"Leave blank to keep the current password"}/>
+      <button type="button" disabled={busy} aria-label={showLoginPassword?"Hide login password":"Show login password"} aria-pressed={showLoginPassword} title={showLoginPassword?"Hide password":"Show password"} onClick={()=>setShowLoginPassword(v=>!v)} className="absolute inset-y-0 end-1.5 mt-1.5 flex w-11 items-center justify-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#efbd5d]">
+        {showLoginPassword?<EyeOff className="size-4" aria-hidden="true"/>:<Eye className="size-4" aria-hidden="true"/>}
+      </button>
+    </div>
     <p className="text-xs leading-5 text-white/45">{creating?"New accounts start with regular platform access. Business accounts receive a 14-day trial.":"Changing the login email or password signs the user out of all existing sessions. It does not change loyalty or subscription history."}</p>
     <div className="flex flex-wrap justify-end gap-2"><button type="button" className={button} onClick={onClose} disabled={busy}>Cancel</button>
      <button type="submit" disabled={busy} className={button+" border-[#efbd5d]/40 bg-[#efbd5d] text-black hover:bg-[#f9ca76]"}>{busy?"Saving...":creating?"Create account":"Save changes"}</button></div>
