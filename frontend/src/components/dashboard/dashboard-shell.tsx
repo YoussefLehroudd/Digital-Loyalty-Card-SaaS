@@ -5,7 +5,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Menu, ScanLine, Settings, Users, } from "lucide-react";
+import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, ScanLine, Settings, Users, } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
@@ -14,7 +14,7 @@ import { BusinessSubscriptionAlert, BusinessSubscriptionCard, BusinessSubscripti
 import { cn } from "@/lib/utils";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 type DashboardShellProps = {
-    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate";
+    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns";
     children: React.ReactNode;
 };
 const sidebarItems = [
@@ -28,6 +28,7 @@ const sidebarItems = [
     },
     { key: "scanner", label: "Scanner", icon: ScanLine, href: "/dashboard/scanner" },
     { key: "rewards", label: "Rewards", icon: Gift, href: "/dashboard/rewards" },
+    { key: "campaigns", label: "Campaigns", icon: Megaphone, href: "/dashboard/campaigns" },
     { key: "affiliate", label: "Affiliate", icon: Handshake, href: "/dashboard/affiliate" },
     {
         key: "settings",
@@ -337,6 +338,7 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         rewards: "Rewards",
         settings: "Settings",
         affiliate: "Affiliate",
+        campaigns: "Campaigns",
     };
     return (<header className="app-topbar fixed inset-x-0 top-0 z-30 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl lg:sticky lg:inset-x-auto lg:z-20">
       <div className="flex h-16 items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
