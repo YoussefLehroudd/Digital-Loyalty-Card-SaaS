@@ -4,6 +4,8 @@ import type { getSql } from "@/lib/server/db";
 
 type Sql = ReturnType<typeof getSql>;
 type Row = Record<string, unknown>;
+type RowSql = { (parts: TemplateStringsArray, ...values: unknown[]): Promise<Row[]> };
+const rowSql = (sql: Sql): RowSql => sql as unknown as RowSql;
 const scrypt = promisify(scryptCallback);
 const reply = (data: unknown, status = 200) => Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
 const codePattern = /^[a-z0-9][a-z0-9-]{2,39}$/;
@@ -39,7 +41,8 @@ function validMonth(value: unknown): value is string {
 }
 
 export async function ensureAffiliateSchema(sql: Sql) {
-  await sql`CREATE TABLE IF NOT EXISTS affiliate_partners (
+  const q = rowSql(sql);
+  await q`CREATE TABLE IF NOT EXISTS affiliate_partners (
     id uuid PRIMARY KEY, name text NOT NULL, email text NOT NULL UNIQUE,
     code text NOT NULL UNIQUE, password_hash text NOT NULL,
     is_active boolean NOT NULL DEFAULT true,
@@ -49,26 +52,26 @@ export async function ensureAffiliateSchema(sql: Sql) {
     rate_12_bps integer NOT NULL DEFAULT 2200 CHECK(rate_12_bps BETWEEN 0 AND 5000),
     created_at timestamptz NOT NULL DEFAULT now()
   )`;
-  await sql`CREATE TABLE IF NOT EXISTS affiliate_businesses (
+  await q`CREATE TABLE IF NOT EXISTS affiliate_businesses (
     business_id uuid PRIMARY KEY REFERENCES businesses(id) ON DELETE CASCADE,
     affiliate_id uuid NOT NULL REFERENCES affiliate_partners(id),
     attributed_at timestamptz NOT NULL DEFAULT now()
   )`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_affiliate_businesses_partner ON affiliate_businesses(affiliate_id)`;
-  await sql`CREATE TABLE IF NOT EXISTS affiliate_sessions (
+  await q`CREATE INDEX IF NOT EXISTS idx_affiliate_businesses_partner ON affiliate_businesses(affiliate_id)`;
+  await q`CREATE TABLE IF NOT EXISTS affiliate_sessions (
     token_hash text PRIMARY KEY, affiliate_id uuid NOT NULL REFERENCES affiliate_partners(id) ON DELETE CASCADE,
     expires_at timestamptz NOT NULL DEFAULT now() + interval '30 days',
     created_at timestamptz NOT NULL DEFAULT now()
   )`;
-  await sql`CREATE TABLE IF NOT EXISTS affiliate_payouts (
+  await q`CREATE TABLE IF NOT EXISTS affiliate_payouts (
     id uuid PRIMARY KEY, affiliate_id uuid NOT NULL REFERENCES affiliate_partners(id),
     month text NOT NULL, amount_centimes integer NOT NULL CHECK(amount_centimes > 0),
     method text NOT NULL, reference text NOT NULL,
     created_by uuid REFERENCES app_users(id) ON DELETE SET NULL,
     paid_at timestamptz NOT NULL DEFAULT now()
   )`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_affiliate_payout_partner ON affiliate_payouts(affiliate_id,paid_at DESC)`;
-  await sql`CREATE TABLE IF NOT EXISTS affiliate_commissions (
+  await q`CREATE INDEX IF NOT EXISTS idx_affiliate_payout_partner ON affiliate_payouts(affiliate_id,paid_at DESC)`;
+  await q`CREATE TABLE IF NOT EXISTS affiliate_commissions (
     subscription_event_id uuid PRIMARY KEY REFERENCES subscription_events(id),
     affiliate_id uuid NOT NULL REFERENCES affiliate_partners(id),
     business_id uuid NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
@@ -79,33 +82,35 @@ export async function ensureAffiliateSchema(sql: Sql) {
     payout_id uuid REFERENCES affiliate_payouts(id),
     created_at timestamptz NOT NULL DEFAULT now()
   )`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_affiliate_commissions_partner ON affiliate_commissions(affiliate_id,created_at DESC)`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_affiliate_commissions_unpaid ON affiliate_commissions(affiliate_id) WHERE payout_id IS NULL`;
+  await q`CREATE INDEX IF NOT EXISTS idx_affiliate_commissions_partner ON affiliate_commissions(affiliate_id,created_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS idx_affiliate_commissions_unpaid ON affiliate_commissions(affiliate_id) WHERE payout_id IS NULL`;
 }
 
 export async function affiliateCodeIsValid(sql: Sql, code: string) {
+  const q = rowSql(sql);
   if (!codePattern.test(code)) return false;
-  const found = await sql`SELECT id FROM affiliate_partners WHERE code=${code} AND is_active=true LIMIT 1`;
+  const found = await q`SELECT id FROM affiliate_partners WHERE code=${code} AND is_active=true LIMIT 1`;
   return found.length > 0;
 }
 
 export async function affiliateReport(sql: Sql, affiliateId: string) {
+  const q = rowSql(sql);
   const [businesses, commissions, payouts, summary, history] = await Promise.all([
-    sql`SELECT b.id,b.name,b.created_at::text,ab.attributed_at::text,
+    q`SELECT b.id,b.name,b.created_at::text,ab.attributed_at::text,
       count(c.subscription_event_id)::int AS paid_orders,
       COALESCE(sum(c.commission_centimes),0)::bigint::text AS earned_centimes
       FROM affiliate_businesses ab JOIN businesses b ON b.id=ab.business_id
       LEFT JOIN affiliate_commissions c ON c.business_id=b.id AND c.affiliate_id=ab.affiliate_id
       WHERE ab.affiliate_id=${affiliateId} GROUP BY b.id,ab.attributed_at ORDER BY ab.attributed_at DESC LIMIT 200`,
-    sql`SELECT c.subscription_event_id,c.business_id,b.name AS business_name,c.duration_months,
+    q`SELECT c.subscription_event_id,c.business_id,b.name AS business_name,c.duration_months,
       c.amount_centimes,c.rate_bps,c.commission_centimes,c.payout_id,
       e.paid_at::text,p.paid_at::text AS payout_at
       FROM affiliate_commissions c JOIN subscription_events e ON e.id=c.subscription_event_id
       JOIN businesses b ON b.id=c.business_id LEFT JOIN affiliate_payouts p ON p.id=c.payout_id
       WHERE c.affiliate_id=${affiliateId} ORDER BY e.paid_at DESC,c.created_at DESC LIMIT 300`,
-    sql`SELECT id,month,amount_centimes,method,reference,paid_at::text
+    q`SELECT id,month,amount_centimes,method,reference,paid_at::text
       FROM affiliate_payouts WHERE affiliate_id=${affiliateId} ORDER BY paid_at DESC LIMIT 100`,
-    sql`SELECT count(DISTINCT ab.business_id)::int AS referred_businesses,
+    q`SELECT count(DISTINCT ab.business_id)::int AS referred_businesses,
       (SELECT count(*)::int FROM affiliate_commissions WHERE affiliate_id=${affiliateId}) AS paid_orders,
       (SELECT COALESCE(sum(commission_centimes),0)::bigint::text FROM affiliate_commissions WHERE affiliate_id=${affiliateId}) AS total_centimes,
       (SELECT COALESCE(sum(commission_centimes),0)::bigint::text FROM affiliate_commissions WHERE affiliate_id=${affiliateId} AND payout_id IS NULL) AS unpaid_centimes,
@@ -115,7 +120,7 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
         AND to_char(e.paid_at AT TIME ZONE 'Africa/Casablanca','YYYY-MM')=
         to_char(now() AT TIME ZONE 'Africa/Casablanca','YYYY-MM')) AS month_centimes
       FROM affiliate_businesses ab WHERE ab.affiliate_id=${affiliateId}`,
-    sql`SELECT to_char(e.paid_at AT TIME ZONE 'Africa/Casablanca','YYYY-MM') AS month,
+    q`SELECT to_char(e.paid_at AT TIME ZONE 'Africa/Casablanca','YYYY-MM') AS month,
       count(*)::int AS orders,COALESCE(sum(c.commission_centimes),0)::bigint::text AS earned_centimes,
       COALESCE(sum(c.commission_centimes) FILTER(WHERE c.payout_id IS NULL),0)::bigint::text AS unpaid_centimes
       FROM affiliate_commissions c JOIN subscription_events e ON e.id=c.subscription_event_id
@@ -125,10 +130,11 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
 }
 
 export async function handleAdminAffiliates(path: string[], req: Request, sql: Sql, admin: { id: string }) {
+  const q = rowSql(sql);
   const segments = path.slice(2);
   if (!segments.length) {
     if (req.method === "GET") {
-      const partners = await sql`SELECT p.id,p.name,p.email,p.code,p.is_active,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text,
+      const partners = await q`SELECT p.id,p.name,p.email,p.code,p.is_active,p.rate_1_bps,p.rate_3_bps,p.rate_6_bps,p.rate_12_bps,p.created_at::text,
         (SELECT count(*)::int FROM affiliate_businesses b WHERE b.affiliate_id=p.id) AS businesses,
         (SELECT COALESCE(sum(c.commission_centimes),0)::bigint::text FROM affiliate_commissions c WHERE c.affiliate_id=p.id) AS earned_centimes,
         (SELECT COALESCE(sum(c.commission_centimes),0)::bigint::text FROM affiliate_commissions c WHERE c.affiliate_id=p.id AND c.payout_id IS NULL) AS unpaid_centimes
@@ -146,7 +152,7 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
     const password = `${randomBytes(12).toString("base64url")}aA1!`;
     const passwordHash = await hashPassword(password);
     const id = randomUUID();
-    const found = await sql`INSERT INTO affiliate_partners(id,name,email,code,password_hash,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps)
+    const found = await q`INSERT INTO affiliate_partners(id,name,email,code,password_hash,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps)
       VALUES(${id},${name},${email},${code},${passwordHash},${rates["1"]},${rates["3"]},${rates["6"]},${rates["12"]})
       ON CONFLICT DO NOTHING RETURNING id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
     if (!found.length) return reply({ message: "Affiliate email or referral code already exists." },409);
@@ -154,7 +160,7 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
   }
   const id = segments[0];
   if (!uuidPattern.test(id)) return reply({ message: "Invalid affiliate." },422);
-  const partner = (await sql`SELECT id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps,created_at::text FROM affiliate_partners WHERE id=${id}`)[0];
+  const partner = (await q`SELECT id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps,created_at::text FROM affiliate_partners WHERE id=${id}`)[0];
   if (!partner) return reply({ message: "Affiliate not found." },404);
   if (segments.length === 1 && req.method === "GET") return reply({ affiliate: partner, ...(await affiliateReport(sql,id)) });
   if (segments.length === 1 && req.method === "PATCH") {
@@ -164,10 +170,10 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
     const isActive = body.is_active === undefined ? partner.is_active : body.is_active;
     if (!rates || name.length < 2 || name.length > 120 || typeof isActive !== "boolean")
       return reply({ message: "Invalid affiliate name, status or rates." },422);
-    const updated = await sql`UPDATE affiliate_partners SET name=${name},is_active=${isActive},
+    const updated = await q`UPDATE affiliate_partners SET name=${name},is_active=${isActive},
       rate_1_bps=${rates["1"]},rate_3_bps=${rates["3"]},rate_6_bps=${rates["6"]},rate_12_bps=${rates["12"]}
       WHERE id=${id} RETURNING id,name,email,code,is_active,rate_1_bps,rate_3_bps,rate_6_bps,rate_12_bps`;
-    if (!isActive) await sql`DELETE FROM affiliate_sessions WHERE affiliate_id=${id}`;
+    if (!isActive) await q`DELETE FROM affiliate_sessions WHERE affiliate_id=${id}`;
     return reply({ affiliate: updated[0] });
   }
   if (segments.length === 2 && segments[1] === "payouts" && req.method === "POST") {
@@ -178,13 +184,13 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
     const reference = String(body.reference ?? "").trim();
     if (!uuidPattern.test(requestId) || !validMonth(month) || !method || method.length > 80 || !reference || reference.length > 180)
       return reply({ message: "Select a month and provide a payout method and payment reference." },422);
-    const existing = await sql`SELECT id,affiliate_id,month,amount_centimes,method,reference FROM affiliate_payouts WHERE id=${requestId}`;
+    const existing = await q`SELECT id,affiliate_id,month,amount_centimes,method,reference FROM affiliate_payouts WHERE id=${requestId}`;
     if (existing.length) {
       const p = existing[0];
       return p.affiliate_id===id && p.month===month && p.method===method && p.reference===reference
         ? reply({ payout: p, already_recorded: true }) : reply({ message: "Payout request ID already used." },409);
     }
-    const paid = await sql`WITH eligible AS MATERIALIZED (
+    const paid = await q`WITH eligible AS MATERIALIZED (
         SELECT c.subscription_event_id,c.commission_centimes FROM affiliate_commissions c
         JOIN subscription_events e ON e.id=c.subscription_event_id
         WHERE c.affiliate_id=${id} AND c.payout_id IS NULL
@@ -206,15 +212,17 @@ export async function handleAdminAffiliates(path: string[], req: Request, sql: S
 }
 
 async function currentAffiliate(req: Request, sql: Sql) {
+  const q = rowSql(sql);
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i,"").trim() ?? "";
   if (!/^[a-f0-9]{64}$/i.test(token)) return null;
-  const rows = await sql`SELECT a.id,a.name,a.email,a.code,a.is_active,a.rate_1_bps,a.rate_3_bps,a.rate_6_bps,a.rate_12_bps
+  const rows = await q`SELECT a.id,a.name,a.email,a.code,a.is_active,a.rate_1_bps,a.rate_3_bps,a.rate_6_bps,a.rate_12_bps
     FROM affiliate_sessions s JOIN affiliate_partners a ON a.id=s.affiliate_id
     WHERE s.token_hash=${codeHash(token)} AND s.expires_at>now() AND a.is_active=true LIMIT 1`;
   return rows[0] ?? null;
 }
 
 export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
+  const q = rowSql(sql);
   if (path[1] === "validate" && req.method === "GET") {
     const code = new URL(req.url).searchParams.get("code")?.trim().toLowerCase() ?? "";
     return reply({ valid: await affiliateCodeIsValid(sql,code) });
@@ -224,12 +232,12 @@ export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
     const email = String(body.email ?? "").toLowerCase().trim();
     const password = String(body.password ?? "");
     if (email.length > 200 || password.length > 200) return reply({ message: "Invalid credentials." },401);
-    const users = await sql`SELECT id,name,email,code,password_hash,is_active FROM affiliate_partners WHERE email=${email} LIMIT 1`;
+    const users = await q`SELECT id,name,email,code,password_hash,is_active FROM affiliate_partners WHERE email=${email} LIMIT 1`;
     const user = users[0];
     if (!user || user.is_active !== true || !(await verifyPassword(password,String(user.password_hash))))
       return reply({ message: "Invalid credentials or inactive affiliate account." },401);
     const token = randomBytes(32).toString("hex");
-    await sql`INSERT INTO affiliate_sessions(token_hash,affiliate_id) VALUES(${codeHash(token)},${user.id}::uuid)`;
+    await q`INSERT INTO affiliate_sessions(token_hash,affiliate_id) VALUES(${codeHash(token)},${user.id}::uuid)`;
     return reply({ token, affiliate: { id:user.id,name:user.name,email:user.email,code:user.code } });
   }
   const affiliate = await currentAffiliate(req,sql);
@@ -238,7 +246,7 @@ export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
   if (path[1] === "report" && req.method === "GET") return reply({ affiliate, ...(await affiliateReport(sql,String(affiliate.id))) });
   if (path[1] === "logout" && req.method === "POST") {
     const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i,"").trim() ?? "";
-    await sql`DELETE FROM affiliate_sessions WHERE token_hash=${codeHash(token)} AND affiliate_id=${affiliate.id}::uuid`;
+    await q`DELETE FROM affiliate_sessions WHERE token_hash=${codeHash(token)} AND affiliate_id=${affiliate.id}::uuid`;
     return reply({ message: "Signed out." });
   }
   if (path[1] === "password" && req.method === "POST") {
@@ -247,10 +255,10 @@ export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
     const newPassword = String(body.new_password ?? "");
     if (newPassword.length < 12 || newPassword.length > 200 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/\d/.test(newPassword))
       return reply({ message: "Use at least 12 characters including uppercase, lowercase and a number." },422);
-    const rows = await sql`SELECT password_hash FROM affiliate_partners WHERE id=${affiliate.id}::uuid`;
+    const rows = await q`SELECT password_hash FROM affiliate_partners WHERE id=${affiliate.id}::uuid`;
     if (!rows.length || !(await verifyPassword(oldPassword,String(rows[0].password_hash)))) return reply({ message: "Current password is incorrect." },403);
-    await sql`UPDATE affiliate_partners SET password_hash=${await hashPassword(newPassword)} WHERE id=${affiliate.id}::uuid`;
-    await sql`DELETE FROM affiliate_sessions WHERE affiliate_id=${affiliate.id}::uuid`;
+    await q`UPDATE affiliate_partners SET password_hash=${await hashPassword(newPassword)} WHERE id=${affiliate.id}::uuid`;
+    await q`DELETE FROM affiliate_sessions WHERE affiliate_id=${affiliate.id}::uuid`;
     return reply({ message: "Password changed. Sign in again." });
   }
   return reply({ message: "API route not found." },404);
