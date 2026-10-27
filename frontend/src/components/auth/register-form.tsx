@@ -37,7 +37,29 @@ export function RegisterForm() {
     const { t: tr } = useI18n();
     const router = useRouter();
     const [accountType, setAccountType] = useState<"customer" | "business">("customer");
-    useEffect(() => { if (new URLSearchParams(window.location.search).has("ref")) setAccountType("business"); }, []);
+    useEffect(() => {
+        const ref = new URLSearchParams(window.location.search).get("ref")?.trim().toLowerCase() || "";
+        if (!/^[a-z0-9][a-z0-9-]{2,39}$/.test(ref)) return;
+        setAccountType("business");
+        // Count actual referral-page opens, once per browser tab + affiliate code.
+        // Registration/commission attribution is separate and requires OTP completion.
+        try {
+            if (navigator.doNotTrack === "1" || localStorage.getItem("loyvance.analytics.optout") === "1") return;
+            const key = "loyvance.affiliate.visit." + ref;
+            let visitId = sessionStorage.getItem(key);
+            if (!visitId) {
+                visitId = crypto.randomUUID();
+                sessionStorage.setItem(key, visitId);
+            }
+            void fetch("/api/affiliate/visit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: ref, visit_id: visitId }),
+                credentials: "same-origin",
+                keepalive: true
+            }).catch(() => {});
+        } catch { /* Analytics must never prevent registration. */ }
+    }, []);
     const [error, setError] = useState<string | null>(null);
     const [otpEmail, setOtpEmail] = useState<string | null>(null);
     const [otpAccountType, setOtpAccountType] = useState<"customer" | "business">("business");
