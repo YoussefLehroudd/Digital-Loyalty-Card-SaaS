@@ -4,7 +4,7 @@ import Link from "next/link";
 import { BusinessPrivacySettings } from "@/components/settings/business-privacy-settings";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BadgeCheck, Building2, ImageUp, KeyRound, Trash2, Loader2, Mail, MapPin, Palette, Phone, Save, ShieldCheck, UserRound, ZoomIn, MoveHorizontal, MoveVertical, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, } from "lucide-react";
+import { BadgeCheck, Building2, ExternalLink, ImageUp, KeyRound, Trash2, Loader2, Mail, MapPin, Star, Palette, Phone, Save, ShieldCheck, UserRound, ZoomIn, MoveHorizontal, MoveVertical, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "@/components/auth/auth-guard";
@@ -20,12 +20,15 @@ import { ApiError } from "@/lib/api";
 import { getBusinessProfile, removeAccountAvatar, updateAccountPassword, updateAccountProfile, updateBusinessProfile, uploadAccountAvatar, uploadBusinessHeroImage, uploadBusinessLogo, type Business, } from "@/lib/auth";
 import { useAutoDismiss } from "@/lib/use-auto-dismiss";
 import { cn } from "@/lib/utils";
+import { isGoogleBusinessLink } from "@/lib/google-business-links";
 import LoyaltyCardVisual from "@/components/loyalty/LoyaltyCardVisual";
 const schema = z.object({
     name: z.string().min(2, "Enter a business name.").max(255),
     email: z.string().email("Enter a valid business email."),
     phone: z.string().max(40).optional(),
     address: z.string().max(1000).optional(),
+    google_maps_url: z.string().trim().max(1200).refine(value => !value || isGoogleBusinessLink(value, "maps"), "Paste a real HTTPS Google Maps location link.").optional(),
+    google_reviews_url: z.string().trim().max(1200).refine(value => !value || isGoogleBusinessLink(value, "reviews"), "Use the direct Google 'Get more reviews' link.").optional(),
     google_wallet_show_background: z.boolean(),
     primary_color: z
         .string()
@@ -80,6 +83,8 @@ export function BusinessProfileSettings() {
             email: "",
             phone: "",
             address: "",
+            google_maps_url: "",
+            google_reviews_url: "",
             primary_color: "#171717",
             google_wallet_show_background: true,
         },
@@ -120,6 +125,8 @@ export function BusinessProfileSettings() {
                     email: response.business.email,
                     phone: response.business.phone ?? "",
                     address: response.business.address ?? "",
+                    google_maps_url: response.business.google_maps_url ?? "",
+                    google_reviews_url: response.business.google_reviews_url ?? "",
                     primary_color: response.business.primary_color,
                     google_wallet_show_background: response.business.google_wallet_show_background ?? true,
                 });
@@ -246,6 +253,8 @@ export function BusinessProfileSettings() {
                 ...values,
                 phone: values.phone || null,
                 address: values.address || null,
+                google_maps_url: values.google_maps_url || null,
+                google_reviews_url: values.google_reviews_url || null,
                 hero_image_url: brandingImage?.dataUrl ?? null,
                 hero_image_public_id: brandingImage?.publicId ?? null,
                 hero_image_zoom: brandingImage?.zoom ?? null,
@@ -259,6 +268,8 @@ export function BusinessProfileSettings() {
                 email: response.business.email,
                 phone: response.business.phone ?? "",
                 address: response.business.address ?? "",
+                google_maps_url: response.business.google_maps_url ?? "",
+                google_reviews_url: response.business.google_reviews_url ?? "",
                 primary_color: response.business.primary_color,
                 google_wallet_show_background: response.business.google_wallet_show_background ?? true,
             });
@@ -453,6 +464,25 @@ export function BusinessProfileSettings() {
                   <ProfileField error={errors.address?.message} icon={MapPin} label={tr("Address")}>
                     <Input placeholder={tr("Street, city, country")} {...register("address")}/>
                   </ProfileField>
+
+                  <div className="min-w-0 space-y-4 rounded-2xl border border-[#e7b354]/20 bg-[#e7b354]/[.035] p-4">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-sm font-semibold text-white"><MapPin className="size-4 text-[#efbd5d]"/>{tr("Google Maps & customer reviews")}</h3>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{tr("Add your exact Google Maps business location and your direct Google review-request link. These buttons will appear on your business card in Explore Businesses.")}</p>
+                    </div>
+                    <ProfileField error={errors.google_maps_url?.message} icon={MapPin} label={tr("Google Maps location link")}>
+                      <Input type="url" inputMode="url" autoComplete="url" placeholder="https://maps.app.goo.gl/..." {...register("google_maps_url")}/>
+                    </ProfileField>
+                    {watchedValues.google_maps_url && isGoogleBusinessLink(watchedValues.google_maps_url,"maps") ?
+                      <a href={watchedValues.google_maps_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 break-all text-xs font-semibold text-[#efbd5d] hover:underline"><ExternalLink className="size-3.5 shrink-0"/>{tr("Preview location on Google Maps")}</a> : null}
+                    <ProfileField error={errors.google_reviews_url?.message} icon={Star} label={tr("Direct Google Reviews link")}>
+                      <Input type="url" inputMode="url" autoComplete="url" placeholder="https://g.page/r/.../review" {...register("google_reviews_url")}/>
+                    </ProfileField>
+                    {watchedValues.google_reviews_url && isGoogleBusinessLink(watchedValues.google_reviews_url,"reviews") ?
+                      <a href={watchedValues.google_reviews_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 break-all text-xs font-semibold text-[#efbd5d] hover:underline"><ExternalLink className="size-3.5 shrink-0"/>{tr("Preview direct review link")}</a> : null}
+                    <p className="text-[11px] leading-5 text-white/45">{tr("To get the exact review link: open your Google Business Profile on desktop, select Read reviews → Get more reviews → Copy link. Leave either field blank to hide that button.")}</p>
+                    <a href="https://support.google.com/business/answer/16816815" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-[#efbd5d] hover:underline"><ExternalLink className="size-3"/>{tr("Google instructions for getting a review link")}</a>
+                  </div>
 
                   <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <Button className="border-0 bg-[#efbd5d] font-semibold text-black hover:bg-[#f4c86f]" disabled={(!isDirty && !hasHeroChanges) || isSubmitting} type="submit">

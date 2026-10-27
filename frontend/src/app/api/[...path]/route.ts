@@ -4,6 +4,7 @@ import { businessPrivacy } from "@/lib/server/customer-privacy";
 import { createHash, createSign, randomBytes, randomInt, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { getSql } from "@/lib/server/db";
+import { normalizeGoogleBusinessLink } from "@/lib/google-business-links";
 import { collectVisitorAnalytics, ensureVisitorAnalyticsSchema } from "@/lib/server/visitor-analytics";
 import { ensureSubscriptionSchema, requireSubscription, subscriptionDetails } from "@/lib/server/subscriptions";
 import { ensureAdminSchema, handleAdmin, isPlatformAdmin } from "@/lib/server/admin";
@@ -58,6 +59,8 @@ type DbBusiness = {
   primary_color: string;
   phone: string | null;
   address: string | null;
+  google_maps_url: string | null;
+  google_reviews_url: string | null;
   created_at: string;
   status?: string;
 };
@@ -236,6 +239,12 @@ async function ensureSchema(sql: Sql) {
       )`;
 
       await sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS google_wallet_show_background boolean NOT NULL DEFAULT true`;
+      // Serialize this additive schema migration across concurrent serverless cold starts.
+      await sql.transaction([
+        sql`SELECT pg_advisory_xact_lock(229001, 27)`,
+        sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS google_maps_url text`,
+        sql`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS google_reviews_url text`
+      ]);
 
       await sql`CREATE TABLE IF NOT EXISTS app_users (
         id uuid PRIMARY KEY,
@@ -446,6 +455,8 @@ function publicBusiness(b: DbBusiness) {
     primary_color: b.primary_color,
     phone: b.phone,
     address: b.address,
+    google_maps_url: b.google_maps_url ?? null,
+    google_reviews_url: b.google_reviews_url ?? null,
     created_at: b.created_at,
   };
 }
@@ -1210,9 +1221,18 @@ async function handleBusiness(path: string[], req: Request, sql: Sql) {
       const name = asString(body.name, auth.business.name);
       const email = asString(body.email, auth.business.email);
       const primary = asString(body.primary_color, auth.business.primary_color);
+      let googleMapsUrl: string | null;
+      let googleReviewsUrl: string | null;
+      try {
+        googleMapsUrl = normalizeGoogleBusinessLink(body.google_maps_url === undefined ? auth.business.google_maps_url : body.google_maps_url, "maps");
+        googleReviewsUrl = normalizeGoogleBusinessLink(body.google_reviews_url === undefined ? auth.business.google_reviews_url : body.google_reviews_url, "reviews");
+      } catch (cause) {
+        return error(cause instanceof Error ? cause.message : "Invalid Google link.",422);
+      }
       const updated = ((await sql`
         UPDATE businesses SET
           name = ${name}, email = ${email}, phone = ${asNullableString(body.phone)}, address = ${asNullableString(body.address)},
+          google_maps_url = ${googleMapsUrl}, google_reviews_url = ${googleReviewsUrl},
           primary_color = ${primary}, hero_image_url = ${asNullableString(body.hero_image_url)},
           hero_image_public_id = ${asNullableString(body.hero_image_public_id)},
           hero_image_zoom = ${asNumber(body.hero_image_zoom, auth.business.hero_image_zoom ?? 1)},
@@ -2117,7 +2137,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
   if (path[1] === "explore" && req.method === "GET" && path.length===2) {
     const rows=await sql`
       SELECT b.id::text,b.slug,b.name,b.logo_url,b.hero_image_url,b.primary_color,
-        b.address,b.created_at::text,
+        b.address,b.google_maps_url,b.google_reviews_url,b.created_at::text,
         COALESCE(lc.reward_name,'Loyalty rewards') AS reward_name,
         COALESCE(lc.required_stamps,10)::int AS required_stamps,
         COALESCE(lc.reward_description,'Collect stamps with this business.') AS reward_description,

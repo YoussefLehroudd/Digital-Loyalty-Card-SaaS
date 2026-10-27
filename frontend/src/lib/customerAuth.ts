@@ -376,6 +376,8 @@ export type DiscoverableBusiness = {
   hero_image_url: string | null;
   primary_color: string | null;
   address: string | null;
+  google_maps_url: string | null;
+  google_reviews_url: string | null;
   created_at: string;
   reward_name: string;
   required_stamps: number;

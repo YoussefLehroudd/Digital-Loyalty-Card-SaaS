@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, CreditCard, Gift, Loader2, MapPin, RefreshCw, Search, Store, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, CreditCard, ExternalLink, Gift, Loader2, MapPin, RefreshCw, Search, Star, Store, X } from "lucide-react";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { useI18n } from "@/components/i18n/language-provider";
@@ -35,6 +35,21 @@ function BusinessTile({business,onGetCard,busy}:{business:DiscoverableBusiness;o
       <p className="mt-1 text-[11px] leading-5 text-white/55">{business.reward_description||tr("Collect stamps and unlock rewards.")}</p>
       <span className="mt-2 text-[11px] font-medium text-white/45">{business.required_stamps} {tr("stamps to collect")}</span>
     </div>
+    {(business.google_maps_url || business.google_reviews_url) ?
+      <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 min-[340px]:grid-cols-2">
+        {business.google_maps_url ?
+          <a href={business.google_maps_url} target="_blank" rel="noopener noreferrer"
+            aria-label={tr("Open this business in Google Maps")}
+            className="inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/[.035] px-2.5 text-xs font-semibold text-white/80 transition hover:border-[#efbd5d]/50 hover:text-[#efbd5d]">
+            <MapPin className="size-4 shrink-0 text-[#efbd5d]"/>{tr("Google Maps")}<ExternalLink className="size-3 shrink-0 opacity-60"/>
+          </a> : null}
+        {business.google_reviews_url ?
+          <a href={business.google_reviews_url} target="_blank" rel="noopener noreferrer"
+            aria-label={tr("Write a Google review for this business")}
+            className="inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#efbd5d]/25 bg-[#efbd5d]/[.07] px-2.5 text-xs font-semibold text-[#efbd5d] transition hover:bg-[#efbd5d]/15">
+            <Star className="size-4 shrink-0"/>{tr("Write a review")}<ExternalLink className="size-3 shrink-0 opacity-60"/>
+          </a> : null}
+      </div> : null}
     {joined?
       <Link href={`/user/cards?selected=${encodeURIComponent(business.membership_id||"")}`} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#e7b354]/30 bg-[#e7b354]/10 px-3 text-sm font-bold text-[#f1bd58] transition hover:bg-[#e7b354]/20"><CreditCard className="size-4"/>{tr("View my card")}<ArrowRight className="size-4"/></Link>:
       <button type="button" disabled={busy||unavailable} onClick={()=>onGetCard(business.id)} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#efbd5d] px-3 text-sm font-bold text-[#10110e] transition hover:bg-[#f7cf82] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35">

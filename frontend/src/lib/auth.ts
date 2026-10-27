@@ -21,6 +21,8 @@ export type Business = {
   primary_color: string;
   phone: string | null;
   address: string | null;
+  google_maps_url?: string | null;
+  google_reviews_url?: string | null;
   created_at?: string;
 };
 
@@ -86,6 +88,8 @@ export type BusinessProfilePayload = {
   email: string;
   phone?: string | null;
   address?: string | null;
+  google_maps_url?: string | null;
+  google_reviews_url?: string | null;
   primary_color: string;
   hero_image_url?: string | null;
   hero_image_public_id?: string | null;
