@@ -137,9 +137,13 @@ export default function UserDashboardPage() {
                   <QrCode className="size-5"/>
                 </div>
                 <h2 className="mt-4 text-lg font-semibold text-white">{tr("Add your first loyalty card")}</h2>
-                <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">{tr(" Scan a business QR code to join its loyalty program and start collecting stamps. ")}</p>
-                <Button className="mt-5 w-full sm:w-auto" onClick={() => router.push("/user/join")}>
-                  <QrCode className="size-4"/>{tr(" Scan business QR ")}</Button>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">{tr("Choose any available LOYVANCE business and add a free loyalty card online. You can still scan a business QR code if you prefer.")}</p>
+                <div className="mt-5 flex w-full flex-col items-center justify-center gap-2 sm:flex-row">
+                  <Button className="w-full sm:w-auto" onClick={() => router.push("/user/explore")}>
+                    <Plus className="size-4"/>{tr("Explore businesses & get a card")}</Button>
+                  <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push("/user/join")}>
+                    <QrCode className="size-4"/>{tr("Scan business QR")}</Button>
+                </div>
               </CardContent>
             </Card>) : (<>
               <section className="relative overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] lg:min-h-[620px]">
@@ -154,7 +158,7 @@ export default function UserDashboardPage() {
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <Button className="border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] hover:bg-[#f4c86f] lg:h-11 lg:px-5" size="sm" onClick={() => router.push("/user/join")}>
+                    <Button className="border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.18)] hover:bg-[#f4c86f] lg:h-11 lg:px-5" size="sm" onClick={() => router.push("/user/explore")}>
                       <Plus className="size-4"/> <span className="hidden sm:inline">{tr("Add card")}</span>
                     </Button>
 
