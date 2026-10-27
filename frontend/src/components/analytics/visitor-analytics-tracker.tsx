@@ -6,8 +6,14 @@ const KEY="loyvance.analytics.session.v1";
 const DAY=86400000;
 const keys=["loyvance_admin_token","digital_loyalty_token","digital_loyalty_customer_token"];
 function trackingDisabled(){
- try{const nav=navigator as Navigator&{globalPrivacyControl?:boolean};return Boolean(nav.globalPrivacyControl||nav.doNotTrack==="1"||localStorage.getItem("loyvance.analytics.optout")==="1");}
- catch{return true;}
+ try{
+  // Brave enables GPC by default. GPC is an opt-out of selling/sharing personal
+  // information with third parties, not a ban on this site's first-party metrics.
+  // LOYVANCE neither sells nor shares these analytics records.
+  // Still respect the stronger Do Not Track signal and the explicit site opt-out.
+  const nav=navigator;
+  return nav.doNotTrack==="1"||localStorage.getItem("loyvance.analytics.optout")==="1";
+ }catch{return true;}
 }
 function sessionId(){
  try{
