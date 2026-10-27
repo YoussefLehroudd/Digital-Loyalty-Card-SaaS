@@ -32,23 +32,23 @@ function TrackingCard({business:b}:{business:ReferredBusiness}){
     <h3 className="break-words text-sm font-bold text-white">{b.name}</h3>
     <p className="mt-1 text-[11px] leading-5 text-white/45"><Check className="me-1 inline size-3 text-emerald-300"/>Account created and email verified · {day(b.attributed_at)}</p>
    </div>
-   <span className={\`rounded-full border px-2.5 py-1 text-[11px] font-semibold \${badge}\`}>{state}</span>
+   <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${badge}`}>{state}</span>
   </div>
   <div className="mt-4 grid min-w-0 grid-cols-1 gap-2 min-[370px]:grid-cols-2 lg:grid-cols-3">
    <div className="min-w-0 rounded-lg border border-white/5 bg-white/[.025] p-3">
     <p className="text-[11px] text-white/40">14-day trial ends</p>
     <p className="mt-1 text-xs font-semibold text-white/85">{day(b.trial_ends_at)}</p>
-    <p className="mt-1 text-[11px] text-white/45">{trial?\`\${b.trial_days_left} days remaining\`:"Trial finished / replaced"}</p>
+    <p className="mt-1 text-[11px] text-white/45">{trial?`${b.trial_days_left} days remaining`:"Trial finished / replaced"}</p>
    </div>
    <div className="min-w-0 rounded-lg border border-white/5 bg-white/[.025] p-3">
     <p className="text-[11px] text-white/40">Payment & subscription</p>
-    <p className="mt-1 text-xs font-semibold text-white/85">{paid?\`Paid · \${b.latest_plan_months||"—"}-month plan\`:wasPaid?"Previously subscribed":trial?"Not subscribed yet":"No active subscription"}</p>
-    <p className="mt-1 text-[11px] leading-5 text-white/45">{b.latest_paid_at?\`Last confirmed: \${day(b.latest_paid_at)}\`:"No confirmed payment yet"}</p>
+    <p className="mt-1 text-xs font-semibold text-white/85">{paid?`Paid · ${b.latest_plan_months||"—"}-month plan`:wasPaid?"Previously subscribed":trial?"Not subscribed yet":"No active subscription"}</p>
+    <p className="mt-1 text-[11px] leading-5 text-white/45">{b.latest_paid_at?`Last confirmed: ${day(b.latest_paid_at)}`:"No confirmed payment yet"}</p>
    </div>
    <div className="min-w-0 rounded-lg border border-white/5 bg-white/[.025] p-3">
     <p className="text-[11px] text-white/40">{paid?"Paid plan expires":trial?"Trial expires":"Last access expired"}</p>
     <p className="mt-1 text-xs font-semibold text-[#efbd5d]">{day(b.paid_ends_at||b.trial_ends_at)}</p>
-    <p className="mt-1 text-[11px] text-white/45">{paid||trial?\`\${b.days_remaining} days remaining\`:"Needs renewal"}</p>
+    <p className="mt-1 text-[11px] text-white/45">{paid||trial?`${b.days_remaining} days remaining`:"Needs renewal"}</p>
    </div>
   </div>
   {trial&&<div className="mt-3">
