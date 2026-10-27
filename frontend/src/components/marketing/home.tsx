@@ -179,7 +179,7 @@ const features: Array<[LucideIcon, string, string]> = [
         </div>
       </section>
 
-      <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>{t("© LOYVANCE. Digital loyalty, made simple.")}</span><div className="flex gap-6"><Link href="/login">{t("Sign in")}</Link><Link href="/register">{t("Create account")}</Link></div></div></footer>
+      <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>{t("© LOYVANCE. Digital loyalty, made simple.")}</span><div className="flex gap-6"><Link href="/login">{t("Sign in")}</Link><Link href="/register">{t("Create account")}</Link><Link href="/analytics-privacy" className="text-[#efbd5d]/70 hover:text-[#efbd5d]">Visitor privacy</Link></div></div></footer>
     </main>
   );
 }
