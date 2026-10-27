@@ -8,6 +8,7 @@ import { subscriptionDetails, subscriptionFor, subscriptionsFor } from "@/lib/se
 import { rejectRenewal, renewalProof } from "@/lib/server/renewal-requests";
 import { handleAdminAffiliates } from "@/lib/server/affiliates";
 import { handleAdminAccounts } from "@/lib/server/admin-accounts";
+import { adminVisitorAnalytics } from "@/lib/server/visitor-analytics";
 
 type Sql = ReturnType<typeof getSql>;
 type RowSql = {
@@ -83,6 +84,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   if (!auth) return reply({ message: "Unauthenticated." }, 401);
   if (!isPlatformAdmin(auth.user)) return reply({ message: "Administrator access required." }, 403);
   if (path[1] === "me" && req.method === "GET") return reply({ user: safeUser(auth.user) });
+  if (path[1] === "visitors") return adminVisitorAnalytics(req,database,path);
   if (path[1] === "affiliates") return handleAdminAffiliates(path,req,database,auth.user);
   if (["businesses","customers"].includes(path[1]) && ((req.method==="POST"&&!path[2]) || (path[2] && ["PUT","DELETE"].includes(req.method) && path.length===3))) return handleAdminAccounts(path,req,database,auth.user,deps);
   if (path[1] === "businesses" && path[3] === "features" && path.length === 4) return adminBusinessFeatures(req, database, path[2], auth.user);
