@@ -2,5 +2,14 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "crons": [{"path": "/api/cron/subscription-reminders", "schedule": "0 8 * * *"}]
+  "crons": [
+    {
+      "path": "/api/cron/subscription-reminders",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/campaigns",
+      "schedule": "15 8 * * *"
+    }
+  ]
 }
