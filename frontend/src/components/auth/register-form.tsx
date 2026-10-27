@@ -37,6 +37,7 @@ export function RegisterForm() {
     const { t: tr } = useI18n();
     const router = useRouter();
     const [accountType, setAccountType] = useState<"customer" | "business">("customer");
+    useEffect(() => { if (new URLSearchParams(window.location.search).has("ref")) setAccountType("business"); }, []);
     const [error, setError] = useState<string | null>(null);
     const [otpEmail, setOtpEmail] = useState<string | null>(null);
     const { register, handleSubmit, formState: { errors, isSubmitting }, } = useForm<RegisterValues>({
@@ -80,6 +81,7 @@ export function RegisterForm() {
                 email: values.email,
                 password: values.password,
                 password_confirmation: values.passwordConfirmation,
+                affiliate_code: new URLSearchParams(window.location.search).get("ref")?.trim().toLowerCase() || undefined,
             });
             setOtpEmail(response.email);
         }
