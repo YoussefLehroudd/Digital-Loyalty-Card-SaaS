@@ -1,4 +1,6 @@
 "use client";
+import "flag-icons/css/flag-icons.min.css";
+import { CountryFlag } from "@/components/ui/country-flag";
 import { useCallback, useEffect, useState } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, Clock3, Computer, ExternalLink, Globe2, Link2, Loader2, MapPin, MousePointerClick, RefreshCw, Smartphone, Users, X } from "lucide-react";
 import { useAdmin } from "@/components/admin/admin-shell";
@@ -13,20 +15,19 @@ const card="min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5";
 const formatNumber=(value:number)=>new Intl.NumberFormat("en").format(Number(value||0));
 const seconds=(n:number)=>n>=3600?Math.floor(n/3600)+"h "+Math.floor(n%3600/60)+"m":n>=60?Math.floor(n/60)+"m "+n%60+"s":n+"s";
 const date=(value:string)=>{try{return new Date(value).toLocaleString(undefined,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}catch{return value;}};
-const flag=(code:string|null)=>{if(!code||!/^[A-Z]{2}$/.test(code))return "🌐";return String.fromCodePoint(...[...code].map(c=>127397+c.charCodeAt(0)));};
 const nameCountry=(code:string|null)=>{if(!code||code==="Unknown")return "Unknown country";try{return new Intl.DisplayNames(["en"],{type:"region"}).of(code)||code;}catch{return code;}};
 const number=(value:unknown)=>Number(value||0);
 function Metric({label,value,note,icon:Icon}:{label:string;value:string;note:string;icon:typeof Users}){
  return <div className={card}><div className="flex min-w-0 items-start justify-between gap-3"><p className="text-xs font-semibold text-white/50">{label}</p><Icon className="size-5 shrink-0 text-[#efbd5d]"/></div><p className="mt-3 text-2xl font-bold text-white sm:text-3xl">{value}</p><p className="mt-1 text-[11px] leading-5 text-white/40">{note}</p></div>;
 }
-function Ranking({title,items,formatter}:{title:string;items:Array<{label:string;value:number;subtitle?:string}>;formatter?:(value:number)=>string}){
+function Ranking({title,items,formatter}:{title:string;items:Array<{label:string;value:number;subtitle?:string;flagCode?:string|null}>;formatter?:(value:number)=>string}){
  const max=Math.max(1,...items.map(x=>number(x.value)));
  return <section className={card}>
   <h2 className="mb-5 text-base font-semibold text-white">{title}</h2>
   {!items.length?<p className="py-5 text-xs text-white/40">No data collected yet.</p>:
   <div className="space-y-4">{items.map((item,i)=><div key={item.label+"_"+i} className="min-w-0 space-y-1.5">
    <div className="flex min-w-0 items-center justify-between gap-3 text-xs">
-    <div className="min-w-0"><p className="break-all font-medium text-white/80">{item.label}</p>{item.subtitle?<p className="mt-0.5 text-[10px] text-white/35">{item.subtitle}</p>:null}</div>
+    <div className="min-w-0"><p className="flex min-w-0 items-center gap-2 break-all font-medium text-white/80">{item.flagCode!==undefined?<CountryFlag code={item.flagCode}/>:null}<span className="min-w-0 break-words">{item.label}</span></p>{item.subtitle?<p className="mt-0.5 text-[10px] text-white/35">{item.subtitle}</p>:null}</div>
     <span className="shrink-0 tabular-nums font-semibold text-[#efbd5d]">{formatter?formatter(item.value):formatNumber(item.value)}</span>
    </div><div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#efbd5d]/80" style={{width:Math.max(2,item.value/max*100)+"%"}}/></div>
   </div>)}</div>}
@@ -98,8 +99,8 @@ export default function AdminVisitorsPage(){
    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
     <Ranking title="Most visited pages" items={report.pages.map(p=>({label:p.name,value:number(p.views),subtitle:p.sessions+" sessions"}))}/>
     <Ranking title="Links visitors clicked" items={report.clicks.map(p=>({label:p.name,value:number(p.clicks)}))}/>
-    <Ranking title="Countries" items={report.countries.map(c=>({label:flag(c.country_code)+"  "+nameCountry(c.country_code),value:number(c.sessions)}))}/>
-    <Ranking title="Cities (estimated)" items={report.cities.map(c=>({label:flag(c.country_code)+"  "+c.city+(c.region?" · "+c.region:""),value:number(c.sessions),subtitle:nameCountry(c.country_code)}))}/>
+    <Ranking title="Countries" items={report.countries.map(c=>({label:nameCountry(c.country_code),flagCode:c.country_code,value:number(c.sessions)}))}/>
+    <Ranking title="Cities (estimated)" items={report.cities.map(c=>({label:c.city+(c.region?" · "+c.region:""),flagCode:c.country_code,value:number(c.sessions),subtitle:nameCountry(c.country_code)}))}/>
     <Ranking title="Where they came from" items={report.sources.map(s=>({label:s.name,value:number(s.sessions)}))}/>
     <Ranking title="Device types" items={report.devices.map(d=>({label:d.name,value:number(d.sessions)}))}/>
    </div>
@@ -107,7 +108,7 @@ export default function AdminVisitorsPage(){
     <div className="mb-4"><h2 className="text-base font-semibold">Recent visitor sessions</h2><p className="mt-1 text-xs leading-5 text-white/40">Latest 80 sessions. Select one to see page-by-page history and clicked links. Anonymous visitors cannot be personally identified.</p></div>
     <div className="space-y-2">{report.sessions.map(v=><button key={v.id} type="button" onClick={()=>void details(v)} className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-[#efbd5d]/40 sm:flex-row sm:items-center sm:justify-between sm:p-4">
       <div className="min-w-0">
-       <div className="flex min-w-0 items-center gap-2"><span className="shrink-0 text-xl">{flag(v.country_code)}</span><span className="truncate text-sm font-semibold text-white">{v.user_name||"Anonymous visitor"}</span><span className="shrink-0 text-[10px] text-white/30">#{v.id.slice(0,8)}</span></div>
+       <div className="flex min-w-0 items-center gap-2"><CountryFlag code={v.country_code}/><span className="truncate text-sm font-semibold text-white">{v.user_name||"Anonymous visitor"}</span><span className="shrink-0 text-[10px] text-white/30">#{v.id.slice(0,8)}</span></div>
        <p className="mt-1 break-words text-[11px] leading-5 text-white/45"><MapPin className="me-1 inline size-3"/>{[v.city||"City unknown",nameCountry(v.country_code)].join(", ")} · {v.device} · {v.browser} / {v.os}</p>
        <p className="mt-1 break-all text-[11px] text-white/40">{v.traffic_source} · Entered {v.entry_path}</p>
       </div>
@@ -124,7 +125,7 @@ export default function AdminVisitorsPage(){
     <div className="max-h-[90dvh] w-full min-w-0 max-w-xl overflow-y-auto rounded-t-2xl border border-white/15 bg-[#12151b] p-4 shadow-2xl sm:rounded-2xl sm:p-6" onClick={e=>e.stopPropagation()}>
       <div className="flex items-start justify-between gap-3"><div className="min-w-0">
        <p className="text-[11px] font-semibold uppercase tracking-[.15em] text-[#efbd5d]">Session details</p>
-       <h3 className="mt-2 break-words text-xl font-semibold">{flag(selected.country_code)} {selected.user_name||"Anonymous visitor"}</h3>
+       <h3 className="mt-2 flex min-w-0 items-center gap-2 break-words text-xl font-semibold"><CountryFlag code={selected.country_code}/><span className="min-w-0">{selected.user_name||"Anonymous visitor"}</span></h3>
        <p className="mt-1 text-xs text-white/45">{selected.city||"Unknown city"}, {nameCountry(selected.country_code)} · {selected.device} · {selected.browser}</p>
       </div><button type="button" aria-label="Close details" onClick={()=>{setSelected(null);setEvents(null);}} className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/15 text-white/75"><X className="size-4"/></button></div>
       <div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-xl border border-white/10 bg-white/[.025] p-3"><p className="text-[11px] text-white/40">Active time</p><p className="mt-1 font-bold">{seconds(number(selected.active_seconds))}</p></div><div className="rounded-xl border border-white/10 bg-white/[.025] p-3"><p className="text-[11px] text-white/40">Arrival source</p><p className="mt-1 break-words text-xs font-semibold">{selected.traffic_source}</p></div></div>
