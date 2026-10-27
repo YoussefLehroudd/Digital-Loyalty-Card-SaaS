@@ -43,6 +43,12 @@ export type CustomerAuthResponse = {
   user: CustomerUser;
 };
 
+export type CustomerRegistrationResponse = {
+  verification_required: true;
+  email: string;
+  expires_in: number;
+};
+
 export type CustomerRegisterPayload = {
   first_name: string;
   last_name: string;
@@ -94,9 +100,15 @@ export function clearStoredCustomerToken() {
 }
 
 export function customerRegister(payload: CustomerRegisterPayload) {
-  return apiFetch<CustomerAuthResponse>("/user/register", {
+  return apiFetch<CustomerRegistrationResponse>("/user/register", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export function verifyCustomerEmail(payload: { email:string; code:string }) {
+  return apiFetch<CustomerAuthResponse>("/user/verify-email", {
+    method: "POST",body:JSON.stringify(payload)
   });
 }
 

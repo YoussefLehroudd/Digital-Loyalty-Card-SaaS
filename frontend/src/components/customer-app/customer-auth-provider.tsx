@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { clearStoredCustomerToken, customerLogin, customerLogout, customerMe, customerRegister, getStoredCustomerToken, storeCustomerToken, type CustomerAuthResponse, type CustomerLoginPayload, type CustomerRegisterPayload, type CustomerUser, } from "@/lib/customerAuth";
+import { clearStoredCustomerToken, customerLogin, customerLogout, customerMe, customerRegister, getStoredCustomerToken, storeCustomerToken, type CustomerAuthResponse, type CustomerLoginPayload, type CustomerRegisterPayload, type CustomerRegistrationResponse, type CustomerUser, } from "@/lib/customerAuth";
 import { ApiError } from "@/lib/api";
 type CustomerAuthContextValue = {
     user: CustomerUser | null;
@@ -9,7 +9,7 @@ type CustomerAuthContextValue = {
     loading: boolean;
     isAuthenticated: boolean;
     login: (payload: CustomerLoginPayload) => Promise<CustomerAuthResponse>;
-    register: (payload: CustomerRegisterPayload) => Promise<CustomerAuthResponse>;
+    register: (payload: CustomerRegisterPayload) => Promise<CustomerRegistrationResponse>;
     logout: () => Promise<void>;
     refresh: () => Promise<void>;
 };
@@ -52,13 +52,8 @@ export function CustomerAuthProvider({ children }: {
                 setUser(res.user);
                 return res;
             },
-            register: async (payload) => {
-                const res = await customerRegister(payload);
-                storeCustomerToken(res.token);
-                setToken(res.token);
-                setUser(res.user);
-                return res;
-            },
+            // Registration is pending until email OTP verification; never authenticate here.
+            register: (payload) => customerRegister(payload),
             logout: async () => {
                 if (token) {
                     try {
