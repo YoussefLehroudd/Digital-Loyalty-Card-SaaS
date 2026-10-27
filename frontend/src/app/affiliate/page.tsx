@@ -74,7 +74,9 @@ export default function AffiliatePortal(){
    <div className="w-full max-w-md space-y-6">
      <Link href="/" className="mx-auto flex w-fit items-center gap-3 text-xl font-black tracking-[.12em]"><img src="/brand/icon.png" alt="" className="size-12 object-contain"/>LOYVANCE</Link>
      <div className={`${panel} space-y-6`}>
-       <div className="text-center"><span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-[#efbd5d]/30 bg-[#efbd5d]/10"><Handshake className="size-6 text-[#efbd5d]"/></span><h1 className="text-2xl font-semibold">Affiliate Partner Portal</h1><p className="mt-2 text-sm text-white/45">Sign in to see the businesses you brought, paid subscriptions and your earnings.</p></div>
+       <div className="text-center"><span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-[#efbd5d]/30 bg-[#efbd5d]/10"><Handshake className="size-6 text-[#efbd5d]"/></span><h1 className="text-2xl font-semibold">Affiliate Partner Portal</h1><p className="mt-2 text-sm text-white/45">Legacy partner portal. New partners sign in with their existing LOYVANCE account.</p></div>
+       <div className="grid grid-cols-2 gap-2"><Link href="/login" className={secondary}>Business sign in</Link><Link href="/user/login" className={secondary}>Customer sign in</Link></div>
+       <p className="text-xs text-center text-white/40">After signing in normally, open the Affiliate tab in your dashboard.</p>
        {error&&<p role="alert" className="rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>}
        {success&&<p role="status" className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-sm text-emerald-200">{success}</p>}
        <form onSubmit={e=>void login(e)} className="space-y-4"><label className="block text-xs text-white/65">Your login email<input type="email" required className={`${input} mt-2`} value={email} onChange={e=>setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email"/></label>
