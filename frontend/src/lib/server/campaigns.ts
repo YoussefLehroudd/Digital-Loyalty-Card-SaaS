@@ -32,6 +32,7 @@ export async function ensureCampaignSchema(sql:Sql){
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
   created_by uuid REFERENCES app_users(id) ON DELETE SET NULL
  )`;
+ await q`ALTER TABLE marketing_campaigns ADD COLUMN IF NOT EXISTS archived_at timestamptz`;
  await q`CREATE INDEX IF NOT EXISTS marketing_campaigns_due_idx ON marketing_campaigns(status,scheduled_at)`;
  await q`CREATE INDEX IF NOT EXISTS marketing_campaigns_business_idx ON marketing_campaigns(business_id,created_at DESC)`;
  await q`CREATE TABLE IF NOT EXISTS marketing_campaign_recipients (
@@ -110,19 +111,19 @@ export async function handleBusinessCampaigns(path:string[],req:Request,sql:Sql,
  if(id&&!uuid.test(id))return reply({message:"Invalid campaign ID."},422);
  if(req.method==="GET"&&!id){
   const campaigns=await q`SELECT id,title,message,segment,channel,status,scheduled_at::text,sent_at::text,created_at::text
-    FROM marketing_campaigns WHERE business_id=${businessId}::uuid ORDER BY created_at DESC LIMIT 100`;
+    FROM marketing_campaigns WHERE business_id=${businessId}::uuid AND archived_at IS NULL ORDER BY created_at DESC LIMIT 100`;
   const automations=await q`SELECT id,name,title,message,segment,channel,interval_days,is_active,next_run_at::text,last_run_at::text
     FROM marketing_automations WHERE business_id=${businessId}::uuid ORDER BY created_at DESC LIMIT 50`;
   return reply({campaigns,automations});
  }
  if(req.method==="GET"&&id&&!action){
   const campaign=(await q`SELECT id,title,message,segment,channel,status,scheduled_at::text,sent_at::text,created_at::text
-   FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid`)[0];
+   FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND archived_at IS NULL`)[0];
   if(!campaign)return reply({message:"Campaign not found."},404);
   return reply({campaign,analytics:await stats(sql,businessId,id)});
  }
  if(req.method==="GET"&&id&&action==="audience"){
-  const row=(await q`SELECT segment FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid`)[0];
+  const row=(await q`SELECT segment FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND archived_at IS NULL`)[0];
   if(!row)return reply({message:"Campaign not found."},404);
   const list=await recipients(sql,businessId,row.segment as Segment,501);
   return reply({eligible:Math.min(list.length,500),limited:list.length>500});
@@ -142,8 +143,21 @@ export async function handleBusinessCampaigns(path:string[],req:Request,sql:Sql,
   return reply({campaign:created[0]},201);
  }
  if(!id)return reply({message:"Invalid operation."},404);
- const row=(await q`SELECT id,status,segment FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid`)[0];
+ const row=(await q`SELECT id,status,segment FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND archived_at IS NULL`)[0];
  if(!row)return reply({message:"Campaign not found."},404);
+ if(req.method==="PATCH"&&!action){
+  if(row.status!=="draft"&&row.status!=="scheduled")return reply({message:"Sent or cancelled campaigns cannot be edited. Create an edited copy instead."},409);
+  if(!(await businessActive(sql,businessId)))return reply({message:"Business subscription is inactive."},403);
+  const body=await req.json().catch(()=>null) as Row|null;
+  const title=String(body?.title??"").trim(),message=String(body?.message??"").trim();
+  const segment=body?.segment,channel=body?.channel;
+  if(!isSegment(segment)||(channel!=="inapp"&&channel!=="inapp_email")||title.length<3||title.length>80||message.length<10||message.length>300||/[<>]/.test(message))
+   return reply({message:"Choose a valid segment, channel, title (3–80 chars) and plain-text message (10–300 chars)."},422);
+  const updated=await q`UPDATE marketing_campaigns SET title=${title},message=${message},segment=${segment},channel=${channel},updated_at=now()
+    WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND archived_at IS NULL AND status IN ('draft','scheduled')
+    RETURNING id,title,message,segment,channel,status,scheduled_at::text,sent_at::text,created_at::text`;
+  return updated.length?reply({campaign:updated[0]}):reply({message:"Campaign started processing or was removed. Refresh and try again."},409);
+ }
  if(req.method==="POST"&&action==="schedule"){
   if(row.status!=="draft")return reply({message:"Only drafts can be scheduled."},409);
   if(!(await businessActive(sql,businessId)))return reply({message:"Business subscription is inactive."},403);
@@ -171,8 +185,16 @@ export async function handleBusinessCampaigns(path:string[],req:Request,sql:Sql,
   return reply({cancelled:Boolean(cancelled.length)});
  }
  if(req.method==="DELETE"&&!action){
-  const deleted=await q`DELETE FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND status='draft' RETURNING id`;
-  return reply({deleted:Boolean(deleted.length)});
+  // Drafts may be deleted; sent/other history is archived without changing delivered messages or email receipts.
+  if(row.status==="processing")return reply({message:"Campaign is processing. Delete it after processing finishes."},409);
+  if(row.status==="draft"){
+   const deleted=await q`DELETE FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND archived_at IS NULL AND status='draft' RETURNING id`;
+   return deleted.length?reply({deleted:true,archived:false}):reply({message:"Campaign status changed. Refresh and try again."},409);
+  }
+  const archived=await q`UPDATE marketing_campaigns SET archived_at=now(),status=CASE WHEN status='scheduled' THEN 'cancelled' ELSE status END,updated_at=now()
+   WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND archived_at IS NULL AND status IN ('scheduled','sent','cancelled')
+   RETURNING id`;
+  return archived.length?reply({deleted:true,archived:true}):reply({message:"Campaign status changed. Refresh and try again."},409);
  }
  return reply({message:"Route not found."},404);
 }
