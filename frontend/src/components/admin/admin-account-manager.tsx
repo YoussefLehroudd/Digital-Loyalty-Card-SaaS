@@ -35,12 +35,12 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
   event.preventDefault();if(busy)return;setBusy(true);setError("");
   try{
    const payload:Record<string,string>={
-    name:isBusiness?(creating?form.business_name:form.name):form.name,
-    ...(isBusiness?{email:form.email,business_email:form.business_email,owner_name:form.owner_name,address:form.address,phone:form.phone}
+    name:form.name,
+    ...(isBusiness?{email:form.email,business_name:form.business_name,business_email:form.business_email,owner_name:form.owner_name,address:form.address,phone:form.phone}
       :target?.contact_details_visible===false?{}:{email:form.email,phone:form.phone})
    };
    if(form.password)payload.password=form.password;
-   const url=creating?kind:${kind}/${target?.id};
+   const url=creating?kind:`${kind}/${target?.id}`;
    const result=await adminRequest<{message:string;temporary_password?:string}>(url,token,{method:creating?"POST":"PUT",body:JSON.stringify(payload)});
    onSaved(result.message);
    if(result.temporary_password){setTemporaryPassword(result.temporary_password);setForm(v=>({...v,password:""}));}
@@ -51,11 +51,11 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
   event.preventDefault();if(!target||busy||confirmName!==target.name||!adminPassword)return;
   setBusy(true);setError("");
   try{
-   const result=await adminRequest<{message:string}>(${kind}/${target.id},token,{method:"DELETE",body:JSON.stringify({confirm_name:confirmName,admin_password:adminPassword})});
+   const result=await adminRequest<{message:string}>(`${kind}/${target.id}`,token,{method:"DELETE",body:JSON.stringify({confirm_name:confirmName,admin_password:adminPassword})});
    onSaved(result.message);onClose();
   }catch(e){setError(e instanceof Error?e.message:"Deletion failed.");}finally{setBusy(false);}
  }
- const title=deleting?${isBusiness?"Delete business":"Delete customer"}:creating?${isBusiness?"Create business":"Create customer"}:${isBusiness?"Edit business & owner":"Edit customer"};
+ const title=deleting?(isBusiness?"Delete business":"Delete customer"):creating?(isBusiness?"Create business":"Create customer"):(isBusiness?"Edit business & owner":"Edit customer");
  return <Modal isOpen={mode!==null} onClose={onClose} closeDisabled={busy} className="sm:max-w-xl" title={title} description={deleting?target?.name:creating?"Create a new platform account":"Update the existing account details"} icon={deleting?<Trash2 className="size-5 text-rose-300"/>:creating?<Plus className="size-5"/>:<Pencil className="size-5"/>}>
   {error?<p role="alert" className="mb-4 rounded-xl border border-rose-400/25 bg-rose-400/10 p-3 text-xs text-rose-200">{error}</p>:null}
   {temporaryPassword?<div className="space-y-4">
@@ -72,7 +72,7 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
     <label className={label}>Confirm your own administrator password
      <input type="password" autoComplete="current-password" className={field} required value={adminPassword} onChange={e=>setAdminPassword(e.target.value)}/></label>
     <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={onClose} className={button}>Cancel</button>
-      <button type="submit" disabled={busy||confirmName!==target?.name||!adminPassword} className={${button}+" border-rose-500/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25"}><Trash2 className="size-4"/>Delete permanently</button></div>
+      <button type="submit" disabled={busy||confirmName!==target?.name||!adminPassword} className={button+" border-rose-500/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25"}><Trash2 className="size-4"/>Delete permanently</button></div>
    </form>:<form onSubmit={e=>void save(e)} className="space-y-4">
     {isBusiness?<><div className="text-xs font-bold uppercase tracking-[.14em] text-[#efbd5d]">Business information</div>
        <label className={label}>Business name<input required minLength={2} maxLength={120} className={field} value={creating?form.business_name:form.name} onChange={e=>set(creating?"business_name":"name",e.target.value)}/></label>
@@ -91,7 +91,7 @@ export function AdminAccountManager({kind,mode,target,onClose,onSaved}:Props){
      <input type="password" autoComplete="new-password" minLength={10} className={field} value={form.password} onChange={e=>set("password",e.target.value)} placeholder={creating?"Leave blank to generate a secure password":"Leave blank to keep the current password"}/></label>
     <p className="text-xs leading-5 text-white/45">{creating?"New accounts start with regular platform access. Business accounts receive a 14-day trial.":"Changing the login email or password signs the user out of all existing sessions. It does not change loyalty or subscription history."}</p>
     <div className="flex flex-wrap justify-end gap-2"><button type="button" className={button} onClick={onClose} disabled={busy}>Cancel</button>
-     <button type="submit" disabled={busy} className={${button}+" border-[#efbd5d]/40 bg-[#efbd5d] text-black hover:bg-[#f9ca76]"}>{busy?"Saving...":creating?"Create account":"Save changes"}</button></div>
+     <button type="submit" disabled={busy} className={button+" border-[#efbd5d]/40 bg-[#efbd5d] text-black hover:bg-[#f9ca76]"}>{busy?"Saving...":creating?"Create account":"Save changes"}</button></div>
    </form>}
  </Modal>;
 }
