@@ -7,7 +7,7 @@ import { useAdmin } from "@/components/admin/admin-shell";
 import { useI18n } from "@/components/i18n/language-provider";
 
 type Partner = {
-  id: string; name: string; email: string; code: string; is_active: boolean;
+  id: string; name: string; email: string; code: string; is_active: boolean; user_id?: string|null; account_role?: string|null; account_email?: string|null;
   rate_1_bps: number; rate_3_bps: number; rate_6_bps: number; rate_12_bps: number;
   businesses?: number; earned_centimes?: string; unpaid_centimes?: string;
 };
@@ -34,7 +34,7 @@ export default function AdminAffiliatesPage(){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const [message,setMessage]=useState("");
- const [name,setName]=useState("");
+ const [linkEmail,setLinkEmail]=useState("");
  const [email,setEmail]=useState("");
  const [code,setCode]=useState("");
  const [createRates,setCreateRates]=useState<Rates>(initialRates);
@@ -56,7 +56,7 @@ export default function AdminAffiliatesPage(){
  useEffect(()=>{void load();},[load]);
  useEffect(()=>{if(selected)void loadDetail(selected);else setReport(null);},[selected,loadDetail]);
  const referralUrl=(code:string)=>typeof window==="undefined"?"":`${window.location.origin}/register?ref=${encodeURIComponent(code)}`;
- const affiliateUrl=()=>typeof window==="undefined"?"":`${window.location.origin}/affiliate`;
+ const affiliateUrl=(partner?:Partner)=>typeof window==="undefined"?"":`${window.location.origin}${partner?.account_role==="customer"?"/user/affiliate":partner?.account_role==="business_owner"?"/dashboard/affiliate":"/affiliate"}`;
  const copy=async(value:string,label:string)=>{
   try{await navigator.clipboard.writeText(value);setCopied(label);window.setTimeout(()=>setCopied(""),2000);}
   catch{setError("Could not copy. Select the text manually.");}
@@ -64,10 +64,10 @@ export default function AdminAffiliatesPage(){
  async function create(e:React.FormEvent){
   e.preventDefault();setBusy(true);setError("");setMessage("");setTempPassword("");
   try{
-   const res=await adminRequest<{affiliate:Partner;temporary_password:string}>("affiliates",token,{
-    method:"POST",body:JSON.stringify({name,email,code:code||undefined,rates:createRates})
+   const res=await adminRequest<{affiliate:Partner;linked_existing?:boolean}>("affiliates",token,{
+    method:"POST",body:JSON.stringify({user_email:email,code:code||undefined,rates:createRates})
    });
-   setTempPassword(res.temporary_password);setMessage("Partner created. Copy the one-time password and share it securely.");setName("");setEmail("");setCode("");
+   setMessage(res.linked_existing?"Existing affiliate earnings preserved and account linked.":"Affiliate permission granted to the existing account.");setEmail("");setCode("");
    await load();setSelected(res.affiliate.id);
   }catch(e){setError(e instanceof Error?e.message:"Could not create affiliate.");}
   finally{setBusy(false);}
@@ -78,6 +78,16 @@ export default function AdminAffiliatesPage(){
    await adminRequest(`affiliates/${report.affiliate.id}`,token,{method:"PATCH",body:JSON.stringify({name:editName,is_active:isActive,rates:editRates})});
    setMessage("Affiliate updated. Previous commission rates remain unchanged on recorded payments.");await Promise.all([load(),loadDetail(report.affiliate.id)]);
   }catch(e){setError(e instanceof Error?e.message:"Unable to update affiliate.");}
+  finally{setBusy(false);}
+ }
+ async function linkAccount(){
+  if(!report || !linkEmail.trim())return;
+  setBusy(true);setError("");setMessage("");
+  try{
+   await adminRequest(`affiliates/${report.affiliate.id}/link-account`,token,{method:"POST",body:JSON.stringify({user_email:linkEmail.trim()})});
+   setMessage("Existing partner linked to the normal LOYVANCE account. All historical commissions and referrals are preserved.");
+   setLinkEmail("");await Promise.all([load(),loadDetail(report.affiliate.id)]);
+  }catch(e){setError(e instanceof Error?e.message:"Unable to link account.");}
   finally{setBusy(false);}
  }
  async function resetPassword(){
@@ -106,33 +116,33 @@ export default function AdminAffiliatesPage(){
   <p className="mt-2 text-sm text-white/50">{tr("Referral links, confirmed subscriptions, commission earnings and monthly settlements.")}</p></header>
   {error&&<p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">{error}</p>}
   {message&&<p role="status" className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-4 text-sm text-emerald-200">{message}</p>}
-  {tempPassword&&<section className="rounded-2xl border border-amber-400/50 bg-amber-400/10 p-5"><h2 className="font-semibold text-amber-200">One-time login password — copy now</h2><p className="mt-1 text-xs text-white/60">For security this password is never displayed again. The affiliate should change it after login.</p><div className="mt-3 flex flex-wrap gap-2"><code className="break-all rounded-lg bg-black/40 px-4 py-3 text-amber-100">{tempPassword}</code><button className={secondary} onClick={()=>void copy(tempPassword,"password")}><Copy className="size-4"/>Copy password</button><button className={secondary} onClick={()=>void copy(affiliateUrl(),"portal")}>Copy partner login</button></div></section>}
+  {tempPassword&&<section className="rounded-2xl border border-amber-400/50 bg-amber-400/10 p-5"><h2 className="font-semibold text-amber-200">One-time login password — copy now</h2><p className="mt-1 text-xs text-white/60">For security this password is never displayed again. The affiliate should change it after login.</p><div className="mt-3 flex flex-wrap gap-2"><code className="break-all rounded-lg bg-black/40 px-4 py-3 text-amber-100">{tempPassword}</code><button className={secondary} onClick={()=>void copy(tempPassword,"password")}><Copy className="size-4"/>Copy password</button><button className={secondary} onClick={()=>void copy(affiliateUrl(),"portal")}>Copy legacy partner login</button></div></section>}
   <div className="grid gap-5 xl:grid-cols-[350px_minmax(0,1fr)]">
    <div className="space-y-5">
     <form onSubmit={e=>void create(e)} className={`${panel} space-y-4`}>
-     <h2 className="flex items-center gap-2 font-semibold"><Plus className="size-4 text-[#efbd5d]"/> {tr("Add a partner")}</h2>
-     <label className="block text-xs text-white/60">Full name<input className={`${field} mt-2`} placeholder="Partner name" value={name} onChange={e=>setName(e.target.value)} required minLength={2}/></label>
-     <label className="block text-xs text-white/60">Login email<input type="email" className={`${field} mt-2`} placeholder="partner@example.com" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
+     <h2 className="flex items-center gap-2 font-semibold"><Plus className="size-4 text-[#efbd5d]"/> {tr("Grant affiliate access")}</h2>
+     <p className="text-xs leading-5 text-white/50">The person first creates a normal Business or Customer account. Enter their registered email to unlock Affiliate inside their own workspace. Their normal role, data and password stay unchanged.</p>
+     <label className="block text-xs text-white/60">Existing LOYVANCE account email<input type="email" className={`${field} mt-2`} placeholder="person@example.com" value={email} onChange={e=>setEmail(e.target.value)} required/></label>
      <label className="block text-xs text-white/60">Custom referral code (optional)<input className={`${field} mt-2`} placeholder="mohamed-sales" pattern="[a-z0-9][a-z0-9-]{2,39}" value={code} onChange={e=>setCode(e.target.value.toLowerCase())}/></label>
      <RateFields rates={createRates} setRates={setCreateRates}/>
-     <button className={`${primary} w-full`} disabled={busy}><Plus className="size-4"/>Create partner & generate link</button>
+     <button className={`${primary} w-full`} disabled={busy}><Plus className="size-4"/>Grant Affiliate & generate link</button>
     </form>
     <section className={panel}>
      <div className="mb-4 flex items-center justify-between"><h2 className="font-semibold">All partners ({partners.length})</h2><button aria-label="Reload partners" className={secondary} onClick={()=>void load()}><RefreshCcw className="size-4"/></button></div>
      {partners.length===0?<p className="text-xs text-white/45">No affiliate partners yet.</p>:<div className="space-y-2">{partners.map(p=><button key={p.id} onClick={()=>{setSelected(p.id);setTempPassword("");setMessage("");}} className={`w-full rounded-xl border p-3 text-left transition ${selected===p.id?"border-[#efbd5d]/40 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
       <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">{p.name}</span><span className={`text-xs ${p.is_active?"text-emerald-400":"text-rose-300"}`}>{p.is_active?"Active":"Paused"}</span></div>
-      <p className="mt-1 text-xs text-white/45">{p.code} · {p.businesses} businesses</p><p className="mt-2 text-sm text-[#efbd5d]">Outstanding: {formatMoney(p.unpaid_centimes)}</p></button>)}</div>}
+      <p className="mt-1 text-xs text-white/45">{p.code} · {p.businesses} businesses · {p.account_role?p.account_role==="customer"?"Customer account":"Business account":"Legacy / not linked"}</p><p className="mt-2 text-sm text-[#efbd5d]">Outstanding: {formatMoney(p.unpaid_centimes)}</p></button>)}</div>}
     </section>
    </div>
    <div className="space-y-5">
     {!report?<section className={`${panel} flex min-h-56 items-center justify-center text-sm text-white/45`}>Select a partner to inspect their business referrals and earnings.</section>:<>
      <section className={panel}>
-      <div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-2xl font-semibold">{report.affiliate.name}</h2><p className="mt-1 text-sm text-white/45">{report.affiliate.email}</p></div><span className="rounded-lg border border-[#efbd5d]/30 bg-[#efbd5d]/10 px-3 py-1 text-xs text-[#efbd5d]">{report.affiliate.code}</span></div>
+      <div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-2xl font-semibold">{report.affiliate.name}</h2><p className="mt-1 text-sm text-white/45">{report.affiliate.account_email||report.affiliate.email} · {report.affiliate.account_role||"Not linked to a platform account"}</p></div><span className="rounded-lg border border-[#efbd5d]/30 bg-[#efbd5d]/10 px-3 py-1 text-xs text-[#efbd5d]">{report.affiliate.code}</span></div>
       <p className="mt-5 text-xs text-white/50">Business referral link</p><div className="mt-2 flex flex-wrap gap-2"><input readOnly value={referralUrl(report.affiliate.code)} aria-label="Referral link" className={`${field} min-w-0 flex-1`}/><button className={secondary} onClick={()=>void copy(referralUrl(report.affiliate.code),"ref")}><Copy className="size-4"/>{copied==="ref"?"Copied":"Copy"}</button></div>
-      <div className="mt-2 flex gap-2"><button className={secondary} onClick={()=>void copy(affiliateUrl(),"portal")}><ArrowRight className="size-4"/>Copy partner dashboard URL</button></div>
+      <div className="mt-2 flex gap-2"><button className={secondary} onClick={()=>void copy(affiliateUrl(report.affiliate),"portal")}><ArrowRight className="size-4"/>Copy partner dashboard URL</button></div>
       <div className="mt-5 grid gap-3 sm:grid-cols-3"><Mini label="Referred businesses" value={String(report.summary.referred_businesses)}/><Mini label="Earned total" value={formatMoney(report.summary.total_centimes)}/><Mini label="Unpaid balance" value={formatMoney(report.summary.unpaid_centimes)}/></div>
      </section>
-     <section className={panel}><h3 className="mb-4 text-lg font-semibold">Partner settings</h3><label className="text-xs text-white/60">Display name<input className={`${field} mt-2 mb-4`} value={editName} onChange={e=>setEditName(e.target.value)}/></label><RateFields rates={editRates} setRates={setEditRates}/><div className="mt-4 flex flex-wrap gap-2"><button className={primary} disabled={busy} onClick={()=>void save(report.affiliate.is_active)}><Save className="size-4"/>Save changes</button><button className={secondary} disabled={busy} onClick={()=>void save(!report.affiliate.is_active)}>{report.affiliate.is_active?"Pause partner":"Reactivate partner"}</button></div><button className={`${secondary} mt-3`} disabled={busy} onClick={()=>void resetPassword()}>Reset partner password</button><p className="mt-3 text-xs text-white/40">Pausing prevents new referrals, login and future commission accrual. Existing earnings stay in the ledger.</p></section>
+     <section className={panel}><h3 className="mb-4 text-lg font-semibold">Partner settings</h3><label className="text-xs text-white/60">Display name<input className={`${field} mt-2 mb-4`} value={editName} onChange={e=>setEditName(e.target.value)}/></label><RateFields rates={editRates} setRates={setEditRates}/><div className="mt-4 flex flex-wrap gap-2"><button className={primary} disabled={busy} onClick={()=>void save(report.affiliate.is_active)}><Save className="size-4"/>Save changes</button><button className={secondary} disabled={busy} onClick={()=>void save(!report.affiliate.is_active)}>{report.affiliate.is_active?"Pause partner":"Reactivate partner"}</button></div>{!report.affiliate.user_id?<div className="mt-4 space-y-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4"><p className="text-sm font-semibold text-amber-200">Link this existing affiliate to a normal account</p><p className="text-xs text-white/55">Preserves all previous referrals, commissions and payouts. The account must register in LOYVANCE first.</p><input type="email" value={linkEmail} onChange={e=>setLinkEmail(e.target.value)} placeholder="Registered LOYVANCE email" aria-label="Account email to link" className={field}/><button className={primary} disabled={busy||!linkEmail.trim()} onClick={()=>void linkAccount()}>Grant access to account</button><button className={secondary} disabled={busy} onClick={()=>void resetPassword()}>Reset legacy portal password</button></div>:<p className="mt-3 text-xs text-emerald-300">Linked account · Sign in normally using the original customer or business password.</p>}<p className="mt-3 text-xs text-white/40">Pausing prevents new referrals, login and future commission accrual. Existing earnings stay in the ledger.</p></section>
      <section className={panel}><h3 className="mb-1 flex items-center gap-2 text-lg font-semibold"><Wallet className="size-5 text-[#efbd5d]"/>Record monthly payout</h3><p className="mb-4 text-xs text-white/45">Only mark paid after you really transfer the money. Unpaid commissions for the selected Morocco month are settled together.</p>
        <div className="grid gap-3 sm:grid-cols-3"><label className="text-xs text-white/60">Commission month<input type="month" className={`${field} mt-2`} value={payoutMonth} onChange={e=>setPayoutMonth(e.target.value)}/></label><label className="text-xs text-white/60">Payment method<input className={`${field} mt-2`} value={payoutMethod} onChange={e=>setPayoutMethod(e.target.value)} placeholder="Bank transfer"/></label><label className="text-xs text-white/60">Transfer reference<input className={`${field} mt-2`} value={payoutReference} onChange={e=>setPayoutReference(e.target.value)} placeholder="Transaction ID"/></label></div><button className={`${primary} mt-4`} disabled={busy||!payoutReference.trim()} onClick={()=>void pay()}><Check className="size-4"/>Confirm money sent & record payout</button>
       <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[410px] text-left text-xs"><thead><tr className="text-white/40"><th className="py-2">Paid date</th><th>Month</th><th>Amount</th><th>Reference</th></tr></thead><tbody>{report.payouts.map(p=><tr className="border-t border-white/10" key={p.id}><td className="py-2">{formatDate(p.paid_at)}</td><td>{p.month}</td><td>{formatMoney(p.amount_centimes)}</td><td>{p.reference}</td></tr>)}</tbody></table></div>
