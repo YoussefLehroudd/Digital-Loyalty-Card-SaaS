@@ -1,7 +1,7 @@
 "use client";
 import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Moon, Sun } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { customerUpdateProfile, defaultCustomerPreferences, type CustomerPreferences, } from "@/lib/customerAuth";
@@ -33,7 +33,6 @@ export default function UserSettingsPage() {
     const [rewardAlerts, setRewardAlerts] = useState(preferences.notifications.reward_alerts);
     const [promotions, setPromotions] = useState(preferences.notifications.promotions);
     const [pushEnabled, setPushEnabled] = useState(preferences.notifications.push_enabled);
-    const [darkMode, setDarkMode] = useState(preferences.ui.dark_mode);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -43,16 +42,7 @@ export default function UserSettingsPage() {
         setRewardAlerts(preferences.notifications.reward_alerts);
         setPromotions(preferences.notifications.promotions);
         setPushEnabled(preferences.notifications.push_enabled);
-        setDarkMode(preferences.ui.dark_mode);
     }, [preferences]);
-    useEffect(() => {
-        const root = document.documentElement;
-        if (darkMode)
-            root.classList.add("dark");
-        else
-            root.classList.remove("dark");
-        window.localStorage.setItem("customer_dark_mode", darkMode ? "1" : "0");
-    }, [darkMode]);
     async function savePreferences() {
         if (!token || !user?.customer_profile)
             return;
@@ -74,7 +64,7 @@ export default function UserSettingsPage() {
                         push_enabled: pushEnabled,
                     },
                     ui: {
-                        dark_mode: darkMode,
+                        dark_mode: true,
                     },
                 },
             });
@@ -88,7 +78,7 @@ export default function UserSettingsPage() {
             setSaving(false);
         }
     }
-    return (<CustomerLayout title={tr("Settings")} subtitle={tr("Preferences, theme and account actions")}>
+    return (<CustomerLayout title={tr("Settings")} subtitle={tr("Notification and account settings")}>
       <div className="space-y-4">
         <Card>
           <CardHeader>
@@ -99,18 +89,6 @@ export default function UserSettingsPage() {
             <ToggleRow title={tr("Reward alerts")} description={tr("Get notified when rewards are ready.")} checked={rewardAlerts} onToggle={() => setRewardAlerts((v) => !v)}/>
             <ToggleRow title={tr("Promotions")} description={tr("Receive occasional promotional offers.")} checked={promotions} onToggle={() => setPromotions((v) => !v)}/>
             <ToggleRow title={tr("Push notifications")} description={tr("Enable mobile/browser push alerts.")} checked={pushEnabled} onToggle={() => setPushEnabled((v) => !v)}/>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{tr("Appearance")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button type="button" variant="outline" className="w-full justify-start" onClick={() => setDarkMode((v) => !v)}>
-              {darkMode ? <Moon className="me-2 h-4 w-4"/> : <Sun className="me-2 h-4 w-4"/>}
-              {darkMode ? tr("Dark mode enabled") : tr("Enable dark mode")}
-            </Button>
           </CardContent>
         </Card>
 
