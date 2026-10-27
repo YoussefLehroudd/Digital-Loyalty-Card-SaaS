@@ -7,7 +7,7 @@ const db=new PGlite();
 require.extensions['.ts']=(module,filename)=>module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{
  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true},fileName:filename
 }).outputText,filename);
-const {ensureCampaignSchema,handleBusinessCampaigns,unsubscribeCampaignEmail}=require(path.join(__dirname,'../src/lib/server/campaigns.ts'));
+const {ensureCampaignSchema,handleBusinessCampaigns,unsubscribeCampaignEmail,runCampaignEmails}=require(path.join(__dirname,'../src/lib/server/campaigns.ts'));
 function sql(parts,...values){return db.query(parts.reduce((s,p,i)=>s+(i?'$'+i:'')+p,''),values).then(x=>x.rows);}
 const id=()=>randomUUID();
 async function api(businessId,userId,method,p,body){
@@ -22,7 +22,7 @@ async function setup(){
   CREATE TABLE app_users (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),role text,status text DEFAULT 'active',email text,name text);
   CREATE TABLE business_subscriptions (business_id uuid PRIMARY KEY REFERENCES businesses(id),trial_ends_at timestamptz,paid_ends_at timestamptz);
   CREATE TABLE customers (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),user_id uuid REFERENCES app_users(id),created_at timestamptz DEFAULT now());
-  CREATE TABLE customer_profiles (user_id uuid PRIMARY KEY REFERENCES app_users(id),preferences jsonb DEFAULT '{}'::jsonb);
+  CREATE TABLE customer_profiles (user_id uuid PRIMARY KEY REFERENCES app_users(id),preferences jsonb DEFAULT '{}'::jsonb,updated_at timestamptz DEFAULT now());
   CREATE TABLE loyalty_cards (id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),required_stamps int);
   CREATE TABLE customer_loyalties (id uuid PRIMARY KEY,customer_id uuid REFERENCES customers(id),loyalty_card_id uuid REFERENCES loyalty_cards(id),current_stamps int);
   CREATE TABLE visits (id uuid PRIMARY KEY, business_id uuid REFERENCES businesses(id),customer_id uuid REFERENCES customers(id),created_at timestamptz DEFAULT now());
@@ -84,6 +84,23 @@ async function main(){
  assert.equal((await api(businessA,ownerA,'GET',oneAway.data.campaign.id+'/audience')).data.eligible,1);
  const forbidden=await api(businessB,ownerB,'POST',campaignId+'/cancel',{});
  assert.equal(forbidden.status,404);
+ const emailDraft=await api(businessB,ownerB,'POST','',{...reqBody,title:'Email loyalty news',channel:'inapp_email'});
+ assert.equal(emailDraft.status,201);
+ assert.equal((await api(businessB,ownerB,'POST',emailDraft.data.campaign.id+'/send',{})).status,200);
+ const originalFetch=global.fetch,originalKey=process.env.RESEND_API_KEY,originalFrom=process.env.RESEND_FROM_EMAIL;
+ process.env.RESEND_API_KEY='mock-resend-key';process.env.RESEND_FROM_EMAIL='LOYVANCE <test@local.test>';
+ let outgoing=0;
+ global.fetch=async(url,options)=>{assert.match(String(url),/resend.com\/emails/);assert.match(String(options.body),/Unsubscribe/);outgoing++;return Response.json({id:'mock-email'});};
+ try{
+   const delivery=await runCampaignEmails(sql,1,'https://loyvance.test');
+   assert.equal(delivery.sent,1,JSON.stringify(delivery));
+   assert.equal(outgoing,1);
+   assert.equal((await sql`SELECT email_state FROM marketing_campaign_recipients WHERE campaign_id=${emailDraft.data.campaign.id}`)[0].email_state,'sent');
+ }finally{
+   global.fetch=originalFetch;
+   if(originalKey===undefined)delete process.env.RESEND_API_KEY;else process.env.RESEND_API_KEY=originalKey;
+   if(originalFrom===undefined)delete process.env.RESEND_FROM_EMAIL;else process.env.RESEND_FROM_EMAIL=originalFrom;
+ }
  await sql`UPDATE business_subscriptions SET trial_ends_at=now()-interval '1 day' WHERE business_id=${businessB}`;
  assert.equal((await api(businessB,ownerB,'POST','',reqBody)).status,403,'expired business cannot create');
  const unsubToken='c'.repeat(64),unsubHash=createHash('sha256').update(unsubToken).digest('hex');
