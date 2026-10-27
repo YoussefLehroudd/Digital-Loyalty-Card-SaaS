@@ -52,7 +52,7 @@ export async function handleAdminAccounts(path:string[],req:Request,sql:Sql,admi
  if(!id)return reply({message:"Account ID required."},422);
  if(req.method==="PUT"){
   const name=str(body.name),email=str(body.email).toLowerCase(),password=str(body.password),phone=str(body.phone).slice(0,40)||null;
-  if(!goodName(name)||!goodEmail(email))return reply({message:"A valid name and login email are required."},422);
+  if(!goodName(name)||(business&&!goodEmail(email)))return reply({message:"A valid name and login email are required."},422);
   if(password&&(password.length<10||password.length>200))return reply({message:"New password must be at least 10 characters."},422);
   const hash=password?await deps.hashPassword(password):null,auditId=randomUUID();
   try{
@@ -78,14 +78,16 @@ export async function handleAdminAccounts(path:string[],req:Request,sql:Sql,admi
    if(!user)return reply({message:"Customer not found."},404);
    const privacy=await q`SELECT EXISTS(SELECT 1 FROM customers c JOIN businesses b ON b.id=c.business_id WHERE c.user_id=${id}::uuid AND b.admin_contact_private=true) AS private`;
    const protectedContact=privacy[0]?.private===true;
-   if(protectedContact&&(email!==user.email||body.phone!==undefined))return reply({message:"This customer's email and phone are private. You can change their name or password, but not the protected contact fields."},403);
-   if((await q`SELECT id FROM app_users WHERE email=${email} AND id<>${id}::uuid LIMIT 1`).length)return reply({message:"Email already in use."},409);
-   const parts=nameParts(name),revoke=Boolean(hash)||email!==user.email;
+   if(protectedContact&&(body.email!==undefined||body.phone!==undefined))return reply({message:"Customer contact details are private. Do not send email or phone updates."},403);
+   const effectiveEmail=protectedContact?String(user.email):email;
+   if(!goodEmail(effectiveEmail))return reply({message:"Valid customer email required."},422);
+   if((await q`SELECT id FROM app_users WHERE email=${effectiveEmail} AND id<>${id}::uuid LIMIT 1`).length)return reply({message:"Email already in use."},409);
+   const parts=nameParts(name),revoke=Boolean(hash)||effectiveEmail!==user.email;
    await sql.transaction([
-    sql`UPDATE app_users SET name=${name},email=${email},password_hash=COALESCE(${hash},password_hash),updated_at=now() WHERE id=${id}::uuid AND role='customer'`,
+    sql`UPDATE app_users SET name=${name},email=${effectiveEmail},password_hash=COALESCE(${hash},password_hash),updated_at=now() WHERE id=${id}::uuid AND role='customer'`,
     sql`INSERT INTO customer_profiles(user_id,first_name,last_name,phone) VALUES(${id}::uuid,${parts.first},${parts.last},${phone})
       ON CONFLICT(user_id) DO UPDATE SET first_name=excluded.first_name,last_name=excluded.last_name,phone=CASE WHEN ${protectedContact} THEN customer_profiles.phone ELSE excluded.phone END,updated_at=now()`,
-    sql`UPDATE customers SET first_name=${parts.first},last_name=${parts.last},email=CASE WHEN ${protectedContact} THEN email ELSE ${email} END,phone=CASE WHEN ${protectedContact} THEN phone ELSE ${phone} END,updated_at=now() WHERE user_id=${id}::uuid`,
+    sql`UPDATE customers SET first_name=${parts.first},last_name=${parts.last},email=CASE WHEN ${protectedContact} THEN email ELSE ${effectiveEmail} END,phone=CASE WHEN ${protectedContact} THEN phone ELSE ${phone} END,updated_at=now() WHERE user_id=${id}::uuid`,
     sql`DELETE FROM user_sessions WHERE user_id=${id}::uuid AND ${revoke}`,
     sql`DELETE FROM password_reset_tokens WHERE user_id=${id}::uuid AND ${revoke}`,
     sql`INSERT INTO admin_audit_logs(id,actor_id,actor_name,action,entity_type,entity_id,entity_name,reason) VALUES(${auditId},${admin.id},${admin.name},'admin_update','customer',${id}::uuid,${name},${revoke?'Credentials updated':'Profile details updated'})`
