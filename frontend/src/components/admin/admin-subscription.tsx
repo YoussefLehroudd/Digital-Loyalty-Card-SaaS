@@ -8,7 +8,7 @@ import { DurationChoices, ProofPreview } from "@/components/subscriptions/renewa
 import { Modal } from "@/components/ui/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminRequest, type AdminRow } from "@/lib/admin";
-import { PAYMENT_METHODS, SUBSCRIPTION_PLANS, subscriptionDate, type RenewalRequest, type SubscriptionMonths, type SubscriptionDetails } from "@/lib/subscription";
+import { PAYMENT_METHODS, subscriptionDate, type RenewalRequest, type SubscriptionMonths, type SubscriptionDetails } from "@/lib/subscription";
 const localNow = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 export function AdminSubscription({ business, onClose, onSaved, renewal }: {
     business: Pick<AdminRow, "id" | "name">;
