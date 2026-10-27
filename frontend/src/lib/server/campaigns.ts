@@ -122,6 +122,35 @@ export async function handleBusinessCampaigns(path:string[],req:Request,sql:Sql,
   if(!campaign)return reply({message:"Campaign not found."},404);
   return reply({campaign,analytics:await stats(sql,businessId,id)});
  }
+ if(req.method==="GET"&&id&&action==="recipients"){
+  // Campaign must belong to the authenticated business, including when no messages were delivered.
+  const exists=await q`SELECT id FROM marketing_campaigns
+    WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND archived_at IS NULL`;
+  if(!exists.length)return reply({message:"Campaign not found."},404);
+  // Only disclose the business's own membership names AFTER notification insertion.
+  // Never expose raw email/phone or the campaign's prospective opt-in audience.
+  const delivered=await q`SELECT r.customer_id,
+    COALESCE(
+      NULLIF(TRIM(CONCAT_WS(' ',NULLIF(p.first_name,''),NULLIF(p.last_name,''))), ''),
+      NULLIF(TRIM(CONCAT_WS(' ',NULLIF(c.first_name,''),NULLIF(c.last_name,''))), ''),
+      NULLIF(TRIM(u.name),''),'Customer'
+    ) AS customer_name,
+    r.created_at::text AS notified_at,
+    cr.read_at::text AS read_at,
+    r.email_state
+   FROM marketing_campaign_recipients r
+   JOIN marketing_campaigns mc ON mc.id=r.campaign_id
+      AND mc.business_id=${businessId}::uuid AND mc.archived_at IS NULL
+   JOIN customers c ON c.id=r.customer_id AND c.business_id=${businessId}::uuid AND c.user_id=r.user_id
+   JOIN app_users u ON u.id=r.user_id AND u.role='customer'
+   JOIN customer_notifications n ON n.id=r.notification_id AND n.customer_id=c.id AND n.type='campaign'
+   LEFT JOIN customer_profiles p ON p.user_id=r.user_id
+   LEFT JOIN customer_notification_reads cr ON cr.user_id=r.user_id AND cr.notification_key=r.notification_id
+   WHERE r.campaign_id=${id}::uuid
+   ORDER BY r.created_at DESC,r.customer_id
+   LIMIT 500`;
+  return reply({recipients:delivered});
+ }
  if(req.method==="GET"&&id&&action==="audience"){
   const row=(await q`SELECT segment FROM marketing_campaigns WHERE id=${id}::uuid AND business_id=${businessId}::uuid AND archived_at IS NULL`)[0];
   if(!row)return reply({message:"Campaign not found."},404);

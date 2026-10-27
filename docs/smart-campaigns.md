@@ -6,6 +6,7 @@ This system extends existing customer notifications and Customer Settings. It do
 - Visit `/dashboard/campaigns` to create a draft with a title, plain-text body and target segment.
 - Segments: all opted-in business members, members inactive 30+ days, members 1 stamp away from their reward, or members created in the last 7 days.
 - The audience preview returns a **count**, never customer contact information.
+- After sending, selecting a campaign shows **Notified customers**: the names of actual in-app recipients linked to this business, their delivery timestamp, read status and coarse email queue state. No email address or phone is exposed.
 - Review eligible audience before **Send now**, or choose a scheduled date. Sending in-app notifications occurs immediately for manually sent campaigns; scheduled campaigns run on the Vercel daily processing job.
 - The business owner can optionally select **In-app + Email**, review sent/viewed/email queue statistics, cancel scheduled campaigns, or delete drafts.
 - Automation rules are **paused by default** and may be explicitly enabled with 7/14/30-day cadence. Up to five automations per business.
@@ -21,6 +22,7 @@ This system extends existing customer notifications and Customer Settings. It do
 - Each recipient MUST be a platform customer login with a membership tied to this business; stale orphan emails and unrelated customer records never qualify.
 - Consent is rechecked at audience preparation, in-app insertion, and before email send. No marketing is sent when the business subscription is expired or business is suspended.
 - Never export audience email addresses to the Business UI. Contacts are resolved inside the server for the verified Resend sender only.
+- Delivered-recipient names are only available after notification creation, behind authenticated business-owner, campaign ownership, matching membership-business and notification record checks. The listing cannot be used to discover an audience before sending.
 - A maximum of **500 matched users per campaign**, **3 broadcasts per business per day**, and 8 draft creations per day. Delivery suppresses repeat promotional messages to a user from the same business within 7 days, and across all businesses within 48 hours.
 - Email recipients, claim states and provider idempotency keys are stored in the DB; hourly/daily retries have a 15-minute claim expiry, at most 3 attempts. Unsubscribe tokens are random and stored hashed only. Do not put actual customer data in repository docs.
 - No arbitrary HTML/links accepted as campaign message input; HTML content in emails is escaped.
@@ -33,6 +35,7 @@ GET    /api/campaigns/business
 POST   /api/campaigns/business
 GET    /api/campaigns/business/:id
 GET    /api/campaigns/business/:id/audience
+GET    /api/campaigns/business/:id/recipients  (delivered recipient names, no contact details)
 POST   /api/campaigns/business/:id/send
 POST   /api/campaigns/business/:id/schedule
 POST   /api/campaigns/business/:id/cancel
