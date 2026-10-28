@@ -19,7 +19,7 @@ const loadOffset=(id:string)=>{
   try{
     const raw=window.sessionStorage.getItem(storageKey(id));
     const value=raw===null?0:Number(raw);
-    return Number.isFinite(value)&&value>=0?value:0;
+    return Number.isFinite(value)?value:0;
   }catch{return 0;}
 };
 /** Bottom navigation is mounted in /user/layout; it also recovers after reloads. */
@@ -29,13 +29,13 @@ export const CustomerBottomNav=memo(function CustomerBottomNav(){
   const {token,isAuthenticated,user}=useCustomerAuth();
   const [isAffiliate,setIsAffiliate]=useState(false);
   const scrollRef=useRef<HTMLDivElement|null>(null);
-  const writeTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+  const writeTimer=useRef<number|null>(null);
   const userId=user?.id??null;
 
   const saveOffset=useCallback(()=>{
     const strip=scrollRef.current;
     if(!strip||!userId)return;
-    const left=Math.max(0,strip.scrollLeft);
+    const left=strip.scrollLeft;
     offsets.set(userId,left);
     if(writeTimer.current)window.clearTimeout(writeTimer.current);
     // Storage is written only after scrolling settles, keeping swipes smooth.
