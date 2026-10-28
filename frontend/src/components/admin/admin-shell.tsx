@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Activity, ArchiveRestore, ArrowUpRight, Building2, Handshake, LayoutDashboard, LogOut, Download, Settings2, ShieldCheck, Users, ChartNoAxesCombined } from "lucide-react";
-import { ADMIN_TOKEN_KEY, adminRequest, clearAdminToken, type AdminUser } from "@/lib/admin";
+import { adminRequest, clearAdminToken, getAdminToken, type AdminUser } from "@/lib/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 type LiveStatus = "connecting" | "live" | "retrying";
@@ -51,7 +51,7 @@ function AdminWorkspace({ children }: {
     const [authError, setAuthError] = useState("");
     useEffect(() => {
         const controller = new AbortController();
-        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        const token = getAdminToken();
         if (!token) {
             router.replace("/admin/login");
             return;
