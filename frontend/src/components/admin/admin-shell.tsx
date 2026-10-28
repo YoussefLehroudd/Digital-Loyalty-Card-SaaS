@@ -21,6 +21,7 @@ const AdminContext = createContext<AdminContextValue | null>(null);
 export const adminNavigation = [
     { href: "/admin", label: "Overview", icon: LayoutDashboard },
     { href: "/admin/businesses", label: "Businesses", icon: Building2 },
+    { href: "/admin/premium", label: "Feature Approvals", icon: ShieldCheck },
     { href: "/admin/affiliates", label: "Affiliates", icon: Handshake },
     { href: "/admin/customers", label: "Customers", icon: Users },
     { href: "/admin/activity", label: "Activity", icon: Activity },
