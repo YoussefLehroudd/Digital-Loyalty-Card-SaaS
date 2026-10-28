@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
+import Link from "next/link";
 import {Download,Smartphone,ShieldCheck,CheckCircle2,ExternalLink,Share2,Copy,Globe2,Check} from "lucide-react";
 import {Modal} from "@/components/ui/modal";
 import {AccountPasskeySettings} from "@/components/pwa/account-passkey-settings";
@@ -114,7 +115,7 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
   </section>
   {role==="customer"?
    <p className="rounded-xl border border-[#edbc62]/15 bg-[#edbc62]/5 p-4 text-sm leading-6 text-white/70">
-     Fingerprint / Face ID is managed in <a href="/user/settings" className="font-semibold text-[#edbc62] underline underline-offset-4">Customer Settings</a>. Your existing passkeys stay active.
+     Fingerprint / Face ID is managed in <Link href="/user/settings" className="font-semibold text-[#edbc62] underline underline-offset-4">Customer Settings</Link>. Your existing passkeys stay active.
    </p>
    :<AccountPasskeySettings token={token} elevated/>}
   <p className="text-xs leading-5 text-white/45"><Smartphone className="me-1 inline size-4"/>Stay signed in during ordinary app closes. Fingerprint / Face ID is an optional secure way to sign in again after the session expires or when signing into a new device.</p>
