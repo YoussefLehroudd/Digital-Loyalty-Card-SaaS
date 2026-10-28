@@ -22,7 +22,7 @@ export async function isActiveCashier(sql:Sql,userId:string,businessId:string){
  const rows=await sql`SELECT s.user_id FROM business_staff s
  JOIN app_users u ON u.id=s.user_id AND u.business_id=s.business_id AND u.role='staff'
  JOIN businesses b ON b.id=s.business_id AND COALESCE(b.status,'active')='active'
- WHERE s.user_id=${userId}::uuid AND s.business_id=${businessId}::uuid AND s.active=true LIMIT 1`;
+ WHERE s.user_id=${userId}::uuid AND s.business_id=${businessId}::uuid AND s.active=true LIMIT 1` as Array<{user_id:string}>;
  return rows.length===1;
 }
 export async function manageStaff(path:string[],req:Request,sql:Sql,businessId:string,
@@ -45,7 +45,7 @@ export async function manageStaff(path:string[],req:Request,sql:Sql,businessId:s
    return output({message:"Enter a valid employee name, email and password (12–128 characters)."},422);
   const count=await sql`SELECT count(*)::int AS n FROM business_staff WHERE business_id=${businessId}::uuid AND active=true` as Array<{n:number}>;
   if(count[0]?.n>=25)return output({message:"Maximum 25 active staff accounts."},409);
-  const existing=await sql`SELECT id FROM app_users WHERE lower(email)=${email} LIMIT 1`;
+  const existing=await sql`SELECT id FROM app_users WHERE lower(email)=${email} LIMIT 1` as Array<{id:string}>;
   if(existing.length)return output({message:"This email already belongs to another account."},409);
   const hashed=await hashPassword(password),userId=randomUUID();
   try{
@@ -63,7 +63,7 @@ export async function manageStaff(path:string[],req:Request,sql:Sql,businessId:s
   const changed=await sql`UPDATE business_staff s SET active=${body.active},updated_at=now()
    WHERE s.user_id=${id}::uuid AND s.business_id=${businessId}::uuid
    AND EXISTS (SELECT 1 FROM app_users u WHERE u.id=s.user_id AND u.role='staff' AND u.business_id=s.business_id)
-   RETURNING s.user_id,s.active`;
+   RETURNING s.user_id,s.active` as Array<{user_id:string;active:boolean}>;
   if(!changed.length)return output({message:"Staff member not found."},404);
   if(!body.active)await sql`DELETE FROM user_sessions WHERE user_id=${id}::uuid`;
   return output({staff:changed[0]});
@@ -71,7 +71,7 @@ export async function manageStaff(path:string[],req:Request,sql:Sql,businessId:s
  if(req.method==="DELETE"){
   const changed=await sql`UPDATE business_staff s SET active=false,updated_at=now()
    WHERE s.user_id=${id}::uuid AND s.business_id=${businessId}::uuid
-   AND EXISTS(SELECT 1 FROM app_users u WHERE u.id=s.user_id AND u.business_id=s.business_id AND u.role='staff') RETURNING s.user_id`;
+   AND EXISTS(SELECT 1 FROM app_users u WHERE u.id=s.user_id AND u.business_id=s.business_id AND u.role='staff') RETURNING s.user_id` as Array<{user_id:string}>;
   if(!changed.length)return output({message:"Staff member not found."},404);
   await sql`DELETE FROM user_sessions WHERE user_id=${id}::uuid`;
   return output({deactivated:true});
@@ -91,6 +91,6 @@ export async function staffAudit(req:Request,sql:Sql,businessId:string){
    LEFT JOIN customer_profiles p ON p.user_id=c.user_id
    LEFT JOIN app_users a ON a.id=v.actor_id AND a.business_id=v.business_id
    WHERE v.business_id=${businessId}::uuid
-   ORDER BY v.created_at DESC,v.id DESC LIMIT 50 OFFSET ${page*50}`;
+   ORDER BY v.created_at DESC,v.id DESC LIMIT 50 OFFSET ${page*50}` as Array<Record<string,unknown>>;
  return output({history:rows,page,has_more:rows.length===50});
 }
