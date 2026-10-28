@@ -2587,7 +2587,8 @@ async function dispatch(req: Request, context: RouteContext) {
       const automation=await runCampaignAutomation(sql,3);
       const scheduled=await runCampaignQueue(sql,12);
       const emails=await runCampaignEmails(sql,35,new URL(req.url).origin);
-      response=json({automation,scheduled,emails});
+      const birthdays=await issueBirthdayRewards(sql,100);
+      response=json({automation,scheduled,emails,birthdays});
     }
     else if(path[0]==="special-offers") {
       if(path[1]==="mine"){
