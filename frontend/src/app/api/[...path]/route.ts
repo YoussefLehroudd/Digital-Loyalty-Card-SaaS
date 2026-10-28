@@ -18,6 +18,7 @@ import { ensureSpecialOfferSchema, handleBusinessOffers, handleCustomerOffers } 
 import { ensureStaffSchema, isActiveCashier, manageStaff, staffAudit } from "@/lib/server/staff-management";
 import {ensureEngagementSchema,customerReferralApi,recordVerifiedReferral,referralBusinessForCode,qualifyReferralAfterVisit,applyPendingReferralBonuses,handleFeedback,handleBirthday,issueBirthdayRewards,handleAnalyticsPro} from "@/lib/server/customer-engagement";
 import {ensureDiscoverSchema,getDiscoverCatalog,recordDiscoverJoin,handleOwnerDiscover} from "@/lib/server/discover-pro";
+import {ensurePushSchema,handleCustomerPush,deliverQueuedPush} from "@/lib/server/push-delivery";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -426,6 +427,7 @@ async function ensureSchema(sql: Sql) {
       await ensureStaffSchema(sql);
       await ensureEngagementSchema(sql);
       await ensureDiscoverSchema(sql);
+      await ensurePushSchema(sql);
       await ensureAffiliateSchema(sql);
       await ensureVisitorAnalyticsSchema(sql);
     })();
@@ -2166,6 +2168,8 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     await sql`UPDATE app_users SET password_hash = ${await hashPassword(newPassword)}, updated_at = now() WHERE id = ${auth.user.id}`;
     return json({ message: "Password updated." });
   }
+  if(path[1]==="push")return handleCustomerPush(req,sql,auth.user.id,path);
+
   if (path[1] === "notifications") {
     const events = await customerNotificationEvents(sql, auth.user.id);
     if (req.method === "POST") {
@@ -2567,7 +2571,13 @@ async function dispatch(req: Request, context: RouteContext) {
       const scheduled=await runCampaignQueue(sql,12);
       const emails=await runCampaignEmails(sql,35,new URL(req.url).origin);
       const birthdays=await issueBirthdayRewards(sql,100);
-      response=json({automation,scheduled,emails,birthdays});
+      const push=await deliverQueuedPush(sql,20);
+      response=json({automation,scheduled,emails,birthdays,push});
+    }
+    else if(path[0]==="cron" && path[1]==="push"){
+      const secret=process.env.CRON_SECRET;
+      if(req.method!=="GET"||!secret||req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
+      response=json(await deliverQueuedPush(sql,30));
     }
     else if(path[0]==="special-offers") {
       if(path[1]==="mine"){
@@ -2670,6 +2680,13 @@ async function dispatch(req: Request, context: RouteContext) {
     if(response?.ok && path[0]==="admin" && path[1]==="businesses" && path[3]==="subscription" && req.method==="POST") {
       try { await runSubscriptionEmails(sql,email=>sendLoyvanceEmail({...email,category:"notifications"}),5,path[2]); }
       catch { console.error("Subscription email processing deferred to the scheduled retry."); }
+    }
+    if(response?.ok && req.method==="POST" && (
+      path[0]==="stamp" || path[0]==="redeem-reward" ||
+      path[0]==="campaigns" && path[1]!=="unsubscribe"
+    )){
+      try { await deliverQueuedPush(sql,15); }
+      catch { console.error("Push delivery deferred until scheduled retry."); }
     }
     return response ?? error("API route not found.", 404);
   } catch (caught) {
