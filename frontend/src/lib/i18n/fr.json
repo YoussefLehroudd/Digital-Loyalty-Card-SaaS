@@ -1242,5 +1242,18 @@
   "Unable to load requests": "Impossible de charger les demandes",
   "Unable to save decision": "Impossible d'enregistrer la décision",
   "Administrator approval required": "Approbation de l'administrateur requise",
-  "This feature is locked until the platform administrator approves your request.": "Cette fonctionnalité est verrouillée jusqu'à l'approbation de votre demande par l'administrateur."
+  "This feature is locked until the platform administrator approves your request.": "Cette fonctionnalité est verrouillée jusqu'à l'approbation de votre demande par l'administrateur.",
+  "INSTALL YOUR APP": "INSTALLER VOTRE APPLICATION",
+  "Launch your own workspace from the Home Screen.": "Accédez directement à votre espace depuis l'écran d'accueil.",
+  "Installation help": "Aide à l'installation",
+  "Open workspace": "Ouvrir l'espace",
+  "Got it": "Compris",
+  "Copy installation link": "Copier le lien d'installation",
+  "This is a PWA, not an APK.": "Il s'agit d'une application web, pas d'un APK.",
+  "App installed successfully.": "Application installée avec succès.",
+  "Installation cancelled. You can also install from the browser menu.": "Installation annulée. Vous pouvez aussi installer depuis le menu du navigateur.",
+  "Opening installer…": "Ouverture de l'installation…",
+  "This app is open": "Application ouverte",
+  "Install as separate app": "Installer séparément",
+  "Follow these steps to add this app to your Home Screen.": "Suivez ces étapes pour ajouter l'application à l'écran d'accueil."
 }
