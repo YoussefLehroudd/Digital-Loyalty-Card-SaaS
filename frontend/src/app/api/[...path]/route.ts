@@ -19,6 +19,7 @@ import { ensureStaffSchema, isActiveCashier, manageStaff, staffAudit } from "@/l
 import {ensureEngagementSchema,customerReferralApi,recordVerifiedReferral,referralBusinessForCode,qualifyReferralAfterVisit,applyPendingReferralBonuses,handleFeedback,handleBirthday,issueBirthdayRewards,handleAnalyticsPro} from "@/lib/server/customer-engagement";
 import {ensureDiscoverSchema,getDiscoverCatalog,recordDiscoverJoin,handleOwnerDiscover} from "@/lib/server/discover-pro";
 import {ensurePushSchema,handleCustomerPush,deliverQueuedPush} from "@/lib/server/push-delivery";
+import {ensurePasskeySchema,handlePasskeys} from "@/lib/server/customer-passkeys";
 import {after} from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -429,6 +430,7 @@ async function ensureSchema(sql: Sql) {
       await ensureEngagementSchema(sql);
       await ensureDiscoverSchema(sql);
       await ensurePushSchema(sql);
+      await ensurePasskeySchema(sql);
       await ensureAffiliateSchema(sql);
       await ensureVisitorAnalyticsSchema(sql);
     })();
@@ -2560,7 +2562,26 @@ async function dispatch(req: Request, context: RouteContext) {
     const path = params.path ?? [];
 
     let response: Response | null = null;
-    if(path[0]==="cron" && path[1]==="subscription-reminders") {
+    if(path[0]==="passkeys"){
+      if(req.method==="POST"){
+        const limited=await rateLimit(sql,req,"passkeys-"+String(path[1]||"unknown"),15,15*60*1000);
+        if(limited)return limited;
+      }
+      const auth=await getAuth(req,sql);
+      const authenticatedCustomer=auth?.user.role==="customer"?auth.user.id:null;
+      response=await handlePasskeys(req,sql,path,{
+        userId:authenticatedCustomer,
+        login:async(userId)=>{
+          const user=((await sql`SELECT * FROM app_users WHERE id=${userId}::uuid AND role='customer' AND status<>'suspended' LIMIT 1`) as DbUser[])[0];
+          if(!user)return error("Customer account unavailable.",403);
+          const token=await createSession(sql,user.id);
+          const profile=((await sql`SELECT first_name,last_name,phone,avatar_url,preferences,${user.email} AS email
+             FROM customer_profiles WHERE user_id=${user.id}`) as JsonRecord[])[0]||null;
+          return json({token,token_type:"Bearer",user:publicUser(user,null,profile)});
+        }
+      });
+    }
+    else if(path[0]==="cron" && path[1]==="subscription-reminders") {
       const secret=process.env.CRON_SECRET;
       if(req.method!=="GET" || !secret || req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
       response=json(await runSubscriptionEmails(sql,email=>sendLoyvanceEmail({...email,category:"notifications"})));
