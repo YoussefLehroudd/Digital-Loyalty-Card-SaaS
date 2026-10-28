@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import {usePersistentNavScroll} from "@/components/navigation/use-persistent-nav-scroll";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 type DashboardShellProps = {
-    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff" | "analytics" | "feedback" | "birthdays" | "discover" | "app";
+    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff" | "analytics" | "feedback" | "birthdays" | "discover" | "app" | "premium";
     children: React.ReactNode;
 };
 const sidebarItems = [
@@ -30,6 +30,7 @@ const sidebarItems = [
     },
     { key: "scanner", label: "Scanner", icon: ScanLine, href: "/dashboard/scanner" },
     { key: "rewards", label: "Rewards", icon: Gift, href: "/dashboard/rewards" },
+    { key: "premium", label: "Request Features", icon: Sparkles, href: "/dashboard/premium" },
     { key: "campaigns", label: "Campaigns", icon: Megaphone, href: "/dashboard/campaigns" },
     { key: "offers", label: "Special Offers", icon: Sparkles, href: "/dashboard/offers" },
     { key: "staff", label: "Staff Management", icon: UserCog, href: "/dashboard/staff" },
@@ -56,7 +57,18 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
     const [notifications, setNotifications] = useState<BusinessNotification[]>([]);
     const [isAffiliate, setIsAffiliate] = useState(false);
     useEffect(() => { if(user.role==="staff")return; let valid = true; apiFetch("/affiliate/me", {token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
-    const visibleItems = sidebarItems.filter(item => item.key !== "affiliate" || isAffiliate);
+    const [premiumAccess,setPremiumAccess]=useState<Record<string,string>>({});
+    useEffect(()=>{
+      let active=true;
+      const load=()=>apiFetch<{features:Record<string,string>}>("/premium-features",{token,cache:"no-store"})
+        .then(data=>{if(active)setPremiumAccess(data.features);}).catch(()=>{if(active)setPremiumAccess({});});
+      void load();
+      const onFocus=()=>void load();
+      window.addEventListener("focus",onFocus);
+      return()=>{active=false;window.removeEventListener("focus",onFocus);};
+    },[token]);
+    const premiumKeys:Record<string,string>={birthdays:"birthdays",analytics:"analytics",staff:"staff",offers:"offers",campaigns:"campaigns"};
+    const visibleItems = sidebarItems.filter(item => (item.key !== "affiliate" || isAffiliate) && (!premiumKeys[item.key] || premiumAccess[premiumKeys[item.key]]==="approved"));
     const desktopScroll=usePersistentNavScroll("business:"+user.id+":desktop",activeItem);
     const mobileScroll=usePersistentNavScroll("business:"+user.id+":mobile",activeItem);
     useEffect(() => {
