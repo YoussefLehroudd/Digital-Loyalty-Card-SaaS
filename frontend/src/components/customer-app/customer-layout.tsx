@@ -1,5 +1,6 @@
 "use client";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import {ThemeToggle} from "@/components/theme-toggle";
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -92,7 +93,7 @@ export function CustomerLayout({ children, title, subtitle, }: {
               </div>
             </div>
             <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <LanguageSwitcher/>
+              <ThemeToggle/><LanguageSwitcher/>
               <CustomerNotificationBell/>
               <Button type="button" variant="outline" size="icon" onClick={logout} aria-label={tr("Logout")} title={tr("Logout")} className="size-10 shrink-0 border-[#d8a63f]/15 lg:hidden">
                 <LogOut aria-hidden="true" className="size-4"/>
