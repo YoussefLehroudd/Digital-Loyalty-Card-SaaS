@@ -545,3 +545,12 @@ html.light .business-mobile-drawer .loyvance-sidebar-scroll button:hover {
   background: #f8efd9;
   color: #263a2a;
 }
+
+
+/* Platform Admin: understated matching ivory/gold artwork in Light Mode. */
+html.light .admin-light-content {
+  background-image: url("/brand/loyvance-light-ribbons.svg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: right top;
+}
