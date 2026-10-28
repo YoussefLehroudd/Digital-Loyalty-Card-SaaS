@@ -130,13 +130,14 @@ export default function UserSettingsPage() {
             <CardTitle className="text-base">{tr("Notification preferences")}</CardTitle>
           </CardHeader>
           <CardContent className="min-w-0 space-y-2">
+            <p className="text-xs leading-5 text-muted-foreground">Account and reward alerts are enabled by default. Promotional offers are optional. Phone notifications require permission on each device.</p>
             <ToggleRow title={tr("Email updates")} description={tr("Receive account and loyalty updates by email.")} checked={emailUpdates} onToggle={() => setEmailUpdates((v) => !v)}/>
             <ToggleRow title={tr("Reward alerts")} description={tr("Get notified when rewards are ready.")} checked={rewardAlerts} onToggle={() => setRewardAlerts((v) => !v)}/>
             <ToggleRow title={tr("Promotions")} description={tr("Receive occasional promotional offers.")} checked={promotions} onToggle={() => setPromotions((v) => !v)}/>
             <ToggleRow title={tr("Push notifications")} description={tr("Allow Web Push alerts for your loyalty account. Each device also needs permission below.")} checked={pushEnabled} onToggle={() => setPushEnabled((v) => !v)}/>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="lg:hidden">
           <CardHeader><CardTitle className="flex items-center gap-2 text-base"><BellRing className="size-4 text-[#e7b354]"/>Real phone notifications</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <p className="text-muted-foreground">Receive loyalty stamp updates, unlocked rewards, promotions (only if opted in), and birthday surprises even when Loyvance is closed.</p>
