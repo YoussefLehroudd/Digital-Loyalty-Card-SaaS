@@ -60,8 +60,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const next = route ?? (isLanguage(saved) ? saved : "en");
     document.documentElement.lang = next;
     document.documentElement.dir = next === "ar" ? "rtl" : "ltr";
-    document.documentElement.lang = next;
-    document.documentElement.dir = next === "ar" ? "rtl" : "ltr";
     updateLanguage(next);
     setReady(true);
     // Read the preference once; subsequent changes are driven by the selector or storage event.
