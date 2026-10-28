@@ -305,6 +305,8 @@ html[dir="rtl"] table { text-align: right; }
 /* A single touch-scrollable row for Customer mobile navigation.
    Hide the visual scrollbar in Firefox, Chromium and iOS Safari. */
 .customer-bottom-nav-scroll {
+  overflow-anchor: none;
+  scroll-behavior: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
