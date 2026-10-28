@@ -136,7 +136,7 @@ export default function UserSettingsPage() {
             {pushConfig?.configured===false?<p className="text-amber-300">Push delivery is not configured on the server yet (VAPID keys required).</p>:null}
             {typeof window!=="undefined"&&!supportsWebPush()?<p className="text-amber-300">This browser does not support Web Push or this page is not on HTTPS.</p>:null}
             {typeof window!=="undefined"&&supportsWebPush()&&isIosPwaRequired()?<p className="text-amber-300">On iPhone: install Loyvance using Safari → Share → Add to Home Screen, then open the installed app to enable notifications.</p>:null}
-            {permission==="denied"?<p className="text-amber-300">Notifications are blocked in this device's browser settings. You must allow them there first.</p>:null}
+            {permission==="denied"?<p className="text-amber-300">Notifications are blocked in this device&apos;s browser settings. You must allow them there first.</p>:null}
             <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/10 p-3"><Smartphone className="size-5 text-[#e7b354]"/><span className="flex-1">{deviceSubscribed?"This device is subscribed":"This device is not subscribed"}</span><ShieldCheck className="size-4 text-white/40"/></div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" disabled={pushBusy||!token||!pushConfig?.configured||!pushConfig?.public_key||deviceSubscribed||!supportsWebPush()||isIosPwaRequired()} onClick={()=>void enableDevice()}>
