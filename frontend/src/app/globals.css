@@ -329,3 +329,24 @@ html[dir="rtl"] table { text-align: right; }
   -webkit-overflow-scrolling: touch;
 }
 .loyvance-sidebar-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+
+/* Loyvance light-mode overrides for legacy dark-only workspace surfaces.
+   Dark mode remains unchanged; these apply solely after selecting Light. */
+html.light body { color-scheme: light; background: #f8f7f4; color: #1b201b; }
+html.light [class*="bg-[#070806]"],
+html.light [class*="bg-[#080907]"],
+html.light [class*="bg-[#090a08]"],
+html.light [class*="bg-[#090b0e]"],
+html.light [class*="bg-[#0b0c0a]"],
+html.light [class*="bg-[#11130f]"],
+html.light [class*="bg-[#12130f]"] {
+  background-color: #fffdfa !important;
+}
+html.light [class*="text-white"] { color: #20251f !important; }
+html.light [class*="text-white/"] { color: #575f56 !important; }
+html.light .app-topbar { background: rgba(255,253,250,.96) !important; color: #20251f; }
+html.light .loyvance-sidebar-scroll { color: #20251f; }
+html.light [class*="bg-black/"] { background-color: rgba(240,236,225,.65) !important; }
+html.light [class*="border-white/"] { border-color: rgba(36,45,34,.16) !important; }
+html.light [class*="bg-gradient-to-b"][class*="to-[#070806]"] { background-image: none !important; }
