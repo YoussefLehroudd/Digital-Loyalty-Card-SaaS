@@ -6,6 +6,9 @@ import { useCustomerAuth } from "@/components/customer-app/customer-auth-provide
 import { customerUpdateProfile, defaultCustomerPreferences, type CustomerPreferences, } from "@/lib/customerAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BellRing, Smartphone, ShieldCheck } from "lucide-react";
+import {apiFetch} from "@/lib/api";
+import {supportsWebPush,isIosPwaRequired,enablePushOnDevice,disablePushOnDevice,registeredSubscription,type PushConfig} from "@/lib/web-push-client";
 type ToggleRowProps = {
     title: string;
     description: string;
@@ -33,6 +36,10 @@ export default function UserSettingsPage() {
     const [promotions, setPromotions] = useState(preferences.notifications.promotions);
     const [pushEnabled, setPushEnabled] = useState(preferences.notifications.push_enabled);
     const [saving, setSaving] = useState(false);
+    const [pushBusy,setPushBusy]=useState(false);
+    const [pushConfig,setPushConfig]=useState<PushConfig|null>(null);
+    const [deviceSubscribed,setDeviceSubscribed]=useState(false);
+    const [permission,setPermission]=useState<NotificationPermission|null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     useEffect(() => {
@@ -41,6 +48,39 @@ export default function UserSettingsPage() {
         setPromotions(preferences.notifications.promotions);
         setPushEnabled(preferences.notifications.push_enabled);
     }, [preferences]);
+    useEffect(()=>{
+      if(!token)return;
+      let active=true;
+      void Promise.all([apiFetch<PushConfig>("/user/push/config",{token,cache:"no-store"}),registeredSubscription()])
+       .then(([config,subscription])=>{if(active){setPushConfig(config);setDeviceSubscribed(!!subscription);setPermission(supportsWebPush()?Notification.permission:null);}})
+       .catch(()=>{if(active)setPushConfig({configured:false,public_key:null});});
+      return ()=>{active=false;};
+    },[token]);
+    async function enableDevice(){
+      if(!token||!pushConfig?.public_key)return;
+      setPushBusy(true);setMessage(null);setError(null);
+      try{
+        await enablePushOnDevice(token,pushConfig.public_key);
+        if(user?.customer_profile){
+          await customerUpdateProfile(token,{
+            first_name:user.customer_profile.first_name,last_name:user.customer_profile.last_name,email:user.customer_profile.email,
+            phone:user.customer_profile.phone,avatar_url:user.customer_profile.avatar_url,
+            preferences:{notifications:{email_updates:emailUpdates,reward_alerts:rewardAlerts,promotions,push_enabled:true},ui:{dark_mode:true}}
+          });
+          await refresh();
+        }
+        setPushEnabled(true);setDeviceSubscribed(true);setPermission("granted");
+        setMessage("Phone notifications enabled on this device.");
+      }catch(e){setError(e instanceof Error?e.message:"Could not enable device notifications.");}
+      finally{setPushBusy(false);}
+    }
+    async function disableDevice(){
+      if(!token)return;
+      setPushBusy(true);setMessage(null);setError(null);
+      try{await disablePushOnDevice(token);setDeviceSubscribed(false);setMessage("This device was removed from push notifications.");}
+      catch(e){setError(e instanceof Error?e.message:"Could not remove this device.");}
+      finally{setPushBusy(false);}
+    }
     async function savePreferences() {
         if (!token || !user?.customer_profile)
             return;
@@ -86,7 +126,25 @@ export default function UserSettingsPage() {
             <ToggleRow title={tr("Email updates")} description={tr("Receive account and loyalty updates by email.")} checked={emailUpdates} onToggle={() => setEmailUpdates((v) => !v)}/>
             <ToggleRow title={tr("Reward alerts")} description={tr("Get notified when rewards are ready.")} checked={rewardAlerts} onToggle={() => setRewardAlerts((v) => !v)}/>
             <ToggleRow title={tr("Promotions")} description={tr("Receive occasional promotional offers.")} checked={promotions} onToggle={() => setPromotions((v) => !v)}/>
-            <ToggleRow title={tr("Push notifications")} description={tr("Enable mobile/browser push alerts.")} checked={pushEnabled} onToggle={() => setPushEnabled((v) => !v)}/>
+            <ToggleRow title={tr("Push notifications")} description={tr("Allow Web Push alerts for your loyalty account. Each device also needs permission below.")} checked={pushEnabled} onToggle={() => setPushEnabled((v) => !v)}/>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-base"><BellRing className="size-4 text-[#e7b354]"/>Real phone notifications</CardTitle></CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">Receive loyalty stamp updates, unlocked rewards, promotions (only if opted in), and birthday surprises even when Loyvance is closed.</p>
+            {pushConfig?.configured===false?<p className="text-amber-300">Push delivery is not configured on the server yet (VAPID keys required).</p>:null}
+            {typeof window!=="undefined"&&!supportsWebPush()?<p className="text-amber-300">This browser does not support Web Push or this page is not on HTTPS.</p>:null}
+            {typeof window!=="undefined"&&supportsWebPush()&&isIosPwaRequired()?<p className="text-amber-300">On iPhone: install Loyvance using Safari → Share → Add to Home Screen, then open the installed app to enable notifications.</p>:null}
+            {permission==="denied"?<p className="text-amber-300">Notifications are blocked in this device's browser settings. You must allow them there first.</p>:null}
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/10 p-3"><Smartphone className="size-5 text-[#e7b354]"/><span className="flex-1">{deviceSubscribed?"This device is subscribed":"This device is not subscribed"}</span><ShieldCheck className="size-4 text-white/40"/></div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" disabled={pushBusy||!token||!pushConfig?.configured||!pushConfig?.public_key||deviceSubscribed||!supportsWebPush()||isIosPwaRequired()} onClick={()=>void enableDevice()}>
+                {pushBusy?"Updating…":"Enable on this device"}
+              </Button>
+              <Button type="button" variant="outline" disabled={pushBusy||!token||!deviceSubscribed} onClick={()=>void disableDevice()}>Remove this device</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Permission is requested only after tapping Enable. You can disable alerts globally with the switch above and Save settings. Browser-level permission can also be revoked from device settings.</p>
           </CardContent>
         </Card>
 
