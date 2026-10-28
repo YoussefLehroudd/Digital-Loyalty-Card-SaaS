@@ -16,6 +16,7 @@ import { runSubscriptionEmails } from "@/lib/server/subscription-emails";
 import { ensureCampaignSchema, handleBusinessCampaigns, handleAutomations, runCampaignAutomation, runCampaignQueue, runCampaignEmails, unsubscribeCampaignEmail } from "@/lib/server/campaigns";
 import { ensureSpecialOfferSchema, handleBusinessOffers, handleCustomerOffers } from "@/lib/server/special-offers";
 import { ensureStaffSchema, isActiveCashier, manageStaff, staffAudit } from "@/lib/server/staff-management";
+import {ensureEngagementSchema,customerReferralApi,recordVerifiedReferral,referralBusinessForCode,qualifyReferralAfterVisit,applyPendingReferralBonuses,handleFeedback,handleBirthday,issueBirthdayRewards,handleAnalyticsPro} from "@/lib/server/customer-engagement";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -422,6 +423,7 @@ async function ensureSchema(sql: Sql) {
       await ensureCampaignSchema(sql);
       await ensureSpecialOfferSchema(sql);
       await ensureStaffSchema(sql);
+      await ensureEngagementSchema(sql);
       await ensureAffiliateSchema(sql);
       await ensureVisitorAnalyticsSchema(sql);
     })();
@@ -1564,6 +1566,8 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || customer.email || "A customer";
     await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
               VALUES (${randomUUID()}, ${auth.business.id}, 'reward_redeemed', 'Reward redeemed', ${customerName + " redeemed a reward."})`;
+    // Deliver queued first-visit referral credit when a reward cycle makes room.
+    await applyPendingReferralBonuses(sql,customer.id);
     await syncGoogleWalletCustomer(sql, customer.id);
     return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: remaining, required_stamps: card.required_stamps, reward_unlocked: remaining >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
   }
@@ -1649,9 +1653,9 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
              ${"You collected " + card.required_stamps + "/" + card.required_stamps + " stamps at " + auth.business.name + ". Your reward (" + card.reward_name + ") is unlocked and ready to redeem."}, r.id
       FROM reward_insert r
     )
-    SELECT lu.*, EXISTS (SELECT 1 FROM reward_insert) AS redemption_created, (SELECT amount FROM awarded)::int AS stamps_awarded, (SELECT title FROM offer_usage LIMIT 1) AS offer_title, EXISTS(SELECT 1 FROM offer_redemption) AS bonus_recorded
+    SELECT lu.*, EXISTS (SELECT 1 FROM reward_insert) AS redemption_created, (SELECT amount FROM awarded)::int AS stamps_awarded, (SELECT title FROM offer_usage LIMIT 1) AS offer_title, EXISTS(SELECT 1 FROM offer_redemption) AS bonus_recorded, (SELECT id::text FROM credited_visit LIMIT 1) AS stamped_visit_id
     FROM loyalty_update lu
-  `) as Array<DbLoyalty & { redemption_created: boolean; stamps_awarded:number; offer_title:string|null; bonus_recorded:boolean }>;
+  `) as Array<DbLoyalty & { redemption_created: boolean; stamps_awarded:number; offer_title:string|null; bonus_recorded:boolean; stamped_visit_id:string|null }>;
   const updated = stampRows[0];
   if (!updated) {
     const freshFeatures = await readBusinessFeatures(sql,auth.business.id);
@@ -1676,8 +1680,16 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
               VALUES (${randomUUID()}, ${auth.business.id}, 'reward_ready', 'Reward ready', ${customerName + " unlocked a reward."})`;
   }
+  if(updated.stamped_visit_id && customer.user_id){
+    await qualifyReferralAfterVisit(sql,customer.id,auth.business.id,updated.stamped_visit_id);
+    const pending=await sql`SELECT DISTINCT a.member_id FROM referral_bonus_awards a
+      JOIN customer_referrals r ON r.id=a.referral_id
+      WHERE r.first_visit_id=${updated.stamped_visit_id}::uuid` as Array<{member_id:string}>;
+    for(const record of pending)await applyPendingReferralBonuses(sql,record.member_id);
+  }
+  const refreshed=((await sql`SELECT current_stamps FROM customer_loyalties WHERE id=${current.id}`) as Array<{current_stamps:number}>)[0]?.current_stamps??updated.current_stamps;
   await syncGoogleWalletCustomer(sql, customer.id);
-  return json({ message: creditedCount === 1 ? "Stamp added." : `${creditedCount} stamps added.`, stamps_added: creditedCount, offer_applied: updated.bonus_recorded ? updated.offer_title : null, loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
+  return json({ message: creditedCount === 1 ? "Stamp added." : `${creditedCount} stamps added.`, stamps_added: creditedCount, offer_applied: updated.bonus_recorded ? updated.offer_title : null, loyalty: { current_stamps: refreshed, required_stamps: card.required_stamps, reward_unlocked: refreshed>=card.required_stamps, reward_redemption_created: redemptionCreated } });
 }
 
 function base64Url(input: string) {
@@ -1987,7 +1999,10 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     const code=String(randomInt(100000,1000000));
     const codeHash=createHash("sha256").update(code).digest("hex");
     const passwordHash=await hashPassword(password);
+    const referralCode=asString(body.invite_code).trim().toLowerCase();
+    if(referralCode && !(await referralBusinessForCode(sql,referralCode)))return error("This friend invitation is invalid.",422);
     const payload={
+      invite_code:referralCode,
       first_name:first,last_name:last,phone:asNullableString(body.phone),
       avatar_url:asNullableString(body.avatar_url),
       preferences:body.preferences && typeof body.preferences==="object" && !Array.isArray(body.preferences)
@@ -2059,6 +2074,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     ]);
     const user=(users as DbUser[])[0];
     if(!user)return error("This code has already been used or the email is registered. Start again.",409);
+    if(row.payload.invite_code)await recordVerifiedReferral(sql,user.id,asString(row.payload.invite_code));
     return json({token,token_type:"Bearer",user:publicUser(user,null,{
       first_name:first,last_name:last,email,phone,avatar_url:avatar,preferences
     })},{status:201});
@@ -2574,7 +2590,8 @@ async function dispatch(req: Request, context: RouteContext) {
       const automation=await runCampaignAutomation(sql,3);
       const scheduled=await runCampaignQueue(sql,12);
       const emails=await runCampaignEmails(sql,35,new URL(req.url).origin);
-      response=json({automation,scheduled,emails});
+      const birthdays=await issueBirthdayRewards(sql,100);
+      response=json({automation,scheduled,emails,birthdays});
     }
     else if(path[0]==="special-offers") {
       if(path[1]==="mine"){
@@ -2626,6 +2643,35 @@ async function dispatch(req: Request, context: RouteContext) {
       response = json(await subscriptionDetails(sql, auth.business!.id));
     }
     else if (path[0] === "auth") response = await handleAuth(path, req, sql);
+    else if(path[0]==="cron" && path[1]==="birthdays"){
+      const secret=process.env.CRON_SECRET;
+      if(req.method!=="GET"||!secret||req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
+      response=json(await issueBirthdayRewards(sql,100));
+    }
+    else if(path[0]==="growth"){
+      const action=path[1];
+      if(action==="referrals" && path[2]==="resolve" && req.method==="GET"){
+        const business=await referralBusinessForCode(sql,new URL(req.url).searchParams.get("code")??"");
+        response=business?json({business}):error("Invitation unavailable.",404);
+      } else if(action==="referrals"){
+        const customer=await requireAuth(req,sql);
+        if(customer.user.role!=="customer")return error("Forbidden.",403);
+        response=await customerReferralApi(req,sql,customer.user.id);
+      } else if(action==="feedback"){
+        const actor=await requireAuth(req,sql);
+        if(actor.user.role==="customer")response=await handleFeedback(req,sql,actor.user.id,null);
+        else if(actor.user.role==="business_owner"&&actor.business)response=await handleFeedback(req,sql,null,actor.business.id);
+        else return error("Forbidden.",403);
+      } else if(action==="birthdays"){
+        const actor=await requireAuth(req,sql);
+        if(actor.user.role==="customer")response=await handleBirthday(req,sql,actor.user.id,null);
+        else if(actor.user.role==="business_owner"&&actor.business)response=await handleBirthday(req,sql,null,actor.business.id);
+        else return error("Forbidden.",403);
+      } else if(action==="analytics"){
+        const owner=await requireBusinessOwner(req,sql);
+        response=await handleAnalyticsPro(req,sql,owner.business!.id);
+      }
+    }
     else if(path[0]==="staff"){
       const owner=await requireBusinessOwner(req,sql);
       if(path[1]==="history" && path.length===2) response=await staffAudit(req,sql,owner.business!.id);

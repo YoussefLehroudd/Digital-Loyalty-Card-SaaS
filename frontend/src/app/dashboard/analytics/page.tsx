@@ -1,0 +1,22 @@
+"use client";
+import {useCallback,useEffect,useState} from "react";
+import {BarChart3,CalendarDays,Users,Gift,Activity,RefreshCcw} from "lucide-react";
+import {DashboardShell} from "@/components/dashboard/dashboard-shell";
+import {useAuth} from "@/components/auth/auth-guard";
+import {apiFetch} from "@/lib/api";
+type Metrics={new_customers:number;total_customers:number;returning_customers:number;dormant_customers:number;active_customers:number;visits_30d:number;avg_visits_active:number;redeemed_rewards_30d:number};
+type Day={day:string;visits:number;joined:number};
+const stats=[{key:"new_customers",title:"New customers",note:"Joined in last 30 days",icon:Users},{key:"returning_customers",title:"Returning customers",note:"Visited now and before this period",icon:RefreshCcw},{key:"dormant_customers",title:"Inactive 30+ days",note:"Previously visited, now absent",icon:CalendarDays},{key:"visits_30d",title:"Verified visits",note:"Recorded QR visits in 30 days",icon:Activity},{key:"avg_visits_active",title:"Avg. visits per active customer",note:"Visits / customers who visited",icon:BarChart3},{key:"redeemed_rewards_30d",title:"Rewards redeemed",note:"Actual used gifts in 30 days",icon:Gift}] as const;
+export default function AnalyticsPro(){
+ const {token}=useAuth();const [metrics,setMetrics]=useState<Metrics|null>(null),[days,setDays]=useState<Day[]>([]),[busy,setBusy]=useState(true),[error,setError]=useState("");
+ const load=useCallback(()=>{setBusy(true);return apiFetch<{metrics:Metrics;daily:Day[]}>("/growth/analytics",{token,cache:"no-store"}).then(res=>{setMetrics(res.metrics);setDays(res.daily);setError("");}).catch(e=>setError(e instanceof Error?e.message:"Unable to load analytics.")).finally(()=>setBusy(false));},[token]);
+ useEffect(()=>{void load();},[load]);
+ const peak=Math.max(1,...days.map(d=>Math.max(d.visits,d.joined)));
+ return <DashboardShell activeItem="analytics"><div className="mx-auto max-w-6xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+ <header className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#e7b354]">CUSTOMER RETENTION</p><h1 className="mt-2 flex items-center gap-3 text-2xl font-bold"><BarChart3 className="size-7 text-[#e7b354]"/>Business Analytics Pro</h1><p className="mt-2 text-sm text-white/55">Real visit and loyalty data. Rolling 30-day window.</p></div><button onClick={()=>void load()} disabled={busy} className="rounded-xl border border-white/15 px-4 py-2 text-sm">Refresh</button></header>
+ {error?<p role="alert" className="rounded-xl border border-rose-400/20 p-3 text-sm text-rose-300">{error}</p>:null}
+ <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{stats.map(item=>{const Icon=item.icon;return <div key={item.key} className="rounded-2xl border border-[#e7b354]/15 bg-[#11130f] p-5"><div className="flex items-center gap-2 text-sm text-white/60"><Icon className="size-4 text-[#e7b354]"/>{item.title}</div><p className="mt-3 text-3xl font-bold text-white">{busy&&!metrics?"…":metrics?.[item.key]??0}</p><p className="mt-2 text-xs text-white/40">{item.note}</p></div>})}</div>
+ <section className="rounded-2xl border border-[#e7b354]/15 bg-[#11130f] p-5"><h2 className="font-semibold">Visits and new customer signups</h2><p className="mt-1 text-xs text-white/50">Actual events by day; no estimated revenue or sales.</p><div className="mt-5 flex items-center gap-4 text-xs"><span className="text-[#e7b354]">● Visits</span><span className="text-emerald-300">● Joined</span></div><div className="mt-4 flex h-44 items-end gap-[3px] overflow-x-auto rounded-xl border border-white/10 bg-black/20 p-3">{days.map(d=><div key={d.day} title={d.day+": "+d.visits+" visits / "+d.joined+" joins"} className="flex h-full min-w-2 flex-1 items-end gap-[1px]"><span className="w-1/2 rounded-t-sm bg-[#e7b354]" style={{height:Math.max(1,d.visits/peak*100)+"%"}}/><span className="w-1/2 rounded-t-sm bg-emerald-500/80" style={{height:Math.max(1,d.joined/peak*100)+"%"}}/></div>)}</div><p className="mt-2 text-[11px] text-white/40">{days[0]?.day??""} — {days.at(-1)?.day??""}</p></section>
+ <p className="text-xs leading-5 text-white/40">Average visits counts registered visits for customers active during the last 30 days. Dormant customers have a prior recorded visit but no visit during this period. No revenue is inferred without payment records.</p>
+ </div></DashboardShell>;
+}

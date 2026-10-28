@@ -1,0 +1,20 @@
+"use client";
+import {useCallback,useEffect,useState} from "react";
+import {Cake,Gift,Save,CalendarClock} from "lucide-react";
+import {DashboardShell} from "@/components/dashboard/dashboard-shell";
+import {useAuth} from "@/components/auth/auth-guard";
+import {apiFetch} from "@/lib/api";
+type Settings={enabled:boolean;gift_name:string;bonus_stamp:boolean};
+export default function BirthdayCampaignSettings(){
+ const {token}=useAuth();const [enabled,setEnabled]=useState(false),[gift,setGift]=useState("Birthday surprise"),[bonus,setBonus]=useState(false),[saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
+ const load=useCallback(()=>apiFetch<{settings:Settings}>("/growth/birthdays",{token,cache:"no-store"}).then(r=>{setEnabled(r.settings.enabled);setGift(r.settings.gift_name);setBonus(r.settings.bonus_stamp);}).catch(e=>setError(e instanceof Error?e.message:"Unable to load settings.")),[token]);useEffect(()=>{void load();},[load]);
+ const save=async()=>{setSaving(true);setError("");setNotice("");try{await apiFetch("/growth/birthdays",{token,method:"PUT",body:JSON.stringify({enabled,gift_name:gift,bonus_stamp:bonus})});setNotice("Birthday reward policy saved.");}catch(e){setError(e instanceof Error?e.message:"Could not save settings.");}finally{setSaving(false);}};
+ return <DashboardShell activeItem="birthdays"><div className="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+ <header><p className="text-xs font-bold uppercase tracking-[.2em] text-[#e7b354]">LOYALTY CELEBRATIONS</p><h1 className="mt-2 flex items-center gap-3 text-2xl font-bold"><Cake className="size-7 text-[#e7b354]"/>Birthday Rewards</h1><p className="mt-2 text-sm text-white/55">Send a birthday gift and optionally one bonus stamp to customers who explicitly opted in.</p></header>
+ <section className="rounded-2xl border border-[#e7b354]/20 bg-[#11130f] p-5 sm:p-6"><label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 p-4"><span><strong className="block">Enable Birthday Rewards</strong><span className="mt-1 block text-xs text-white/50">One gift per eligible membership per year.</span></span><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)} className="size-5 accent-[#e7b354]"/></label>
+ <label className="mt-5 block text-xs text-white/60">Birthday gift name<input maxLength={80} minLength={3} value={gift} onChange={e=>setGift(e.target.value)} placeholder="Free birthday treat" className="mt-2 w-full rounded-xl border border-white/15 bg-black/25 p-3 text-sm text-white"/></label>
+ <label className="mt-5 flex items-start gap-3 rounded-xl border border-white/10 p-4"><input type="checkbox" checked={bonus} onChange={e=>setBonus(e.target.checked)} className="mt-0.5 size-5 accent-[#e7b354]"/><span><span className="flex items-center gap-2 font-semibold"><Gift className="size-4 text-[#e7b354]"/>Add one bonus stamp</span><span className="mt-1 block text-xs text-white/50">A bonus stamp will be credited where the loyalty card has room. A card at its reward limit will still get the birthday gift notification, but no extra stamp until a later eligible cycle.</span></span></label>
+ {error?<p role="alert" className="mt-4 text-sm text-rose-300">{error}</p>:null}{notice?<p role="status" className="mt-4 text-sm text-emerald-300">{notice}</p>:null}
+ <button disabled={saving||gift.trim().length<3} onClick={()=>void save()} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#e7b354] px-4 py-3 text-sm font-bold text-black disabled:opacity-50"><Save className="size-4"/>{saving?"Saving…":"Save birthday rules"}</button></section>
+ <div className="flex items-start gap-3 rounded-xl border border-white/10 p-4 text-xs leading-5 text-white/50"><CalendarClock className="size-5 shrink-0 text-[#e7b354]"/>Automated processing uses the daily scheduler in Morocco time (Africa/Casablanca). Only active businesses and customers with a birthday notification opt-in are included. Birth dates stay hidden from the Business Dashboard.</div></div></DashboardShell>;
+}

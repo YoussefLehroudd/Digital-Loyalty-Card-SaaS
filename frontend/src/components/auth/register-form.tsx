@@ -88,6 +88,7 @@ export function RegisterForm() {
                     password: values.password,
                     password_confirmation: values.passwordConfirmation,
                     device_name: "web-unified-register",
+                    invite_code: new URLSearchParams(window.location.search).get("invite")?.trim().toLowerCase() || undefined,
                 });
                 // Do not authenticate until a six-digit code has verified the email.
                 setOtpAccountType("customer");
@@ -131,6 +132,7 @@ export function RegisterForm() {
                         password: values.password,
                         password_confirmation: values.passwordConfirmation,
                         device_name: "web-unified-register",
+                        invite_code: new URLSearchParams(window.location.search).get("invite")?.trim().toLowerCase() || undefined,
                     });
                 } else {
                     await registerBusinessOwner({

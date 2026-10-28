@@ -59,6 +59,7 @@ export type CustomerRegisterPayload = {
   avatar_url?: string | null;
   preferences?: CustomerPreferences | null;
   device_name?: string;
+  invite_code?: string;
 };
 
 export type CustomerLoginPayload = {
