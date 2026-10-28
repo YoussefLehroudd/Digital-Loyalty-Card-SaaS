@@ -1,0 +1,53 @@
+const assert=require('node:assert/strict');
+const {randomUUID}=require('node:crypto'),fs=require('node:fs'),path=require('node:path'),ts=require('typescript');
+const {PGlite}=require('@electric-sql/pglite');
+require.extensions['.ts']=(mod,file)=>mod._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true},fileName:file}).outputText,file);
+const {ensureDiscoverSchema,getDiscoverCatalog,recordDiscoverJoin,handleOwnerDiscover}=require(path.join(__dirname,'../src/lib/server/discover-pro.ts'));
+const db=new PGlite(),id=()=>randomUUID();
+function sql(parts,...values){return db.query(parts.reduce((s,p,i)=>s+(i?'$'+i:'')+p,''),values).then(r=>r.rows);}
+async function manage(businessId,method,body){
+ const req=new Request('https://loyvance.test/api/discover/business',{method,headers:{'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+ const res=await handleOwnerDiscover(req,sql,businessId);
+ return {status:res.status,data:await res.json()};
+}
+(async()=>{
+ await db.exec("CREATE TABLE businesses(id uuid PRIMARY KEY,slug text NOT NULL,name text NOT NULL,email text NOT NULL,status text DEFAULT 'active',logo_url text,hero_image_url text,primary_color text,address text,google_maps_url text,google_reviews_url text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());CREATE TABLE app_users(id uuid PRIMARY KEY);CREATE TABLE customers(id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),user_id uuid REFERENCES app_users(id),created_at timestamptz DEFAULT now());CREATE TABLE loyalty_cards(id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),reward_name text,required_stamps int,reward_description text);CREATE TABLE business_subscriptions(business_id uuid REFERENCES businesses(id),paid_ends_at timestamptz,trial_ends_at timestamptz);CREATE TABLE special_offers(id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),title text,kind text,weekday int,starts_at timestamptz,ends_at timestamptz,is_active bool DEFAULT true,uses_count int DEFAULT 0,max_uses int DEFAULT 10);CREATE TABLE visits(id uuid PRIMARY KEY,business_id uuid REFERENCES businesses(id),customer_id uuid REFERENCES customers(id),created_at timestamptz DEFAULT now());");
+ await ensureDiscoverSchema(sql);
+ const bakery=id(),cafe=id(),user=id(),member=id();
+ await sql`INSERT INTO businesses(id,slug,name,email,status,address) VALUES(${bakery},'bakery','Bakery','bakery@test.local','active','Casablanca'),(${cafe},'cafe','Cafe','cafe@test.local','active','Rabat')`;
+ await sql`INSERT INTO app_users(id) VALUES(${user})`;
+ await sql`INSERT INTO business_subscriptions(business_id,trial_ends_at) VALUES(${bakery},now()+interval '30 days'),(${cafe},now()+interval '30 days')`;
+ await sql`INSERT INTO loyalty_cards(id,business_id,required_stamps,reward_name) VALUES(${id()},${bakery},10,'Free bread'),(${id()},${cafe},8,'Free coffee')`;
+ const invalid=await manage(bakery,'PATCH',{visible:true,city:'Casablanca',category:'Bakery',latitude:91,longitude:-7.61});
+ assert.equal(invalid.status,422,'Out-of-range coordinates rejected');
+ assert.equal((await manage(bakery,'PATCH',{visible:true,city:'Casablanca',category:'Bakery',latitude:33.57,longitude:null})).status,422,'Partial coordinate rejected');
+ const valid=await manage(bakery,'PATCH',{visible:true,city:'Casablanca',category:'Bakery',latitude:33.57,longitude:-7.61});
+ assert.equal(valid.status,200,JSON.stringify(valid));
+ assert.equal((await manage(cafe,'GET')).data.settings.discover_city,null,'Other tenant settings isolated');
+ const offer=id();
+ await sql`INSERT INTO special_offers(id,business_id,title,kind,weekday,starts_at,ends_at,is_active,uses_count,max_uses) VALUES(${offer},${bakery},'Tuesday double','weekday_double',2,now()-interval '1 day',now()+interval '5 days',true,0,20)`;
+ let explore=await getDiscoverCatalog(sql,user);
+ assert.equal(explore.length,2);
+ assert.equal(explore.find(x=>x.id===bakery).active_offers.length,1,'Active offers appear in catalog');
+ assert.equal(explore.find(x=>x.id===cafe).active_offers.length,0,'Other shop offers not leaked');
+ assert.equal(explore.find(x=>x.id===bakery).latitude,33.57);
+ assert.equal(explore.find(x=>x.id===bakery).category,'Bakery');
+ await sql`INSERT INTO customers(id,business_id,user_id) VALUES(${member},${bakery},${user})`;
+ await recordDiscoverJoin(sql,member,bakery);
+ await recordDiscoverJoin(sql,member,bakery);
+ const fromExplore=await manage(bakery,'GET');
+ assert.equal(fromExplore.data.stats.joins_all,1,'Only one signup per membership');
+ assert.equal(fromExplore.data.stats.joins_30d,1);
+ assert.equal(fromExplore.data.stats.joined_then_visited,0);
+ assert.equal((await manage(cafe,'GET')).data.stats.joins_all,0,'Business analytics isolated');
+ await sql`INSERT INTO visits(id,business_id,customer_id) VALUES(${id()},${bakery},${member})`;
+ assert.equal((await manage(bakery,'GET')).data.stats.visited_from_recent_joins,1,'Count actual first visits after Explore join');
+ await manage(bakery,'PATCH',{visible:false,city:'Casablanca',category:'Bakery',latitude:null,longitude:null});
+ explore=await getDiscoverCatalog(sql,user);
+ assert.equal(explore.length,1,'Hidden business removed from public Explore');
+ assert.equal((await manage(bakery,'GET')).data.stats.joins_all,1,'Hiding does not erase customer acquisition history');
+ const route=fs.readFileSync(path.join(__dirname,'../src/app/api/[...path]/route.ts'),'utf8');
+ assert.ok(route.includes('if(inserted.length)await recordDiscoverJoin(sql,membershipId,business.id)'),'Only new Explore membership gets source attribution');
+ assert.ok(route.includes('const owner=await requireBusinessOwner(req,sql);'),'Only owner accesses business analytics');
+ console.log('PASS Discover: validated public data, active offers, source attribution, tenant isolation and hidden listings');
+})().finally(()=>db.close()).catch(e=>{console.error(e);process.exitCode=1;});

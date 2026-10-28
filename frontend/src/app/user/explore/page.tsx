@@ -3,16 +3,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, CreditCard, ExternalLink, Gift, Loader2, MapPin, RefreshCw, Search, Star, Store, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, CreditCard, ExternalLink, Gift, Loader2, MapPin, RefreshCw, Search, Star, Store, X, LocateFixed, SlidersHorizontal, Sparkles } from "lucide-react";
 import { CustomerLayout } from "@/components/customer-app/customer-layout";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { useI18n } from "@/components/i18n/language-provider";
 import { customerExploreBusinesses, customerGetBusinessCard, type DiscoverableBusiness } from "@/lib/customerAuth";
 
 type Filter = "all" | "available" | "joined";
+type Sort = "recommended" | "nearest" | "alphabetical";
+type Coordinates = {latitude:number;longitude:number};
+const kmBetween=(a:Coordinates,b:Coordinates)=>{
+ const rad=Math.PI/180,dLat=(b.latitude-a.latitude)*rad,dLon=(b.longitude-a.longitude)*rad;
+ const h=Math.sin(dLat/2)**2+Math.cos(a.latitude*rad)*Math.cos(b.latitude*rad)*Math.sin(dLon/2)**2;
+ return 12742*Math.asin(Math.min(1,Math.sqrt(h)));
+};
 const panel="min-w-0 overflow-hidden rounded-2xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(17,18,14,.96),rgba(9,10,8,.96))]";
 
-function BusinessTile({business,onGetCard,busy}:{business:DiscoverableBusiness;onGetCard:(id:string)=>void;busy:boolean}){
+function BusinessTile({business,onGetCard,busy,distanceKm}:{business:DiscoverableBusiness;onGetCard:(id:string)=>void;busy:boolean;distanceKm:number|null}){
  const {t:tr}=useI18n();
  const joined=business.has_card;
  const unavailable=!business.available && !joined;
@@ -29,12 +36,24 @@ function BusinessTile({business,onGetCard,busy}:{business:DiscoverableBusiness;o
      {business.logo_url?<img src={business.logo_url} alt="" loading="lazy" className="size-full object-cover"/>:<Store className="size-6" style={{color}}/>}
     </div>
     <h3 className="min-w-0 break-words text-base font-semibold text-white">{business.name}</h3>
+    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+      {business.category?<span className="rounded-full border border-[#e7b354]/20 bg-[#e7b354]/10 px-2.5 py-1 text-[#f3c66e]">{business.category}</span>:null}
+      {business.city?<span className="rounded-full border border-white/10 px-2.5 py-1 text-white/60">{business.city}</span>:null}
+      {distanceKm!==null?<span className="rounded-full border border-emerald-300/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">{distanceKm.toFixed(1)} km away</span>:null}
+    </div>
     {business.address?<p className="mt-1 flex min-w-0 items-start gap-1.5 text-xs leading-5 text-white/50"><MapPin className="mt-0.5 size-3.5 shrink-0"/><span className="min-w-0 break-words">{business.address}</span></p>:null}
     <div className="mt-4 flex min-w-0 flex-1 flex-col rounded-xl border border-[#e7b354]/15 bg-[#e7b354]/[.045] p-3">
       <div className="flex items-center gap-2 text-xs font-semibold text-[#f1bd58]"><Gift className="size-4 shrink-0"/><span className="min-w-0 break-words">{business.reward_name}</span></div>
       <p className="mt-1 text-[11px] leading-5 text-white/55">{business.reward_description||tr("Collect stamps and unlock rewards.")}</p>
       <span className="mt-2 text-[11px] font-medium text-white/45">{business.required_stamps} {tr("stamps to collect")}</span>
     </div>
+    {business.active_offers?.length?<div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/[.055] p-3">
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300"><Sparkles className="size-4"/>Special Offers</p>
+      <div className="mt-2 space-y-1.5">{business.active_offers.map(offer=><p key={offer.id} className="text-xs text-white/70">
+        <span className="font-medium">{offer.title}</span> <span className="text-[11px] text-white/40">· Until {new Date(offer.ends_at).toLocaleDateString("fr-MA")}</span>
+      </p>)}</div>
+      <p className="mt-2 text-[11px] text-white/40">Eligibility and limits checked at your next visit.</p>
+    </div>:null}
     {(business.google_maps_url || business.google_reviews_url) ?
       <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 min-[340px]:grid-cols-2">
         {business.google_maps_url ?
@@ -70,6 +89,14 @@ export default function UserExploreBusinessesPage(){
  const [error,setError]=useState("");
  const [search,setSearch]=useState("");
  const [filter,setFilter]=useState<Filter>("all");
+ const [city,setCity]=useState("all"),[category,setCategory]=useState("all");
+ const [onlyOffers,setOnlyOffers]=useState(false);
+ const [sort,setSort]=useState<Sort>("recommended");
+ const [radius,setRadius]=useState(25);
+ const [nearby,setNearby]=useState(false);
+ const [location,setLocation]=useState<Coordinates|null>(null);
+ const [locating,setLocating]=useState(false);
+ const [locationNotice,setLocationNotice]=useState("");
  const [pending,setPending]=useState<string|null>(null);
  const load=useCallback(async()=>{
   if(!token){setLoading(false);return;}
@@ -82,13 +109,37 @@ export default function UserExploreBusinessesPage(){
   finally{setLoading(false);}
  },[token]);
  useEffect(()=>{void load();},[load]);
+ const cities=useMemo(()=>Array.from(new Set(items.map(x=>x.city?.trim()).filter((v):v is string=>!!v))).sort((a,b)=>a.localeCompare(b)),[items]);
+ const categories=useMemo(()=>Array.from(new Set(items.map(x=>x.category?.trim()).filter((v):v is string=>!!v))).sort((a,b)=>a.localeCompare(b)),[items]);
  const filtered=useMemo(()=>{
   const query=search.trim().toLocaleLowerCase();
-  return items.filter(item=>
-   (filter==="all" || (filter==="available"&&item.available&&!item.has_card) || (filter==="joined"&&item.has_card)) &&
-   (!query||[item.name,item.address||"",item.reward_name,item.reward_description||""].some(text=>text.toLocaleLowerCase().includes(query)))
+  const rows=items.map(item=>({
+    ...item,
+    distanceKm:location&&item.latitude!==null&&item.longitude!==null
+      ?kmBetween(location,{latitude:item.latitude,longitude:item.longitude}):null
+  })).filter(item=>
+    (filter==="all" || (filter==="available"&&item.available&&!item.has_card) || (filter==="joined"&&item.has_card))
+    && (city==="all"||item.city===city)
+    && (category==="all"||item.category===category)
+    && (!onlyOffers||item.active_offers?.length>0)
+    && (!nearby||(item.distanceKm!==null&&item.distanceKm<=radius))
+    && (!query||[item.name,item.address||"",item.city||"",item.category||"",item.reward_name,item.reward_description||"",...(item.active_offers||[]).map(offer=>offer.title)].some(value=>value.toLocaleLowerCase().includes(query)))
   );
- },[items,search,filter]);
+  if(sort==="nearest"&&location)rows.sort((a,b)=>(a.distanceKm??Infinity)-(b.distanceKm??Infinity));
+  if(sort==="alphabetical")rows.sort((a,b)=>a.name.localeCompare(b.name));
+  return rows;
+ },[items,search,filter,city,category,onlyOffers,nearby,radius,sort,location]);
+ const requestLocation=()=>{
+  if(!navigator.geolocation){setLocationNotice("Location access is unsupported by this browser.");return;}
+  setLocating(true);setLocationNotice("");
+  navigator.geolocation.getCurrentPosition(p=>{
+   setLocation({latitude:p.coords.latitude,longitude:p.coords.longitude});
+   setNearby(true);setSort("nearest");setLocating(false);
+   setLocationNotice("Showing nearby stores with published locations. Your coordinates stay on this device.");
+  },()=>{
+   setLocating(false);setNearby(false);setLocationNotice("Location was denied or unavailable. You can still filter by city.");
+  },{enableHighAccuracy:false,timeout:12000,maximumAge:120000});
+ };
  const joinedCount=items.filter(item=>item.has_card).length;
  const availableCount=items.filter(item=>item.available&&!item.has_card).length;
  async function getCard(businessId:string){
@@ -103,7 +154,7 @@ export default function UserExploreBusinessesPage(){
   }catch(e){setError(e instanceof Error?e.message:"Unable to issue the loyalty card.");}
   finally{setPending(null);}
  }
- return <CustomerLayout title={tr("Explore Businesses")} subtitle={tr("Discover nearby loyalty programs and add a card online")}>
+ return <CustomerLayout title={tr("Discover Pro")} subtitle={tr("Find stores, explore special offers and join loyalty programs")}>
   <div className="space-y-5">
    <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
     <label className="relative block min-w-0 flex-1">
@@ -116,10 +167,27 @@ export default function UserExploreBusinessesPage(){
    <div className="flex min-w-0 flex-wrap gap-2" role="group" aria-label={tr("Business filters")}>
     {([{id:"all",label:"All businesses",count:items.length},{id:"available",label:"Get a card",count:availableCount},{id:"joined",label:"My cards",count:joinedCount}] as const).map(option=><button key={option.id} type="button" onClick={()=>setFilter(option.id)} aria-pressed={filter===option.id} className={`min-h-10 rounded-xl border px-3 text-xs font-semibold transition ${filter===option.id?"border-[#efbd5d] bg-[#efbd5d] text-[#11120e]":"border-[#e7b354]/20 bg-[#11140f] text-white/65 hover:text-white"}`}>{tr(option.label)} <span className="ms-1 opacity-70">{option.count}</span></button>)}
    </div>
+   <section className="rounded-2xl border border-[#e7b354]/15 bg-[#11130f] p-3 sm:p-4">
+     <div className="flex items-center gap-2 text-xs font-semibold text-[#e7b354]"><SlidersHorizontal className="size-4"/>Discover filters</div>
+     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+       <label className="min-w-0 text-xs text-white/55">City<select aria-label="City" value={city} onChange={e=>setCity(e.target.value)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="all">All cities</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>
+       <label className="min-w-0 text-xs text-white/55">Category<select aria-label="Business category" value={category} onChange={e=>setCategory(e.target.value)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="all">All categories</option>{categories.map(c=><option key={c}>{c}</option>)}</select></label>
+       <label className="min-w-0 text-xs text-white/55">Sort<select aria-label="Sort businesses" value={sort} onChange={e=>setSort(e.target.value as Sort)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="recommended">Recommended</option><option value="alphabetical">Name A–Z</option>{location?<option value="nearest">Nearest first</option>:null}</select></label>
+       <label className="min-w-0 text-xs text-white/55">Distance<select aria-label="Nearby radius" value={radius} disabled={!location} onChange={e=>setRadius(Number(e.target.value))} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white disabled:opacity-40">{[5,10,25,50,100].map(n=><option key={n} value={n}>{n} km</option>)}</select></label>
+     </div>
+     <div className="mt-3 flex flex-wrap items-center gap-2">
+       <button type="button" onClick={requestLocation} disabled={locating} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#e7b354]/25 bg-[#e7b354]/10 px-3 text-xs font-semibold text-[#f5c86d]"><LocateFixed className="size-4"/>{locating?"Finding location…":location?"Update location":"Near me"}</button>
+       <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-white/15 px-3 text-xs text-white/75"><input type="checkbox" checked={onlyOffers} onChange={e=>setOnlyOffers(e.target.checked)} className="accent-[#e7b354]"/>Special Offers only</label>
+       {location?<label className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs text-white/75"><input type="checkbox" checked={nearby} onChange={e=>setNearby(e.target.checked)} className="accent-[#e7b354]"/>Within {radius} km</label>:null}
+       <button type="button" className="ms-auto rounded-xl border border-white/15 px-3 py-2.5 text-xs text-white/60" onClick={()=>{setCity("all");setCategory("all");setOnlyOffers(false);setNearby(false);setSort("recommended");setSearch("");}}>Reset filters</button>
+     </div>
+     {locationNotice?<p role="status" className="mt-3 text-xs text-white/55">{locationNotice}</p>:null}
+     <p className="mt-2 text-[11px] text-white/40">{filtered.length} matching businesses · Nearby only includes businesses that added their public shop coordinates.</p>
+   </section>
    {error?<div role="alert" className="rounded-xl border border-rose-300/25 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">{error}</div>:null}
    {loading?<div className="flex min-h-48 items-center justify-center gap-2 text-sm text-white/60"><Loader2 className="size-5 animate-spin text-[#efbd5d]"/>{tr("Loading businesses...")}</div>:
-    filtered.length?<div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{filtered.map(item=><BusinessTile key={item.id} business={item} busy={pending===item.id} onGetCard={getCard}/>)}</div>:
-    <div className={`${panel} flex flex-col items-center p-8 text-center`}><Store className="size-9 text-[#efbd5d]/70"/><h2 className="mt-3 text-sm font-semibold text-white">{tr("No businesses found")}</h2><p className="mt-2 max-w-sm text-xs leading-5 text-white/45">{tr("Try another search or select All businesses. New stores will appear here as they join LOYVANCE.")}</p><button type="button" className="mt-4 rounded-xl border border-white/15 px-4 py-2 text-xs text-white/70" onClick={()=>{setSearch("");setFilter("all");}}>{tr("Show all businesses")}</button></div>
+    filtered.length?<div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{filtered.map(item=><BusinessTile key={item.id} business={item} distanceKm={item.distanceKm} busy={pending===item.id} onGetCard={getCard}/>)}</div>:
+    <div className={`${panel} flex flex-col items-center p-8 text-center`}><Store className="size-9 text-[#efbd5d]/70"/><h2 className="mt-3 text-sm font-semibold text-white">{tr("No businesses found")}</h2><p className="mt-2 max-w-sm text-xs leading-5 text-white/45">{tr("Try another search or select All businesses. New stores will appear here as they join LOYVANCE.")}</p><button type="button" className="mt-4 rounded-xl border border-white/15 px-4 py-2 text-xs text-white/70" onClick={()=>{setSearch("");setFilter("all");setCity("all");setCategory("all");setNearby(false);setOnlyOffers(false);setSort("recommended");}}>{tr("Show all businesses")}</button></div>
    }
   </div>
  </CustomerLayout>;

@@ -17,6 +17,7 @@ import { ensureCampaignSchema, handleBusinessCampaigns, handleAutomations, runCa
 import { ensureSpecialOfferSchema, handleBusinessOffers, handleCustomerOffers } from "@/lib/server/special-offers";
 import { ensureStaffSchema, isActiveCashier, manageStaff, staffAudit } from "@/lib/server/staff-management";
 import {ensureEngagementSchema,customerReferralApi,recordVerifiedReferral,referralBusinessForCode,qualifyReferralAfterVisit,applyPendingReferralBonuses,handleFeedback,handleBirthday,issueBirthdayRewards,handleAnalyticsPro} from "@/lib/server/customer-engagement";
+import {ensureDiscoverSchema,getDiscoverCatalog,recordDiscoverJoin,handleOwnerDiscover} from "@/lib/server/discover-pro";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -424,6 +425,7 @@ async function ensureSchema(sql: Sql) {
       await ensureSpecialOfferSchema(sql);
       await ensureStaffSchema(sql);
       await ensureEngagementSchema(sql);
+      await ensureDiscoverSchema(sql);
       await ensureAffiliateSchema(sql);
       await ensureVisitorAnalyticsSchema(sql);
     })();
@@ -2190,36 +2192,9 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
     return error("API route not found.", 404);
   }
 
-  // Discover all non-suspended LOYVANCE businesses. Show whether a card can
-  // currently be issued; expired subscriptions are visible but cannot be joined.
-  // Only marketing-safe fields are exposed, never login/contact email or customers.
-  if (path[1] === "explore" && req.method === "GET" && path.length===2) {
-    const rows=await sql`
-      SELECT b.id::text,b.slug,b.name,b.logo_url,b.hero_image_url,b.primary_color,
-        b.address,b.google_maps_url,b.google_reviews_url,b.created_at::text,
-        COALESCE(lc.reward_name,'Loyalty rewards') AS reward_name,
-        COALESCE(lc.required_stamps,10)::int AS required_stamps,
-        COALESCE(lc.reward_description,'Collect stamps with this business.') AS reward_description,
-        (existing.id IS NOT NULL) AS has_card,existing.id::text AS membership_id,
-        CASE WHEN s.paid_ends_at>now() OR (s.paid_ends_at IS NULL AND s.trial_ends_at>now())
-           THEN true ELSE false END AS available,
-        CASE WHEN s.paid_ends_at>now() THEN 'active'
-          WHEN s.paid_ends_at IS NULL AND s.trial_ends_at>now() THEN 'trial'
-          ELSE 'expired' END AS subscription_state
-      FROM businesses b
-      LEFT JOIN loyalty_cards lc ON lc.business_id=b.id
-      LEFT JOIN business_subscriptions s ON s.business_id=b.id
-      LEFT JOIN LATERAL (
-        SELECT id FROM customers WHERE user_id=${auth.user.id} AND business_id=b.id
-        LIMIT 1
-      ) existing ON true
-      WHERE COALESCE(b.status,'active')<>'suspended'
-      ORDER BY (existing.id IS NOT NULL) DESC,
-        (CASE WHEN s.paid_ends_at>now() OR (s.paid_ends_at IS NULL AND s.trial_ends_at>now()) THEN 1 ELSE 0 END) DESC,
-        b.created_at DESC
-      LIMIT 500
-    `;
-    return json({data:rows});
+  // Discover Pro: safe public business details and live eligible offers, scoped to authenticated customers.
+  if(path[1]==="explore" && req.method==="GET" && path.length===2){
+    return json({data:await getDiscoverCatalog(sql,auth.user.id)});
   }
 
   if (path[1] === "explore" && path[2] && path[3] === "join" && path.length === 4 && req.method === "POST") {
@@ -2251,6 +2226,7 @@ async function handleCustomerUser(path: string[], req: Request, sql: Sql) {
       VALUES(${randomUUID()},${membershipId},${card.id},0)
       ON CONFLICT (customer_id,loyalty_card_id) DO NOTHING
     `;
+    if(inserted.length)await recordDiscoverJoin(sql,membershipId,business.id);
     return json({
       message:inserted.length?"Loyalty card created.":"You already have this loyalty card.",
       membership_id:membershipId,already_joined:!inserted.length
@@ -2647,6 +2623,11 @@ async function dispatch(req: Request, context: RouteContext) {
       const secret=process.env.CRON_SECRET;
       if(req.method!=="GET"||!secret||req.headers.get("authorization")!==`Bearer ${secret}`)return error("Unauthorized.",401);
       response=json(await issueBirthdayRewards(sql,100));
+    }
+    else if(path[0]==="discover"){
+      if(path[1]!=="business"||path.length!==2)return error("Route not found.",404);
+      const owner=await requireBusinessOwner(req,sql);
+      response=await handleOwnerDiscover(req,sql,owner.business!.id);
     }
     else if(path[0]==="growth"){
       const action=path[1];

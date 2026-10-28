@@ -387,6 +387,11 @@ export type DiscoverableBusiness = {
   membership_id: string | null;
   available: boolean;
   subscription_state: "active" | "trial" | "expired";
+  city: string | null;
+  category: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  active_offers: Array<{ id:string; title:string; kind:"weekday_double"|"first_visit_double";weekday:number|null;ends_at:string }>;
 };
 
 export function customerExploreBusinesses(token: string) {

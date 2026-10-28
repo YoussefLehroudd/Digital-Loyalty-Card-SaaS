@@ -5,7 +5,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, BarChart3, MessageSquare, Cake, } from "lucide-react";
+import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, BarChart3, MessageSquare, Cake, Compass, } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
@@ -14,7 +14,7 @@ import { BusinessSubscriptionAlert, BusinessSubscriptionCard, BusinessSubscripti
 import { cn } from "@/lib/utils";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 type DashboardShellProps = {
-    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff" | "analytics" | "feedback" | "birthdays";
+    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff" | "analytics" | "feedback" | "birthdays" | "discover";
     children: React.ReactNode;
 };
 const sidebarItems = [
@@ -31,6 +31,7 @@ const sidebarItems = [
     { key: "campaigns", label: "Campaigns", icon: Megaphone, href: "/dashboard/campaigns" },
     { key: "offers", label: "Special Offers", icon: Sparkles, href: "/dashboard/offers" },
     { key: "staff", label: "Staff Management", icon: UserCog, href: "/dashboard/staff" },
+    { key: "discover", label: "Discover Pro", icon: Compass, href: "/dashboard/discover" },
     { key: "analytics", label: "Analytics Pro", icon: BarChart3, href: "/dashboard/analytics" },
     { key: "feedback", label: "Feedback", icon: MessageSquare, href: "/dashboard/feedback" },
     { key: "birthdays", label: "Birthdays", icon: Cake, href: "/dashboard/birthdays" },
@@ -353,6 +354,7 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         campaigns: "Campaigns",
         offers: "Special Offers",
         staff: "Staff Management",
+        discover: "Discover Pro",
         analytics: "Analytics Pro",
         feedback: "Feedback",
         birthdays: "Birthdays",
