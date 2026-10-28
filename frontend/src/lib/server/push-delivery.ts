@@ -1,6 +1,6 @@
 import {randomUUID} from "node:crypto";
 import type {getSql} from "@/lib/server/db";
-import {validateSubscription,pushIsConfigured,pushPublicKey,sendWebPush,type PushSubscriptionData} from "@/lib/server/web-push-crypto";
+import {validateSubscription,pushIsConfigured,pushPublicKey,sendWebPush,type PushSubscriptionData} from "./web-push-crypto";
 type Sql=ReturnType<typeof getSql>;
 type Row=Record<string,unknown>;
 const qsql=(sql:Sql)=>sql as unknown as {(str:TemplateStringsArray,...values:unknown[]):Promise<Row[]>};
