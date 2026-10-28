@@ -19,6 +19,7 @@ import { ensureStaffSchema, isActiveCashier, manageStaff, staffAudit } from "@/l
 import {ensureEngagementSchema,customerReferralApi,recordVerifiedReferral,referralBusinessForCode,qualifyReferralAfterVisit,applyPendingReferralBonuses,handleFeedback,handleBirthday,issueBirthdayRewards,handleAnalyticsPro} from "@/lib/server/customer-engagement";
 import {ensureDiscoverSchema,getDiscoverCatalog,recordDiscoverJoin,handleOwnerDiscover} from "@/lib/server/discover-pro";
 import {ensurePushSchema,handleCustomerPush,deliverQueuedPush} from "@/lib/server/push-delivery";
+import {after} from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -2685,8 +2686,10 @@ async function dispatch(req: Request, context: RouteContext) {
       path[0]==="stamp" || path[0]==="redeem-reward" ||
       path[0]==="campaigns" && path[1]!=="unsubscribe"
     )){
-      try { await deliverQueuedPush(sql,15); }
-      catch { console.error("Push delivery deferred until scheduled retry."); }
+      after(async()=>{
+        try { await deliverQueuedPush(sql,15); }
+        catch { console.error("Push delivery deferred until scheduled retry."); }
+      });
     }
     return response ?? error("API route not found.", 404);
   } catch (caught) {
