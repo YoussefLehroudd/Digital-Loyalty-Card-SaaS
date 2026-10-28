@@ -118,9 +118,9 @@ export async function qualifyReferralAfterVisit(sql:Sql,memberId:string,business
    RETURNING r.id,r.referrer_member_id
   ), awards AS (
    INSERT INTO referral_bonus_awards(id,referral_id,member_id,role)
-   SELECT ${randomUUID()},c.id,c.referrer_member_id,'inviter' FROM candidate c
+   SELECT ${randomUUID()}::uuid,c.id,c.referrer_member_id,'inviter' FROM candidate c
    UNION ALL
-   SELECT ${randomUUID()},c.id,${memberId}::uuid,'friend' FROM candidate c
+   SELECT ${randomUUID()}::uuid,c.id,${memberId}::uuid,'friend' FROM candidate c
    ON CONFLICT(referral_id,role) DO NOTHING RETURNING member_id
   ) SELECT count(*) AS awarded FROM awards`;
 }
