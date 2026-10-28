@@ -110,7 +110,7 @@ export default function UserDashboardPage() {
           <CardContent className="p-4 text-sm text-destructive">{tr(error)}</CardContent>
         </Card>) : null}
 
-      {loading ? (<CustomerPageSkeleton variant="dashboard"/>) : (<div className="mx-auto max-w-[1440px] space-y-5 lg:space-y-7">
+      {loading ? (<CustomerPageSkeleton variant="dashboard"/>) : (<div className="customer-dashboard mx-auto max-w-[1440px] space-y-5 lg:space-y-7">
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4 lg:gap-3">
             {[
                 { label: "Total Cards", value: cards.length, note: "Businesses you follow", icon: CreditCard },
@@ -119,7 +119,7 @@ export default function UserDashboardPage() {
                 { label: "Total Activity", value: activitiesCount, note: "Stamps & rewards", icon: Sparkles },
             ].map((stat) => {
                 const Icon = stat.icon;
-                return (<Card key={stat.label} className="group relative min-w-0 overflow-hidden rounded-xl border-[#d8a63f]/20 bg-[linear-gradient(135deg,rgba(18,19,16,.96),rgba(8,9,7,.94))] shadow-[0_10px_28px_rgba(0,0,0,.22)] transition duration-300 hover:border-[#e7b354]/35 sm:rounded-2xl">
+                return (<Card key={stat.label} className="customer-stat-card group relative min-w-0 overflow-hidden rounded-xl border-[#d8a63f]/20 bg-[linear-gradient(135deg,rgba(18,19,16,.96),rgba(8,9,7,.94))] shadow-[0_10px_28px_rgba(0,0,0,.22)] transition duration-300 hover:border-[#e7b354]/35 sm:rounded-2xl">
                   <div className="pointer-events-none absolute -left-8 -top-10 size-24 rounded-full bg-[#d79b16]/[.06] blur-2xl"/>
                   <CardContent className="relative min-h-[118px] p-3 sm:min-h-[124px] sm:p-4">
                     <div className="flex items-start gap-3">
@@ -145,11 +145,11 @@ export default function UserDashboardPage() {
             })}
           </div>
 
-          {specialOffers.length>0?<section className="rounded-2xl border border-[#e7b354]/25 bg-[linear-gradient(145deg,#15150e,#090b09)] p-4 shadow-[0_10px_35px_rgba(0,0,0,.2)] sm:p-5">
+          {specialOffers.length>0?<section className="customer-offers-panel rounded-2xl border border-[#e7b354]/25 bg-[linear-gradient(145deg,#15150e,#090b09)] p-4 shadow-[0_10px_35px_rgba(0,0,0,.2)] sm:p-5">
            <div className="flex items-center gap-2"><Zap className="size-5 text-[#ffc857]"/><h2 className="text-base font-bold text-white">{tr("Special Offers & Double Stamps")}</h2></div>
            <p className="mt-1 text-xs text-white/50">{tr("Special rewards from businesses you follow. Bonus stamps apply automatically when eligible.")}</p>
            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {specialOffers.map(offer=><article key={offer.id} className="rounded-xl border border-[#e7b354]/15 bg-black/25 p-4">
+            {specialOffers.map(offer=><article key={offer.id} className="customer-offer-card rounded-xl border border-[#e7b354]/15 bg-black/25 p-4">
              <div className="flex items-start justify-between gap-2"><p className="min-w-0 break-words text-sm font-bold text-white">{offer.title}</p><span className="shrink-0 rounded-full bg-[#e7b354]/15 px-2 py-1 text-[11px] font-bold text-[#ffc857]">×2 STAMPS</span></div>
              <p className="mt-1 text-xs font-semibold text-[#e7b354]">{offer.business_name}</p>
              {offer.description?<p className="mt-2 break-words text-xs leading-5 text-white/65">{offer.description}</p>:null}
@@ -160,7 +160,7 @@ export default function UserDashboardPage() {
             </article>)}
            </div>
           </section>:null}
-          {cards.length === 0 ? (<Card className="overflow-hidden border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.92))]">
+          {cards.length === 0 ? (<Card className="customer-empty-card overflow-hidden border-[#d8a63f]/20 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.92))]">
               <CardContent className="flex flex-col items-center px-5 py-8 text-center">
                 <div className="flex size-12 items-center justify-center rounded-2xl border border-[#e7b354]/25 bg-[#8b5d12]/20 text-[#ffc857]">
                   <QrCode className="size-5"/>
@@ -175,7 +175,7 @@ export default function UserDashboardPage() {
                 </div>
               </CardContent>
             </Card>) : (<>
-              <section className="relative overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] lg:min-h-[620px]">
+              <section className="customer-loyalty-panel relative overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] lg:min-h-[620px]">
                 <div className="relative z-20 flex items-center justify-between gap-3 px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[linear-gradient(145deg,rgba(157,107,17,.36),rgba(87,57,9,.28))] text-[#ffd369] shadow-[inset_0_0_18px_rgba(255,194,64,.08)] lg:size-12">
