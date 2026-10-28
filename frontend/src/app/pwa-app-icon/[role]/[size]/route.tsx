@@ -12,6 +12,11 @@ export async function GET(_request:Request,{params}:{params:Promise<{role:string
   if(!(role in appIcons)||!["192","512"].includes(size)){
     return new Response("Icon not found",{status:404});
   }
+  // Customer and business use the official platform logo, while keeping their own PWA IDs and scopes.
+  if(role==="customer"||role==="business"){
+    const url=new URL(`/pwa/icon-${size}.png`,_request.url);
+    return Response.redirect(url,307);
+  }
   const detail=appIcons[role as keyof typeof appIcons];
   const px=Number(size),scale=px/512;
   return new ImageResponse(
