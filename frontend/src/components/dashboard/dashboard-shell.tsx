@@ -12,6 +12,7 @@ import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
 import { Button } from "@/components/ui/button";
 import { BusinessSubscriptionAlert, BusinessSubscriptionCard, BusinessSubscriptionModal, useBusinessSubscription } from "@/components/subscriptions/business-subscription";
 import { cn } from "@/lib/utils";
+import {usePersistentNavScroll} from "@/components/navigation/use-persistent-nav-scroll";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 type DashboardShellProps = {
     activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff" | "analytics" | "feedback" | "birthdays" | "discover" | "app";
@@ -56,6 +57,8 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
     const [isAffiliate, setIsAffiliate] = useState(false);
     useEffect(() => { if(user.role==="staff")return; let valid = true; apiFetch("/affiliate/me", {token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
     const visibleItems = sidebarItems.filter(item => item.key !== "affiliate" || isAffiliate);
+    const desktopScroll=usePersistentNavScroll("business:"+user.id+":desktop",activeItem);
+    const mobileScroll=usePersistentNavScroll("business:"+user.id+":mobile",activeItem);
     useEffect(() => {
         if (!isMobileMenuOpen)
             return;
@@ -104,7 +107,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
               </div>
             </div>
 
-            <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-5">
+            <nav ref={desktopScroll.ref} onScroll={desktopScroll.onScroll} onClickCapture={desktopScroll.onClickCapture} className="loyvance-sidebar-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-5">
               {visibleItems.map((item) => (<SidebarItem active={item.key === activeItem} href={item.href} icon={item.icon} key={item.key} label={tr(item.label)}/>))}
             </nav>
 
@@ -137,7 +140,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
                     <Menu className="size-5"/>
                   </Button>
                 </div>
-                <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-5">
+                <nav ref={mobileScroll.ref} onScroll={mobileScroll.onScroll} onClickCapture={mobileScroll.onClickCapture} className="loyvance-sidebar-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-5">
                   {visibleItems.map((item) => (<MobileDrawerItem active={item.key === activeItem} href={item.href} icon={item.icon} key={item.key} label={tr(item.label)} onNavigate={() => setIsMobileMenuOpen(false)}/>))}
                 </nav>
                 <div className="shrink-0 border-t border-[#d9a52f]/15 bg-[#090a08]/85 p-3 backdrop-blur-sm">
