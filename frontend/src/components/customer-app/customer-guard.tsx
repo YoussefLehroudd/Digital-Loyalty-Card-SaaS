@@ -7,11 +7,11 @@ const PUBLIC_USER_ROUTES = new Set(["/user/login", "/user/register"]);
 export function CustomerGuard({ children }: {
     children: React.ReactNode;
 }) {
-    const { isAuthenticated, loading } = useCustomerAuth();
+    const { isAuthenticated, loading, token, sessionError, retrySession } = useCustomerAuth();
     const pathname = usePathname();
     const router = useRouter();
     useEffect(() => {
-        if (loading)
+        if (loading || (token && sessionError))
             return;
         const isPublic = PUBLIC_USER_ROUTES.has(pathname);
         if (!isAuthenticated && !isPublic) {
@@ -29,9 +29,17 @@ export function CustomerGuard({ children }: {
         if (isAuthenticated && isPublic) {
             router.replace("/user/dashboard");
         }
-    }, [isAuthenticated, loading, pathname, router]);
+    }, [isAuthenticated, loading, pathname, router, token, sessionError]);
     if (loading) {
         return (<CustomerPageLoading />);
+    }
+    if(token && sessionError && !isAuthenticated && !PUBLIC_USER_ROUTES.has(pathname)){
+      return <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#080907] p-6 text-center text-white">
+        <h1 className="text-xl font-semibold">Connection unavailable</h1>
+        <p className="max-w-sm text-sm text-white/60">{sessionError}</p>
+        <button type="button" className="rounded-xl bg-[#e7b354] px-6 py-3 font-semibold text-black" onClick={()=>void retrySession()}>Retry connection</button>
+        <p className="text-xs text-white/40">Your login remains saved on this device. You will not need to enter your password again.</p>
+      </main>;
     }
     return <>{children}</>;
 }
