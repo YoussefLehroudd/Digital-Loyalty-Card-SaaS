@@ -5,7 +5,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, } from "lucide-react";
+import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, ScanLineCheck, } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
@@ -14,7 +14,7 @@ import { BusinessSubscriptionAlert, BusinessSubscriptionCard, BusinessSubscripti
 import { cn } from "@/lib/utils";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 type DashboardShellProps = {
-    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers";
+    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff";
     children: React.ReactNode;
 };
 const sidebarItems = [
@@ -30,6 +30,7 @@ const sidebarItems = [
     { key: "rewards", label: "Rewards", icon: Gift, href: "/dashboard/rewards" },
     { key: "campaigns", label: "Campaigns", icon: Megaphone, href: "/dashboard/campaigns" },
     { key: "offers", label: "Special Offers", icon: Sparkles, href: "/dashboard/offers" },
+    { key: "staff", label: "Staff Management", icon: UserCog, href: "/dashboard/staff" },
     { key: "affiliate", label: "Affiliate", icon: Handshake, href: "/dashboard/affiliate" },
     {
         key: "settings",
@@ -42,13 +43,13 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
     const { t: tr } = useI18n();
     const { user, signOut, token } = useAuth();
     const businessName = user.business?.name ?? "Business";
-    const subscription = useBusinessSubscription(token ?? null);
+    const subscription = useBusinessSubscription(user.role==="staff"?null:token ?? null);
     const expired = subscription.data?.subscription.state === "expired";
     const [subscriptionOpen, setSubscriptionOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [notifications, setNotifications] = useState<BusinessNotification[]>([]);
     const [isAffiliate, setIsAffiliate] = useState(false);
-    useEffect(() => { let valid = true; apiFetch("/affiliate/me", {token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
+    useEffect(() => { if(user.role==="staff")return; let valid = true; apiFetch("/affiliate/me", {token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
     const visibleItems = sidebarItems.filter(item => item.key !== "affiliate" || isAffiliate);
     useEffect(() => {
         if (!isMobileMenuOpen)
@@ -74,6 +75,13 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             window.removeEventListener("keydown", onKeyDown);
         };
     }, [isMobileMenuOpen]);
+    if(user.role==="staff")return <main className="min-h-screen bg-[#070806] text-white">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-[#e7b354]/20 bg-[#080907] px-4 py-4 sm:px-8">
+        <div className="flex items-center gap-3"><ScanLineCheck className="size-6 text-[#e7b354]"/><div><p className="font-bold">LOYVANCE · Cashier Scanner</p><p className="text-xs text-white/55">{businessName} · {user.name}</p></div></div>
+        <Button variant="outline" onClick={()=>void signOut()}><LogOut className="size-4"/>Logout</Button>
+      </header>
+      {children}
+    </main>;
     return (<main className="min-h-screen bg-[#070806] text-white">
       <div className="lg:grid lg:grid-cols-[264px_1fr]">
         <aside className="fixed inset-y-0 start-0 z-30 hidden w-[264px] overflow-hidden border-e border-[#d9a52f]/15 bg-[#090a08] lg:block" style={{ backgroundImage: "url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
@@ -341,6 +349,7 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         affiliate: "Affiliate",
         campaigns: "Campaigns",
         offers: "Special Offers",
+        staff: "Staff Management",
     };
     return (<header className="app-topbar fixed inset-x-0 top-0 z-30 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl lg:sticky lg:inset-x-auto lg:z-20">
       <div className="flex h-16 items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
