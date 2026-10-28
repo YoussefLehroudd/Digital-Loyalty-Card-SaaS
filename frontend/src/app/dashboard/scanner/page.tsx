@@ -26,6 +26,7 @@ type StampApiResponse = {
 export default function ScannerPage() {
     const { t: tr } = useI18n();
     const { token, user } = useAuth();
+    const isCashier=user.role==="staff";
     const [mode, setMode] = useState<"camera" | "image">("camera");
     const [error, setError] = useState<string | null>(null);
     const [stampResult, setStampResult] = useState<StampApiResponse["loyalty"] | null>(null);
@@ -161,11 +162,11 @@ export default function ScannerPage() {
         </div>
 
         <div className="mx-auto mt-5 max-w-2xl">
-          <div className="mb-4"><ShareLoyaltyLink businessId={user.business?.id} name={user.business?.name}/></div>
-          <div className="mb-4 grid grid-cols-2 gap-2" aria-label={tr("Scan method")}>
+          {!isCashier?<div className="mb-4"><ShareLoyaltyLink businessId={user.business?.id} name={user.business?.name}/></div>:null}
+          {!isCashier?<div className="mb-4 grid grid-cols-2 gap-2" aria-label={tr("Scan method")}>
             <Button variant={mode === "camera" ? "default" : "outline"} aria-pressed={mode === "camera"} onClick={() => { clearResult(); setMode("camera"); }}>{tr("Camera scan")}</Button>
             <Button variant={mode === "image" ? "default" : "outline"} aria-pressed={mode === "image"} onClick={() => { clearResult(); setMode("image"); }}>{tr("QR image / online")}</Button>
-          </div>
+          </div>:null}
           {mode === "camera" ? <StaffQrScanner onQrScanned={handleQrScanned} onResetReady={handleResetReady}/> : <OnlineOrderScanner token={token}/>}
 
           <Modal isOpen={!!pending} onClose={() => { if (!confirming) {
@@ -175,7 +176,7 @@ export default function ScannerPage() {
             {pending ? <div className="space-y-4"><p className="text-sm text-muted-foreground">{tr("Current progress: ")}<span className="font-semibold text-[#ffc857]">{pending.current_stamps}/{pending.required_stamps}</span>{tr(". No stamps are added until you confirm.")}</p><StampOptions prefix="camera-stamp" features={pending.features} value={selection} onChange={setSelection} remaining={pending.required_stamps - pending.current_stamps} disabled={confirming}/>{error ? <p role="alert" className="text-sm text-rose-300">{tr(error)}</p> : null}<div className="flex flex-col gap-2 sm:flex-row sm:justify-end"><Button variant="outline" disabled={confirming} onClick={() => { clearResult(); scanAnotherRef.current?.(); }}>{tr("Cancel")}</Button><Button disabled={confirming || !Number.isInteger(selection.stamp_count) || selection.stamp_count < 1 || selection.stamp_count > pending.required_stamps - pending.current_stamps} onClick={() => void confirmPurchase()}>{confirming ? tr("Confirming…") : tr("Confirm & add {0} {1}", { "0": selection.stamp_count, "1": selection.stamp_count === 1 ? tr("stamp") : tr("stamps") })}</Button></div></div> : null}
           </Modal>
 
-          {mode === "camera" && stampResult ? (<StampResult currentStamps={stampResult.current_stamps} requiredStamps={stampResult.required_stamps} rewardUnlocked={stampResult.reward_unlocked} rewardRedeemed={stampResult.reward_redeemed} rewardAlreadyReady={rewardReadyBlocked} redeeming={redeeming} onRedeemReward={handleRedeemReward} onClose={clearResult} onScanAnother={() => {
+          {mode === "camera" && stampResult ? (<StampResult currentStamps={stampResult.current_stamps} requiredStamps={stampResult.required_stamps} rewardUnlocked={stampResult.reward_unlocked} rewardRedeemed={stampResult.reward_redeemed} rewardAlreadyReady={rewardReadyBlocked} redeeming={redeeming} onRedeemReward={isCashier?undefined:handleRedeemReward} onClose={clearResult} onScanAnother={() => {
                 clearResult();
                 scanAnotherRef.current?.();
             }}/>) : null}
