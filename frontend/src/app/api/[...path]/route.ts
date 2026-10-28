@@ -1,3 +1,4 @@
+import {premiumAllowed,ownerPremiumApi,adminPremiumApi} from "@/lib/server/premium-feature-access";
 import { combinedRewardLevels, reconcileRewardGoals, effectiveRewardCard, validateRewardLevels, saveRewardLevels, selectRewardGoal } from "@/lib/server/reward-levels";
 import { ownerBusinessFeatures, readBusinessFeatures, stampOptions } from "@/lib/server/business-features";
 import { businessPrivacy } from "@/lib/server/customer-privacy";
@@ -2562,6 +2563,23 @@ async function dispatch(req: Request, context: RouteContext) {
     const path = params.path ?? [];
 
     let response: Response | null = null;
+    if(path[0]==="premium-features"){
+      const owner=await requireBusinessOwner(req,sql);
+      return ownerPremiumApi(req,sql,owner.business!.id);
+    }
+    if(path[0]==="premium-admin"){
+      const auth=await requireAuth(req,sql);
+      if(!isPlatformAdmin(auth.user))return error("Forbidden.",403);
+      return adminPremiumApi(req,sql,auth.user.id);
+    }
+    const gatedFeature=path[0]==="staff"?"staff":path[0]==="special-offers"&&path[1]==="business"?"offers":
+      path[0]==="campaigns"&&path[1]!=="unsubscribe"?"campaigns":path[0]==="growth"&&path[1]==="analytics"?"analytics":
+      path[0]==="growth"&&path[1]==="birthdays"?"birthdays":null;
+    if(gatedFeature){
+      const auth=await requireBusinessOwner(req,sql);
+      if(!await premiumAllowed(sql,auth.business!.id,gatedFeature))
+        return error("Administrator approval required for this feature.",403);
+    }
     if(path[0]==="passkeys"){
       if(req.method==="POST"){
         const limited=await rateLimit(sql,req,"passkeys-"+String(path[1]||"unknown"),15,15*60*1000);
