@@ -122,7 +122,7 @@ function AdminWorkspace({ children }: {
             </div>
           </div>
         </header>
-        <main className="mx-auto min-w-0 max-w-[1500px] px-3 pb-28 pt-6 sm:px-4 sm:px-8 sm:pt-8 lg:pb-10">{children}</main>
+        <main className="admin-light-content mx-auto min-w-0 max-w-[1500px] px-3 pb-28 pt-6 sm:px-4 sm:px-8 sm:pt-8 lg:pb-10">{children}</main>
       </div>
       <nav aria-label={tr("Mobile administration")} ref={mobileTabsScroll.ref} onScroll={mobileTabsScroll.onScroll} onClickCapture={mobileTabsScroll.onClickCapture} tabIndex={0} className="customer-bottom-nav-scroll fixed inset-x-0 bottom-0 z-40 flex flex-nowrap gap-1 overflow-x-auto overscroll-x-contain border-t border-white/10 bg-[#0d1015] px-2 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2 lg:hidden">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex min-w-[76px] w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-xl px-1 py-2 text-[10px] font-semibold ${active ? "text-[#edbc62]" : "text-white/45"}`}><item.icon className="size-5"/><span className="max-w-full truncate px-0.5">{tr(item.label)}</span></Link>; })}</nav>
     </div>
