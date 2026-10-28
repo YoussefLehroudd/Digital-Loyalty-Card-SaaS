@@ -367,3 +367,16 @@ html.light aside[class*="bg-[#090a08]"] {background-color:#10110e!important;}
 html.light aside[class*="bg-[#090a08]"] [class*="bg-black/"] {background-color:rgba(0,0,0,.25)!important;}
 html.light [class*="border-white/"]:not(aside):not(.premium-feature-card) {border-color:rgba(50,50,42,.2);}
 html.light [class*="bg-gradient-to-b"][class*="to-[#070806]"] {background-image:none!important;}
+
+
+/* Administrative content uses light paper surfaces in light mode. */
+html.light .admin-light-content {color:#20251f;}
+html.light .admin-light-content [class*="text-white"] {color:#252b26!important;}
+html.light .admin-light-content [class*="text-white/"] {color:#62695f!important;}
+html.light .admin-light-content [class*="bg-[#11130f]"] {background:#fffdfa!important;}
+html.light .admin-light-content [class*="bg-black/"] {background:rgba(241,239,231,.78)!important;}
+html.light .admin-light-content button:not([disabled])[class*="bg-[#edbc62]"] {color:#17160d!important;}
+html.light .admin-light-content [class*="text-rose-"] {color:#aa264c;}
+/* Accessible contrast for icons and labels over the light workspace. */
+html.light .loyvance-light-content > header h1 {color:#20251f!important;}
+html.light .loyvance-light-content > header p:not(:first-child) {color:#62695f!important;}
