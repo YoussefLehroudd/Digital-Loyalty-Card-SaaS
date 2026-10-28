@@ -317,3 +317,15 @@ html[dir="rtl"] table { text-align: right; }
   width: 0;
   height: 0;
 }
+
+/* Keep multi-page workspace sidebars native and lightweight while hiding the
+   distracting scrollbars. Touch/trackpad/wheel scrolling remains enabled. */
+.loyvance-sidebar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
+  overflow-anchor: none;
+  -webkit-overflow-scrolling: touch;
+}
+.loyvance-sidebar-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
