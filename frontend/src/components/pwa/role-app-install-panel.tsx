@@ -8,8 +8,8 @@ import {getRoleInstallPrompt,clearRoleInstallPrompt,getInstalledWindowRole,isSta
 type Role="customer"|"business"|"admin";
 type InstallPrompt=BrowserInstallPrompt;
 const roles={
- customer:{name:"LOYVANCE Wallet",url:"/user/dashboard",manifest:"/customer-app.webmanifest",icon:"/pwa-app-icon/customer/192"},
- business:{name:"LOYVANCE Business",url:"/dashboard",manifest:"/business-app.webmanifest",icon:"/pwa-app-icon/business/192"},
+ customer:{name:"LOYVANCE Wallet",url:"/user/dashboard",manifest:"/customer-app.webmanifest",icon:"/pwa/icon-192.png?v=20261028-logo2"},
+ business:{name:"LOYVANCE Business",url:"/dashboard",manifest:"/business-app.webmanifest",icon:"/pwa/icon-192.png?v=20261028-logo2"},
  admin:{name:"LOYVANCE Admin Hub",url:"/admin",manifest:"/admin-app.webmanifest",icon:"/pwa-app-icon/admin/192"}
 };
 export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
