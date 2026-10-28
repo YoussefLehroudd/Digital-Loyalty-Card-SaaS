@@ -144,6 +144,19 @@ export async function applyPendingReferralBonuses(sql:Sql,memberId:string){
    ), marked AS (
     UPDATE referral_bonus_awards a SET applied_at=now()
     FROM credited c WHERE a.id=c.award_id RETURNING a.id,a.member_id
+   ), reward_ready AS (
+    INSERT INTO reward_redemptions(id,business_id,customer_id,loyalty_card_id,status,required_stamps_snapshot,reward_name_snapshot)
+    SELECT gen_random_uuid(),c.business_id,l.customer_id,lc.id,'ready',COALESCE(l.target_stamps,lc.required_stamps),lc.reward_name
+    FROM credited l JOIN customers c ON c.id=l.customer_id
+    JOIN loyalty_cards lc ON lc.business_id=c.business_id
+    WHERE l.current_stamps=l.needed
+     AND NOT EXISTS (SELECT 1 FROM reward_redemptions r WHERE r.customer_id=l.customer_id AND r.status='ready')
+    ON CONFLICT DO NOTHING RETURNING id,customer_id
+   ), reward_notify AS (
+    INSERT INTO customer_notifications(id,customer_id,type,title,message,reward_id)
+    SELECT CONCAT('referral-ready-',id::text),customer_id,'reward_ready','Reward unlocked',
+      'Your referral bonus completed the loyalty card!',id FROM reward_ready
+    ON CONFLICT(id) DO NOTHING RETURNING id
    ), notify AS (
     INSERT INTO customer_notifications(id,customer_id,type,title,message)
     SELECT CONCAT('referral-bonus-',m.id::text),m.member_id,'referral_bonus','Friend referral bonus',
@@ -250,10 +263,14 @@ export async function issueBirthdayRewards(sql:Sql,limit=100){
    WHERE p.birthday_opt_in=true AND p.date_of_birth IS NOT NULL
     AND extract(month from p.date_of_birth)=extract(month from now() AT TIME ZONE 'Africa/Casablanca')
     AND extract(day from p.date_of_birth)=extract(day from now() AT TIME ZONE 'Africa/Casablanca')
+   AND NOT EXISTS(
+     SELECT 1 FROM birthday_rewards br WHERE br.business_id=c.business_id AND br.member_id=c.id
+       AND br.reward_year=extract(year from now() AT TIME ZONE 'Africa/Casablanca')::int
+   )
    ORDER BY c.id LIMIT ${limit}
   ), inserted AS (
    INSERT INTO birthday_rewards(id,business_id,member_id,reward_year,gift_name)
-   SELECT ${randomUUID()},business_id,member_id,y,gift_name FROM birthdays
+   SELECT gen_random_uuid(),business_id,member_id,y,gift_name FROM birthdays
    ON CONFLICT(business_id,member_id,reward_year) DO NOTHING
    RETURNING id,business_id,member_id,gift_name
   ), notified AS (
