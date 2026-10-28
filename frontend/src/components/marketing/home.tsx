@@ -33,6 +33,13 @@ const features: Array<[LucideIcon, string, string]> = [
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Existing PWA installations still launch '/'. Recover their authenticated
+  // workspace without changing the ordinary marketing website.
+  useEffect(()=>{
+    const standalone=window.matchMedia("(display-mode: standalone)").matches||
+      Boolean((navigator as Navigator & {standalone?:boolean}).standalone);
+    if(standalone)window.location.replace("/app");
+  },[]);
   useEffect(() => {
     if (!mobileMenuOpen) return;
     const closeMenu = () => setMobileMenuOpen(false);
