@@ -138,7 +138,7 @@ export async function handlePasskeys(req:Request,sql:Sql,path:string[],{userId,l
   const key=stored[0];
   try{
    const verified=await verifyAuthenticationResponse({
-    response:body.response as Parameters<typeof verifyAuthenticationResponse>[0]["response"],
+    response:body!.response as Parameters<typeof verifyAuthenticationResponse>[0]["response"],
     expectedChallenge:String(challenge[0].challenge),
     expectedOrigin:rp().expectedOrigin,expectedRPID:rp().rpID,requireUserVerification:true,
     credential:{id:String(key.credential_id),publicKey:new Uint8Array(Buffer.from(String(key.public_key),"base64url")),
