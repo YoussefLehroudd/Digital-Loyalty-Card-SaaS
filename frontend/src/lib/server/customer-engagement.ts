@@ -279,11 +279,19 @@ export async function issueBirthdayRewards(sql:Sql,limit=100){
      CONCAT('Birthday gift from your business: ',i.gift_name,'.') FROM inserted i
    ON CONFLICT(id) DO NOTHING RETURNING id
   ) SELECT id,member_id,business_id FROM inserted`;
- for(const item of result){
-  // Skip full cards; keep the birthday gift notification regardless.
+ const pendingBonuses=await q`SELECT r.id FROM birthday_rewards r
+    JOIN business_birthday_settings setting ON setting.business_id=r.business_id AND setting.enabled AND setting.bonus_stamp
+    JOIN customers c ON c.id=r.member_id
+    JOIN customer_profiles p ON p.user_id=c.user_id AND p.birthday_opt_in=true
+    JOIN businesses b ON b.id=r.business_id AND COALESCE(b.status,'active')='active'
+    JOIN business_subscriptions sub ON sub.business_id=r.business_id AND COALESCE(sub.paid_ends_at,sub.trial_ends_at)>now()
+    WHERE r.bonus_applied=false AND r.reward_year=extract(year from now() AT TIME ZONE 'Africa/Casablanca')::int
+    ORDER BY r.created_at ASC LIMIT ${limit}`;
+ for(const item of pendingBonuses){
   await q`WITH pending AS (
-    SELECT r.id,r.member_id,l.id AS loyalty_id,COALESCE(l.target_stamps,lc.required_stamps) AS needed
-    FROM birthday_rewards r JOIN business_birthday_settings s ON s.business_id=r.business_id AND s.bonus_stamp=true
+    SELECT r.id,r.member_id,l.id AS loyalty_id,COALESCE(l.target_stamps,lc.required_stamps) AS needed,
+     lc.id AS loyalty_card_id,lc.reward_name,r.business_id
+    FROM birthday_rewards r JOIN business_birthday_settings setting ON setting.business_id=r.business_id AND setting.enabled AND setting.bonus_stamp
     JOIN loyalty_cards lc ON lc.business_id=r.business_id
     JOIN customer_loyalties l ON l.customer_id=r.member_id AND l.loyalty_card_id=lc.id
     WHERE r.id=${item.id}::uuid AND r.bonus_applied=false
@@ -291,8 +299,24 @@ export async function issueBirthdayRewards(sql:Sql,limit=100){
    ), credited AS (
     UPDATE customer_loyalties l SET current_stamps=l.current_stamps+1,updated_at=now()
     FROM pending p WHERE l.id=p.loyalty_id AND l.current_stamps<p.needed
-    RETURNING p.id
-   ) UPDATE birthday_rewards r SET bonus_applied=true FROM credited c WHERE r.id=c.id`;
+    RETURNING p.id,p.member_id,p.business_id,p.loyalty_card_id,p.needed,p.reward_name,l.current_stamps
+   ), marked AS (
+    UPDATE birthday_rewards r SET bonus_applied=true FROM credited c WHERE r.id=c.id RETURNING r.id,r.member_id
+   ), reward_ready AS (
+    INSERT INTO reward_redemptions(id,business_id,customer_id,loyalty_card_id,status,required_stamps_snapshot,reward_name_snapshot)
+    SELECT gen_random_uuid(),c.business_id,c.member_id,c.loyalty_card_id,'ready',c.needed,c.reward_name
+    FROM credited c WHERE c.current_stamps=c.needed
+     AND NOT EXISTS(SELECT 1 FROM reward_redemptions x WHERE x.customer_id=c.member_id AND x.status='ready')
+    ON CONFLICT DO NOTHING RETURNING id,customer_id
+   ), notifications AS (
+    INSERT INTO customer_notifications(id,customer_id,type,title,message)
+    SELECT CONCAT('birthday-stamp-',m.id::text),m.member_id,'birthday_bonus','Birthday bonus stamp','One birthday bonus stamp was credited to your loyalty card.' FROM marked m
+    ON CONFLICT(id) DO NOTHING RETURNING id
+   ), ready_notify AS (
+    INSERT INTO customer_notifications(id,customer_id,type,title,message,reward_id)
+    SELECT CONCAT('birthday-ready-',r.id::text),r.customer_id,'reward_ready','Reward unlocked','Your birthday stamp completed your card!',r.id FROM reward_ready r
+    ON CONFLICT(id) DO NOTHING RETURNING id
+   ) SELECT count(*) FROM marked`;
  }
  return {issued:result.length};
 }
