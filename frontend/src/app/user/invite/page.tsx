@@ -6,7 +6,7 @@ import {useCustomerAuth} from "@/components/customer-app/customer-auth-provider"
 import {apiFetch} from "@/lib/api";
 type LinkRow={business_id:string;business_name:string;code:string;invited:number;qualified:number};
 export default function InviteFriendsPage(){
- const {token}=useCustomerAuth();const [links,setLinks]=useState<LinkRow[]>([]),[error,setError]=useState(""),[loading,setLoading]=useState(true),[copied,setCopied]=useState("");
+ const {token:customerToken}=useCustomerAuth();const token=customerToken??undefined;const [links,setLinks]=useState<LinkRow[]>([]),[error,setError]=useState(""),[loading,setLoading]=useState(true),[copied,setCopied]=useState("");
  useEffect(()=>{if(!token)return;let active=true;apiFetch<{links:LinkRow[]}>("/growth/referrals",{token,cache:"no-store"}).then(res=>{if(active)setLinks(res.links);}).catch(e=>{if(active)setError(e instanceof Error?e.message:"Unable to load invitation links.");}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[token]);
  const url=(link:LinkRow)=>typeof window==="undefined"?"":window.location.origin+"/register?invite="+encodeURIComponent(link.code)+"&join_business_id="+encodeURIComponent(link.business_id);
  const copy=async(l:LinkRow)=>{try{await navigator.clipboard.writeText(url(l));setCopied(l.code);}catch{setError("Your browser blocked clipboard access. Select and copy the link below.");}};
