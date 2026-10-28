@@ -15,6 +15,7 @@ import { renewalProof, submitRenewal } from "@/lib/server/renewal-requests";
 import { runSubscriptionEmails } from "@/lib/server/subscription-emails";
 import { ensureCampaignSchema, handleBusinessCampaigns, handleAutomations, runCampaignAutomation, runCampaignQueue, runCampaignEmails, unsubscribeCampaignEmail } from "@/lib/server/campaigns";
 import { ensureSpecialOfferSchema, handleBusinessOffers, handleCustomerOffers } from "@/lib/server/special-offers";
+import { ensureStaffSchema, isActiveCashier, manageStaff, staffAudit } from "@/lib/server/staff-management";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -24,7 +25,7 @@ type RouteContext = {
 
 type Sql = ReturnType<typeof getSql>;
 type JsonRecord = Record<string, unknown>;
-type Role = "business_owner" | "customer" | "platform_admin";
+type Role = "business_owner" | "customer" | "platform_admin" | "staff";
 
 type DbUser = {
   id: string;
@@ -420,6 +421,7 @@ async function ensureSchema(sql: Sql) {
       await ensureSubscriptionSchema(sql);
       await ensureCampaignSchema(sql);
       await ensureSpecialOfferSchema(sql);
+      await ensureStaffSchema(sql);
       await ensureAffiliateSchema(sql);
       await ensureVisitorAnalyticsSchema(sql);
     })();
@@ -527,7 +529,8 @@ async function getAuth(req: Request, sql: Sql): Promise<AuthContext | null> {
 
   const business = businesses[0] ?? null;
   const adminRequest = new URL(req.url).pathname.startsWith("/api/admin/") && isPlatformAdmin(user);
-  if (user.role === "business_owner" && business?.status === "suspended" && !adminRequest) return null;
+  if ((user.role === "business_owner" || user.role === "staff") && business?.status === "suspended" && !adminRequest) return null;
+  if (user.role === "staff" && (!business || !(await isActiveCashier(sql,user.id,business.id)))) return null;
   return { user, business };
 }
 
@@ -549,6 +552,15 @@ async function requireBusinessOwner(req: Request, sql: Sql) {
   return auth;
 }
 
+async function requireStampOperator(req:Request,sql:Sql){
+  const auth=await requireAuth(req,sql);
+  if(!auth.business || (auth.user.role!=="business_owner" && auth.user.role!=="staff"))
+    throw new Response(JSON.stringify({message:"Scanner access is restricted to owners and active cashiers."}),{status:403,headers:{"Content-Type":"application/json"}});
+  if(auth.user.role==="staff" && !(await isActiveCashier(sql,auth.user.id,auth.business.id)))
+    throw new Response(JSON.stringify({message:"Cashier access revoked."}),{status:403,headers:{"Content-Type":"application/json"}});
+  await requireSubscription(sql,auth.business.id);
+  return auth;
+}
 async function defaultCard(sql: Sql, businessId: string) {
   const rows = (await sql`SELECT * FROM loyalty_cards WHERE business_id = ${businessId} LIMIT 1`) as DbLoyaltyCard[];
   if (rows[0]) return rows[0];
@@ -795,10 +807,12 @@ async function handleAuth(path: string[], req: Request, sql: Sql) {
       return error("Invalid credentials.", 401);
     }
     if (user.status === "suspended") return error("Your account has been suspended. Please contact support for assistance.", 403);
-    const business = user.role === "business_owner" && user.business_id
+    const business = (user.role === "business_owner" || user.role === "staff") && user.business_id
       ? (((await sql`SELECT * FROM businesses WHERE id = ${user.business_id} LIMIT 1`) as DbBusiness[])[0] ?? null)
       : null;
     if (business?.status === "suspended") return error("This business account is suspended. Contact support.", 403);
+    if(user.role==="staff" && (!business || !(await isActiveCashier(sql,user.id,business.id))))
+      return error("This cashier account is inactive. Contact the business owner.",403);
     const profile = user.role === "customer"
       ? (((await sql`SELECT first_name, last_name, phone, avatar_url, preferences, ${user.email} AS email FROM customer_profiles WHERE user_id = ${user.id}`) as JsonRecord[])[0] ?? null)
       : null;
@@ -1448,7 +1462,7 @@ async function handleOrderCustomers(req: Request, sql: Sql) {
 
 async function handleStamp(path: string[], req: Request, sql: Sql) {
   if (req.method !== "POST") return error("Method not allowed.", 405);
-  const auth = await requireBusinessOwner(req, sql);
+  const auth = path[0]==="redeem-reward"?await requireBusinessOwner(req,sql):await requireStampOperator(req,sql);
   const limited = await rateLimit(sql, req, path[0] === "redeem-reward" ? "reward-action" : "stamp-action", 120, 60_000);
   if (limited) return limited;
   if (!auth.business) return error("Business not found.", 404);
@@ -2612,6 +2626,11 @@ async function dispatch(req: Request, context: RouteContext) {
       response = json(await subscriptionDetails(sql, auth.business!.id));
     }
     else if (path[0] === "auth") response = await handleAuth(path, req, sql);
+    else if(path[0]==="staff"){
+      const owner=await requireBusinessOwner(req,sql);
+      if(path[1]==="history" && path.length===2) response=await staffAudit(req,sql,owner.business!.id);
+      else response=await manageStaff(path,req,sql,owner.business!.id,hashPassword);
+    }
     else if (path[0] === "dashboard") response = await handleDashboard(path, req, sql);
     else if (path[0] === "realtime-version") response = await handleRealtimeVersion(req, sql);
     else if (path[0] === "business") response = await handleBusiness(path, req, sql);
