@@ -5,14 +5,14 @@ require.extensions[".ts"]=(mod,file)=>mod._compile(ts.transpileModule(fs.readFil
 const {ensurePasskeySchema,handlePasskeys}=require(path.join(__dirname,"../src/lib/server/customer-passkeys.ts"));
 const db=new PGlite(),id=()=>randomUUID();
 function sql(parts,...values){return db.query(parts.reduce((s,p,i)=>s+(i?"$"+i:"")+p,""),values).then(r=>r.rows);}
-async function act(userId,operation,action="start",body={}){
+async function act(userId,operation,action="start",body={},elevated=false){
  const req=new Request("https://loyvance.vercel.app/api/passkeys/"+operation+"/"+action,
   {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
- const res=await handlePasskeys(req,sql,["passkeys",operation,action],{userId,login:async()=>Response.json({token:"must-not-issue-for-fake-proof"})});
+ const res=await handlePasskeys(req,sql,["passkeys",operation,action],{userId,elevated,verifyPassword:async(password,hash)=>password==="valid-current-password"&&hash==="test-hash",login:async()=>Response.json({token:"must-not-issue-for-fake-proof"})});
  return {status:res.status,data:await res.json()};
 }
 (async()=>{
- await db.exec("CREATE TABLE app_users(id uuid PRIMARY KEY,role text NOT NULL,name text NOT NULL,email text NOT NULL,status text NOT NULL DEFAULT 'active');");
+ await db.exec("CREATE TABLE app_users(id uuid PRIMARY KEY,role text NOT NULL,name text NOT NULL,email text NOT NULL,password_hash text NOT NULL DEFAULT 'test-hash',status text NOT NULL DEFAULT 'active');");
  await ensurePasskeySchema(sql);
  const users=[
   {id:id(),role:"customer",email:"customer@loyvance.test"},
@@ -22,7 +22,11 @@ async function act(userId,operation,action="start",body={}){
  ];
  for(const u of users)await sql`INSERT INTO app_users(id,role,name,email) VALUES(${u.id},${u.role},${u.role},${u.email})`;
  for(const user of users){
-  const res=await act(user.id,"register");
+  if(user.role!=="customer"){
+    const denied=await act(user.id,"register","start",{},true);
+    assert.equal(denied.status,403,"Privileged passkey enrollment must require current password");
+  }
+  const res=await act(user.id,"register","start",user.role!=="customer"?{current_password:"valid-current-password"}:{},user.role!=="customer");
   assert.equal(res.status,200,JSON.stringify({role:user.role,response:res}));
   assert.equal(res.data.options.rp.id,"loyvance.vercel.app");
   assert.equal(res.data.options.authenticatorSelection.userVerification,"required");
