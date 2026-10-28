@@ -3,7 +3,7 @@ import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartSpline, Compass, CreditCard, Handshake, Home, LogOut, Mail, Settings, Trophy, User } from "lucide-react";
+import { ChartSpline, Compass, CreditCard, Handshake, Home, LogOut, Mail, Settings, Trophy, User, UserRoundPlus, MessageSquare, Cake } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ const nav = [
     { href: "/user/cards", label: "Cards", icon: CreditCard },
     { href: "/user/rewards", label: "Rewards", icon: Trophy },
     { href: "/user/activity", label: "Activity", icon: ChartSpline },
+    { href: "/user/invite", label: "Invite friends", icon: UserRoundPlus },
+    { href: "/user/feedback", label: "Feedback", icon: MessageSquare },
+    { href: "/user/birthday", label: "Birthday rewards", icon: Cake },
     { href: "/user/profile", label: "Profile", icon: User },
     { href: "/user/settings", label: "Settings", icon: Settings },
 ];
