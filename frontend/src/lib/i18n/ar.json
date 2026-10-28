@@ -1242,5 +1242,18 @@
   "Unable to load requests": "تعذر تحميل الطلبات",
   "Unable to save decision": "تعذر حفظ القرار",
   "Administrator approval required": "موافقة المسؤول مطلوبة",
-  "This feature is locked until the platform administrator approves your request.": "هذه الميزة مقفلة حتى يوافق مسؤول المنصة على طلبك."
+  "This feature is locked until the platform administrator approves your request.": "هذه الميزة مقفلة حتى يوافق مسؤول المنصة على طلبك.",
+  "INSTALL YOUR APP": "تثبيت تطبيقك",
+  "Launch your own workspace from the Home Screen.": "افتح مساحة عملك مباشرة من الشاشة الرئيسية.",
+  "Installation help": "مساعدة في التثبيت",
+  "Open workspace": "فتح مساحة العمل",
+  "Got it": "فهمت",
+  "Copy installation link": "نسخ رابط التثبيت",
+  "This is a PWA, not an APK.": "هذا تطبيق ويب وليس ملف APK.",
+  "App installed successfully.": "تم تثبيت التطبيق بنجاح.",
+  "Installation cancelled. You can also install from the browser menu.": "تم إلغاء التثبيت. يمكنك التثبيت من قائمة المتصفح.",
+  "Opening installer…": "جارٍ فتح التثبيت…",
+  "This app is open": "التطبيق مفتوح",
+  "Install as separate app": "التثبيت كتطبيق مستقل",
+  "Follow these steps to add this app to your Home Screen.": "اتبع الخطوات لإضافة التطبيق إلى الشاشة الرئيسية."
 }
