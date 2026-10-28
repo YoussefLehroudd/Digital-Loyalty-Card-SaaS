@@ -22,3 +22,4 @@ jobs:
       - run: node scripts/test-role-apps.cjs
       - run: node scripts/test-mobile-nav-persistence.cjs
       - run: node scripts/test-mobile-preferences-nav.cjs
+      - run: node scripts/test-workspace-navigation-settings.cjs
