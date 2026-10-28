@@ -3,26 +3,14 @@ import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartSpline, Compass, CreditCard, Handshake, Home, LogOut, Mail, Settings, Trophy, Download, User, UserRoundPlus, MessageSquare, Cake } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { LogOut, Mail } from "lucide-react";
+import {customerAffiliateNavItem,customerNavItems} from "@/components/customer-app/customer-nav-items";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { cn } from "@/lib/utils";
 import { CustomerNotificationBell } from "@/components/customer-app/customer-notification-bell";
-const nav = [
-    { href: "/user/dashboard", label: "Home", icon: Home },
-    { href: "/user/explore", label: "Explore", icon: Compass },
-    { href: "/user/cards", label: "Cards", icon: CreditCard },
-    { href: "/user/rewards", label: "Rewards", icon: Trophy },
-    { href: "/user/activity", label: "Activity", icon: ChartSpline },
-    { href: "/user/invite", label: "Invite friends", icon: UserRoundPlus },
-    { href: "/user/feedback", label: "Feedback", icon: MessageSquare },
-    { href: "/user/birthday", label: "Birthday rewards", icon: Cake },
-    { href: "/user/profile", label: "Profile", icon: User },
-    { href: "/user/settings", label: "Settings", icon: Settings },
-    { href: "/user/install", label: "Install App", icon: Download },
-];
 export function CustomerLayout({ children, title, subtitle, }: {
     children: React.ReactNode;
     title: string;
@@ -32,18 +20,24 @@ export function CustomerLayout({ children, title, subtitle, }: {
     const pathname = usePathname();
     const { user, token, logout } = useCustomerAuth();
     const [isAffiliate,setIsAffiliate] = useState(false);
-    const bottomNavScrollRef = useRef<HTMLDivElement | null>(null);
-    useEffect(()=>{ if(!token){setIsAffiliate(false);return;} let valid=true;apiFetch("/affiliate/me",{token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
-    const visibleNav = isAffiliate?[...nav,{href:"/user/affiliate",label:"Affiliate",icon:Handshake}]:nav;
-    // Keep the active destination visible without forcing a two-line mobile menu.
-    // This runs only when the selected route or affiliate membership changes.
+    // Desktop sidebar only: do not refetch affiliate information on every
+    // customer page transition in the mobile PWA. The persistent mobile nav
+    // manages its own membership check once for the current session.
     useEffect(()=>{
-      const strip=bottomNavScrollRef.current;
-      const active=strip?.querySelector<HTMLElement>('[aria-current="page"]');
-      if(strip && active){
-        active.scrollIntoView({behavior:"smooth",block:"nearest",inline:"nearest"});
-      }
-    },[pathname,isAffiliate]);
+      if(!token){setIsAffiliate(false);return;}
+      const desktop=window.matchMedia("(min-width: 1024px)");
+      let valid=true;
+      const sync=()=>{
+        if(!desktop.matches){setIsAffiliate(false);return;}
+        apiFetch("/affiliate/me",{token,cache:"no-store"})
+          .then(()=>{if(valid)setIsAffiliate(true);})
+          .catch(()=>{if(valid)setIsAffiliate(false);});
+      };
+      sync();
+      desktop.addEventListener("change",sync);
+      return()=>{valid=false;desktop.removeEventListener("change",sync);};
+    },[token]);
+    const visibleNav = isAffiliate?[...customerNavItems,customerAffiliateNavItem]:customerNavItems;
     return (<div className="relative min-h-dvh overflow-x-clip bg-[#080907] bg-fixed bg-center bg-no-repeat text-foreground lg:flex" style={{
             backgroundImage: "url('/brand/%C3%89l%C3%A9gance%20noire%20aux%20rubans%20dor%C3%A9s.png')",
             backgroundSize: "100% 100%",
@@ -109,19 +103,7 @@ export function CustomerLayout({ children, title, subtitle, }: {
           {children}
         </main>
 
-        <nav aria-label={tr("Customer navigation")} className="fixed inset-x-0 bottom-0 z-[100] border-t border-[#d8a63f]/15 bg-[#0b0c0a]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden [transform:translate3d(0,0,0)]">
-          <div ref={bottomNavScrollRef} tabIndex={0} className="customer-bottom-nav-scroll w-full overflow-x-auto overflow-y-hidden overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e7b354]">
-            <div className="flex w-max min-w-full flex-nowrap items-center gap-1 px-2 py-2">
-              {visibleNav.map((item) => {
-                const active = pathname === item.href;
-                const Icon = item.icon;
-                return (<Link key={item.href} href={item.href} title={tr(item.label)} aria-label={tr(item.label)} aria-current={active ? "page" : undefined} className={cn("flex min-h-12 w-[72px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-1.5 text-[10px] transition-colors sm:w-[84px] sm:text-[11px]", active ? "bg-[#d79b16]/12 text-[#ffc857]" : "text-muted-foreground")}>
-                    <Icon className="h-[18px] w-[18px] shrink-0"/><span className="block w-full truncate text-center leading-4">{tr(item.label)}</span>
-                  </Link>);
-              })}
-            </div>
-          </div>
-        </nav>
+
 
         {user ? (<footer className="mx-auto w-full max-w-md px-4 pb-28 lg:hidden">
             <AccountIdentity email={user.email}/>
