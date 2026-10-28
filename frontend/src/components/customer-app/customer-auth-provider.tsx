@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearStoredCustomerToken, customerLogin, customerLogout, customerMe, customerRegister, getStoredCustomerToken, storeCustomerToken, type CustomerAuthResponse, type CustomerLoginPayload, type CustomerRegisterPayload, type CustomerRegistrationResponse, type CustomerUser, } from "@/lib/customerAuth";
 import { ApiError } from "@/lib/api";
+import {disablePushOnDevice} from "@/lib/web-push-client";
 type CustomerAuthContextValue = {
     user: CustomerUser | null;
     token: string | null;
@@ -56,6 +57,8 @@ export function CustomerAuthProvider({ children }: {
             register: (payload) => customerRegister(payload),
             logout: async () => {
                 if (token) {
+                    // Prevent private notifications reaching a shared device after sign-out.
+                    try{await disablePushOnDevice(token);}catch{/* Account sign-out must still work offline. */}
                     try {
                         await customerLogout(token);
                     }
