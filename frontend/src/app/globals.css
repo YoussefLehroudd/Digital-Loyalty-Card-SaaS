@@ -331,22 +331,39 @@ html[dir="rtl"] table { text-align: right; }
 .loyvance-sidebar-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 
-/* Loyvance light-mode overrides for legacy dark-only workspace surfaces.
-   Dark mode remains unchanged; these apply solely after selecting Light. */
-html.light body { color-scheme: light; background: #f8f7f4; color: #1b201b; }
+/* Light theme: keep deliberate dark branded panels dark and legible.
+   Avoid global text-white overrides: they made text invisible on dark cards. */
+html.light body {color-scheme:light;background:#f8f7f4;color:#20251f;}
+html.light .app-topbar {background:rgba(255,253,250,.97)!important;color:#20251f;}
+html.light .app-topbar [class*="text-white"] {color:#20251f!important;}
+html.light .app-topbar [class*="text-white/"] {color:#60675e!important;}
 html.light [class*="bg-[#070806]"],
 html.light [class*="bg-[#080907]"],
 html.light [class*="bg-[#090a08]"],
 html.light [class*="bg-[#090b0e]"],
-html.light [class*="bg-[#0b0c0a]"],
 html.light [class*="bg-[#11130f]"],
-html.light [class*="bg-[#12130f]"] {
-  background-color: #fffdfa !important;
-}
-html.light [class*="text-white"] { color: #20251f !important; }
-html.light [class*="text-white/"] { color: #575f56 !important; }
-html.light .app-topbar { background: rgba(255,253,250,.96) !important; color: #20251f; }
-html.light .loyvance-sidebar-scroll { color: #20251f; }
-html.light [class*="bg-black/"] { background-color: rgba(240,236,225,.65) !important; }
-html.light [class*="border-white/"] { border-color: rgba(36,45,34,.16) !important; }
-html.light [class*="bg-gradient-to-b"][class*="to-[#070806]"] { background-image: none !important; }
+html.light [class*="bg-[#12130f]"] {background-color:#fffdfa!important;}
+html.light [class*="bg-[#070806]"]:not(aside) {color:#20251f;}
+html.light .loyvance-light-content {color:#20251f;}
+html.light .loyvance-light-content > header [class*="text-white"] {color:#20251f!important;}
+html.light .loyvance-light-content > header [class*="text-white/"] {color:#687064!important;}
+/* Distinct black and gold feature tiles stay black, including every label. */
+html.light .premium-feature-card {background-color:#10100c!important;color:#f8f6f0!important;}
+html.light .premium-feature-card [class*="text-white"] {color:#fffdf8!important;}
+html.light .premium-feature-card [class*="text-white/"] {color:#b9b8ae!important;}
+/* Admin's dark navigation and Customer's dark wallpaper should never inherit
+   the light text override that applies to the topbar. */
+html.light aside[class*="bg-[#0d1015]"] {background-color:#0d1015!important;color:#f1f1eb!important;}
+html.light aside[class*="bg-[#0d1015]"] [class*="text-white"] {color:#e6e8e8!important;}
+html.light aside[class*="bg-[#0d1015]"] [class*="text-white/"] {color:#aab2bb!important;}
+html.light aside[class*="bg-[#0d1015]"] [class*="text-white/30"] {color:#99a5ad!important;}
+html.light aside[class*="bg-[#0d1015]"] a:not([aria-current="page"]) {color:#aeb7c0;}
+html.light aside[class*="bg-[#0d1015]"] a[aria-current="page"] {color:#f4cb80;}
+html.light aside[class*="bg-[#0d1015]"] [class*="bg-white/"] {background:rgba(255,255,255,.04)!important;}
+html.light aside[class*="bg-[#0d1015]"] [class*="border-white/"] {border-color:rgba(255,255,255,.2)!important;}
+html.light aside[class*="bg-[#090a08]"] [class*="text-white/"],
+html.light aside[class*="bg-[#090a08]"] [class*="text-white"] {color:#f7f2e9!important;}
+html.light aside[class*="bg-[#090a08]"] {background-color:#10110e!important;}
+html.light aside[class*="bg-[#090a08]"] [class*="bg-black/"] {background-color:rgba(0,0,0,.25)!important;}
+html.light [class*="border-white/"]:not(aside):not(.premium-feature-card) {border-color:rgba(50,50,42,.2);}
+html.light [class*="bg-gradient-to-b"][class*="to-[#070806]"] {background-image:none!important;}
