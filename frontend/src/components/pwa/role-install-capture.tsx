@@ -7,6 +7,11 @@ export function getRoleInstallPrompt(role:AppRole){return captured[role]||null;}
 export function clearRoleInstallPrompt(role:AppRole){delete captured[role];}
 export function RoleInstallCapture({role}:{role:AppRole}){
  useEffect(()=>{
+  // Register the same offline/push Service Worker within authenticated PWA
+  // routes too; the marketing install banner is intentionally not mounted here.
+  if("serviceWorker" in navigator){
+    void navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"}).catch(()=>{});
+  }
   const listener=(event:Event)=>{
    // The event belongs to this role layout's own manifest identity.
    event.preventDefault();captured[role]=event as BrowserInstallPrompt;
