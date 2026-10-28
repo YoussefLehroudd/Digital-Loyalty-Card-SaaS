@@ -21,3 +21,4 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: node scripts/test-role-apps.cjs
       - run: node scripts/test-mobile-nav-persistence.cjs
+      - run: node scripts/test-mobile-preferences-nav.cjs
