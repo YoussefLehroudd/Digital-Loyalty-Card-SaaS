@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "LOYVANCE",
     short_name: "LOYVANCE",
     description: "Your loyalty cards, stamps and rewards, everywhere.",
-    start_url: "/",
+    start_url: "/app",
     scope: "/",
     display: "standalone",
     background_color: "#080907",
