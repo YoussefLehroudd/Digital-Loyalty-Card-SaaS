@@ -5,7 +5,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, ScanLineCheck, } from "lucide-react";
+import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
@@ -77,7 +77,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
     }, [isMobileMenuOpen]);
     if(user.role==="staff")return <main className="min-h-screen bg-[#070806] text-white">
       <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-[#e7b354]/20 bg-[#080907] px-4 py-4 sm:px-8">
-        <div className="flex items-center gap-3"><ScanLineCheck className="size-6 text-[#e7b354]"/><div><p className="font-bold">LOYVANCE · Cashier Scanner</p><p className="text-xs text-white/55">{businessName} · {user.name}</p></div></div>
+        <div className="flex items-center gap-3"><ScanLine className="size-6 text-[#e7b354]"/><div><p className="font-bold">LOYVANCE · Cashier Scanner</p><p className="text-xs text-white/55">{businessName} · {user.name}</p></div></div>
         <Button variant="outline" onClick={()=>void signOut()}><LogOut className="size-4"/>Logout</Button>
       </header>
       {children}
