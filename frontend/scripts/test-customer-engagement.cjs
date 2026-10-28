@@ -48,7 +48,7 @@ async function result(prom){const r=await prom;return {status:r.status,data:awai
  const viewed=await result(handleFeedback(req('GET','growth/feedback'),sql,friend,null));
  assert.equal(viewed.data.visits[0].owner_reply,'Thank you for your visit!');
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Casablanca',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
- const bday=await result(handleBirthday(req('PUT','growth/birthdays',{date_of_birth:today.slice(0,4).replace(/\\d/g,'1')+today.slice(4),opt_in:true}),sql,friend,null));
+ const bday=await result(handleBirthday(req('PUT','growth/birthdays',{date_of_birth:String(Number(today.slice(0,4))-25)+today.slice(4),opt_in:true}),sql,friend,null));
  assert.equal(bday.status,200,JSON.stringify(bday));
  const setup=await result(handleBirthday(req('PUT','growth/birthdays',{enabled:true,gift_name:'Birthday pastry',bonus_stamp:true}),sql,null,b));
  assert.equal(setup.status,200);
