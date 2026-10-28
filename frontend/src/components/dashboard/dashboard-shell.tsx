@@ -360,6 +360,7 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         }
     };
     const pageTitle: Record<DashboardShellProps["activeItem"], string> = {
+        premium: "Request Features",
         overview: "Dashboard",
         customers: "Customers",
         loyalty: "Loyalty Card",
@@ -382,7 +383,7 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
           <Button aria-label={tr("Open menu")} className="lg:hidden" onClick={onOpenMobileMenu} size="icon" type="button" variant="ghost">
             <Menu className="size-5"/>
           </Button>
-          <h1 className="hidden text-xl font-bold tracking-tight lg:block">{pageTitle[activeItem]}</h1>
+          <h1 className="hidden text-xl font-bold tracking-tight lg:block">{tr(pageTitle[activeItem])}</h1>
           <div className="flex min-w-0 items-center gap-2 lg:hidden">
             <Image alt={"LOYVANCE"} className="size-7 object-contain sm:size-8" height={32} priority src="/brand/icon.png" width={48}/>
             <p className="truncate text-sm font-semibold">LOYVANCE</p>
