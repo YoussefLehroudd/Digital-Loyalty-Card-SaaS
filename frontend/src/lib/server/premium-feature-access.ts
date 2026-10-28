@@ -41,7 +41,7 @@ export async function adminPremiumApi(req:Request,sql:Sql,actorId:string){
  }
  if(req.method!=="PATCH")return Response.json({message:"Method not allowed"},{status:405});
  const body=await req.json().catch(()=>({}));
- if(typeof body.business_id!=="string"||!/^([0-9a-f]{8}-){4}[0-9a-f]{12}$/i.test(body.business_id)||typeof body.feature!=="string"||!isPremiumFeature(body.feature)||!["approved","rejected"].includes(body.status))
+ if(typeof body.business_id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.business_id)||typeof body.feature!=="string"||!isPremiumFeature(body.feature)||!["approved","rejected"].includes(body.status))
  return Response.json({message:"Invalid request"},{status:422});
  const rows=await sql`UPDATE business_premium_access SET status=${body.status},reviewed_at=now(),reviewed_by=${actorId}
  WHERE business_id=${body.business_id} AND feature=${body.feature} RETURNING business_id`;
