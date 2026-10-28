@@ -37,7 +37,7 @@ export default function PremiumFeaturesPage(){
  }
  const Arrow=language==="ar"?ArrowLeft:ArrowRight;
  return <DashboardShell activeItem="premium">
- <div className="relative isolate min-h-screen w-full bg-[#080907]">
+ <div className="loyvance-light-content relative isolate min-h-screen w-full bg-[#080907]">
  <div className="mx-auto w-full max-w-[1100px] px-4 pb-16 pt-8 sm:px-7 sm:pt-10">
    <header className="mb-8">
      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.14em] text-[#eab33e]">
@@ -53,7 +53,7 @@ export default function PremiumFeaturesPage(){
       const state=features[m.key]??"not_requested";
       const Icon=m.icon;
       const approved=state==="approved";
-      return <section key={m.key} className="group relative isolate min-h-[190px] overflow-hidden rounded-[23px] border border-[#9d752b]/50 bg-[#10100c] p-5 shadow-[inset_0_1px_0_rgba(255,217,122,.06),0_8px_26px_rgba(0,0,0,.22)] transition-colors hover:border-[#e3ae42]/70 sm:p-6">
+      return <section key={m.key} className="premium-feature-card group relative isolate min-h-[190px] overflow-hidden rounded-[23px] border border-[#9d752b]/50 bg-[#10100c] p-5 shadow-[inset_0_1px_0_rgba(255,217,122,.06),0_8px_26px_rgba(0,0,0,.22)] transition-colors hover:border-[#e3ae42]/70 sm:p-6">
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 -end-12 -z-10 size-[230px] rounded-full bg-[#d49313]/25 blur-[55px]"/>
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#f4bc3e]/65 to-[#f7c454]"/>
         <div className="flex h-full items-stretch justify-between gap-3">
