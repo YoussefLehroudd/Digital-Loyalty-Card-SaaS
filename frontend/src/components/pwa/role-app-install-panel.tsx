@@ -112,7 +112,11 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
    </Modal>
    <p className="mt-4 flex items-center gap-2 text-xs text-white/45"><ShieldCheck className="size-4"/>Separate installation does not bypass login or role permissions. The normal account session remains server-verified.</p>
   </section>
-  <AccountPasskeySettings token={token} elevated={role!=="customer"}/>
+  {role==="customer"?
+   <p className="rounded-xl border border-[#edbc62]/15 bg-[#edbc62]/5 p-4 text-sm leading-6 text-white/70">
+     Fingerprint / Face ID is managed in <a href="/user/settings" className="font-semibold text-[#edbc62] underline underline-offset-4">Customer Settings</a>. Your existing passkeys stay active.
+   </p>
+   :<AccountPasskeySettings token={token} elevated/>}
   <p className="text-xs leading-5 text-white/45"><Smartphone className="me-1 inline size-4"/>Stay signed in during ordinary app closes. Fingerprint / Face ID is an optional secure way to sign in again after the session expires or when signing into a new device.</p>
  </div>;
 }
