@@ -36,8 +36,11 @@ export async function handleCustomerPush(req:Request,sql:Sql,userId:string,path:
  if(path[2]==="config"&&req.method==="GET")return out({configured:pushIsConfigured(),public_key:pushIsConfigured()?pushPublicKey():null});
  if(path[2]!=="subscriptions")return out({message:"Not found."},404);
  if(req.method==="GET"){
-  const rows=await q`SELECT count(*)::int AS devices FROM web_push_subscriptions WHERE user_id=${userId}::uuid`;
-  return out({devices:rows[0]?.devices??0});
+  const endpoint=new URL(req.url).searchParams.get("endpoint")||"";
+  const rows=await q`SELECT count(*)::int AS devices,
+   count(*) FILTER (WHERE endpoint=${endpoint})::int AS current_device_count
+   FROM web_push_subscriptions WHERE user_id=${userId}::uuid`;
+  return out({devices:rows[0]?.devices??0,current_device_subscribed:Number(rows[0]?.current_device_count??0)>0});
  }
  const body=await req.json().catch(()=>null) as Record<string,unknown>|null;
  if(req.method==="POST"){
