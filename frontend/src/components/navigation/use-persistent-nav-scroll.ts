@@ -52,5 +52,6 @@ export function usePersistentNavScroll(id:string,route:string,axis:Direction="y"
     const node=ref.current;
     if(node&&id)writeOffset(id,axis,axis==="x"?node.scrollLeft:node.scrollTop);
   },[id,axis]);
-  return {ref,onScroll,onClickCapture:saveNow};
+  const attach=useCallback((element:HTMLElement|null)=>{ref.current=element;},[]);
+  return {ref:attach,onScroll,onClickCapture:saveNow};
 }
