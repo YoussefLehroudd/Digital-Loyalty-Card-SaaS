@@ -52,7 +52,10 @@ export default function UserSettingsPage() {
       if(!token)return;
       let active=true;
       void Promise.all([apiFetch<PushConfig>("/user/push/config",{token,cache:"no-store"}),registeredSubscription()])
-       .then(([config,subscription])=>{if(active){setPushConfig(config);setDeviceSubscribed(!!subscription);setPermission(supportsWebPush()?Notification.permission:null);}})
+       .then(async([config,subscription])=>{
+         const status=subscription?await apiFetch<{current_device_subscribed:boolean}>("/user/push/subscriptions?endpoint="+encodeURIComponent(subscription.endpoint),{token,cache:"no-store"}):null;
+         if(active){setPushConfig(config);setDeviceSubscribed(!!subscription&&!!status?.current_device_subscribed);setPermission(supportsWebPush()?Notification.permission:null);}
+       })
        .catch(()=>{if(active)setPushConfig({configured:false,public_key:null});});
       return ()=>{active=false;};
     },[token]);
