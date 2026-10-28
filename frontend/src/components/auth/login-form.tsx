@@ -3,7 +3,8 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Fingerprint } from "lucide-react";
+import {signInWithPasskey} from "@/lib/passkeys-client";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FormError } from "@/components/auth/form-error";
@@ -24,6 +25,7 @@ export function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [error, setError] = useState<string | null>(null);
+    const [biometricBusy,setBiometricBusy]=useState(false);
     const next = searchParams.get("next");
     const { register, handleSubmit, formState: { errors, isSubmitting }, } = useForm<LoginValues>({
         resolver: zodResolver(schema),
@@ -71,6 +73,17 @@ export function LoginForm() {
             setError("Unable to sign in. Try again.");
         }
     }
+    async function onPasskey(){
+      setBiometricBusy(true);setError(null);
+      try{
+        const response=await signInWithPasskey();
+        if(response.user.role!=="customer")throw Error("This passkey is not linked to a customer account.");
+        storeCustomerToken(response.token);
+        const destination=next?.startsWith("/user/")?next:"/user/dashboard";
+        router.replace(destination);router.refresh();
+      }catch(e){setError(e instanceof Error?e.message:"Passkey sign-in failed. Use email and password.");}
+      finally{setBiometricBusy(false);}
+    }
     return (<form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
       <FormError message={tr(error)}/>
       <div className="space-y-2">
@@ -87,5 +100,10 @@ export function LoginForm() {
         {isSubmitting ? tr("Signing in...") : tr("Sign in")}
         <ArrowRight className="size-4"/>
       </Button>
+      <Button type="button" variant="outline" className="w-full gap-2 border-[#e7b354]/25"
+       disabled={isSubmitting||biometricBusy} onClick={()=>void onPasskey()}>
+       <Fingerprint className="size-5"/>{biometricBusy?"Verifying…":"Sign in with Fingerprint / Face ID"}
+      </Button>
+      <p className="text-center text-xs text-muted-foreground">Set up a passkey once in Customer Settings after signing in with your password. Compatible devices can also use their screen PIN.</p>
     </form>);
 }
