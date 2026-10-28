@@ -380,3 +380,107 @@ html.light .admin-light-content [class*="text-rose-"] {color:#aa264c;}
 /* Accessible contrast for icons and labels over the light workspace. */
 html.light .loyvance-light-content > header h1 {color:#20251f!important;}
 html.light .loyvance-light-content > header p:not(:first-child) {color:#62695f!important;}
+
+
+/* Customer Wallet: genuinely light surfaces without recoloring the individual
+   business-issued loyalty cards and QR designs. */
+html.light .customer-workspace {
+  background-image: none !important;
+  background-color: #f7f6f2 !important;
+  color: #20251f;
+}
+html.light .customer-sidebar {
+  background-image: none !important;
+  background-color: #fffdfa !important;
+  border-color: #e5ded0 !important;
+  color: #243026;
+  box-shadow: 3px 0 24px rgba(40, 38, 30, .035);
+}
+html.light .customer-sidebar [class*="text-white"] {
+  color: #252b26 !important;
+}
+html.light .customer-sidebar [class*="text-muted-foreground"],
+html.light .customer-sidebar .customer-side-link:not([aria-current="page"]) {
+  color: #505a51 !important;
+}
+html.light .customer-sidebar .customer-side-link:not([aria-current="page"]):hover {
+  color: #1e2d23 !important;
+  background-color: #f6f0e1 !important;
+}
+html.light .customer-sidebar .customer-side-link[aria-current="page"] {
+  color: #6e4900 !important;
+  background: #fff0cb !important;
+  border-color: #e2b65d !important;
+}
+html.light .customer-sidebar .customer-account-identity {
+  background-image: none !important;
+  background-color: #f9f6ed !important;
+  border-color: #dbcda9 !important;
+}
+html.light .customer-sidebar .customer-account-identity [class*="text-white"] {
+  color: #283129 !important;
+}
+html.light .customer-sidebar .customer-sidebar-logout {
+  background-color: #fffdfa !important;
+  border-color: #d6c9ad !important;
+  color: #253026 !important;
+}
+html.light .customer-dashboard .customer-stat-card {
+  background: #fff !important;
+  color: #243025 !important;
+  border-color: #e2d6bc !important;
+  box-shadow: 0 10px 26px rgba(44, 39, 26, .065) !important;
+}
+html.light .customer-dashboard .customer-stat-card [class*="text-white"],
+html.light .customer-dashboard .customer-stat-card [class*="text-[#c9c1ae]"] {
+  color: #253026 !important;
+}
+html.light .customer-dashboard .customer-stat-card [class*="text-muted-foreground"] {
+  color: #61685e !important;
+}
+html.light .customer-dashboard .customer-stat-card [class*="border-t"] {
+  border-color: #e9e3d5 !important;
+}
+html.light .customer-dashboard .customer-offers-panel,
+html.light .customer-dashboard .customer-empty-card,
+html.light .customer-dashboard .customer-loyalty-panel {
+  background: #fffdfa !important;
+  border-color: #e5d5b4 !important;
+  box-shadow: 0 14px 36px rgba(35, 31, 22, .07) !important;
+  color: #20291f !important;
+}
+html.light .customer-dashboard .customer-offers-panel > div:first-child [class*="text-white"],
+html.light .customer-dashboard .customer-loyalty-panel > div:first-child [class*="text-white"],
+html.light .customer-dashboard .customer-empty-card [class*="text-white"] {
+  color: #20291f !important;
+}
+html.light .customer-dashboard .customer-offers-panel > p,
+html.light .customer-dashboard .customer-loyalty-panel > div:first-child [class*="text-muted-foreground"] {
+  color: #606b60 !important;
+}
+html.light .customer-dashboard .customer-offer-card {
+  background: #fff !important;
+  border-color: #e6d8b8 !important;
+  color: #222d24;
+}
+html.light .customer-dashboard .customer-offer-card [class*="text-white"] {
+  color: #263127 !important;
+}
+html.light .customer-dashboard .customer-offer-card [class*="text-white/"] {
+  color: #5d675c !important;
+}
+/* Only the surrounding carousel buttons change, not the actual membership card. */
+html.light .customer-dashboard .customer-dashboard-action {
+  background-color: #fff !important;
+  border-color: #d4bd8a !important;
+  color: #3c3526 !important;
+}
+html.light .customer-dashboard .customer-dashboard-action:hover {
+  background-color: #fff5dc !important;
+  color: #211c12 !important;
+}
+html.light .customer-dashboard .customer-dashboard-action:focus-visible,
+html.light .customer-sidebar .customer-side-link:focus-visible {
+  outline: 2px solid #b48220;
+  outline-offset: 2px;
+}
