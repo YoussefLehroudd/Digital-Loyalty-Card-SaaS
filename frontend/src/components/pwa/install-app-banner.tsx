@@ -1,5 +1,6 @@
 "use client";
 import { useI18n } from "@/components/i18n/language-provider";
+import {usePathname} from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Download, Share, Smartphone, X } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
@@ -13,6 +14,7 @@ const DISMISSED_KEY = "loyvance-install-dismissed-until";
 const INSTALLED_KEY = "loyvance-app-installed";
 export function InstallAppBanner() {
     const { t: tr } = useI18n();
+    const pathname=usePathname();
     const [visible, setVisible] = useState(false);
     const [ios, setIos] = useState(false);
     const [instructions, setInstructions] = useState(false);
@@ -21,6 +23,7 @@ export function InstallAppBanner() {
     const banner = useRef<HTMLElement>(null);
     const sessionDismissed = useRef(false);
     useEffect(() => {
+        if(pathname.startsWith("/admin")||pathname.startsWith("/dashboard")||pathname.startsWith("/user"))return;
         const standalone = window.matchMedia("(display-mode: standalone)");
         const mobile = window.matchMedia("(max-width: 1023px)");
         const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -59,7 +62,7 @@ export function InstallAppBanner() {
             standalone.removeEventListener("change", update);
             mobile.removeEventListener("change", update);
         };
-    }, []);
+    }, [pathname]);
     useEffect(() => {
         if (!visible || !banner.current) {
             document.documentElement.style.removeProperty("--app-install-height");
