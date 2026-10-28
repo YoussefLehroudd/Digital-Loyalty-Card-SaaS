@@ -18,13 +18,15 @@ type ToggleRowProps = {
 };
 function ToggleRow({ title, description, checked, onToggle }: ToggleRowProps) {
     const { t: tr } = useI18n();
-    return (<button type="button" onClick={onToggle} className="flex w-full items-center justify-between rounded-md border p-3 text-start transition hover:bg-muted/50" aria-pressed={checked}>
-      <div>
-        <p className="text-sm font-medium">{tr(title)}</p>
-        <p className="text-xs text-muted-foreground">{tr(description)}</p>
-      </div>
-      <span className={`h-6 w-11 rounded-full p-1 transition ${checked ? "bg-primary" : "bg-muted"}`} aria-hidden>
-        <span className={`block h-4 w-4 rounded-full bg-white transition ${checked ? "translate-x-5 rtl:-translate-x-5" : ""}`}/>
+    return (<button type="button" role="switch" aria-checked={checked} aria-label={tr(title)}
+      onClick={onToggle}
+      className="flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-xl border border-border/80 p-3 text-start transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e7b354]">
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="break-words text-sm font-semibold leading-5">{tr(title)}</span>
+        <span className="break-words text-xs leading-[1.4] text-muted-foreground">{tr(description)}</span>
+      </span>
+      <span className={`relative inline-block h-6 w-11 min-w-11 shrink-0 rounded-full transition-colors duration-150 ${checked ? "bg-[#e7b354]" : "bg-muted border border-border"}`} aria-hidden="true">
+        <span className={`absolute start-1 top-1 block size-4 rounded-full bg-white shadow-sm transition-transform duration-150 ${checked ? "translate-x-5 rtl:-translate-x-5" : ""}`}/>
       </span>
     </button>);
 }
@@ -127,7 +129,7 @@ export default function UserSettingsPage() {
           <CardHeader>
             <CardTitle className="text-base">{tr("Notification preferences")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="min-w-0 space-y-2">
             <ToggleRow title={tr("Email updates")} description={tr("Receive account and loyalty updates by email.")} checked={emailUpdates} onToggle={() => setEmailUpdates((v) => !v)}/>
             <ToggleRow title={tr("Reward alerts")} description={tr("Get notified when rewards are ready.")} checked={rewardAlerts} onToggle={() => setRewardAlerts((v) => !v)}/>
             <ToggleRow title={tr("Promotions")} description={tr("Receive occasional promotional offers.")} checked={promotions} onToggle={() => setPromotions((v) => !v)}/>
