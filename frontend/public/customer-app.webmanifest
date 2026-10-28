@@ -1,22 +1,22 @@
 {
   "id": "/pwa-customer",
-  "name": "LOYVANCE Customer",
-  "short_name": "LOYVANCE",
-  "description": "Customer loyalty cards, stamps, rewards and invitations",
-  "start_url": "/user/dashboard",
-  "scope": "/",
+  "name": "LOYVANCE Wallet",
+  "short_name": "LV Wallet",
+  "description": "Personal loyalty cards, rewards and invitations",
+  "start_url": "/user/dashboard?loyvance_app=customer",
+  "scope": "/user",
   "display": "standalone",
-  "background_color": "#080907",
-  "theme_color": "#080907",
+  "background_color": "#090b09",
+  "theme_color": "#090b09",
   "icons": [
     {
-      "src": "/pwa/icon-192.png",
+      "src": "/pwa-app-icon/customer/192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa/icon-512.png",
+      "src": "/pwa-app-icon/customer/512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
