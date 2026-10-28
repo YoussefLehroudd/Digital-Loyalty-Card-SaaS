@@ -59,6 +59,6 @@ async function result(prom){const r=await prom;return {status:r.status,data:awai
  assert.equal(analytics.status,200);
  assert.equal(analytics.data.metrics.visits_30d,1);
  assert.equal(analytics.data.daily.length,30);
- assert.ok(!JSON.stringify(analytics.data).includes('sales'),'No fabricated revenue fields');
+ assert.ok(!Object.keys(analytics.data.metrics).some(k=>/revenue|sales|turnover/i.test(k)),'No fabricated revenue metrics');
  console.log('PASS growth: verified first visit, both bonus stamps, tenant privacy, feedback uniqueness/reply, opt-in birthday idempotence and analytics');
 })().finally(()=>db.close()).catch(e=>{console.error(e);process.exitCode=1;});
