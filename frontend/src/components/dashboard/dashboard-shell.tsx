@@ -5,7 +5,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, BarChart3, MessageSquare, Cake, Compass, } from "lucide-react";
+import { Bell, CreditCard, Gift, Handshake, Home, Download, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, BarChart3, MessageSquare, Cake, Compass, } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
@@ -14,11 +14,12 @@ import { BusinessSubscriptionAlert, BusinessSubscriptionCard, BusinessSubscripti
 import { cn } from "@/lib/utils";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 type DashboardShellProps = {
-    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff" | "analytics" | "feedback" | "birthdays" | "discover";
+    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff" | "analytics" | "feedback" | "birthdays" | "discover" | "app";
     children: React.ReactNode;
 };
 const sidebarItems = [
     { key: "overview", label: "Overview", icon: Home, href: "/dashboard" },
+    { key: "app", label: "Install App", icon: Download, href: "/dashboard/app" },
     { key: "customers", label: "Customers", icon: Users, href: "/dashboard/customers" },
     {
         key: "loyalty",
@@ -355,6 +356,7 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         offers: "Special Offers",
         staff: "Staff Management",
         discover: "Discover Pro",
+        app: "Install App",
         analytics: "Analytics Pro",
         feedback: "Feedback",
         birthdays: "Birthdays",
