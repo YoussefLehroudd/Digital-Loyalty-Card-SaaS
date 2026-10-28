@@ -32,7 +32,7 @@ async function act(userId,operation,action="start",body={}){
  }
  const manifestIds=new Set();
  for(const [role,start] of [["customer","/user/dashboard"],["business","/dashboard"],["admin","/admin"]]){
-  const content=fs.readFileSync(path.join(__dirname,"../../public/"+role+"-app.webmanifest"),"utf8");
+  const content=fs.readFileSync(path.join(__dirname,"../public/"+role+"-app.webmanifest"),"utf8");
   const manifest=JSON.parse(content);
   assert.equal(manifest.start_url,start);
   assert.equal(manifest.display,"standalone");
