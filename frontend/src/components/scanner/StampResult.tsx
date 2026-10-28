@@ -68,7 +68,7 @@ export function StampResult({ currentStamps, requiredStamps, rewardUnlocked, rew
 
                   <Button type="button" onClick={() => onScanAnother?.()}>{tr(" Scan another ")}</Button>
                 </>) : rewardUnlocked ? (<>
-                  <Button type="button" onClick={() => onRedeemReward?.()} disabled={!!redeeming}>{tr(" Redeem Reward ")}</Button>
+                  {onRedeemReward ? <Button type="button" onClick={onRedeemReward} disabled={!!redeeming}>{tr(" Redeem Reward ")}</Button> : null}
 
                   <Button variant="outline" type="button" onClick={() => onClose?.()}>{tr(" Not now ")}</Button>
 
