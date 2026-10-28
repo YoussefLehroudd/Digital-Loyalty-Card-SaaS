@@ -15,11 +15,11 @@ export async function signInWithPasskey():Promise<AuthResponse>{
  return apiFetch<AuthResponse>("/passkeys/login/finish",{method:"POST",
   body:JSON.stringify({challenge_id:started.challenge_id,response:credential})});
 }
-export async function registerCustomerPasskey(token:string){
+export async function registerCustomerPasskey(token:string,currentPassword?:string){
  if(!canUsePasskeys())throw Error("This device does not support passkeys.");
  const {startRegistration}=await import("@simplewebauthn/browser");
  const started=await apiFetch<{options:Parameters<typeof startRegistration>[0]["optionsJSON"];challenge_id:string}>(
-  "/passkeys/register/start",{token,method:"POST",body:"{}"});
+  "/passkeys/register/start",{token,method:"POST",body:JSON.stringify({current_password:currentPassword||""})});
  const credential=await startRegistration({optionsJSON:started.options});
  return apiFetch<{registered:boolean}>("/passkeys/register/finish",{token,method:"POST",
   body:JSON.stringify({challenge_id:started.challenge_id,response:credential})});
