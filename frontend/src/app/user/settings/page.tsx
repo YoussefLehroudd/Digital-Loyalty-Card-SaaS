@@ -6,6 +6,7 @@ import { useCustomerAuth } from "@/components/customer-app/customer-auth-provide
 import { customerUpdateProfile, defaultCustomerPreferences, type CustomerPreferences, } from "@/lib/customerAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {CustomerPasskeySettings} from "@/components/customer-app/customer-passkey-settings";
 import { BellRing, Smartphone, ShieldCheck } from "lucide-react";
 import {apiFetch} from "@/lib/api";
 import {supportsWebPush,isIosPwaRequired,enablePushOnDevice,disablePushOnDevice,registeredSubscription,type PushConfig} from "@/lib/web-push-client";
@@ -121,6 +122,7 @@ export default function UserSettingsPage() {
     }
     return (<CustomerLayout title={tr("Settings")} subtitle={tr("Manage notification preferences")}>
       <div className="space-y-4">
+        <CustomerPasskeySettings/>
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{tr("Notification preferences")}</CardTitle>

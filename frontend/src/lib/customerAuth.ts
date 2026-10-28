@@ -85,18 +85,25 @@ export type CustomerChangePasswordPayload = {
 
 export function getStoredCustomerToken() {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(CUSTOMER_AUTH_TOKEN_STORAGE_KEY);
+  try {
+    const saved=window.localStorage.getItem(CUSTOMER_AUTH_TOKEN_STORAGE_KEY);
+    if(saved)return saved;
+  }catch{/* Storage can be unavailable in restricted browser modes. */}
+  const cookie=document.cookie.split(";").map(s=>s.trim()).find(s=>s.startsWith(CUSTOMER_AUTH_TOKEN_STORAGE_KEY+"="));
+  const recovered=cookie?.slice(CUSTOMER_AUTH_TOKEN_STORAGE_KEY.length+1)||null;
+  if(recovered){try{window.localStorage.setItem(CUSTOMER_AUTH_TOKEN_STORAGE_KEY,recovered);}catch{}}
+  return recovered;
 }
 
 export function storeCustomerToken(token: string) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(CUSTOMER_AUTH_TOKEN_STORAGE_KEY, token);
-  document.cookie = `${CUSTOMER_AUTH_TOKEN_STORAGE_KEY}=${token}; path=/; max-age=${cookieMaxAge}; SameSite=Lax`;
+  try{window.localStorage.setItem(CUSTOMER_AUTH_TOKEN_STORAGE_KEY, token);}catch{}
+  document.cookie = `${CUSTOMER_AUTH_TOKEN_STORAGE_KEY}=${token}; path=/; max-age=${cookieMaxAge}; SameSite=Lax; Secure`;
 }
 
 export function clearStoredCustomerToken() {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(CUSTOMER_AUTH_TOKEN_STORAGE_KEY);
+  try{window.localStorage.removeItem(CUSTOMER_AUTH_TOKEN_STORAGE_KEY);}catch{}
   document.cookie = `${CUSTOMER_AUTH_TOKEN_STORAGE_KEY}=; path=/; max-age=0; SameSite=Lax`;
 }
 
