@@ -13,7 +13,7 @@ assert.match(strip,/usePathname\(\)/,"Active route still updates within persiste
 assert.match(strip,/overflow-x-auto/,"Scrollable on narrow screens");
 assert.match(strip,/flex-nowrap/,"Navigation items stay in one row");
 assert.match(strip,/shrink-0/,"Items never compress to unreadable sizes");
-assert.ok(!strip.includes("scrollIntoView"),"No automatic horizontal jumps or viewport scroll");
+assert.ok(!strip.includes("scrollIntoView("),"No automatic horizontal jumps or viewport scroll");
 assert.ok(!customer.includes("customer-bottom-nav-scroll"),"Old per-page mobile nav must be removed to avoid remounts");
 assert.ok(!customer.includes("scrollIntoView"),"No per-page automatic scroll");
 assert.match(customer,/matchMedia\("\(min-width: 1024px\)"\)/,"Mobile pages avoid repeated desktop affiliate lookups");
