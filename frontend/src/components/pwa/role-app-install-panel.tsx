@@ -2,8 +2,9 @@
 import {useEffect,useRef,useState} from "react";
 import {Download,Smartphone,ShieldCheck,CheckCircle2,ExternalLink} from "lucide-react";
 import {AccountPasskeySettings} from "@/components/pwa/account-passkey-settings";
+import {getRoleInstallPrompt,clearRoleInstallPrompt,type BrowserInstallPrompt} from "@/components/pwa/role-install-capture";
 type Role="customer"|"business"|"admin";
-type InstallPrompt=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:"accepted"|"dismissed"}>};
+type InstallPrompt=BrowserInstallPrompt;
 const roles={
  customer:{name:"LOYVANCE Customer",url:"/user/dashboard",manifest:"/customer-app.webmanifest",icon:"/pwa/icon-192.png"},
  business:{name:"LOYVANCE Business",url:"/dashboard",manifest:"/business-app.webmanifest",icon:"/pwa/icon-192.png"},
@@ -20,21 +21,23 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
   const onPrompt=(event:Event)=>{event.preventDefault();prompt.current=event as InstallPrompt;setAvailable(true);};
   const onInstalled=()=>{check();setNotice("App installed successfully.");setAvailable(false);prompt.current=null;};
   check();setIos(/iPhone|iPad|iPod/i.test(navigator.userAgent));
+  const sync=()=>setAvailable(Boolean(getRoleInstallPrompt(role)));
+  sync();window.addEventListener("loyvance-install-prompt",sync);
   window.addEventListener("beforeinstallprompt",onPrompt);
   window.addEventListener("appinstalled",onInstalled);
   media.addEventListener("change",check);
-  return()=>{window.removeEventListener("beforeinstallprompt",onPrompt);window.removeEventListener("appinstalled",onInstalled);media.removeEventListener("change",check);};
- },[]);
+  return()=>{window.removeEventListener("beforeinstallprompt",onPrompt);window.removeEventListener("appinstalled",onInstalled);window.removeEventListener("loyvance-install-prompt",sync);media.removeEventListener("change",check);};
+ },[role]);
  const install=async()=>{
   if(standalone){setNotice("You are already using the installed app.");return;}
-  const ev=prompt.current;
+  const ev=prompt.current||getRoleInstallPrompt(role);
   if(!ev){setInstructions(true);return;}
   setBusy(true);
   try{
    await ev.prompt();const choice=await ev.userChoice;
    if(choice.outcome==="accepted"){setAvailable(false);setNotice("Installation accepted. Find the app on your Home Screen.");}
    else setInstructions(true);
-  }catch{setInstructions(true);}finally{prompt.current=null;setBusy(false);}
+  }catch{setInstructions(true);}finally{prompt.current=null;clearRoleInstallPrompt(role);setBusy(false);}
  };
  return <div className="space-y-5">
   <section className="rounded-2xl border border-[#edbc62]/25 bg-[#11130f] p-5 sm:p-6">
