@@ -2574,7 +2574,7 @@ async function dispatch(req: Request, context: RouteContext) {
     }
     const gatedFeature=path[0]==="staff"?"staff":path[0]==="special-offers"&&path[1]==="business"?"offers":
       path[0]==="campaigns"&&path[1]!=="unsubscribe"?"campaigns":path[0]==="growth"&&path[1]==="analytics"?"analytics":
-      path[0]==="growth"&&path[1]==="birthdays"?"birthdays":null;
+      null;
     if(gatedFeature){
       const auth=await requireBusinessOwner(req,sql);
       if(!await premiumAllowed(sql,auth.business!.id,gatedFeature))
@@ -2706,7 +2706,10 @@ async function dispatch(req: Request, context: RouteContext) {
       } else if(action==="birthdays"){
         const actor=await requireAuth(req,sql);
         if(actor.user.role==="customer")response=await handleBirthday(req,sql,actor.user.id,null);
-        else if(actor.user.role==="business_owner"&&actor.business)response=await handleBirthday(req,sql,null,actor.business.id);
+        else if(actor.user.role==="business_owner"&&actor.business){
+          if(!await premiumAllowed(sql,actor.business.id,"birthdays"))return error("Administrator approval required.",403);
+          response=await handleBirthday(req,sql,null,actor.business.id);
+        }
         else return error("Forbidden.",403);
       } else if(action==="analytics"){
         const owner=await requireBusinessOwner(req,sql);
