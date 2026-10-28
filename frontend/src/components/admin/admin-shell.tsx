@@ -4,8 +4,8 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, ArchiveRestore, ArrowUpRight, Building2, Handshake, LayoutDashboard, LogOut, Settings2, ShieldCheck, Users, ChartNoAxesCombined } from "lucide-react";
-import { ADMIN_TOKEN_KEY, adminRequest, clearAdminToken, type AdminUser } from "@/lib/admin";
+import { Activity, ArchiveRestore, ArrowUpRight, Building2, Handshake, LayoutDashboard, LogOut, Download, Settings2, ShieldCheck, Users, ChartNoAxesCombined } from "lucide-react";
+import { adminRequest, clearAdminToken, getAdminToken, type AdminUser } from "@/lib/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 type LiveStatus = "connecting" | "live" | "retrying";
@@ -26,6 +26,7 @@ export const adminNavigation = [
     { href: "/admin/visitors", label: "Visitors", icon: ChartNoAxesCombined },
     { href: "/admin/archived", label: "Archived", icon: ArchiveRestore },
     { href: "/admin/settings", label: "Settings", icon: Settings2 },
+    { href: "/admin/app", label: "Install Admin App", icon: Download },
 ];
 export function useAdmin() {
     const context = useContext(AdminContext);
@@ -50,7 +51,7 @@ function AdminWorkspace({ children }: {
     const [authError, setAuthError] = useState("");
     useEffect(() => {
         const controller = new AbortController();
-        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        const token = getAdminToken();
         if (!token) {
             router.replace("/admin/login");
             return;

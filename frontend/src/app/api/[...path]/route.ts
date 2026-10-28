@@ -2568,16 +2568,26 @@ async function dispatch(req: Request, context: RouteContext) {
         if(limited)return limited;
       }
       const auth=await getAuth(req,sql);
-      const authenticatedCustomer=auth?.user.role==="customer"?auth.user.id:null;
+      const activeUser=auth?.user.id??null;
       response=await handlePasskeys(req,sql,path,{
-        userId:authenticatedCustomer,
+        userId:activeUser,
+        elevated:Boolean(auth && (auth.user.role!=="customer"||isPlatformAdmin(auth.user))),
+        verifyPassword,
         login:async(userId)=>{
-          const user=((await sql`SELECT * FROM app_users WHERE id=${userId}::uuid AND role='customer' AND status<>'suspended' LIMIT 1`) as DbUser[])[0];
-          if(!user)return error("Customer account unavailable.",403);
+          const user=((await sql`SELECT * FROM app_users WHERE id=${userId}::uuid AND status='active' LIMIT 1`) as DbUser[])[0];
+          if(!user)return error("Account unavailable.",403);
+          if(!["customer","business_owner","staff","platform_admin"].includes(user.role)&&!isPlatformAdmin(user))return error("Invalid account role.",403);
+          const admin=isPlatformAdmin(user);
+          let business:DbBusiness|null=null;
+          if(!admin && (user.role==="business_owner"||user.role==="staff")){
+             business=((await sql`SELECT * FROM businesses WHERE id=${user.business_id}::uuid LIMIT 1`) as DbBusiness[])[0]??null;
+             if(!business||business.status==="suspended")return error("Business account unavailable.",403);
+             if(user.role==="staff"&&!(await isActiveCashier(sql,user.id,business.id)))return error("Cashier access revoked.",403);
+          }
           const token=await createSession(sql,user.id);
-          const profile=((await sql`SELECT first_name,last_name,phone,avatar_url,preferences,${user.email} AS email
-             FROM customer_profiles WHERE user_id=${user.id}`) as JsonRecord[])[0]||null;
-          return json({token,token_type:"Bearer",user:publicUser(user,null,profile)});
+          const profile=user.role==="customer"?((await sql`SELECT first_name,last_name,phone,avatar_url,preferences,${user.email} AS email
+             FROM customer_profiles WHERE user_id=${user.id}`) as JsonRecord[])[0]||null:null;
+          return json({token,token_type:"Bearer",user:admin?{id:user.id,name:user.name,email:user.email,role:"platform_admin"}:publicUser(user,business,profile)});
         }
       });
     }

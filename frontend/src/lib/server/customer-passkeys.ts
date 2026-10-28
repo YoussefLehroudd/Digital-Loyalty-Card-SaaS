@@ -23,6 +23,8 @@ function rp(){
  return {rpID,expectedOrigin};
 }
 const challengeExpiresMs=5*60*1000;
+// Legacy SQL table name retained so existing customer passkeys keep working.
+// Registration and verified authentication now support all Loyvance account roles.
 export async function ensurePasskeySchema(sql:Sql){
  const q=raw(sql);
  await q`CREATE TABLE IF NOT EXISTS customer_passkeys (
@@ -48,8 +50,10 @@ export async function ensurePasskeySchema(sql:Sql){
 type PasskeyOptions={
  userId:string|null;
  login:(userId:string)=>Promise<Response>;
+ elevated?:boolean;
+ verifyPassword?:(password:string,hash:string)=>Promise<boolean>;
 };
-export async function handlePasskeys(req:Request,sql:Sql,path:string[],{userId,login}:PasskeyOptions){
+export async function handlePasskeys(req:Request,sql:Sql,path:string[],{userId,login,elevated=false,verifyPassword}:PasskeyOptions){
  const q=raw(sql),method=req.method;
  const operation=path[1]||"",action=path[2]||"";
  if(operation==="devices" && method==="GET"){
@@ -71,8 +75,14 @@ export async function handlePasskeys(req:Request,sql:Sql,path:string[],{userId,l
   const existing=await q`SELECT credential_id AS id,transports
    FROM customer_passkeys WHERE user_id=${userId}::uuid`;
   if(existing.length>=10)return send({message:"Maximum 10 passkeys per account."},409);
-  const users=await q`SELECT name,email FROM app_users WHERE id=${userId}::uuid AND role='customer' AND status<>'suspended' LIMIT 1`;
-  if(!users.length)return send({message:"Customer account unavailable."},403);
+  const users=await q`SELECT name,email,password_hash FROM app_users WHERE id=${userId}::uuid AND role IN ('customer','business_owner','staff','platform_admin') AND status<>'suspended' LIMIT 1`;
+  if(!users.length)return send({message:"Account unavailable."},403);
+  if(elevated){
+    const body=await req.json().catch(()=>null) as {current_password?:unknown}|null;
+    const password=typeof body?.current_password==="string"?body.current_password:"";
+    if(!password||!verifyPassword||!(await verifyPassword(password,String(users[0].password_hash))))
+      return send({message:"Confirm your account password before adding a passkey."},403);
+  }
   const cfg=rp();
   const options=await generateRegistrationOptions({
    rpName:"LOYVANCE",rpID:cfg.rpID,userName:String(users[0].email),
@@ -133,7 +143,7 @@ export async function handlePasskeys(req:Request,sql:Sql,path:string[],{userId,l
   if(!challenge.length)return send({message:"Passkey login expired. Try again."},410);
   const stored=await q`SELECT k.credential_id,k.public_key,k.counter,k.transports,k.user_id
     FROM customer_passkeys k JOIN app_users u ON u.id=k.user_id
-    WHERE k.credential_id=${response.id} AND u.role='customer' AND u.status<>'suspended' LIMIT 1`;
+    WHERE k.credential_id=${response.id} AND u.role IN ('customer','business_owner','staff','platform_admin') AND u.status<>'suspended' LIMIT 1`;
   if(!stored.length)return send({message:"No matching customer passkey."},401);
   const key=stored[0];
   try{

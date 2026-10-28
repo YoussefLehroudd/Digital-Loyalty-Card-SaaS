@@ -15,12 +15,20 @@ export type AdminSettings = { data: { account: AdminUser; integrations: Record<"
 export function adminRequest<T>(path: string, token: string, options?: RequestInit) {
   return apiFetch<T>("/admin/" + path, { token, ...options });
 }
+export function getAdminToken(){
+  if(typeof window==="undefined")return null;
+  try{const token=window.localStorage.getItem(ADMIN_TOKEN_KEY);if(token)return token;}catch{}
+  const cookie=window.document.cookie.split(";").map(s=>s.trim()).find(s=>s.startsWith(ADMIN_TOKEN_KEY+"="));
+  const recovered=cookie?.slice(ADMIN_TOKEN_KEY.length+1)||null;
+  if(recovered){try{window.localStorage.setItem(ADMIN_TOKEN_KEY,recovered);}catch{}}
+  return recovered;
+}
 export function storeAdminToken(token: string) {
-  localStorage.setItem(ADMIN_TOKEN_KEY, token);
+  try{window.localStorage.setItem(ADMIN_TOKEN_KEY,token);}catch{}
   document.cookie = `${ADMIN_TOKEN_KEY}=${token}; path=/admin; max-age=2592000; SameSite=Strict${location.protocol === "https:" ? "; Secure" : ""}`;
 }
 export function clearAdminToken() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
+  try{window.localStorage.removeItem(ADMIN_TOKEN_KEY);}catch{}
   document.cookie = `${ADMIN_TOKEN_KEY}=; path=/admin; max-age=0; SameSite=Strict`;
 }
 

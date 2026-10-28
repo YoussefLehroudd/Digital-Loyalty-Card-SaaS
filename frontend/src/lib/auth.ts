@@ -144,7 +144,14 @@ export function getStoredToken() {
     return null;
   }
 
-  return window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  try{
+    const saved=window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+    if(saved)return saved;
+  }catch{}
+  const cookie=window.document.cookie.split(";").map(x=>x.trim()).find(x=>x.startsWith(AUTH_TOKEN_STORAGE_KEY+"="));
+  const token=cookie?.slice(AUTH_TOKEN_STORAGE_KEY.length+1)||null;
+  if(token){try{window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY,token);}catch{}}
+  return token;
 }
 
 export function storeToken(token: string) {
@@ -152,8 +159,8 @@ export function storeToken(token: string) {
     return;
   }
 
-  window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
-  document.cookie = `${AUTH_TOKEN_STORAGE_KEY}=${token}; path=/; max-age=${cookieMaxAge}; SameSite=Lax`;
+  try{window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY,token);}catch{}
+  document.cookie = `${AUTH_TOKEN_STORAGE_KEY}=${token}; path=/; max-age=${cookieMaxAge}; SameSite=Lax; Secure`;
 }
 
 export function clearStoredToken() {
@@ -161,7 +168,7 @@ export function clearStoredToken() {
     return;
   }
 
-  window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+  try{window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);}catch{}
   document.cookie = `${AUTH_TOKEN_STORAGE_KEY}=; path=/; max-age=0; SameSite=Lax`;
 }
 

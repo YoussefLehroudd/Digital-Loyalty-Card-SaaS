@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { usePathname, useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {ApiError} from "@/lib/api";
 import { clearStoredToken, getCurrentUser, getStoredToken, logout, type AuthUser, type UserRole, } from "@/lib/auth";
 type AuthContextValue = {
     token: string;
@@ -20,8 +21,13 @@ export function AuthGuard({ children, requiredRole, }: {
     const [token, setToken] = useState<string | null>(null);
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [offlineError,setOfflineError]=useState(false);
+    const [retry,setRetry]=useState(0);
     useEffect(() => {
         let isMounted = true;
+        setOfflineError(false);
+        const onOnline=()=>setRetry(v=>v+1);
+        window.addEventListener("online",onOnline);
         const storedToken = getStoredToken();
         const cachedUserCacheKey = "digital_loyalty_cached_user";
         const cachedUserTsCacheKey = "digital_loyalty_cached_user_ts";
@@ -73,21 +79,28 @@ export function AuthGuard({ children, requiredRole, }: {
                     return;
                 }
                 if (isMounted) {
+                    setOfflineError(false);
                     setToken(storedToken);
                     setUser(response.user);
                     setIsLoading(false);
                 }
             }
-            catch {
-                clearStoredToken();
-                router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+            catch(error) {
+                if(!isMounted)return;
+                if(error instanceof ApiError && [401,403].includes(error.status)){
+                    clearStoredToken();router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+                    return;
+                }
+                // A temporary network/5xx problem must not destroy the saved login.
+                setOfflineError(true);setIsLoading(false);
             }
         }
         verifySession();
         return () => {
             isMounted = false;
+            window.removeEventListener("online",onOnline);
         };
-    }, [pathname, requiredRole, router]);
+    }, [pathname, requiredRole, router,retry]);
     const value = useMemo<AuthContextValue | null>(() => {
         if (!token || !user) {
             return null;
@@ -108,6 +121,11 @@ export function AuthGuard({ children, requiredRole, }: {
             },
         };
     }, [router, token, user]);
+    if(offlineError)return <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#080907] p-6 text-center text-white">
+      <h1 className="text-xl font-semibold">Connection unavailable</h1>
+      <p className="max-w-sm text-sm text-white/60">Your Business/Admin login remains saved. Try again when your connection is back.</p>
+      <button type="button" className="rounded-xl bg-[#e7b354] px-6 py-3 font-semibold text-black" onClick={()=>{setIsLoading(true);setRetry(v=>v+1);}}>Retry connection</button>
+    </main>;
     if (isLoading || !value) {
         return (<main className="min-h-screen bg-background p-4 text-foreground sm:p-6">
         <div className="mx-auto max-w-5xl">

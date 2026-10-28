@@ -11,7 +11,7 @@ async function invoke(pathParts,userId=null,payload={},method="POST"){
  return {status:res.status,data:await res.json()};
 }
 (async()=>{
- await db.exec("CREATE TABLE app_users(id uuid PRIMARY KEY,role text NOT NULL,name text NOT NULL,email text NOT NULL,status text NOT NULL DEFAULT 'active');");
+ await db.exec("CREATE TABLE app_users(id uuid PRIMARY KEY,role text NOT NULL,name text NOT NULL,email text NOT NULL,password_hash text NOT NULL DEFAULT 'test-hash',status text NOT NULL DEFAULT 'active');");
  await ensurePasskeySchema(sql);
  const alice=id,bob=randomUUID();
  await sql`INSERT INTO app_users(id,role,name,email) VALUES(${alice},'customer','Alice','alice@example.test'),(${bob},'customer','Bob','bob@example.test')`;
