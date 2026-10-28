@@ -14,6 +14,7 @@ import { appleWalletAvailable, createAppleWalletLink, ensureAppleWalletSchema, h
 import { renewalProof, submitRenewal } from "@/lib/server/renewal-requests";
 import { runSubscriptionEmails } from "@/lib/server/subscription-emails";
 import { ensureCampaignSchema, handleBusinessCampaigns, handleAutomations, runCampaignAutomation, runCampaignQueue, runCampaignEmails, unsubscribeCampaignEmail } from "@/lib/server/campaigns";
+import { ensureSpecialOfferSchema, handleBusinessOffers, handleCustomerOffers } from "@/lib/server/special-offers";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -418,6 +419,7 @@ async function ensureSchema(sql: Sql) {
       await ensureAdminSchema(sql);
       await ensureSubscriptionSchema(sql);
       await ensureCampaignSchema(sql);
+      await ensureSpecialOfferSchema(sql);
       await ensureAffiliateSchema(sql);
       await ensureVisitorAnalyticsSchema(sql);
     })();
@@ -1562,28 +1564,52 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     ), locked_loyalty AS (
       SELECT id, current_stamps FROM customer_loyalties WHERE id = ${current.id} AND target_stamps IS NOT DISTINCT FROM ${card.goal_selection}::integer AND EXISTS(SELECT 1 FROM locked_business) FOR UPDATE
     ),
+    offer_candidate AS (
+      SELECT o.id,o.title FROM special_offers o CROSS JOIN locked_loyalty ll
+      WHERE o.business_id=${auth.business.id} AND o.is_active=true AND o.starts_at<=now()
+        AND o.ends_at>now() AND o.uses_count<o.max_uses
+        AND ll.current_stamps + ${stampCount}*2 <= ${card.required_stamps}
+        AND ((o.kind='weekday_double' AND extract(dow from now() AT TIME ZONE 'Africa/Casablanca')::int=o.weekday)
+          OR (o.kind='first_visit_double' AND NOT EXISTS (
+            SELECT 1 FROM visits v WHERE v.business_id=${auth.business.id} AND v.customer_id=${customer.id}
+          )))
+      ORDER BY o.ends_at,o.id LIMIT 1 FOR UPDATE OF o
+    ),
+    awarded AS (SELECT (${stampCount}::int * CASE WHEN EXISTS(SELECT 1 FROM offer_candidate) THEN 2 ELSE 1 END) AS amount),
     order_claim AS (
       INSERT INTO visits (id, business_id, customer_id, order_reference, stamp_count, stamp_message, actor_id)
-      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${orderReference}, ${stampCount}, ${stampMessage}, ${auth.user.id}
-      FROM locked_loyalty WHERE ${orderReference}::text IS NOT NULL AND current_stamps + ${stampCount} <= ${card.required_stamps}
+      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${orderReference}, (SELECT amount FROM awarded), ${stampMessage}, ${auth.user.id}
+      FROM locked_loyalty WHERE ${orderReference}::text IS NOT NULL AND current_stamps + (SELECT amount FROM awarded) <= ${card.required_stamps}
       ON CONFLICT (business_id, order_reference) WHERE order_reference IS NOT NULL DO NOTHING
       RETURNING id
     ),
     loyalty_update AS (
       UPDATE customer_loyalties
-      SET current_stamps = current_stamps + ${stampCount}, updated_at = now()
-      WHERE id = ${current.id} AND EXISTS(SELECT 1 FROM locked_loyalty) AND current_stamps + ${stampCount} <= ${card.required_stamps}
+      SET current_stamps = current_stamps + (SELECT amount FROM awarded), updated_at = now()
+      WHERE id = ${current.id} AND EXISTS(SELECT 1 FROM locked_loyalty) AND current_stamps + (SELECT amount FROM awarded) <= ${card.required_stamps}
         AND (${orderReference}::text IS NULL OR EXISTS (SELECT 1 FROM order_claim))
       RETURNING *
     ),
     visit_insert AS (
       INSERT INTO visits (id, business_id, customer_id, stamp_count, stamp_message, actor_id)
-      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, ${stampCount}, ${stampMessage}, ${auth.user.id}
+      SELECT ${randomUUID()}, ${auth.business.id}, ${customer.id}, (SELECT amount FROM awarded), ${stampMessage}, ${auth.user.id}
       FROM loyalty_update WHERE ${orderReference}::text IS NULL
       RETURNING id
     ),
     credited_visit AS (
       SELECT id FROM visit_insert UNION ALL SELECT id FROM order_claim
+    ),
+    offer_usage AS (
+      UPDATE special_offers o SET uses_count=uses_count+1
+      FROM offer_candidate candidate
+      WHERE o.id=candidate.id AND o.uses_count<o.max_uses AND EXISTS(SELECT 1 FROM credited_visit)
+      RETURNING o.id,o.title
+    ),
+    offer_redemption AS (
+      INSERT INTO special_offer_redemptions(id,offer_id,business_id,customer_id,visit_id,bonus_stamps)
+      SELECT ${randomUUID()},used.id,${auth.business.id},${customer.id},v.id,${stampCount}
+      FROM offer_usage used CROSS JOIN credited_visit v
+      RETURNING id
     ),
     reward_insert AS (
       INSERT INTO reward_redemptions (id, business_id, customer_id, loyalty_card_id, status, required_stamps_snapshot,reward_name_snapshot,description_snapshot)
@@ -1598,8 +1624,8 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     ),
     stamp_notification AS (
       INSERT INTO customer_notifications (id, customer_id, type, title, message)
-      SELECT CONCAT('stamp_added-', v.id::text), ${customer.id}, 'stamp_added', ${stampCount === 1 ? 'Stamp added' : 'Stamps added'},
-             CONCAT('You received ', ${stampCount}::text, CASE WHEN ${stampCount}=1 THEN ' stamp at ' ELSE ' stamps at ' END, ${auth.business.name}::text, '. ',
+      SELECT CONCAT('stamp_added-', v.id::text), ${customer.id}, 'stamp_added', CASE WHEN (SELECT amount FROM awarded)=1 THEN 'Stamp added' ELSE 'Stamps added' END,
+             CONCAT('You received ', (SELECT amount FROM awarded)::text, CASE WHEN (SELECT amount FROM awarded)=1 THEN ' stamp at ' ELSE ' stamps at ' END, ${auth.business.name}::text, '. ',
                     lu.current_stamps::text, '/', ${card.required_stamps}::text, ' stamps collected.', CASE WHEN ${stampMessage}::text<>'' THEN CONCAT(' ', ${stampMessage}::text) ELSE '' END)
       FROM credited_visit v CROSS JOIN loyalty_update lu
     ),
@@ -1609,9 +1635,9 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
              ${"You collected " + card.required_stamps + "/" + card.required_stamps + " stamps at " + auth.business.name + ". Your reward (" + card.reward_name + ") is unlocked and ready to redeem."}, r.id
       FROM reward_insert r
     )
-    SELECT lu.*, EXISTS (SELECT 1 FROM reward_insert) AS redemption_created
+    SELECT lu.*, EXISTS (SELECT 1 FROM reward_insert) AS redemption_created, (SELECT amount FROM awarded)::int AS stamps_awarded, (SELECT title FROM offer_usage LIMIT 1) AS offer_title, EXISTS(SELECT 1 FROM offer_redemption) AS bonus_recorded
     FROM loyalty_update lu
-  `) as Array<DbLoyalty & { redemption_created: boolean }>;
+  `) as Array<DbLoyalty & { redemption_created: boolean; stamps_awarded:number; offer_title:string|null; bonus_recorded:boolean }>;
   const updated = stampRows[0];
   if (!updated) {
     const freshFeatures = await readBusinessFeatures(sql,auth.business.id);
@@ -1626,17 +1652,18 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     if (fresh[0] && fresh[0].current_stamps < card.required_stamps) return error(`Only ${card.required_stamps - fresh[0].current_stamps} stamps remain. Choose a smaller quantity.`, 422);
     return error("Reward is ready. Redeem it before adding another stamp.", 409);
   }
+  const creditedCount = updated.stamps_awarded ?? stampCount;
   const unlocked = updated.current_stamps >= card.required_stamps;
   const redemptionCreated = updated.redemption_created;
   const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || customer.email || "A customer";
   await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
-            VALUES (${randomUUID()}, ${auth.business.id}, 'stamp_added', 'Stamp added', ${customerName + " received " + stampCount + (stampCount === 1 ? " stamp." : " stamps.")})`;
+            VALUES (${randomUUID()}, ${auth.business.id}, 'stamp_added', 'Stamp added', ${customerName + " received " + creditedCount + (creditedCount === 1 ? " stamp." : " stamps.")})`;
   if (redemptionCreated) {
     await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
               VALUES (${randomUUID()}, ${auth.business.id}, 'reward_ready', 'Reward ready', ${customerName + " unlocked a reward."})`;
   }
   await syncGoogleWalletCustomer(sql, customer.id);
-  return json({ message: stampCount === 1 ? "Stamp added." : `${stampCount} stamps added.`, stamps_added: stampCount, loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
+  return json({ message: creditedCount === 1 ? "Stamp added." : `${creditedCount} stamps added.`, stamps_added: creditedCount, offer_applied: updated.bonus_recorded ? updated.offer_title : null, loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
 }
 
 function base64Url(input: string) {
@@ -2534,6 +2561,16 @@ async function dispatch(req: Request, context: RouteContext) {
       const scheduled=await runCampaignQueue(sql,12);
       const emails=await runCampaignEmails(sql,35,new URL(req.url).origin);
       response=json({automation,scheduled,emails});
+    }
+    else if(path[0]==="special-offers") {
+      if(path[1]==="mine"){
+        const auth=await requireAuth(req,sql);
+        if(auth.user.role!=="customer")return error("Customer account required.",403);
+        response=await handleCustomerOffers(req,sql,auth.user.id);
+      } else if(path[1]==="business"){
+        const owner=await requireBusinessOwner(req,sql);
+        response=await handleBusinessOffers(path,req,sql,owner.business!.id);
+      } else response=error("Not found.",404);
     }
     else if(path[0]==="campaigns") {
       if(path[1]==="unsubscribe") response=await unsubscribeCampaignEmail(req,sql);
