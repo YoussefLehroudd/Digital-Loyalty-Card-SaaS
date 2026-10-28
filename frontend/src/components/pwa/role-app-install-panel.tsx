@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
-import {Download,Smartphone,ShieldCheck,CheckCircle2,ExternalLink,Share2,Copy,Chrome,Check} from "lucide-react";
+import {Download,Smartphone,ShieldCheck,CheckCircle2,ExternalLink,Share2,Copy,Globe2,Check} from "lucide-react";
 import {Modal} from "@/components/ui/modal";
 import {AccountPasskeySettings} from "@/components/pwa/account-passkey-settings";
 import {getRoleInstallPrompt,clearRoleInstallPrompt,type BrowserInstallPrompt} from "@/components/pwa/role-install-capture";
@@ -90,7 +90,7 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
           <li>Select the <strong className="text-white">Install</strong> icon in the address bar, or use the browser menu → Install app.</li>
           <li>Confirm installation to open {app.name} in its own window.</li>
         </ol>}
-       {android?<p className="flex items-start gap-2 rounded-xl border border-white/10 p-3 text-xs leading-5 text-white/60"><Chrome className="mt-0.5 size-4 shrink-0 text-[#edbc62]"/>Some Android browsers, including in-app browsers, do not expose the automatic install popup. The menu method is the reliable alternative.</p>:null}
+       {android?<p className="flex items-start gap-2 rounded-xl border border-white/10 p-3 text-xs leading-5 text-white/60"><Globe2 className="mt-0.5 size-4 shrink-0 text-[#edbc62]"/>Some Android browsers, including in-app browsers, do not expose the automatic install popup. The menu method is the reliable alternative.</p>:null}
        <p className="text-xs leading-5 text-white/50">Install from this {role} page to get the correct {app.name} shortcut. You will still need to sign in to access private data.</p>
        <div className="flex flex-wrap gap-2 pt-2">
          <button type="button" onClick={()=>void copyInstallLink()} className="flex min-h-11 items-center gap-2 rounded-xl border border-[#edbc62]/30 px-4 py-2.5 text-sm font-semibold text-[#edbc62]"><Copy className="size-4"/>Copy installation link</button>
