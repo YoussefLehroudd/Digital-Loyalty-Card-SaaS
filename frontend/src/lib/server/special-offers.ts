@@ -61,7 +61,7 @@ export async function handleBusinessOffers(path:string[],req:Request,sql:Sql,bus
   const end=typeof data?.ends_at==="string"?Date.parse(data.ends_at):NaN;
   if(title.length<3||title.length>80||description.length>300||/[<>]/.test(title+description)
    || (kind!=="weekday_double"&&kind!=="first_visit_double")
-   || (kind==="weekday_double"&&(!Number.isInteger(weekday)||Number(weekday)<0||Number(weekday)>6))
+   || (kind==="weekday_double"&&(typeof weekday!=="number"||!Number.isInteger(weekday)||weekday<0||weekday>6))
    || !Number.isInteger(maxUses)||maxUses<1||maxUses>5000
    || !Number.isFinite(start)||!Number.isFinite(end)||end<=start||end<Date.now()
    || end-start>180*86400000||start>Date.now()+180*86400000)
