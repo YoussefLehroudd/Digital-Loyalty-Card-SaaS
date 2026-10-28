@@ -1,6 +1,7 @@
 "use client";
 import { getFormattingLocale } from "@/components/i18n/language-provider";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import {ThemeToggle} from "@/components/theme-toggle";
 import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
