@@ -44,6 +44,6 @@ export async function adminPremiumApi(req:Request,sql:Sql,actorId:string){
  if(typeof body.business_id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.business_id)||typeof body.feature!=="string"||!isPremiumFeature(body.feature)||!["approved","rejected"].includes(body.status))
  return Response.json({message:"Invalid request"},{status:422});
  const rows=await sql`UPDATE business_premium_access SET status=${body.status},reviewed_at=now(),reviewed_by=${actorId}
- WHERE business_id=${body.business_id} AND feature=${body.feature} RETURNING business_id`;
+ WHERE business_id=${body.business_id} AND feature=${body.feature} RETURNING business_id` as Array<{business_id:string}>;
  return rows.length?Response.json({ok:true}):Response.json({message:"Request not found"},{status:404});
 }
