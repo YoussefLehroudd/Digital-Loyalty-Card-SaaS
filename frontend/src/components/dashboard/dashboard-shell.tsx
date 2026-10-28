@@ -5,7 +5,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, } from "lucide-react";
+import { Bell, CreditCard, Gift, Handshake, Home, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, BarChart3, MessageSquare, Cake, } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
@@ -14,7 +14,7 @@ import { BusinessSubscriptionAlert, BusinessSubscriptionCard, BusinessSubscripti
 import { cn } from "@/lib/utils";
 import { getBusinessNotifications, markAllBusinessNotificationsRead, markBusinessNotificationRead, type BusinessNotification } from "@/lib/auth";
 type DashboardShellProps = {
-    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff";
+    activeItem: "overview" | "settings" | "loyalty" | "customers" | "scanner" | "rewards" | "affiliate" | "campaigns" | "offers" | "staff" | "analytics" | "feedback" | "birthdays";
     children: React.ReactNode;
 };
 const sidebarItems = [
@@ -31,6 +31,9 @@ const sidebarItems = [
     { key: "campaigns", label: "Campaigns", icon: Megaphone, href: "/dashboard/campaigns" },
     { key: "offers", label: "Special Offers", icon: Sparkles, href: "/dashboard/offers" },
     { key: "staff", label: "Staff Management", icon: UserCog, href: "/dashboard/staff" },
+    { key: "analytics", label: "Analytics Pro", icon: BarChart3, href: "/dashboard/analytics" },
+    { key: "feedback", label: "Feedback", icon: MessageSquare, href: "/dashboard/feedback" },
+    { key: "birthdays", label: "Birthdays", icon: Cake, href: "/dashboard/birthdays" },
     { key: "affiliate", label: "Affiliate", icon: Handshake, href: "/dashboard/affiliate" },
     {
         key: "settings",
@@ -350,6 +353,9 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         campaigns: "Campaigns",
         offers: "Special Offers",
         staff: "Staff Management",
+        analytics: "Analytics Pro",
+        feedback: "Feedback",
+        birthdays: "Birthdays",
     };
     return (<header className="app-topbar fixed inset-x-0 top-0 z-30 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl lg:sticky lg:inset-x-auto lg:z-20">
       <div className="flex h-16 items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
