@@ -1,18 +1,18 @@
 import {apiFetch} from "@/lib/api";
-import type {CustomerAuthResponse} from "@/lib/customerAuth";
+import type {AuthResponse} from "@/lib/auth";
 
 export type PasskeyDevice={credential_id:string;created_at:string;last_used_at:string|null};
 export function canUsePasskeys(){
  return typeof window!=="undefined" && window.isSecureContext &&
   "PublicKeyCredential" in window && !!navigator.credentials;
 }
-export async function signInWithPasskey():Promise<CustomerAuthResponse>{
+export async function signInWithPasskey():Promise<AuthResponse>{
  if(!canUsePasskeys())throw Error("Fingerprint / Face ID login requires a compatible HTTPS browser.");
  const {startAuthentication}=await import("@simplewebauthn/browser");
  const started=await apiFetch<{options:Parameters<typeof startAuthentication>[0]["optionsJSON"];challenge_id:string}>(
   "/passkeys/login/start",{method:"POST",body:"{}"});
  const credential=await startAuthentication({optionsJSON:started.options});
- return apiFetch<CustomerAuthResponse>("/passkeys/login/finish",{method:"POST",
+ return apiFetch<AuthResponse>("/passkeys/login/finish",{method:"POST",
   body:JSON.stringify({challenge_id:started.challenge_id,response:credential})});
 }
 export async function registerCustomerPasskey(token:string){
