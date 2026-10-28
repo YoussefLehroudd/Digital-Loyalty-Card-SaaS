@@ -1,5 +1,6 @@
 "use client";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import {ThemeToggle} from "@/components/theme-toggle";
 import { useI18n } from "@/components/i18n/language-provider";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
@@ -111,7 +112,7 @@ function AdminWorkspace({ children }: {
               </div>
             </div>
             <div className="col-start-2 row-start-1 flex shrink-0 items-center gap-1.5 sm:gap-3">
-              <LanguageSwitcher/>
+              <ThemeToggle/><LanguageSwitcher/>
               <span role="status" className={`hidden items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-medium lg:flex ${liveStatus === 'live' ? "border-emerald-400/15 bg-emerald-400/[.06] text-emerald-300" : "border-amber-400/20 bg-amber-400/5 text-amber-200"}`}>
                 <span className={`size-1.5 rounded-full ${liveStatus === 'live' ? "bg-emerald-400" : "bg-amber-300"}`}/>{liveStatus === 'live' ? tr("Live") : liveStatus === 'retrying' ? tr("Reconnecting") : tr("Connecting")}
               </span>
