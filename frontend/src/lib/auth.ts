@@ -2,7 +2,7 @@ import { apiFetch, ApiError, API_BASE_URL } from "@/lib/api";
 
 export const AUTH_TOKEN_STORAGE_KEY = "digital_loyalty_token";
 
-export type UserRole = "platform_admin" | "business_owner" | "customer";
+export type UserRole = "platform_admin" | "business_owner" | "customer" | "staff";
 
 export type Business = {
   id: string;
