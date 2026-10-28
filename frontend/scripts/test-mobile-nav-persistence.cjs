@@ -1,0 +1,23 @@
+const assert=require("node:assert/strict");
+const fs=require("node:fs"),path=require("node:path");
+const read=p=>fs.readFileSync(path.join(__dirname,"../src/",p),"utf8");
+const area=read("components/customer-app/customer-area-layout-client.tsx");
+const strip=read("components/customer-app/customer-bottom-nav.tsx");
+const customer=read("components/customer-app/customer-layout.tsx");
+const defs=read("components/customer-app/customer-nav-items.ts");
+const css=fs.readFileSync(path.join(__dirname,"../src/app/globals.css"),"utf8");
+
+assert.match(area,/<CustomerGuard>\{children\}<CustomerBottomNav\s*\/>\s*<\/CustomerGuard>/,"Mobile nav is kept in the persistent /user layout outside page instances");
+assert.match(strip,/data-testid="persistent-customer-bottom-nav"/);
+assert.match(strip,/usePathname\(\)/,"Active route still updates within persistent component");
+assert.match(strip,/overflow-x-auto/,"Scrollable on narrow screens");
+assert.match(strip,/flex-nowrap/,"Navigation items stay in one row");
+assert.match(strip,/shrink-0/,"Items never compress to unreadable sizes");
+assert.ok(!strip.includes("scrollIntoView"),"No automatic horizontal jumps or viewport scroll");
+assert.ok(!customer.includes("customer-bottom-nav-scroll"),"Old per-page mobile nav must be removed to avoid remounts");
+assert.ok(!customer.includes("scrollIntoView"),"No per-page automatic scroll");
+assert.match(customer,/matchMedia\("\(min-width: 1024px\)"\)/,"Mobile pages avoid repeated desktop affiliate lookups");
+assert.match(defs,/customerAffiliateNavItem/,"Affiliate remains accessible when eligible");
+assert.match(defs,/\/user\/install/,"Install App remains accessible");
+assert.match(css,/\.customer-bottom-nav-scroll::-webkit-scrollbar[\s\S]*?display:\s*none/,"Hide scrollbar in WebKit/Chrome/Safari");
+console.log("PASS: persistent mobile customer nav across routes, swipeable one-row bar, no scroll resets and no redundant mobile affiliate fetch");
