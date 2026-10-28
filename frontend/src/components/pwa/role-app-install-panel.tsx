@@ -79,7 +79,7 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
      {standalone?<CheckCircle2 className="size-5"/>:<Download className="size-5"/>}{standalone?"This app is open":otherAppWindow?"Install as separate app":busy?"Opening installer…":"Install "+app.name}
     </button>
     <button type="button" onClick={()=>setInstructions(v=>!v)} className="rounded-xl border border-white/15 px-4 py-3 text-sm text-white/75">Installation help</button>
-    <a href={app.url} className="flex items-center gap-2 rounded-xl border border-white/15 px-4 py-3 text-sm text-white/75"><ExternalLink className="size-4"/>Open workspace</a>
+    <Link href={app.url} className="flex items-center gap-2 rounded-xl border border-white/15 px-4 py-3 text-sm text-white/75"><ExternalLink className="size-4"/>Open workspace</Link>
    </div>
    {notice?<p role="status" className="mt-4 text-sm text-[#edbc62]">{notice}</p>:null}
    {!available&&!standalone?<p className="mt-3 text-xs text-white/50">{mobile?"If the phone browser does not offer a one-tap installer, tap Install to see clear phone-specific steps.":"If the browser does not offer a one-tap installer, use its menu (Install app / Add to Home Screen)."} This is a PWA, not an APK.</p>:null}
