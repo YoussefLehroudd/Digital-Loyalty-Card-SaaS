@@ -30,6 +30,7 @@ export function RoleInstallCapture({role}:{role:AppRole}){
       if(launchRole===role)window.sessionStorage.setItem(installedWindowRoleKey,role);
       else if(!getInstalledWindowRole())window.sessionStorage.setItem(installedWindowRoleKey,role);
     }catch{/* Still allow installation help when browser storage is disabled. */}
+    window.dispatchEvent(new Event("loyvance-pwa-context"));
   }
   // Register the same offline/push Service Worker within authenticated PWA
   // routes too; the marketing install banner is intentionally not mounted here.
