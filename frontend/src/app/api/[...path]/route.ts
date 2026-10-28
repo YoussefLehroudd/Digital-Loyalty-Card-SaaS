@@ -2571,6 +2571,8 @@ async function dispatch(req: Request, context: RouteContext) {
       const activeUser=auth?.user.id??null;
       response=await handlePasskeys(req,sql,path,{
         userId:activeUser,
+        elevated:Boolean(auth && (auth.user.role!=="customer"||isPlatformAdmin(auth.user))),
+        verifyPassword,
         login:async(userId)=>{
           const user=((await sql`SELECT * FROM app_users WHERE id=${userId}::uuid AND status='active' LIMIT 1`) as DbUser[])[0];
           if(!user)return error("Account unavailable.",403);
