@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
 import { login, storeToken } from "@/lib/auth";
 import { storeCustomerToken } from "@/lib/customerAuth";
+import {storeAdminToken} from "@/lib/admin";
 const schema = z.object({
     email: z.string().email("Enter a valid email address."),
     password: z.string().min(1, "Enter your password."),
@@ -77,9 +78,15 @@ export function LoginForm() {
       setBiometricBusy(true);setError(null);
       try{
         const response=await signInWithPasskey();
-        if(response.user.role!=="customer")throw Error("This passkey is not linked to a customer account.");
-        storeCustomerToken(response.token);
-        const destination=next?.startsWith("/user/")?next:"/user/dashboard";
+        const role=response.user.role;
+        if(role==="customer")storeCustomerToken(response.token);
+        else if(role==="platform_admin")storeAdminToken(response.token);
+        else storeToken(response.token);
+        const destination=role==="customer"
+          ? (next?.startsWith("/user/")?next:"/user/dashboard")
+          : role==="platform_admin"?"/admin"
+          : role==="staff"?"/dashboard/scanner"
+          : (next?.startsWith("/dashboard")?next:"/dashboard");
         router.replace(destination);router.refresh();
       }catch(e){setError(e instanceof Error?e.message:"Passkey sign-in failed. Use email and password.");}
       finally{setBiometricBusy(false);}
@@ -104,6 +111,6 @@ export function LoginForm() {
        disabled={isSubmitting||biometricBusy} onClick={()=>void onPasskey()}>
        <Fingerprint className="size-5"/>{biometricBusy?"Verifying…":"Sign in with Fingerprint / Face ID"}
       </Button>
-      <p className="text-center text-xs text-muted-foreground">Set up a passkey once in Customer Settings after signing in with your password. Compatible devices can also use their screen PIN.</p>
+      <p className="text-center text-xs text-muted-foreground">Set up a passkey once in the App & Security section after signing in with your password. Compatible devices can also use their screen PIN.</p>
     </form>);
 }
