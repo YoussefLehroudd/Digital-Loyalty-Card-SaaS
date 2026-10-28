@@ -15,7 +15,7 @@ const auth=require('node:crypto').randomBytes(16);
 const subscription={endpoint:'https://fcm.googleapis.com/fcm/send/test-push',keys:{p256dh:b64(client.getPublicKey()),auth:b64(auth)}};
 const extract=(salt,ikm)=>createHmac('sha256',salt).update(ikm).digest();
 const expand=(key,info,len)=>{let prev=Buffer.alloc(0),result=Buffer.alloc(0),idx=0;while(result.length<len){prev=createHmac('sha256',key).update(Buffer.concat([prev,info,Buffer.from([++idx])])).digest();result=Buffer.concat([result,prev]);}return result.subarray(0,len);};
-const str=s=>Buffer.from(s+'\\0');
+const str=s=>Buffer.from(s+'\0');
 function decrypt(packet){
  const salt=packet.subarray(0,16),length=packet.readUInt32BE(16),keyLength=packet[20];
  assert.equal(length,4096);assert.equal(keyLength,65);
