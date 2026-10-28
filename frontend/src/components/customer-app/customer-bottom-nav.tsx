@@ -77,7 +77,7 @@ export const CustomerBottomNav=memo(function CustomerBottomNav(){
   const visibleNav=isAffiliate?[...customerNavItems,customerAffiliateNavItem]:customerNavItems;
 
   return <nav aria-label={tr("Customer navigation")} data-testid="persistent-customer-bottom-nav"
-    className="fixed inset-x-0 bottom-0 z-[100] border-t border-[#d8a63f]/15 bg-[#0b0c0a]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden [transform:translate3d(0,0,0)]">
+    className="fixed inset-x-0 bottom-0 z-[100] border-t border-[#d8a63f]/15 bg-[#0b0c0a] pb-[env(safe-area-inset-bottom)] lg:hidden [transform:translate3d(0,0,0)]">
     <div ref={scrollRef} onScroll={saveOffset} onTouchEnd={saveOffset} tabIndex={0} className="customer-bottom-nav-scroll w-full overflow-x-auto overflow-y-hidden overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e7b354]">
       <div className="flex w-max min-w-full flex-nowrap items-center gap-1 px-2 py-2">
         {visibleNav.map(item=>{
