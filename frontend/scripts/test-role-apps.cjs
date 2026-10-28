@@ -50,5 +50,12 @@ async function act(userId,operation,action="start",body={},elevated=false){
  assert.ok(guard.includes("[401,403].includes(error.status)"),"Transient server failures must not delete PWA session");
  const admin=fs.readFileSync(path.join(__dirname,"../src/lib/admin.ts"),"utf8");
  assert.ok(admin.includes("getAdminToken"),"Admin PWA recovers remembered session");
+ const installer=fs.readFileSync(path.join(__dirname,"../src/components/pwa/role-app-install-panel.tsx"),"utf8");
+ assert.ok(installer.includes('if(!ev){setNotice(')&&installer.includes('setInstructions(true);return;}'),"Mobile install click must always show help if the native prompt is unavailable");
+ assert.ok(installer.includes('<Modal isOpen={instructions}'),"Mobile install instructions must open in a visible modal, not below the fold");
+ assert.ok(installer.includes("Add to Home Screen")&&installer.includes("Add to Home screen"),"Support iOS and Android manual install methods");
+ assert.ok(installer.includes("copyInstallLink"),"Allow opening installer link in another browser");
+ const capture=fs.readFileSync(path.join(__dirname,"../src/components/pwa/role-install-capture.tsx"),"utf8");
+ assert.ok(capture.includes('navigator.serviceWorker.register("/sw.js"'),"Service worker must register inside customer/business/admin areas too");
  console.log("PASS role PWAs: 3 independent manifests, all-role verified passkeys, fake proof denied, scoped admin login and remembered sessions");
 })().finally(()=>db.close()).catch(e=>{console.error(e);process.exitCode=1;});
