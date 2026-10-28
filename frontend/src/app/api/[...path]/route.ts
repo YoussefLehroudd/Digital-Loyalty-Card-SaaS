@@ -1566,6 +1566,8 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
     const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ").trim() || customer.email || "A customer";
     await sql`INSERT INTO business_notifications (id, business_id, type, title, message)
               VALUES (${randomUUID()}, ${auth.business.id}, 'reward_redeemed', 'Reward redeemed', ${customerName + " redeemed a reward."})`;
+    // Deliver queued first-visit referral credit when a reward cycle makes room.
+    await applyPendingReferralBonuses(sql,customer.id);
     await syncGoogleWalletCustomer(sql, customer.id);
     return json({ message: "Reward redeemed.", reward_redeemed: true, loyalty: { current_stamps: remaining, required_stamps: card.required_stamps, reward_unlocked: remaining >= card.required_stamps, reward_redemption_created: false, reward_redeemed: true } });
   }
@@ -1685,8 +1687,9 @@ async function handleStamp(path: string[], req: Request, sql: Sql) {
       WHERE r.first_visit_id=${updated.stamped_visit_id}::uuid` as Array<{member_id:string}>;
     for(const record of pending)await applyPendingReferralBonuses(sql,record.member_id);
   }
+  const refreshed=((await sql`SELECT current_stamps FROM customer_loyalties WHERE id=${current.id}`) as Array<{current_stamps:number}>)[0]?.current_stamps??updated.current_stamps;
   await syncGoogleWalletCustomer(sql, customer.id);
-  return json({ message: creditedCount === 1 ? "Stamp added." : `${creditedCount} stamps added.`, stamps_added: creditedCount, offer_applied: updated.bonus_recorded ? updated.offer_title : null, loyalty: { current_stamps: updated.current_stamps, required_stamps: card.required_stamps, reward_unlocked: unlocked, reward_redemption_created: redemptionCreated } });
+  return json({ message: creditedCount === 1 ? "Stamp added." : `${creditedCount} stamps added.`, stamps_added: creditedCount, offer_applied: updated.bonus_recorded ? updated.offer_title : null, loyalty: { current_stamps: refreshed, required_stamps: card.required_stamps, reward_unlocked: refreshed>=card.required_stamps, reward_redemption_created: redemptionCreated } });
 }
 
 function base64Url(input: string) {
