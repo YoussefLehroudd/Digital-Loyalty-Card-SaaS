@@ -1,4 +1,5 @@
 "use client";
+import {useI18n} from "@/components/i18n/language-provider";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Bell, CalendarClock, CheckCheck, Clock, Gift, Loader2, Mail, Megaphone, Play, Pencil, RefreshCcw, ShieldCheck, Trash2, Users, X, Zap } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
@@ -27,6 +28,7 @@ function labelOf(s:Segment){return segments.find(x=>x.value===s)?.name??s;}
 
 export default function BusinessCampaignsPage(){
  const {token}=useAuth();
+ const {t:trI18n}=useI18n();
  const [campaigns,setCampaigns]=useState<Campaign[]>([]);
  const [automations,setAutomations]=useState<Automation[]>([]);
  const [title,setTitle]=useState("");
@@ -128,10 +130,10 @@ export default function BusinessCampaignsPage(){
  return <DashboardShell activeItem="campaigns">
   <div className="mx-auto w-full min-w-0 max-w-6xl space-y-5 overflow-x-clip px-3 pb-14 pt-6 sm:px-6 lg:px-8">
    <header className="flex flex-wrap items-center justify-between gap-3">
-    <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-[.23em] text-[#efbd5d]">CUSTOMER ENGAGEMENT</p>
-     <h1 className="mt-1 flex items-center gap-3 text-2xl font-bold text-white sm:text-3xl"><Megaphone className="size-7 shrink-0 text-[#efbd5d]"/>Smart Campaigns</h1>
-     <p className="mt-2 text-sm text-white/55">Bring customers back with targeted, consent-based loyalty reminders.</p></div>
-    <button type="button" onClick={()=>void refresh()} className={secondary}><RefreshCcw className="size-4"/>Refresh</button>
+    <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-[.23em] text-[#efbd5d]">{trI18n("CUSTOMER ENGAGEMENT")}</p>
+     <h1 className="mt-1 flex items-center gap-3 text-2xl font-bold text-white sm:text-3xl"><Megaphone className="size-7 shrink-0 text-[#efbd5d]"/>{trI18n("Smart Campaigns")}</h1>
+     <p className="mt-2 text-sm text-white/55">{trI18n("Bring customers back with targeted, consent-based loyalty reminders.")}</p></div>
+    <button type="button" onClick={()=>void refresh()} className={secondary}><RefreshCcw className="size-4"/>{trI18n("Refresh")}</button>
    </header>
    {error?<p role="alert" className="break-words rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-200">{error}</p>:null}
    {success?<p role="status" className="break-words rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-sm text-emerald-200">{success}</p>:null}
@@ -141,15 +143,15 @@ export default function BusinessCampaignsPage(){
      {copyFrom?<p className="mt-2 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-xs text-amber-100">Previously delivered messages cannot be changed. This creates a new editable draft.</p>:null}
      {editingId?<p className="mt-2 text-xs text-white/55">Scheduled campaigns keep the original delivery time.</p>:null}
      <form onSubmit={e=>void create(e)} className="mt-4 space-y-4">
-      <label className="block text-xs font-medium text-white/60">Campaign title<input className={input} maxLength={80} minLength={3} required value={title} onChange={e=>setTitle(e.target.value)} placeholder="A special offer from your business"/></label>
+      <label className="block text-xs font-medium text-white/60">{trI18n("Campaign title")}<input className={input} maxLength={80} minLength={3} required value={title} onChange={e=>setTitle(e.target.value)} placeholder="A special offer from your business"/></label>
       <label className="block text-xs font-medium text-white/60">Message<textarea className={input+" min-h-28 resize-y"} maxLength={300} minLength={10} required value={message} onChange={e=>setMessage(e.target.value)}/><span className="mt-1 block text-right text-[11px] text-white/40">{message.length}/300</span></label>
-      <fieldset className="space-y-2"><legend className="mb-2 text-xs font-semibold text-white/70">Target audience</legend>
+      <fieldset className="space-y-2"><legend className="mb-2 text-xs font-semibold text-white/70">{trI18n("Target audience")}</legend>
        {segments.map(item=><label key={item.value} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition ${segment===item.value?"border-[#efbd5d]/50 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
         <input type="radio" name="segment" className="accent-[#efbd5d]" checked={segment===item.value} onChange={()=>setSegment(item.value)}/><item.icon className="size-5 shrink-0 text-[#efbd5d]"/>
         <span className="min-w-0"><span className="block text-sm font-semibold text-white">{item.name}</span><span className="block text-xs text-white/45">{item.description}</span></span>
        </label>)}
       </fieldset>
-      <fieldset><legend className="mb-2 text-xs font-semibold text-white/70">Delivery channel</legend>
+      <fieldset><legend className="mb-2 text-xs font-semibold text-white/70">{trI18n("Delivery channel")}</legend>
        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-xs ${channel==="inapp"?"border-[#efbd5d]/50 text-[#efbd5d]":"border-white/10 text-white/65"}`}><input type="radio" checked={channel==="inapp"} onChange={()=>setChannel("inapp")}/><Bell className="size-4"/>In-app notifications</label>
         <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-xs ${channel==="inapp_email"?"border-[#efbd5d]/50 text-[#efbd5d]":"border-white/10 text-white/65"}`}><input type="radio" checked={channel==="inapp_email"} onChange={()=>setChannel("inapp_email")}/><Mail className="size-4"/>In-app + email</label>
@@ -162,7 +164,7 @@ export default function BusinessCampaignsPage(){
     </section>
     <div className="min-w-0 space-y-4">
      <section className={panel}>
-      <h2 className="flex items-center gap-2 text-base font-semibold text-white"><CalendarClock className="size-5 text-[#efbd5d]"/>Campaign history</h2>
+      <h2 className="flex items-center gap-2 text-base font-semibold text-white"><CalendarClock className="size-5 text-[#efbd5d]"/>{trI18n("Campaign history")}</h2>
       {loading?<p className="mt-4 flex items-center gap-2 text-sm text-white/50"><Loader2 className="size-4 animate-spin"/>Loading…</p>:!campaigns.length?<p className="mt-4 text-sm text-white/45">No campaigns created yet. Save a draft to start.</p>:<div className="mt-4 max-h-[460px] space-y-2 overflow-y-auto">
         {campaigns.map(c=><div key={c.id} className={`min-w-0 rounded-xl border p-3 transition ${selected===c.id?"border-[#efbd5d]/45 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
          <button type="button" onClick={()=>void inspect(c.id)} className="flex w-full min-w-0 items-start justify-between gap-2 text-left" aria-label={`View campaign ${c.title}`}>
@@ -213,7 +215,7 @@ export default function BusinessCampaignsPage(){
         </div>:selectedCampaign.status==="scheduled"?<div className="mt-4"><p className="text-xs text-white/55">Scheduled: {date(selectedCampaign.scheduled_at)}. The daily delivery processor runs campaigns at or after the chosen time.</p><button type="button" disabled={busy} className={secondary+" mt-3 w-full"} onClick={()=>void action(selectedCampaign.id,"cancel")}>Cancel scheduled campaign</button></div>:<p className="mt-4 text-xs text-white/45">{selectedCampaign.status==="sent"?"Delivered to opted-in members; email processing may continue on the next run.":"Campaign cancelled."} Email jobs pending: {analytics?.emails_waiting??0}.</p>}
      </section>:null}
      <section className={panel}>
-      <h2 className="flex items-center gap-2 text-base font-semibold text-white"><Zap className="size-5 text-[#efbd5d]"/>Smart automations</h2>
+      <h2 className="flex items-center gap-2 text-base font-semibold text-white"><Zap className="size-5 text-[#efbd5d]"/>{trI18n("Smart automations")}</h2>
       <p className="mt-2 text-xs leading-5 text-white/50">Recurring reminders are created paused, and run at most once per configured interval. Global and business send limits still apply.</p>
       <form className="mt-4 space-y-3" onSubmit={e=>void createAutomation(e)}>
        <label className="block text-xs text-white/60">Automation name<input className={input} value={automationName} minLength={3} maxLength={60} required onChange={e=>setAutomationName(e.target.value)}/></label>
