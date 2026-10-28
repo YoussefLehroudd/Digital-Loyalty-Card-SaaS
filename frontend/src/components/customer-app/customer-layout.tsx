@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { cn } from "@/lib/utils";
 import { CustomerNotificationBell } from "@/components/customer-app/customer-notification-bell";
+import {usePersistentNavScroll} from "@/components/navigation/use-persistent-nav-scroll";
 export function CustomerLayout({ children, title, subtitle, }: {
     children: React.ReactNode;
     title: string;
@@ -38,11 +39,12 @@ export function CustomerLayout({ children, title, subtitle, }: {
       return()=>{valid=false;desktop.removeEventListener("change",sync);};
     },[token]);
     const visibleNav = isAffiliate?[...customerNavItems,customerAffiliateNavItem]:customerNavItems;
+    const sidebarScroll=usePersistentNavScroll("customer:"+(user?.id??"none")+":desktop",pathname);
     return (<div className="relative min-h-dvh overflow-x-clip bg-[#080907] bg-fixed bg-center bg-no-repeat text-foreground lg:flex" style={{
             backgroundImage: "url('/brand/%C3%89l%C3%A9gance%20noire%20aux%20rubans%20dor%C3%A9s.png')",
             backgroundSize: "100% 100%",
         }}>
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:start-0 lg:z-40 lg:flex lg:w-[280px] lg:flex-col lg:border-e lg:border-[#d8a63f]/15 lg:bg-[linear-gradient(180deg,rgba(16,17,14,.98),rgba(8,9,7,.98))] lg:backdrop-blur-xl">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:start-0 lg:z-40 lg:flex lg:w-[280px] lg:flex-col lg:overflow-hidden lg:border-e lg:border-[#d8a63f]/15 lg:bg-[linear-gradient(180deg,rgba(16,17,14,.98),rgba(8,9,7,.98))] lg:backdrop-blur-xl">
         <div className="px-5 pb-2 pt-6">
           <Link href="/user/dashboard" aria-label={tr("LOYVANCE home")} className="group flex items-center gap-3 rounded-2xl p-1 outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55]">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(231,179,84,.12),rgba(231,179,84,.025))] shadow-[0_8px_24px_rgba(0,0,0,.2)] transition group-hover:border-[#e7b354]/40">
@@ -54,7 +56,7 @@ export function CustomerLayout({ children, title, subtitle, }: {
             </span>
           </Link>
         </div>
-        <nav className="flex-1 space-y-1.5 p-4 pt-5">
+        <nav ref={sidebarScroll.ref} onScroll={sidebarScroll.onScroll} onClickCapture={sidebarScroll.onClickCapture} className="loyvance-sidebar-scroll min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain p-4 pt-5">
           {visibleNav.map((item) => {
             const active = pathname === item.href;
             const Icon = item.icon;
@@ -63,7 +65,7 @@ export function CustomerLayout({ children, title, subtitle, }: {
               </Link>);
         })}
         </nav>
-        <div className="border-t border-[#d8a63f]/10 p-4">
+        <div className="shrink-0 border-t border-[#d8a63f]/10 p-4">
           {user ? <AccountIdentity email={user.email} className="mb-3"/> : null}
           <Button variant="outline" className="w-full justify-start gap-2 border-[#d8a63f]/15 bg-black/20 hover:bg-white/5" onClick={logout}>
             <LogOut className="h-4 w-4"/>{tr(" Logout ")}</Button>
