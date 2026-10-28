@@ -20,7 +20,23 @@ export function CustomerLayout({ children, title, subtitle, }: {
     const pathname = usePathname();
     const { user, token, logout } = useCustomerAuth();
     const [isAffiliate,setIsAffiliate] = useState(false);
-    useEffect(()=>{ if(!token){setIsAffiliate(false);return;} let valid=true;apiFetch("/affiliate/me",{token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
+    // Desktop sidebar only: do not refetch affiliate information on every
+    // customer page transition in the mobile PWA. The persistent mobile nav
+    // manages its own membership check once for the current session.
+    useEffect(()=>{
+      if(!token){setIsAffiliate(false);return;}
+      const desktop=window.matchMedia("(min-width: 1024px)");
+      let valid=true;
+      const sync=()=>{
+        if(!desktop.matches){setIsAffiliate(false);return;}
+        apiFetch("/affiliate/me",{token,cache:"no-store"})
+          .then(()=>{if(valid)setIsAffiliate(true);})
+          .catch(()=>{if(valid)setIsAffiliate(false);});
+      };
+      sync();
+      desktop.addEventListener("change",sync);
+      return()=>{valid=false;desktop.removeEventListener("change",sync);};
+    },[token]);
     const visibleNav = isAffiliate?[...customerNavItems,customerAffiliateNavItem]:customerNavItems;
     return (<div className="relative min-h-dvh overflow-x-clip bg-[#080907] bg-fixed bg-center bg-no-repeat text-foreground lg:flex" style={{
             backgroundImage: "url('/brand/%C3%89l%C3%A9gance%20noire%20aux%20rubans%20dor%C3%A9s.png')",
