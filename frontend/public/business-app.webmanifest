@@ -1,22 +1,22 @@
 {
   "id": "/pwa-business",
   "name": "LOYVANCE Business",
-  "short_name": "LOYVANCE Biz",
-  "description": "Business loyalty management, cashier and analytics",
-  "start_url": "/dashboard",
-  "scope": "/",
+  "short_name": "LV Business",
+  "description": "Independent business loyalty app for stores, staff and QR scans",
+  "start_url": "/dashboard?loyvance_app=business",
+  "scope": "/dashboard",
   "display": "standalone",
-  "background_color": "#080907",
-  "theme_color": "#080907",
+  "background_color": "#0e1714",
+  "theme_color": "#0e1714",
   "icons": [
     {
-      "src": "/pwa/icon-192.png",
+      "src": "/pwa-app-icon/business/192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/pwa/icon-512.png",
+      "src": "/pwa-app-icon/business/512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
