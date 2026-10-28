@@ -385,12 +385,18 @@ html.light .loyvance-light-content > header p:not(:first-child) {color:#62695f!i
 /* Customer Wallet: genuinely light surfaces without recoloring the individual
    business-issued loyalty cards and QR designs. */
 html.light .customer-workspace {
-  background-image: none !important;
+  background-image: url("/brand/loyvance-light-ribbons.svg") !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
   background-color: #f7f6f2 !important;
   color: #20251f;
 }
 html.light .customer-sidebar {
-  background-image: none !important;
+  background-image: url("/brand/loyvance-light-sidebar.svg") !important;
+  background-position: bottom center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
   background-color: #fffdfa !important;
   border-color: #e5ded0 !important;
   color: #243026;
@@ -483,4 +489,59 @@ html.light .customer-dashboard .customer-dashboard-action:focus-visible,
 html.light .customer-sidebar .customer-side-link:focus-visible {
   outline: 2px solid #b48220;
   outline-offset: 2px;
+}
+
+
+/* Light-theme branded artwork is separate from the original dark PNGs.
+   Switch backgrounds with CSS only: no reload and no user-generated card edits. */
+html.light .business-main-wallpaper {
+  background-color: #fbf8f0 !important;
+  background-image: url("/brand/loyvance-light-ribbons.svg") !important;
+  background-position: center top !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+}
+html.light .business-main-ribbons,
+html.light .business-main-fade {
+  display: none !important;
+}
+html.light .business-sidebar {
+  background-color: #fffdfa !important;
+  background-image: url("/brand/loyvance-light-sidebar.svg") !important;
+  background-position: bottom center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  border-color: #e8dcc2 !important;
+}
+html.light .business-sidebar-overlay {background-color: transparent !important;}
+html.light .business-sidebar [class*="text-white"],
+html.light .business-sidebar [class*="text-white/"] {
+  color: #354037 !important;
+}
+html.light .business-sidebar .loyvance-sidebar-scroll a,
+html.light .business-sidebar .loyvance-sidebar-scroll button {
+  color: #455248;
+}
+html.light .business-sidebar .loyvance-sidebar-scroll a:hover,
+html.light .business-sidebar .loyvance-sidebar-scroll button:hover {
+  color: #263a2a;
+  background-color: #f8efd9;
+}
+html.light .business-mobile-drawer {
+  background-color: #fffdfa !important;
+  background-image: url("/brand/loyvance-light-sidebar.svg") !important;
+  background-size: cover !important;
+  background-position: center bottom !important;
+  color: #263329 !important;
+}
+html.light .business-mobile-drawer [class*="text-white"] {color: #25332a !important;}
+html.light .business-mobile-drawer [class*="text-white/"] {color: #58645a !important;}
+html.light .business-mobile-drawer .loyvance-sidebar-scroll a,
+html.light .business-mobile-drawer .loyvance-sidebar-scroll button {
+  color: #455248;
+}
+html.light .business-mobile-drawer .loyvance-sidebar-scroll a:hover,
+html.light .business-mobile-drawer .loyvance-sidebar-scroll button:hover {
+  background: #f8efd9;
+  color: #263a2a;
 }
