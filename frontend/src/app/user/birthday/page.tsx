@@ -5,7 +5,7 @@ import {CustomerLayout} from "@/components/customer-app/customer-layout";
 import {useCustomerAuth} from "@/components/customer-app/customer-auth-provider";
 import {apiFetch} from "@/lib/api";
 export default function BirthdayPreferences(){
- const {token}=useCustomerAuth();const [dob,setDob]=useState(""),[consent,setConsent]=useState(false),[saving,setSaving]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(""),[success,setSuccess]=useState("");
+ const {token:customerToken}=useCustomerAuth();const token=customerToken??undefined;const [dob,setDob]=useState(""),[consent,setConsent]=useState(false),[saving,setSaving]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(""),[success,setSuccess]=useState("");
  useEffect(()=>{if(!token)return;let active=true;apiFetch<{birthday:{date_of_birth:string|null;opt_in:boolean}}>("/growth/birthdays",{token,cache:"no-store"}).then(r=>{if(active){setDob(r.birthday.date_of_birth??"");setConsent(r.birthday.opt_in);}}).catch(e=>{if(active)setError(e instanceof Error?e.message:"Unable to load birthday settings.");}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[token]);
  const save=async()=>{setSaving(true);setError("");setSuccess("");try{await apiFetch("/growth/birthdays",{token,method:"PUT",body:JSON.stringify({date_of_birth:dob||null,opt_in:consent})});setSuccess("Your birthday preferences were saved.");}catch(e){setError(e instanceof Error?e.message:"Could not save birthday preferences.");}finally{setSaving(false);}};
  return <CustomerLayout title="Birthday Rewards" subtitle="Optional birthday surprises from your loyalty businesses.">
