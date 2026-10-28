@@ -8,6 +8,7 @@ import { Activity, ArchiveRestore, ArrowUpRight, Building2, Handshake, LayoutDas
 import { adminRequest, clearAdminToken, getAdminToken, type AdminUser } from "@/lib/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
+import {usePersistentNavScroll} from "@/components/navigation/use-persistent-nav-scroll";
 type LiveStatus = "connecting" | "live" | "retrying";
 type AdminContextValue = {
     token: string;
@@ -49,6 +50,8 @@ function AdminWorkspace({ children }: {
     } | null>(null);
     const [liveStatus, setLiveStatus] = useState<LiveStatus>("connecting");
     const [authError, setAuthError] = useState("");
+    const sidebarScroll=usePersistentNavScroll("admin:"+(session?.user.id??"none")+":desktop",pathname);
+    const mobileTabsScroll=usePersistentNavScroll("admin:"+(session?.user.id??"none")+":mobile",pathname,"x");
     useEffect(() => {
         const controller = new AbortController();
         const token = getAdminToken();
@@ -86,7 +89,7 @@ function AdminWorkspace({ children }: {
     const title = adminNavigation.find(item => item.href === pathname)?.label || "Overview";
     return <AdminContext.Provider value={{ ...session, liveStatus, setLiveStatus, logout }}>
     <div className="min-h-dvh bg-[#090b0e] text-[#f3f4f6] selection:bg-[#edbc62]/30">
-      <aside className="fixed inset-y-0 start-0 z-40 hidden w-64 flex-col overflow-y-auto border-e border-white/[.07] bg-[#0d1015] p-5 lg:flex">
+      <aside ref={sidebarScroll.ref} onScroll={sidebarScroll.onScroll} onClickCapture={sidebarScroll.onClickCapture} className="loyvance-sidebar-scroll fixed inset-y-0 start-0 z-40 hidden w-64 flex-col overflow-y-auto overscroll-contain border-e border-white/[.07] bg-[#0d1015] p-5 lg:flex">
         <Link href="/admin" aria-label={tr("LOYVANCE administrator home")} className="flex items-center gap-3 rounded-2xl p-2"><span className="grid size-12 place-items-center rounded-2xl border border-[#edbc62]/25 bg-[#edbc62]/10"><img src="/brand/icon.png" alt="" className="size-10 object-contain"/></span><span><span className="block text-lg font-black tracking-[.13em]">LOYVANCE</span><span className="text-[10px] font-semibold uppercase tracking-[.22em] text-[#edbc62]">{tr("Admin workspace")}</span></span></Link>
         <p className="mb-3 mt-10 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-white/30">{tr("Platform management")}</p>
         <nav aria-label={tr("Administration")} className="space-y-2 pb-4">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${active ? "border border-[#edbc62]/20 bg-[#edbc62]/10 text-[#f4cb80]" : "border border-transparent text-white/55 hover:bg-white/[.04] hover:text-white"}`}><item.icon className="size-[18px]"/>{tr(item.label)}{active ? <span className="ms-auto size-1.5 rounded-full bg-[#edbc62]"/> : null}</Link>; })}</nav>
@@ -119,7 +122,7 @@ function AdminWorkspace({ children }: {
         </header>
         <main className="mx-auto min-w-0 max-w-[1500px] px-3 pb-28 pt-6 sm:px-4 sm:px-8 sm:pt-8 lg:pb-10">{children}</main>
       </div>
-      <nav aria-label={tr("Mobile administration")} className="fixed inset-x-0 bottom-0 z-40 flex overflow-x-auto border-t border-white/10 bg-[#0d1015]/95 px-2 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl lg:hidden">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex min-w-[64px] flex-1 flex-col items-center gap-1.5 rounded-xl py-1 text-[9px] font-semibold ${active ? "text-[#edbc62]" : "text-white/45"}`}><item.icon className="size-5"/><span className="max-w-full truncate px-0.5">{tr(item.label)}</span></Link>; })}</nav>
+      <nav aria-label={tr("Mobile administration")} ref={mobileTabsScroll.ref} onScroll={mobileTabsScroll.onScroll} onClickCapture={mobileTabsScroll.onClickCapture} tabIndex={0} className="customer-bottom-nav-scroll fixed inset-x-0 bottom-0 z-40 flex flex-nowrap gap-1 overflow-x-auto overscroll-x-contain border-t border-white/10 bg-[#0d1015] px-2 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2 lg:hidden">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex min-w-[76px] w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-xl px-1 py-2 text-[10px] font-semibold ${active ? "text-[#edbc62]" : "text-white/45"}`}><item.icon className="size-5"/><span className="max-w-full truncate px-0.5">{tr(item.label)}</span></Link>; })}</nav>
     </div>
   </AdminContext.Provider>;
 }
