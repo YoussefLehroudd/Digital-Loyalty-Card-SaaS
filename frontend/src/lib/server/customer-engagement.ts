@@ -146,7 +146,7 @@ export async function applyPendingReferralBonuses(sql:Sql,memberId:string){
     FROM credited c WHERE a.id=c.award_id RETURNING a.id,a.member_id
    ), reward_ready AS (
     INSERT INTO reward_redemptions(id,business_id,customer_id,loyalty_card_id,status,required_stamps_snapshot,reward_name_snapshot)
-    SELECT gen_random_uuid(),c.business_id,l.customer_id,lc.id,'ready',COALESCE(l.target_stamps,lc.required_stamps),lc.reward_name
+    SELECT gen_random_uuid(),c.business_id,l.customer_id,lc.id,'ready',l.needed,lc.reward_name
     FROM credited l JOIN customers c ON c.id=l.customer_id
     JOIN loyalty_cards lc ON lc.business_id=c.business_id
     WHERE l.current_stamps=l.needed
