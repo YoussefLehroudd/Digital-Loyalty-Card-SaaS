@@ -53,7 +53,7 @@ export function LoginForm() {
             }
             const join = searchParams.get("join");
             const joinBusinessId = searchParams.get("join_business_id");
-            const destination = response.user.role === "customer"
+            const destination = response.user.role === "staff" ? "/dashboard/scanner" : response.user.role === "customer"
                 ? join
                     ? `/user/join?auto=${encodeURIComponent(join)}`
                     : joinBusinessId

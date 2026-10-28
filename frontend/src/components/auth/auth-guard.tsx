@@ -40,7 +40,7 @@ export function AuthGuard({ children, requiredRole, }: {
                 const isExpired = !Number.isFinite(ts) || Date.now() - ts > cachedUserTtlMs;
                 if (raw && !isExpired) {
                     const parsed = JSON.parse(raw) as AuthUser;
-                    if (!requiredRole || parsed.role === requiredRole) {
+                    if (!requiredRole || parsed.role === requiredRole || (requiredRole==="business_owner" && parsed.role==="staff" && pathname === "/dashboard/scanner")) {
                         window.sessionStorage.removeItem(cachedUserCacheKey);
                         window.sessionStorage.removeItem(cachedUserTsCacheKey);
                         if (isMounted) {
@@ -67,7 +67,7 @@ export function AuthGuard({ children, requiredRole, }: {
             }
             try {
                 const response = await getCurrentUser(storedToken);
-                if (requiredRole && response.user.role !== requiredRole) {
+                if (requiredRole && response.user.role !== requiredRole && !(requiredRole==="business_owner" && response.user.role==="staff" && pathname === "/dashboard/scanner")) {
                     clearStoredToken();
                     router.replace("/login");
                     return;
