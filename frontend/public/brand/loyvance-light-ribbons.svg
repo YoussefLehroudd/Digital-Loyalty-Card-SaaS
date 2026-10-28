@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="paper" x1="0" y1="0" x2="1920" y2="1080" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFDF9"/><stop offset=".55" stop-color="#FAF8F1"/><stop offset="1" stop-color="#F7F2E7"/></linearGradient>
+<linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FAE3A3" stop-opacity=".07"/><stop offset=".2" stop-color="#D89A18" stop-opacity=".28"/><stop offset=".43" stop-color="#FFF1BE" stop-opacity=".64"/><stop offset=".58" stop-color="#DAA02E" stop-opacity=".29"/><stop offset=".8" stop-color="#F1CD76" stop-opacity=".14"/><stop offset="1" stop-color="#A87519" stop-opacity=".3"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1920" y2="1080" gradientUnits="userSpaceOnUse"><stop stop-color="#C38B28" stop-opacity=".1"/><stop offset=".3" stop-color="#DDA72C"/><stop offset=".57" stop-color="#F3CB65"/><stop offset=".75" stop-color="#C28B19"/><stop offset="1" stop-color="#E7B54D"/></linearGradient>
+<linearGradient id="ribbonLight" x1="0" y1="0" x2="1920" y2="1080" gradientUnits="userSpaceOnUse"><stop stop-color="#FFFDF7" stop-opacity="0"/><stop offset=".35" stop-color="#F0D79B" stop-opacity=".27"/><stop offset=".5" stop-color="#FFEFC8" stop-opacity=".58"/><stop offset=".7" stop-color="#EDC66C" stop-opacity=".18"/><stop offset="1" stop-color="#FFFDF7" stop-opacity="0"/></linearGradient>
+<radialGradient id="halo"><stop stop-color="#EAC77A" stop-opacity=".22"/><stop offset="1" stop-color="#EAC77A" stop-opacity="0"/></radialGradient>
+<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="28"/></filter>
+</defs>
+<rect width="1920" height="1080" fill="url(#paper)"/>
+<ellipse cx="1770" cy="130" rx="650" ry="420" fill="url(#halo)"/>
+<ellipse cx="130" cy="1050" rx="680" ry="420" fill="url(#halo)"/>
+<!-- Upper-right flowing golden bands, with an open uncluttered center -->
+<path d="M1110 -220C1370 14 1584 8 2015 -164L2070 178C1718 90 1485 110 1248 266C1470 103 1657 -8 1110 -220Z" fill="url(#ribbonLight)"/>
+<path d="M1305 -210C1504 30 1726 37 2026 -70" stroke="url(#gold)" stroke-width="3" opacity=".85"/>
+<path d="M1264 -162C1505 96 1743 111 2030 15" stroke="url(#gold)" stroke-width="1.2" opacity=".66"/>
+<path d="M1398 -210C1656 170 1770 213 2020 165" stroke="url(#gold)" stroke-width="6" opacity=".36"/>
+<path d="M1220 -120C1454 135 1669 220 1986 130L2043 298C1632 240 1436 187 1220 -120Z" fill="url(#metal)" opacity=".5"/>
+<path d="M1390 -94C1620 238 1740 255 2050 216" stroke="url(#gold)" stroke-width="1.8" opacity=".7"/>
+<!-- Bottom-left ribbons curve toward the page edges -->
+<path d="M-230 850C200 1028 280 730 602 750C450 810 438 994 130 1120L-200 1180Z" fill="url(#ribbonLight)" opacity=".8"/>
+<path d="M-80 800C220 965 300 802 570 707" stroke="url(#gold)" stroke-width="3" opacity=".76"/>
+<path d="M-105 864C173 1057 325 849 620 791" stroke="url(#gold)" stroke-width="1.4" opacity=".47"/>
+<path d="M-90 925C155 1105 385 953 672 860" stroke="url(#gold)" stroke-width="5" opacity=".24"/>
+<!-- Minimal thin gold details along far edge -->
+<path d="M1730 450C1840 334 1928 348 2000 309" stroke="#D5AB4B" stroke-width="1.1" opacity=".34"/>
+<path d="M1725 590C1878 442 1921 499 2010 445" stroke="#BD8C2C" stroke-width="1" opacity=".23"/>
+</svg>
