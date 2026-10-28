@@ -37,11 +37,8 @@ export default function PremiumFeaturesPage(){
  }
  const Arrow=language==="ar"?ArrowLeft:ArrowRight;
  return <DashboardShell activeItem="premium">
- <div className="relative isolate mx-auto w-full max-w-[1100px] overflow-hidden px-4 pb-16 pt-8 sm:px-7 sm:pt-10">
-   <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-     <div className="absolute -start-40 top-32 size-[420px] rounded-full bg-[#ba7b0b]/[.07] blur-[100px]"/>
-     <div className="absolute -end-40 bottom-0 size-[460px] rounded-full bg-[#da9a22]/[.08] blur-[110px]"/>
-   </div>
+ <div className="relative isolate min-h-screen w-full bg-[#080907]">
+ <div className="mx-auto w-full max-w-[1100px] px-4 pb-16 pt-8 sm:px-7 sm:pt-10">
    <header className="mb-8">
      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.14em] text-[#eab33e]">
        <span className="inline-flex size-[18px] items-center justify-center rounded-full border-2 border-[#eab33e]"><span className="size-1 rounded-full bg-[#eab33e]"/></span>
@@ -93,6 +90,7 @@ export default function PremiumFeaturesPage(){
       </section>;
     })}
    </div>
+ </div>
  </div>
  </DashboardShell>;
 }
