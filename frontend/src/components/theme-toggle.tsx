@@ -12,7 +12,7 @@ export function ThemeToggle() {
     useEffect(() => {
         setMounted(true);
     }, []);
-    return (<Button aria-label={tr("Toggle theme")} size="icon" variant="ghost" onClick={() => setTheme(isDark ? "light" : "dark")}>
+    return (<Button className="loyvance-theme-toggle" aria-label={tr("Toggle theme")} size="icon" variant="ghost" onClick={() => setTheme(isDark ? "light" : "dark")}>
       {mounted && isDark ? (<Sun className="size-4"/>) : (<Moon className="size-4"/>)}
     </Button>);
 }
