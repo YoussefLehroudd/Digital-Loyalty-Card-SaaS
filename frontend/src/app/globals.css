@@ -1457,3 +1457,65 @@ html.light .admin-login :is(input,textarea) {background:#fff!important;color:#29
 html.light .admin-login [class*="text-white"] {color:#29362d!important;}
 html.light .admin-login [class*="text-white/"] {color:#637064!important;}
 html.light .admin-login [class*="text-[#edbc62]"] {color:#91610d!important;}
+
+
+
+/* Full Light Mode includes the admin navigation and its loading state.
+   The dark charcoal nav remains unchanged when Dark is selected. */
+html.light .admin-workspace .admin-sidebar {
+  background:#fffdfa url("/brand/loyvance-light-sidebar.svg") bottom center/cover no-repeat!important;
+  color:#2b392f!important;
+  border-color:#e5dac7!important;
+}
+html.light .admin-workspace .admin-sidebar nav a:not([aria-current="page"]) {
+  background:rgba(255,253,248,.88)!important;
+  border:1px solid #ded2bf!important;
+  color:#47584a!important;
+}
+html.light .admin-workspace .admin-sidebar nav a:not([aria-current="page"]):hover {
+  background:#fff3d9!important;
+  border-color:#d8b368!important;
+  color:#604710!important;
+}
+html.light .admin-workspace .admin-sidebar nav a[aria-current="page"] {
+  background:#ffedc6!important;
+  border-color:#cba352!important;
+  color:#684708!important;
+}
+html.light .admin-workspace .admin-sidebar [class*="text-white/"] {
+  color:#667465!important;
+}
+html.light .admin-workspace .admin-sidebar [class*="text-white/30"] {
+  color:#687869!important;
+}
+html.light .admin-workspace .admin-sidebar :is(div,p,button)[class*="bg-white/"] {
+  background:rgba(255,253,249,.84)!important;
+}
+html.light .admin-workspace .admin-sidebar :is(div,button)[class*="border-white/"] {
+  border-color:#e0d3bc!important;
+}
+html.light .admin-workspace .admin-sidebar button[class*="text-white/"] {
+  color:#455548!important;
+}
+html.light .admin-workspace .admin-sidebar svg {
+  opacity:1;
+}
+html.light .admin-workspace .admin-mobile-nav {
+  background:#fffdfa!important;
+  border-color:#e1d2b7!important;
+  color:#35453b!important;
+}
+html.light .admin-workspace .admin-mobile-nav a {
+  color:#465648!important;
+}
+html.light .admin-workspace .admin-mobile-nav a[aria-current="page"] {
+  color:#6b4808!important;
+  background:#ffedc7!important;
+}
+html.light .admin-loading {
+  background:#fbf8f1 url("/brand/loyvance-light-ribbons.svg") center/cover!important;
+  color:#29382e!important;
+}
+html.light .admin-skeleton [class*="bg-muted"] {
+  background:#e8dec9!important;
+}

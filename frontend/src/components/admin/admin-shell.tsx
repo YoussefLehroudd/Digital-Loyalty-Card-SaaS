@@ -39,7 +39,7 @@ export function useAdmin() {
 }
 export function AdminSkeleton() {
     const { t: tr } = useI18n();
-    return <div role="status" aria-label={tr("Loading administration")} className="space-y-6 p-5 sm:p-8"><Skeleton className="h-10 w-64"/><Skeleton className="h-5 w-80 max-w-full"/><div className="grid grid-cols-2 gap-4 xl:grid-cols-4">{[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl"/>)}</div><Skeleton className="h-80 rounded-3xl"/></div>;
+    return <div role="status" aria-label={tr("Loading administration")} className="admin-skeleton space-y-6 p-5 sm:p-8"><Skeleton className="h-10 w-64"/><Skeleton className="h-5 w-80 max-w-full"/><div className="grid grid-cols-2 gap-4 xl:grid-cols-4">{[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl"/>)}</div><Skeleton className="h-80 rounded-3xl"/></div>;
 }
 function AdminWorkspace({ children }: {
     children: ReactNode;
@@ -87,7 +87,7 @@ function AdminWorkspace({ children }: {
         }
     }, [router, session]);
     if (!session)
-        return <main className="min-h-screen bg-[#090b0e] text-white">{authError ? <div role="alert" className="mx-auto max-w-md p-8 text-center"><p>{tr(authError)}</p><button onClick={() => location.reload()} className="mt-4 rounded-xl bg-[#edbc62] px-5 py-3 font-semibold text-black">{tr("Try again")}</button></div> : <AdminSkeleton />}</main>;
+        return <main className="admin-loading min-h-screen bg-[#090b0e] text-white">{authError ? <div role="alert" className="mx-auto max-w-md p-8 text-center"><p>{tr(authError)}</p><button onClick={() => location.reload()} className="mt-4 rounded-xl bg-[#edbc62] px-5 py-3 font-semibold text-black">{tr("Try again")}</button></div> : <AdminSkeleton />}</main>;
     const title = adminNavigation.find(item => item.href === pathname)?.label || "Overview";
     return <AdminContext.Provider value={{ ...session, liveStatus, setLiveStatus, logout }}>
     <div className="admin-workspace min-h-dvh bg-[#090b0e] text-[#f3f4f6] selection:bg-[#edbc62]/30">
