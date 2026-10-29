@@ -1519,3 +1519,49 @@ html.light .admin-loading {
 html.light .admin-skeleton [class*="bg-muted"] {
   background:#e8dec9!important;
 }
+
+
+
+/* Admin Archived filters: readable ivory summary tiles in Light Mode.
+   All four categories share one style; selected category keeps gold accent.
+   No changes to dark mode or the recovery actions. */
+html.light .admin-content .admin-archived .admin-archive-filter {
+  background:#fffdfa!important;
+  border:1px solid #dacbad!important;
+  color:#2b3b30!important;
+  box-shadow:0 5px 18px rgba(51,38,23,.055)!important;
+}
+html.light .admin-content .admin-archived .admin-archive-filter .admin-archive-filter-count {
+  color:#26372b!important;
+  opacity:1!important;
+  font-variant-numeric:tabular-nums;
+}
+html.light .admin-content .admin-archived .admin-archive-filter .admin-archive-filter-label {
+  color:#4b594c!important;
+  opacity:1!important;
+}
+html.light .admin-content .admin-archived .admin-archive-filter .admin-archive-filter-icon {
+  color:#956510!important;
+  stroke:#956510!important;
+  opacity:1!important;
+}
+html.light .admin-content .admin-archived .admin-archive-filter:hover {
+  background:#fff4db!important;
+  border-color:#c79c46!important;
+  box-shadow:0 7px 22px rgba(109,75,21,.11)!important;
+}
+html.light .admin-content .admin-archived .admin-archive-filter[aria-pressed="true"] {
+  background:linear-gradient(145deg,#fff0cd,#f7dfab)!important;
+  border-color:#bd8c34!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 6px 22px rgba(114,79,21,.12)!important;
+}
+html.light .admin-content .admin-archived .admin-archive-filter[aria-pressed="true"] .admin-archive-filter-count,
+html.light .admin-content .admin-archived .admin-archive-filter[aria-pressed="true"] .admin-archive-filter-label,
+html.light .admin-content .admin-archived .admin-archive-filter[aria-pressed="true"] .admin-archive-filter-icon {
+  color:#624007!important;
+  stroke:currentColor;
+}
+html.light .admin-content .admin-archived .admin-archive-filter:focus-visible {
+  outline:2px solid #a97820;
+  outline-offset:3px;
+}

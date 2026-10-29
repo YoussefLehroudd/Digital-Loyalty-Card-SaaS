@@ -99,9 +99,9 @@ export default function ArchivedAdminPage(){
     const count=option.id==="all"?totalRecoverable:counts?.[option.id]??0;
     return <button type="button" key={option.id} onClick={()=>{setKind(option.id);setPage(1);setMessage("");}}
       aria-pressed={kind===option.id}
-      className={`min-w-0 rounded-xl border p-3 text-left transition sm:p-4 ${kind===option.id?"border-[#edbc62]/55 bg-[#edbc62]/10":"border-white/10 bg-[#101318] hover:border-[#edbc62]/30"}`}>
-      <div className="flex items-center justify-between gap-2"><Icon className={`size-5 ${kind===option.id?"text-[#edbc62]":"text-white/45"}`}/><span className="text-lg font-bold tabular-nums text-white">{count}</span></div>
-      <p className="mt-2 truncate text-xs font-semibold text-white/75 sm:text-sm">{option.name}</p>
+      className={`admin-archive-filter min-w-0 rounded-xl border p-3 text-left transition sm:p-4 ${kind===option.id?"border-[#edbc62]/55 bg-[#edbc62]/10":"border-white/10 bg-[#101318] hover:border-[#edbc62]/30"}`}>
+      <div className="flex items-center justify-between gap-2"><Icon className={`admin-archive-filter-icon size-5 ${kind===option.id?"text-[#edbc62]":"text-white/45"}`}/><span className="admin-archive-filter-count text-lg font-bold tabular-nums text-white">{count}</span></div>
+      <p className="admin-archive-filter-label mt-2 truncate text-xs font-semibold text-white/75 sm:text-sm">{option.name}</p>
     </button>;
    })}
   </div>
