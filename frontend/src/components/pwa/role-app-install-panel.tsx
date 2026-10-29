@@ -85,7 +85,7 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
    </div>
    {notice?<p role="status" className="mt-4 text-sm text-[#edbc62]">{notice}</p>:null}
    {!available&&!standalone?<p className="mt-3 text-xs text-white/50">{mobile?"If the phone browser does not offer a one-tap installer, tap Install to see clear phone-specific steps.":"If the browser does not offer a one-tap installer, use its menu (Install app / Add to Home Screen)."} This is a PWA, not an APK.</p>:null}
-   <Modal isOpen={instructions} onClose={()=>setInstructions(false)} title={t("Install")+" "+app.name} description={t("Follow these steps to add this app to your Home Screen.")} icon={<Smartphone className="size-6"/>}>
+   <Modal isOpen={instructions} onClose={()=>setInstructions(false)} title={t("Install")+" "+app.name} description={t("Follow these steps to add this app to your Home Screen.")} icon={<Smartphone className="size-6"/>} className="install-help-modal">
      <div className="space-y-4">
        {otherAppWindow?<div className="rounded-xl border border-[#edbc62]/25 bg-[#edbc62]/10 p-3 text-xs leading-5 text-[#edbc62]">Copy the link below and open it in Chrome (Android) or Safari (iPhone), outside the already-installed application. Then install <strong>{app.name}</strong> using its own name and icon.</div>:null}
        {inAppBrowser?<div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">You are viewing Loyvance inside another app. Open the browser menu and choose <strong>Open in browser</strong>. Use Chrome on Android or Safari on iPhone to install.</div>:null}

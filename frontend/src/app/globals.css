@@ -1239,3 +1239,104 @@ html.light .business-loyalty-page :is(.business-loyalty-tools,.business-reward-l
 }
 html.light .business-loyalty-page :is(.business-loyalty-tools,.business-reward-levels)
  [class*="text-[#ffc857]"] {color:#966611!important;}
+
+
+
+/* Theme-correct portalled dialogs: light ivory cards, readable typography,
+   and untouched black QR pixels. In dark theme existing styles still apply. */
+html.light .loyvance-modal-panel.customer-details-modal,
+html.light .loyvance-modal-panel.install-help-modal {
+  background:#fffdfa!important;
+  color:#27352b!important;
+  border:1px solid #dfcda9!important;
+  box-shadow:0 28px 80px rgba(44,35,20,.24)!important;
+}
+html.light :is(.customer-details-modal,.install-help-modal) > div:first-of-type {
+  border-color:#e5dac6!important;
+}
+html.light .customer-details-modal .customer-details-panel {
+  background:#fffaf1!important;
+  border:1px solid #ddceae!important;
+  color:#28382d!important;
+  box-shadow:0 3px 12px rgba(72,50,20,.045)!important;
+}
+html.light .customer-details-modal .customer-details-panel [class*="text-white"] {
+  color:#29382e!important;
+}
+html.light .customer-details-modal .customer-details-panel [class*="text-white/"] {
+  color:#647266!important;
+}
+html.light .customer-details-modal .customer-details-panel [class*="text-[#ffd067]"] {
+  color:#9d690e!important;
+}
+html.light .customer-details-modal .customer-details-panel [class*="text-[#ffc857]"],
+html.light .customer-details-modal .customer-details-panel svg[class*="text-[#ffc857]"] {
+  color:#a06a10!important;
+  stroke:#a06a10!important;
+}
+html.light .customer-details-modal .customer-details-stat {
+  background:#f3ead9!important;
+  border:1px solid #e6d5b9;
+}
+html.light .customer-details-modal .customer-details-qr-panel {
+  background:#fff!important;
+  border:1px dashed #d4bd90!important;
+}
+html.light .customer-details-modal .customer-details-panel [class*="bg-white/"]:not(.customer-details-qr-panel) {
+  background:#f5eedf!important;
+}
+html.light .customer-details-modal .customer-details-panel [class*="border-white/"] {
+  border-color:#dfd1b8!important;
+}
+html.light .customer-details-modal .customer-details-panel .bg-\[linear-gradient\(90deg\,\#9d6813\,\#f3bd55\)\] {
+  background:linear-gradient(90deg,#c38b26,#e8b34b)!important;
+}
+html.light .customer-details-modal .customer-details-panel [class*="bg-white/[.07]"] {
+  background:#e6dbc5!important;
+}
+html.light .customer-details-modal .customer-details-panel [class*="text-emerald-"] {
+  color:#127848!important;
+}
+/* Avoid theme styling on the actual black-and-white QR artwork. */
+html.light .customer-details-modal svg[role="img"] {
+  color:initial;
+}
+
+/* PWA installation help follows light mode, including the step text and CTAs. */
+html.light .install-help-modal .loyvance-modal-body {
+  background:#fffdfa!important;
+  color:#364438!important;
+}
+html.light .install-help-modal :is(ol,li,p,strong) {
+  color:#314135!important;
+}
+html.light .install-help-modal strong {
+  font-weight:700;
+}
+html.light .install-help-modal ol li::marker {color:#986719;}
+html.light .install-help-modal [class*="text-[#edbc62]"] {
+  color:#98660d!important;
+}
+html.light .install-help-modal [class*="text-amber-100"] {
+  color:#745112!important;
+}
+html.light .install-help-modal [class*="bg-[#edbc62]/"] {
+  background:#fff1d3!important;
+  border-color:#dfc18d!important;
+}
+html.light .install-help-modal [class*="bg-amber-400/"] {
+  background:#fff2d9!important;
+  border-color:#e2c28d!important;
+}
+html.light .install-help-modal .loyvance-modal-body > div > div:last-of-type button:first-child {
+  color:#805713!important;
+  border-color:#d5b578!important;
+  background:#fff8ea!important;
+}
+html.light .install-help-modal .loyvance-modal-body > div > div:last-of-type button:last-child {
+  color:#241a0a!important;
+  background:#edb950!important;
+}
+html.light .install-help-modal .loyvance-modal-body > div > div:last-of-type button:hover {
+  filter:brightness(.97);
+}
