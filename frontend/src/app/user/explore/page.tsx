@@ -24,30 +24,30 @@ function BusinessTile({business,onGetCard,busy,distanceKm}:{business:Discoverabl
  const joined=business.has_card;
  const unavailable=!business.available && !joined;
  const color=/^#[0-9a-f]{6}$/i.test(business.primary_color||"")?business.primary_color!:"#e7b354";
- return <article className={`${panel} flex h-full min-w-0 flex-col transition-colors hover:border-[#e7b354]/40`}>
+ return <article className={`${panel} customer-explore-tile flex h-full min-w-0 flex-col transition-colors hover:border-[#e7b354]/40`}>
    <div className="relative h-32 w-full overflow-hidden border-b border-[#e7b354]/10 bg-[radial-gradient(ellipse_at_65%_25%,rgba(208,157,56,.22),transparent_60%),#171913] sm:h-40">
     {business.hero_image_url?<img src={business.hero_image_url} alt="" loading="lazy" className="h-full w-full object-cover opacity-85"/>:null}
     <span className="absolute end-3 top-3 rounded-full border border-white/15 bg-black/75 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur">
      {joined?<span className="inline-flex items-center gap-1 text-emerald-300"><CheckCircle2 className="size-3"/>{tr("Card added")}</span>:business.available?tr("Available"):tr("Currently unavailable")}
     </span>
    </div>
-   <div className="relative flex min-w-0 flex-1 flex-col p-4">
-    <div className="-mt-10 mb-3 flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#26271c] bg-[#12150e] shadow-lg">
+   <div className="customer-explore-body relative flex min-w-0 flex-1 flex-col p-4">
+    <div className="customer-explore-logo -mt-10 mb-3 flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#26271c] bg-[#12150e] shadow-lg">
      {business.logo_url?<img src={business.logo_url} alt="" loading="lazy" className="size-full object-cover"/>:<Store className="size-6" style={{color}}/>}
     </div>
-    <h3 className="min-w-0 break-words text-base font-semibold text-white">{business.name}</h3>
+    <h3 className="customer-explore-title min-w-0 break-words text-base font-semibold text-white">{business.name}</h3>
     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
       {business.category?<span className="rounded-full border border-[#e7b354]/20 bg-[#e7b354]/10 px-2.5 py-1 text-[#f3c66e]">{business.category}</span>:null}
       {business.city?<span className="rounded-full border border-white/10 px-2.5 py-1 text-white/60">{business.city}</span>:null}
       {distanceKm!==null?<span className="rounded-full border border-emerald-300/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-200">{distanceKm.toFixed(1)} km away</span>:null}
     </div>
     {business.address?<p className="mt-1 flex min-w-0 items-start gap-1.5 text-xs leading-5 text-white/50"><MapPin className="mt-0.5 size-3.5 shrink-0"/><span className="min-w-0 break-words">{business.address}</span></p>:null}
-    <div className="mt-4 flex min-w-0 flex-1 flex-col rounded-xl border border-[#e7b354]/15 bg-[#e7b354]/[.045] p-3">
+    <div className="customer-explore-reward mt-4 flex min-w-0 flex-1 flex-col rounded-xl border border-[#e7b354]/15 bg-[#e7b354]/[.045] p-3">
       <div className="flex items-center gap-2 text-xs font-semibold text-[#f1bd58]"><Gift className="size-4 shrink-0"/><span className="min-w-0 break-words">{business.reward_name}</span></div>
       <p className="mt-1 text-[11px] leading-5 text-white/55">{business.reward_description||tr("Collect stamps and unlock rewards.")}</p>
       <span className="mt-2 text-[11px] font-medium text-white/45">{business.required_stamps} {tr("stamps to collect")}</span>
     </div>
-    {business.active_offers?.length?<div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/[.055] p-3">
+    {business.active_offers?.length?<div className="customer-explore-offers mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/[.055] p-3">
       <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300"><Sparkles className="size-4"/>Special Offers</p>
       <div className="mt-2 space-y-1.5">{business.active_offers.map(offer=><p key={offer.id} className="text-xs text-white/70">
         <span className="font-medium">{offer.title}</span> <span className="text-[11px] text-white/40">· Until {new Date(offer.ends_at).toLocaleDateString("fr-MA")}</span>
@@ -59,19 +59,19 @@ function BusinessTile({business,onGetCard,busy,distanceKm}:{business:Discoverabl
         {business.google_maps_url ?
           <a href={business.google_maps_url} target="_blank" rel="noopener noreferrer"
             aria-label={tr("Open this business in Google Maps")}
-            className="inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/[.035] px-2.5 text-xs font-semibold text-white/80 transition hover:border-[#efbd5d]/50 hover:text-[#efbd5d]">
+            className="customer-explore-map-btn inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/[.035] px-2.5 text-xs font-semibold text-white/80 transition hover:border-[#efbd5d]/50 hover:text-[#efbd5d]">
             <MapPin className="size-4 shrink-0 text-[#efbd5d]"/>{tr("Google Maps")}<ExternalLink className="size-3 shrink-0 opacity-60"/>
           </a> : null}
         {business.google_reviews_url ?
           <a href={business.google_reviews_url} target="_blank" rel="noopener noreferrer"
             aria-label={tr("Write a Google review for this business")}
-            className="inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#efbd5d]/25 bg-[#efbd5d]/[.07] px-2.5 text-xs font-semibold text-[#efbd5d] transition hover:bg-[#efbd5d]/15">
+            className="customer-explore-review-btn inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#efbd5d]/25 bg-[#efbd5d]/[.07] px-2.5 text-xs font-semibold text-[#efbd5d] transition hover:bg-[#efbd5d]/15">
             <Star className="size-4 shrink-0"/>{tr("Write a review")}<ExternalLink className="size-3 shrink-0 opacity-60"/>
           </a> : null}
       </div> : null}
     {joined?
-      <Link href={`/user/cards?selected=${encodeURIComponent(business.membership_id||"")}`} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#e7b354]/30 bg-[#e7b354]/10 px-3 text-sm font-bold text-[#f1bd58] transition hover:bg-[#e7b354]/20"><CreditCard className="size-4"/>{tr("View my card")}<ArrowRight className="size-4"/></Link>:
-      <button type="button" disabled={busy||unavailable} onClick={()=>onGetCard(business.id)} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#efbd5d] px-3 text-sm font-bold text-[#10110e] transition hover:bg-[#f7cf82] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35">
+      <Link href={`/user/cards?selected=${encodeURIComponent(business.membership_id||"")}`} className="customer-explore-view-btn mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#e7b354]/30 bg-[#e7b354]/10 px-3 text-sm font-bold text-[#f1bd58] transition hover:bg-[#e7b354]/20"><CreditCard className="size-4"/>{tr("View my card")}<ArrowRight className="size-4"/></Link>:
+      <button type="button" disabled={busy||unavailable} onClick={()=>onGetCard(business.id)} className="customer-explore-add-btn mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#efbd5d] px-3 text-sm font-bold text-[#10110e] transition hover:bg-[#f7cf82] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35">
        {busy?<Loader2 className="size-4 animate-spin"/>:<CreditCard className="size-4"/>}
        {busy?tr("Adding card..."):unavailable?tr("Program unavailable"):tr("Get loyalty card")}
       </button>
