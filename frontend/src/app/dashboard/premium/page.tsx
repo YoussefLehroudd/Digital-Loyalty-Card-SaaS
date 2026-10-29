@@ -39,7 +39,7 @@ export default function PremiumFeaturesPage(){
  return <DashboardShell activeItem="premium">
  <div className="loyvance-light-content relative isolate min-h-screen w-full bg-[#080907]">
  <div className="mx-auto w-full max-w-[1100px] px-4 pb-16 pt-8 sm:px-7 sm:pt-10">
-   <header className="mb-8">
+   <header className="premium-feature-heading mb-8">
      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.14em] text-[#eab33e]">
        <span className="inline-flex size-[18px] items-center justify-center rounded-full border-2 border-[#eab33e]"><span className="size-1 rounded-full bg-[#eab33e]"/></span>
        {t("LOYVANCE BUSINESS")}

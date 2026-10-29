@@ -222,8 +222,8 @@ export function LoyaltyCardSettings() {
         a.remove();
     }, [business?.slug, joinQrDataUrl]);
     return (<DashboardShell activeItem="loyalty">
-      <div className="mx-auto max-w-[1450px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="rounded-[20px] border border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(16,17,14,.94),rgba(8,9,7,.88))] p-5 shadow-[0_18px_55px_rgba(0,0,0,.25)] sm:p-6 flex items-start gap-3 lg:items-center lg:gap-4">
+      <div className="business-loyalty-page mx-auto max-w-[1450px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="business-loyalty-heading rounded-[20px] border border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(16,17,14,.94),rgba(8,9,7,.88))] p-5 shadow-[0_18px_55px_rgba(0,0,0,.25)] sm:p-6 flex items-start gap-3 lg:items-center lg:gap-4">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#d6a33d]/25 bg-[#8b5d12]/20 text-[#ffc857]">
             <CreditCard className="size-5"/>
           </div>
@@ -238,7 +238,7 @@ export function LoyaltyCardSettings() {
 
         {isLoading ? (<LoyaltyCardSettingsSkeleton />) : (<div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
             <div className="min-w-0 space-y-5">
-            <Card className="rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
+            <Card className="business-loyalty-form rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
               <CardHeader>
                 <CardTitle>{loyaltyCard ? tr("Edit loyalty card") : tr("Create loyalty card")}</CardTitle>
                 <CardDescription>{tr(" One loyalty card per business. Updates are scoped to your tenant. ")}</CardDescription>
@@ -355,7 +355,7 @@ function PremiumLoyaltyCardPreview({ business, preview, onOpenJoinQr, }: {
 }) {
     const { t: tr } = useI18n();
     const requiredStamps = Math.max(1, Math.floor(preview.required_stamps || 1));
-    return (<Card className="h-fit overflow-hidden rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
+    return (<Card className="business-loyalty-preview h-fit overflow-hidden rounded-[20px] border-[#d6a33d]/25 bg-[linear-gradient(145deg,rgba(15,16,13,.96),rgba(8,9,7,.93))] shadow-[0_18px_55px_rgba(0,0,0,.3)]">
       <CardHeader>
         <CardTitle>{tr("Customer card preview")}</CardTitle>
         <CardDescription>{tr(" Same card layout your customers see. Member data and QR are customer-specific. ")}</CardDescription>

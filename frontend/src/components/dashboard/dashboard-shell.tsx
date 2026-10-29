@@ -105,7 +105,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
     </main>;
     return (<main className="business-workspace min-h-screen bg-[#070806] text-white">
       <div className="lg:grid lg:grid-cols-[264px_1fr]">
-        <aside className="business-sidebar fixed inset-y-0 start-0 z-30 hidden w-[264px] overflow-hidden border-e border-[#d9a52f]/15 bg-[#090a08] lg:block" style={{ backgroundImage: "url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
+        <aside className="business-sidebar fixed inset-y-0 start-0 z-30 hidden w-[264px] overflow-hidden border-e border-[#d9a52f]/15 bg-[#090a08] lg:block">
           <div className="business-sidebar-overlay absolute inset-0 bg-black/25" aria-hidden="true"/>
           <div className="relative z-10 flex h-dvh flex-col">
             <div className="flex h-20 items-center gap-3 px-5">
@@ -143,7 +143,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
 
           {isMobileMenuOpen ? (<div className="fixed inset-0 z-[120] lg:hidden">
               <button aria-label={tr("Close mobile menu overlay")} className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" onClick={() => setIsMobileMenuOpen(false)} type="button"/>
-              <div className="business-mobile-drawer absolute start-0 top-0 flex h-dvh w-[86%] max-w-[320px] flex-col overflow-hidden border-e border-[#d9a52f]/15 bg-[#090a08] shadow-2xl" style={{ backgroundImage: "linear-gradient(rgba(9,10,8,.88),rgba(9,10,8,.96)), url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
+              <div className="business-mobile-drawer absolute start-0 top-0 flex h-dvh w-[86%] max-w-[320px] flex-col overflow-hidden border-e border-[#d9a52f]/15 bg-[#090a08] shadow-2xl">
                 <div className="flex h-20 shrink-0 items-center justify-between border-b border-[#d9a52f]/15 px-5">
                   <div className="flex min-w-0 items-center gap-2">
                     <Image alt={"LOYVANCE"} className="size-14 object-contain" height={48} priority src="/brand/icon.png" width={48}/>
@@ -192,7 +192,7 @@ function SidebarItem({ active, href, icon: Icon, label, }: {
       </Button>);
     }
     return (<Button asChild className={className} variant="ghost">
-      <Link href={href}>
+      <Link href={href} aria-current={active ? "page" : undefined}>
         <Icon className="size-4"/>
         {tr(label)}
       </Link>
@@ -234,7 +234,7 @@ function MobileDrawerItem({ active, href, icon: Icon, label, onNavigate, }: {
       </Button>);
     }
     return (<Button asChild className={className} variant="ghost">
-      <Link href={href} onClick={onNavigate}>
+      <Link href={href} aria-current={active ? "page" : undefined} onClick={onNavigate}>
         <Icon className="size-4"/>
         {tr(label)}
       </Link>

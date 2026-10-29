@@ -85,7 +85,7 @@ export function Modal({ isOpen, onClose, title, description, icon, allowOverlayC
             if (event.target === event.currentTarget && allowOverlayClose && !closeDisabled)
                 onClose();
         }}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={title ? id + "-title" : undefined} aria-label={title ? undefined : tr("LOYVANCE dialog")} aria-describedby={description ? id + "-description" : undefined} tabIndex={-1} className={cn("relative flex max-h-[calc(100dvh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[24px] border border-[#e7b354]/25 bg-[linear-gradient(145deg,#141510,#090a08)] text-white shadow-[0_30px_100px_rgba(0,0,0,.65),0_0_40px_rgba(231,179,84,.06)] outline-none sm:max-h-[calc(100dvh-48px)]", className)}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={title ? id + "-title" : undefined} aria-label={title ? undefined : tr("LOYVANCE dialog")} aria-describedby={description ? id + "-description" : undefined} tabIndex={-1} className={cn("loyvance-modal-panel relative flex max-h-[calc(100dvh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[24px] border border-[#e7b354]/25 bg-[linear-gradient(145deg,#141510,#090a08)] text-white shadow-[0_30px_100px_rgba(0,0,0,.65),0_0_40px_rgba(231,179,84,.06)] outline-none sm:max-h-[calc(100dvh-48px)]", className)}>
         <div className="flex shrink-0 items-start gap-3 border-b border-white/[.07] p-5 sm:p-6">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-[#e7b354]/20 bg-[#e7b354]/10 text-[#f3bd55] [&_svg]:size-6">
             {icon ?? <img src="/brand/icon.png" alt="" width={32} height={32} className="size-8 object-contain"/>}
@@ -98,7 +98,7 @@ export function Modal({ isOpen, onClose, title, description, icon, allowOverlayC
             <X className="size-4"/>
           </Button>
         </div>
-        <div className="min-h-0 overflow-y-auto overscroll-contain p-5 text-sm text-white/70 sm:p-6 [&_button]:rounded-xl [&_button]:focus-visible:ring-[#f3bd55] [&_button[data-size=default]]:h-11 [&_button[data-variant=default]]:bg-[#f3bd55] [&_button[data-variant=default]]:font-semibold [&_button[data-variant=default]]:text-black [&_button[data-variant=default]]:hover:bg-[#ffd078] [&_button[data-variant=outline]]:border-white/15 [&_button[data-variant=outline]]:bg-white/[.025] [&_button[data-variant=outline]]:text-white/80 [&_button[data-variant=outline]]:hover:bg-white/[.07]" style={{ scrollbarWidth: "thin", scrollbarColor: "#806629 #10110e" }}>{children}</div>
+        <div className="loyvance-modal-body min-h-0 overflow-y-auto overscroll-contain p-5 text-sm text-white/70 sm:p-6 [&_button]:rounded-xl [&_button]:focus-visible:ring-[#f3bd55] [&_button[data-size=default]]:h-11 [&_button[data-variant=default]]:bg-[#f3bd55] [&_button[data-variant=default]]:font-semibold [&_button[data-variant=default]]:text-black [&_button[data-variant=default]]:hover:bg-[#ffd078] [&_button[data-variant=outline]]:border-white/15 [&_button[data-variant=outline]]:bg-white/[.025] [&_button[data-variant=outline]]:text-white/80 [&_button[data-variant=outline]]:hover:bg-white/[.07]" style={{ scrollbarWidth: "thin", scrollbarColor: "#806629 #10110e" }}>{children}</div>
       </div>
     </div>, document.body);
 }

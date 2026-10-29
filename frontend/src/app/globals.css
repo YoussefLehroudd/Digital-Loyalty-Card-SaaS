@@ -361,10 +361,6 @@ html.light aside[class*="bg-[#0d1015]"] a:not([aria-current="page"]) {color:#aeb
 html.light aside[class*="bg-[#0d1015]"] a[aria-current="page"] {color:#f4cb80;}
 html.light aside[class*="bg-[#0d1015]"] [class*="bg-white/"] {background:rgba(255,255,255,.04)!important;}
 html.light aside[class*="bg-[#0d1015]"] [class*="border-white/"] {border-color:rgba(255,255,255,.2)!important;}
-html.light aside[class*="bg-[#090a08]"] [class*="text-white/"],
-html.light aside[class*="bg-[#090a08]"] [class*="text-white"] {color:#f7f2e9!important;}
-html.light aside[class*="bg-[#090a08]"] {background-color:#10110e!important;}
-html.light aside[class*="bg-[#090a08]"] [class*="bg-black/"] {background-color:rgba(0,0,0,.25)!important;}
 html.light [class*="border-white/"]:not(aside):not(.premium-feature-card) {border-color:rgba(50,50,42,.2);}
 html.light [class*="bg-gradient-to-b"][class*="to-[#070806]"] {background-image:none!important;}
 
@@ -1147,3 +1143,64 @@ html.light .business-overview .business-overview-activity svg text {fill:#506151
 html.light .business-overview .business-overview-activity svg [stroke^="rgba(255"] {stroke:rgba(42,54,42,.2)!important;}
 html.light .business-overview .business-loading > div {background:#e9decb!important;}
 html.light .business-content img {filter:none!important;}
+
+
+/* Business Light revision: navigation contrast and native theme backgrounds. */
+.business-sidebar {background-image:url("/brand/Élégantes vagues dorées sur fond noir.png");background-position:bottom;background-size:cover;background-repeat:no-repeat;}
+.business-mobile-drawer {background-image:linear-gradient(rgba(9,10,8,.88),rgba(9,10,8,.96)),url("/brand/Élégantes vagues dorées sur fond noir.png");background-position:bottom;background-size:cover;background-repeat:no-repeat;}
+html.light .business-workspace .business-sidebar,
+html.light .business-workspace .business-mobile-drawer {background:#fffdfa url("/brand/loyvance-light-sidebar.svg") bottom center/cover no-repeat!important;}
+html.light .business-workspace .business-sidebar .business-nav-link,
+html.light .business-workspace .business-mobile-drawer .business-nav-link {
+ color:#293b2c!important;background:rgba(255,253,249,.96)!important;
+ border:1px solid #d7c8a9!important;opacity:1!important;
+}
+html.light .business-workspace .business-sidebar .business-nav-link svg,
+html.light .business-workspace .business-mobile-drawer .business-nav-link svg {
+ color:inherit!important;stroke:currentColor!important;opacity:1!important;
+}
+html.light .business-workspace .business-sidebar .business-nav-link[aria-current="page"],
+html.light .business-workspace .business-mobile-drawer .business-nav-link[aria-current="page"] {
+ color:#624204!important;background:#ffedc8!important;border-color:#cea551!important;
+}
+html.light .business-workspace .business-sidebar .business-nav-link:hover,
+html.light .business-workspace .business-mobile-drawer .business-nav-link:hover {
+ color:#583d07!important;background:#fff0cb!important;border-color:#d6b169!important;
+}
+/* Premium page headings light, keep its gold/black feature tiles untouched. */
+html.light .business-content[data-business-page="premium"] .premium-feature-heading h1 {color:#26342a!important;}
+html.light .business-content[data-business-page="premium"] .premium-feature-heading p:not(:first-child) {color:#5d685d!important;}
+/* Editing forms get ivory surfaces; merchant preview stays independent. */
+html.light .business-loyalty-page :is(.business-loyalty-heading,.business-loyalty-form,.business-loyalty-preview) {
+ background:#fffdfa!important;color:#263329!important;border-color:#e1d1b3!important;
+ box-shadow:0 10px 26px rgba(45,36,21,.075)!important;
+}
+html.light .business-loyalty-page :is(.business-loyalty-heading,.business-loyalty-form,.business-loyalty-preview) :is(h1,h2,h3,p,label,span)[class*="text-white"] {color:#2d3a30!important;}
+html.light .business-loyalty-page :is(.business-loyalty-heading,.business-loyalty-form,.business-loyalty-preview) :is(h1,h2,h3,p,label,span)[class*="text-white/"] {color:#5d6a60!important;}
+html.light .business-loyalty-page .business-loyalty-form :is(input,textarea,select) {
+ background:#fffdfa!important;border-color:#d3c4a9!important;color:#263329!important;color-scheme:light;
+}
+html.light .business-loyalty-page .business-loyalty-form :is(input,textarea)::placeholder {color:#68766a!important;}
+html.light .business-loyalty-page .business-loyalty-form button:disabled {background:#e7e1d7!important;color:#596258!important;}
+html.light .business-loyalty-page .business-loyalty-form [class*="bg-black/"] {background:#f8f2e7!important;}
+/* Business profile's branded card should keep its original white text. */
+html.light .business-workspace .business-content .loyalty-card-visual,
+html.light .business-workspace .business-content .loyalty-card-visual [class*="text-white"] {color:#fffefa!important;}
+html.light .business-workspace .business-content .loyalty-card-visual [class*="text-white/"] {color:rgba(255,255,255,.85)!important;}
+/* Dialogs are portalled to body: light background + legible text. */
+html.light .loyvance-modal-panel {
+ background:#fffdfa!important;color:#263329!important;border-color:#d5c4a6!important;
+ box-shadow:0 22px 64px rgba(45,36,24,.24)!important;
+}
+html.light .loyvance-modal-panel [class*="text-white"] {color:#2c392d!important;}
+html.light .loyvance-modal-panel [class*="text-white/"] {color:#5e6a60!important;}
+html.light .loyvance-modal-body {color:#39473d!important;}
+html.light .loyvance-modal-panel :is(input,textarea,select) {
+ color:#293a2d!important;background:#fffdfa!important;border-color:#d9c7a6!important;color-scheme:light;
+}
+html.light .loyvance-modal-panel button[data-variant="outline"] {
+ background:#fff5e2!important;color:#5b4317!important;border-color:#d4bc8a!important;
+}
+html.light .loyvance-modal-panel button[data-variant="default"] {background:#eeba57!important;color:#21190b!important;}
+html.light .loyvance-modal-panel .loyalty-card-visual,
+html.light .loyvance-modal-panel .loyalty-card-visual [class*="text-white"] {color:#fffefa!important;}

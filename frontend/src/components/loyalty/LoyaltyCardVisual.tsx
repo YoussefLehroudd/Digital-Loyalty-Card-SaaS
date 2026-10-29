@@ -100,7 +100,7 @@ export default function LoyaltyCardVisual({ businessName, businessLogoUrl, heade
         prevFilledRef.current = nextFilled;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filled, remaining, isCustomerStampUi, stampGoal]);
-    return (<div className={dashboardCompact ? "relative aspect-[2.15/1] overflow-hidden rounded-2xl border border-white/10 text-white shadow-sm" : "relative overflow-hidden rounded-2xl border border-white/10 text-white shadow-sm"} style={{
+    return (<div className={dashboardCompact ? "loyalty-card-visual relative aspect-[2.15/1] overflow-hidden rounded-2xl border border-white/10 text-white shadow-sm" : "loyalty-card-visual relative overflow-hidden rounded-2xl border border-white/10 text-white shadow-sm"} style={{
             background: showHero ? "transparent" : `linear-gradient(135deg, ${primary} 0%, rgba(2,6,23,1) 100%)`,
         }}>
       {showHero ? (<>
