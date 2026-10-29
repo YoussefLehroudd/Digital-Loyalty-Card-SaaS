@@ -123,7 +123,7 @@ export default function UserDashboardPage() {
                   <div className="pointer-events-none absolute -left-8 -top-10 size-24 rounded-full bg-[#d79b16]/[.06] blur-2xl"/>
                   <CardContent className="relative min-h-[118px] p-3 sm:min-h-[124px] sm:p-4">
                     <div className="flex items-start gap-3">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(139,93,18,.38),rgba(68,44,7,.24))] text-[#ffc857] shadow-[inset_0_1px_0_rgba(255,218,130,.08)] sm:size-12">
+                      <div className="customer-stat-icon flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/20 bg-[linear-gradient(145deg,rgba(139,93,18,.38),rgba(68,44,7,.24))] text-[#ffc857] shadow-[inset_0_1px_0_rgba(255,218,130,.08)] sm:size-12">
                         <Icon className="size-4 sm:size-5"/>
                       </div>
                       <div className="min-w-0 flex-1 pt-0.5 sm:pt-1">
@@ -178,7 +178,7 @@ export default function UserDashboardPage() {
               <section className="customer-loyalty-panel relative overflow-hidden rounded-[22px] border border-[#d9a72e]/45 bg-[radial-gradient(ellipse_at_-8%_75%,rgba(208,148,20,.14),transparent_28%),radial-gradient(ellipse_at_108%_70%,rgba(208,148,20,.14),transparent_28%),linear-gradient(145deg,#10110f_0%,#090a08_52%,#0c0d0b_100%)] shadow-[inset_0_1px_0_rgba(255,213,103,.08),0_24px_70px_rgba(0,0,0,.32)] lg:min-h-[620px]">
                 <div className="relative z-20 flex items-center justify-between gap-3 px-4 py-4 sm:px-5 lg:px-6 lg:py-5">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[linear-gradient(145deg,rgba(157,107,17,.36),rgba(87,57,9,.28))] text-[#ffd369] shadow-[inset_0_0_18px_rgba(255,194,64,.08)] lg:size-12">
+                    <div className="customer-loyalty-icon flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#e7b354]/25 bg-[linear-gradient(145deg,rgba(157,107,17,.36),rgba(87,57,9,.28))] text-[#ffd369] shadow-[inset_0_0_18px_rgba(255,194,64,.08)] lg:size-12">
                       <CreditCard className="size-4 lg:size-5"/>
                     </div>
                     <div className="min-w-0">
