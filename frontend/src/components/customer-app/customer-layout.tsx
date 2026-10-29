@@ -4,7 +4,7 @@ import {ThemeToggle} from "@/components/theme-toggle";
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Mail } from "lucide-react";
+import { LogOut } from "lucide-react";
 import {customerAffiliateNavItem,customerNavItems} from "@/components/customer-app/customer-nav-items";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
@@ -67,7 +67,6 @@ export function CustomerLayout({ children, title, subtitle, }: {
         })}
         </nav>
         <div className="shrink-0 border-t border-[#d8a63f]/10 p-4">
-          {user ? <AccountIdentity email={user.email} className="mb-3"/> : null}
           <Button variant="outline" className="customer-sidebar-logout w-full justify-start gap-2 border-[#d8a63f]/15 bg-black/20 hover:bg-white/5" onClick={logout}>
             <LogOut className="h-4 w-4"/>{tr(" Logout ")}</Button>
         </div>
@@ -105,25 +104,6 @@ export function CustomerLayout({ children, title, subtitle, }: {
         <main data-customer-route={pathname.split("/")[2] || "dashboard"} className="customer-page mx-auto w-full max-w-md px-4 pb-24 pt-4 lg:max-w-[1440px] lg:px-8 lg:pb-12 lg:pt-7">
           {children}
         </main>
-
-
-
-        {user ? (<footer className="mx-auto w-full max-w-md px-4 pb-28 lg:hidden">
-            <AccountIdentity email={user.email}/>
-          </footer>) : null}
       </div>
     </div>);
-}
-function AccountIdentity({ email, className }: {
-    email: string;
-    className?: string;
-}) {
-    const { t: tr } = useI18n();
-    return (<Link href="/user/profile" className={cn("customer-account-identity flex min-w-0 items-center gap-3 rounded-2xl border border-[#e7b354]/15 bg-[linear-gradient(135deg,rgba(231,179,84,.07),rgba(255,255,255,.015))] p-3 text-start transition hover:border-[#e7b354]/30 hover:bg-[#e7b354]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f3bd55]", className)}>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#e7b354]/10 text-[#f3bd55]"><Mail aria-hidden="true" className="size-4"/></span>
-      <span className="min-w-0">
-        <span className="block text-[10px] font-medium tracking-wide text-white/40">{tr("Your account")}</span>
-        <span title={email} className="mt-0.5 block truncate text-xs font-medium text-white/80">{email}</span>
-      </span>
-    </Link>);
 }
