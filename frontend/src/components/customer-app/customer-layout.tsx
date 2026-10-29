@@ -102,7 +102,7 @@ export function CustomerLayout({ children, title, subtitle, }: {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-md px-4 pb-24 pt-4 lg:max-w-[1440px] lg:px-8 lg:pb-12 lg:pt-7">
+        <main data-customer-route={pathname.split("/")[2] || "dashboard"} className="customer-page mx-auto w-full max-w-md px-4 pb-24 pt-4 lg:max-w-[1440px] lg:px-8 lg:pb-12 lg:pt-7">
           {children}
         </main>
 

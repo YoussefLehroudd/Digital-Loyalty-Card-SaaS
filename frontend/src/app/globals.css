@@ -636,3 +636,278 @@ html.light .customer-dashboard .customer-stat-card div.absolute.end-3 {
   color: #9a640a !important;
   opacity: 1 !important;
 }
+
+
+
+/* Customer Wallet / light theme / per-route contrast correction, Oct 2026.
+   Scoped to user pages, never the merchant's editable loyalty-card artwork.
+   Dark mode is untouched. */
+html.light .customer-page {color:#263126;}
+html.light .customer-page :is(input,select,textarea)[class*="bg-black"],
+html.light .customer-page :is(input,select,textarea)[class*="bg-[#0"],
+html.light .customer-page :is(input,select,textarea)[class*="bg-[#1"] {
+  background:#fffdf9!important;
+  border-color:#d6cbb7!important;
+  color:#263126!important;
+  color-scheme:light;
+}
+html.light .customer-page :is(input,select,textarea)::placeholder {
+  color:#69736a!important;
+  opacity:1;
+}
+html.light .customer-page :is(input,select,textarea):focus-visible {
+  outline:2px solid rgba(176,123,27,.4);
+  outline-offset:1px;
+}
+html.light .customer-page select:disabled,
+html.light .customer-page input:disabled {opacity:.6;}
+
+/* Explore: filter controls become an ivory surface, but actual business
+   cards retain their chosen dark branding, covers and logo colors. */
+html.light [data-customer-route="explore"] input[type="search"],
+html.light [data-customer-route="explore"] button[aria-label="Refresh businesses"] {
+  background:#fffdfa!important;
+  border-color:#d9c49e!important;
+  color:#2d392d!important;
+}
+html.light [data-customer-route="explore"] input[type="search"]::placeholder {color:#6e766d!important;}
+html.light [data-customer-route="explore"] > div > div[role="group"] button[aria-pressed="false"] {
+  background:#fffdfa!important;
+  border-color:#d7c9ac!important;
+  color:#51452b!important;
+}
+html.light [data-customer-route="explore"] > div > section[class*="bg-[#11130f]"] {
+  background:#fffdfa!important;
+  border-color:#e1d5bb!important;
+  color:#273127!important;
+  box-shadow:0 8px 24px rgba(50,41,26,.05);
+}
+html.light [data-customer-route="explore"] > div > section[class*="bg-[#11130f]"] [class*="text-white"] {
+  color:#515c50!important;
+}
+html.light [data-customer-route="explore"] > div > section[class*="bg-[#11130f]"] [class*="text-[#e7b354]"],
+html.light [data-customer-route="explore"] > div > section[class*="bg-[#11130f]"] [class*="text-[#f5c86d]"] {
+  color:#986317!important;
+}
+html.light [data-customer-route="explore"] > div > section[class*="bg-[#11130f]"] :is(select,input) {
+  background:#fff!important;
+  border:1px solid #d5c8ae!important;
+  color:#283529!important;
+}
+html.light [data-customer-route="explore"] > div > section[class*="bg-[#11130f]"] :is(label,button) {
+  color:#435044;
+}
+html.light [data-customer-route="explore"] > div > section[class*="bg-[#11130f]"] button:hover {background:#fff1d4!important;}
+
+/* My Cards: make the gallery paper/light, not the business membership card.
+   QR, stamped artwork and the merchant's own card remain untouched. */
+html.light [data-customer-route="cards"] [class*="bg-[radial-gradient(ellipse_at_-8%_75%"] {
+  background:#fffdfa!important;
+  border-color:#d8c7a1!important;
+  box-shadow:0 14px 34px rgba(48,39,22,.09)!important;
+  color:#273127!important;
+}
+html.light [data-customer-route="cards"] [class*="bg-[radial-gradient(ellipse_at_-8%_75%"] > div > button[variant="outline"] {color:#273127;}
+html.light [data-customer-route="cards"] [class*="bg-[radial-gradient(ellipse_at_-8%_75%"] [class*="text-[#ffd369]"] {
+  color:#99660d!important;
+}
+
+/* Shared readable light typography on first-party content pages. */
+html.light .customer-page:is(
+  [data-customer-route="rewards"],
+  [data-customer-route="activity"],
+  [data-customer-route="invite"],
+  [data-customer-route="feedback"],
+  [data-customer-route="birthday"],
+  [data-customer-route="profile"],
+  [data-customer-route="settings"],
+  [data-customer-route="install"],
+  [data-customer-route="affiliate"]
+) [class*="text-white"] {color:#263126!important;}
+html.light .customer-page:is(
+  [data-customer-route="rewards"],
+  [data-customer-route="activity"],
+  [data-customer-route="invite"],
+  [data-customer-route="feedback"],
+  [data-customer-route="birthday"],
+  [data-customer-route="profile"],
+  [data-customer-route="settings"],
+  [data-customer-route="install"],
+  [data-customer-route="affiliate"]
+) [class*="text-white/"] {color:#5c685b!important;}
+html.light .customer-page :is(p,span,div)[class*="text-white/35"],
+html.light .customer-page :is(p,span,div)[class*="text-white/40"],
+html.light .customer-page :is(p,span,div)[class*="text-white/45"] {opacity:1;}
+
+/* Rewards: counters, earned-reward cards, history and progress surfaces. */
+html.light [data-customer-route="rewards"] [class*="bg-[#10110e]"],
+html.light [data-customer-route="rewards"] [class*="bg-[linear-gradient(145deg,#171811"] {
+  background:#fffdfa!important;
+  border-color:#e2d4b6!important;
+  color:#263126!important;
+  box-shadow:0 8px 26px rgba(47,40,26,.065)!important;
+}
+html.light [data-customer-route="rewards"] [class*="bg-black/"] {background:#f3f0e8!important;}
+html.light [data-customer-route="rewards"] [class*="bg-white/10"] {background:#e3e4dc!important;}
+html.light [data-customer-route="rewards"] [class*="text-[#f3bd55]"] {color:#94620d!important;}
+html.light [data-customer-route="rewards"] [class*="border-white/"] {border-color:#e0d9cd!important;}
+html.light [data-customer-route="rewards"] [class*="text-emerald-"] {color:#16804f!important;}
+
+/* Activity: stats, timeline, date headers, tabs, event rows and search. */
+html.light [data-customer-route="activity"] [class*="bg-[#10110e]"],
+html.light [data-customer-route="activity"] [class*="bg-[#141510]"] {
+  background:#fffdfa!important;
+  border-color:#ded2ba!important;
+  color:#263126!important;
+}
+html.light [data-customer-route="activity"] [class*="bg-black/"] {
+  background:#f5f1e8!important;
+}
+html.light [data-customer-route="activity"] [class*="border-white/"] {
+  border-color:#e2d7c3!important;
+}
+html.light [data-customer-route="activity"] [class*="text-[#f3bd55]"] {color:#976311!important;}
+html.light [data-customer-route="activity"] [class*="bg-white/"] {background:rgba(221,213,193,.18)!important;}
+html.light [data-customer-route="activity"] input[type="search"] {
+  background:#fff!important;
+  color:#243026!important;
+  border:1px solid #d9cbaa!important;
+}
+
+/* Invitations: never put white text over white panels or the muted gray KPIs. */
+html.light [data-customer-route="invite"] [class*="bg-[#12130f]"],
+html.light [data-customer-route="invite"] [class*="bg-[#11130f]"] {
+  background:#fffdfa!important;
+  border:1px solid #e0d2b5!important;
+  box-shadow:0 8px 24px rgba(41,35,23,.05);
+}
+html.light [data-customer-route="invite"] [class*="bg-black/"] {
+  background:#f6eedf!important;
+}
+html.light [data-customer-route="invite"] [class*="text-[#e7b354]"] {color:#94620d!important;}
+html.light [data-customer-route="invite"] input[readonly] {
+  background:#fff!important;
+  color:#2c3a2c!important;
+  border-color:#d0c3a7!important;
+}
+html.light [data-customer-route="invite"] [class*="border-white/"] {border-color:#ddd3c1!important;}
+
+/* Feedback: rating note, business cards and form inputs. */
+html.light [data-customer-route="feedback"] [class*="bg-[#10120f]"],
+html.light [data-customer-route="feedback"] [class*="bg-[#11130f]"] {
+  background:#fffdfa!important;
+  border:1px solid #e0d5bd!important;
+  color:#253026!important;
+}
+html.light [data-customer-route="feedback"] [class*="bg-white/5"] {background:#f5f1e8!important;}
+html.light [data-customer-route="feedback"] [class*="border-white/"] {border-color:#dcd0b9!important;}
+html.light [data-customer-route="feedback"] [class*="text-[#e7b354]"] {color:#96600a!important;}
+html.light [data-customer-route="feedback"] [class*="text-emerald-300"] {color:#167b4e!important;}
+
+/* Birthday: birthdate field, consent option and explanatory text. */
+html.light [data-customer-route="birthday"] [class*="bg-[#11130f]"] {
+  background:#fffdfa!important;
+  border-color:#e1d6c1!important;
+  color:#243026!important;
+}
+html.light [data-customer-route="birthday"] [class*="bg-black/"] {
+  background:#f5f0e6!important;
+  border-color:#d9cbb0!important;
+}
+html.light [data-customer-route="birthday"] [class*="border-white/"] {border-color:#dfd3bf!important;}
+html.light [data-customer-route="birthday"] [class*="text-[#e7b354]"] {color:#946313!important;}
+html.light [data-customer-route="birthday"] input[type="date"] {
+  background:#fff!important;
+  color:#283328!important;
+  color-scheme:light;
+}
+
+/* Profile: light photo header, personal data and password form fields. */
+html.light [data-customer-route="profile"] section[class*="bg-[linear-gradient(120deg"] {
+  background:linear-gradient(120deg,#fffdf8,#faf1dc)!important;
+  border-color:#e2cc9e!important;
+}
+html.light [data-customer-route="profile"] [class*="bg-[#10110e]"] {
+  background:#fffdfa!important;
+  border-color:#e0d4bc!important;
+  color:#253126!important;
+}
+html.light [data-customer-route="profile"] [class*="bg-black/"] {
+  background:#fff!important;
+}
+html.light [data-customer-route="profile"] [class*="border-white/"] {border-color:#ddd2bd!important;}
+html.light [data-customer-route="profile"] [class*="text-[#f3bd55]"] {color:#95650d!important;}
+html.light [data-customer-route="profile"] [class*="text-rose-300"] {color:#b42e52!important;}
+html.light [data-customer-route="profile"] [class*="text-emerald-300"] {color:#167b4a!important;}
+
+/* Security settings: passkeys panel, toggle rows, real device controls. */
+html.light [data-customer-route="settings"] [class*="bg-[#11130f]"] {
+  background:#fffdfa!important;
+  border-color:#e0d3b9!important;
+  color:#253026!important;
+}
+html.light [data-customer-route="settings"] [class*="bg-black/"] {
+  background:#f9f4ea!important;
+  color:#253026!important;
+}
+html.light [data-customer-route="settings"] [class*="border-white/"] {
+  border-color:#d8cebd!important;
+}
+html.light [data-customer-route="settings"] [class*="text-[#e7b354]"] {color:#956211!important;}
+html.light [data-customer-route="settings"] :is(input,select) {color-scheme:light;}
+html.light [data-customer-route="settings"] button[role="switch"] {
+  color:#253026!important;
+  background:#fff!important;
+}
+html.light [data-customer-route="settings"] button[role="switch"] [class*="text-muted-foreground"] {
+  color:#586658!important;
+}
+
+/* Install: all readable content, including manual installation steps. */
+html.light [data-customer-route="install"] section[class*="bg-[#11130f]"] {
+  background:#fffdfa!important;
+  border:1px solid #e0d2b7!important;
+  box-shadow:0 12px 28px rgba(39,33,20,.06);
+}
+html.light [data-customer-route="install"] [class*="border-white/"] {border-color:#dacdb5!important;}
+html.light [data-customer-route="install"] [class*="text-[#edbc62]"] {color:#906009!important;}
+html.light [data-customer-route="install"] [class*="bg-[#edbc62]"] {color:#17120a!important;}
+
+/* Affiliate: white/gold metrics and referral tables, black type on light paper. */
+html.light [data-customer-route="affiliate"] {
+  color:#253025!important;
+}
+html.light [data-customer-route="affiliate"] [class*="bg-[#10130e]"] {
+  background:#fffdfa!important;
+  border:1px solid #ddcfaf!important;
+  box-shadow:0 8px 25px rgba(48,40,26,.055);
+}
+html.light [data-customer-route="affiliate"] [class*="bg-black/"] {
+  background:#f5f0e6!important;
+}
+html.light [data-customer-route="affiliate"] [class*="bg-white/"] {
+  background:#f4efe5!important;
+}
+html.light [data-customer-route="affiliate"] [class*="border-white/"] {
+  border-color:#ddd0b8!important;
+}
+html.light [data-customer-route="affiliate"] [class*="text-[#efbd5d]"] {
+  color:#92600e!important;
+}
+html.light [data-customer-route="affiliate"] [class*="text-amber-200"] {
+  color:#925e08!important;
+}
+html.light [data-customer-route="affiliate"] [class*="text-sky-"] {
+  color:#176ca4!important;
+}
+html.light [data-customer-route="affiliate"] input[readonly] {
+  background:#fff!important;
+  color:#243126!important;
+  border-color:#d6c9b2!important;
+}
+html.light [data-customer-route="affiliate"] :is(button,a)[class*="bg-[#efbd5d]"] {
+  color:#261b0a!important;
+}
+@media (prefers-reduced-motion:reduce) {
+ html.light .customer-page * {scroll-behavior:auto;}
+}
