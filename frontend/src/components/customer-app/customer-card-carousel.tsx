@@ -335,14 +335,14 @@ export function CustomerCardCarousel({ cards, selectedId, onChange, onRefresh, d
 
 
 
-        {dashboardMode ? (<div className="mx-auto grid max-w-[960px] gap-2.5 pt-1 sm:grid-cols-3 lg:pt-3">
-            <Button type="button" variant="outline" className="customer-dashboard-action h-11 w-full border-[#d8a63f]/30 bg-black/25 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 lg:h-12" onClick={() => router.push("/user/rewards")}>
+        {dashboardMode ? (<div className="customer-card-action-container mx-auto w-full max-w-[960px] pt-1 lg:pt-3"><div className="customer-card-action-grid grid gap-2.5">
+            <Button type="button" variant="outline" className="customer-dashboard-action customer-card-action-button min-h-12 h-auto w-full min-w-0 border-[#d8a63f]/30 bg-black/25 px-3 py-2.5 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10" onClick={() => router.push("/user/rewards")}>
               <Gift className="size-4 text-[#ffc857]"/>{tr(" View Rewards ")}</Button>
-            <Button type="button" className="h-11 w-full border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.16)] hover:bg-[#f4c86f] lg:h-12" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
+            <Button type="button" className="customer-card-action-button customer-dashboard-qr-button min-h-12 h-auto w-full min-w-0 border border-[#ffd56b]/45 bg-[linear-gradient(180deg,#ffd36a,#eeb84d)] px-3 py-2.5 font-semibold text-black shadow-[0_8px_24px_rgba(215,155,22,.16)] hover:bg-[#f4c86f]" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
               <QrCode className="size-4"/>{tr(" Show QR Code ")}</Button>
-            <Button type="button" variant="outline" className="customer-dashboard-action h-11 w-full border-[#d8a63f]/30 bg-black/25 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10 lg:h-12" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
+            <Button type="button" variant="outline" className="customer-dashboard-action customer-card-action-button min-h-12 h-auto w-full min-w-0 border-[#d8a63f]/30 bg-black/25 px-3 py-2.5 font-medium hover:border-[#e7b354]/50 hover:bg-[#d79b16]/10" onClick={() => router.push(`/user/cards?selected=${encodeURIComponent(current.id)}`)}>
               <Info className="size-4 text-[#ffc857]"/>{tr(" Card Details ")}</Button>
-          </div>) : (<div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5 lg:absolute lg:end-8 lg:top-[76px] lg:m-0 lg:w-[283px] lg:max-w-none lg:pt-0">
+          </div></div>) : (<div className="mx-auto flex w-full max-w-[420px] flex-col gap-2.5 pt-3 sm:pt-5 lg:absolute lg:end-8 lg:top-[76px] lg:m-0 lg:w-[283px] lg:max-w-none lg:pt-0">
             <Button type="button" variant="outline" className="h-11 w-full lg:rounded-full" disabled={!qrValue || downloadingQr} onClick={() => void downloadQr()}><Download className="size-4"/>{downloadingQr ? tr("Preparing QR…") : tr("Download my QR")}</Button>
             <p className="text-center text-xs text-muted-foreground">{tr("Share this QR with the business for an online order.")}</p>
             {qrDownloadError ? <p role="alert" className="text-center text-xs text-rose-300">{tr(qrDownloadError)}</p> : null}
