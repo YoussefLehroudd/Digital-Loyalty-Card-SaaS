@@ -1565,3 +1565,44 @@ html.light .admin-content .admin-archived .admin-archive-filter:focus-visible {
   outline:2px solid #a97820;
   outline-offset:3px;
 }
+
+
+/* Customer Wallet mobile bottom navigation. In Light Mode the nav surface,
+   tabs and icons use ivory/ink/gold; the existing Dark Mode remains intact.
+   Scope to the nav element, not just its scrollable child. */
+html.light .customer-mobile-bottom-nav {
+  background-color: #fffdfa !important;
+  border-top: 1px solid #e2d4bb !important;
+  color: #455447 !important;
+  box-shadow: 0 -8px 24px rgba(43, 34, 19, .09) !important;
+  color-scheme: light;
+}
+html.light .customer-mobile-bottom-nav .customer-bottom-nav-scroll {
+  background: transparent !important;
+  color: inherit !important;
+}
+html.light .customer-mobile-bottom-nav .customer-mobile-tab:not([aria-current="page"]) {
+  color: #4d5c51 !important;
+  background: transparent !important;
+}
+html.light .customer-mobile-bottom-nav .customer-mobile-tab:not([aria-current="page"]):hover {
+  background: #f7efe1 !important;
+  color: #354739 !important;
+}
+html.light .customer-mobile-bottom-nav .customer-mobile-tab[aria-current="page"] {
+  background: #fff0cc !important;
+  color: #734c09 !important;
+  box-shadow: inset 0 0 0 1px #e3bc6b !important;
+}
+html.light .customer-mobile-bottom-nav .customer-mobile-tab svg,
+html.light .customer-mobile-bottom-nav .customer-mobile-tab span {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+html.light .customer-mobile-bottom-nav .customer-mobile-tab svg {
+  stroke: currentColor !important;
+}
+html.light .customer-mobile-bottom-nav .customer-mobile-tab:focus-visible {
+  outline: 2px solid #ad7c24 !important;
+  outline-offset: 2px;
+}

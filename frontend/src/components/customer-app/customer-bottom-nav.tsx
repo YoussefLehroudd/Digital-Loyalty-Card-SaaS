@@ -77,7 +77,7 @@ export const CustomerBottomNav=memo(function CustomerBottomNav(){
   const visibleNav=isAffiliate?[...customerNavItems,customerAffiliateNavItem]:customerNavItems;
 
   return <nav aria-label={tr("Customer navigation")} data-testid="persistent-customer-bottom-nav"
-    className="fixed inset-x-0 bottom-0 z-[100] border-t border-[#d8a63f]/15 bg-[#0b0c0a] pb-[env(safe-area-inset-bottom)] lg:hidden [transform:translate3d(0,0,0)]">
+    className="customer-mobile-bottom-nav fixed inset-x-0 bottom-0 z-[100] border-t border-[#d8a63f]/15 bg-[#0b0c0a] pb-[env(safe-area-inset-bottom)] lg:hidden [transform:translate3d(0,0,0)]">
     <div ref={scrollRef} onScroll={saveOffset} onTouchEnd={saveOffset} tabIndex={0} className="customer-bottom-nav-scroll w-full overflow-x-auto overflow-y-hidden overscroll-x-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e7b354]">
       <div className="flex w-max min-w-full flex-nowrap items-center gap-1 px-2 py-2">
         {visibleNav.map(item=>{
@@ -85,7 +85,7 @@ export const CustomerBottomNav=memo(function CustomerBottomNav(){
           const Icon=item.icon;
           return <Link key={item.href} href={item.href} onClick={flushOffset} title={tr(item.label)}
             aria-label={tr(item.label)} aria-current={active?"page":undefined}
-            className={cn("flex min-h-12 w-[72px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-1.5 text-[10px] transition-colors sm:w-[84px] sm:text-[11px]",
+            className={cn("customer-mobile-tab flex min-h-12 w-[72px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-1.5 text-[10px] transition-colors sm:w-[84px] sm:text-[11px]",
               active?"bg-[#d79b16]/12 text-[#ffc857]":"text-muted-foreground")}>
             <Icon className="h-[18px] w-[18px] shrink-0"/>
             <span className="block w-full truncate text-center leading-4">{tr(item.label)}</span>
