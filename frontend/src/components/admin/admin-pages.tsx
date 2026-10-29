@@ -16,8 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/api";
 import { adminRequest, type AdminActivity, type AdminCustomerDetail, type AdminDetail, type AdminEvent, type AdminList, type AdminOverview, type AdminRow, type AdminSettings } from "@/lib/admin";
-const panel = "rounded-2xl border border-white/[.08] bg-[#101319] sm:rounded-3xl";
-const input = "h-11 rounded-xl border border-white/10 bg-[#0b0e12] px-4 text-sm text-white outline-none transition focus:border-[#edbc62]/50";
+const panel = "admin-panel rounded-2xl border border-white/[.08] bg-[#101319] sm:rounded-3xl";
+const input = "admin-field h-11 rounded-xl border border-white/10 bg-[#0b0e12] px-4 text-sm text-white outline-none transition focus:border-[#edbc62]/50";
 const number = (n: number) => new Intl.NumberFormat("en").format(n);
 const date = (value: string) => new Date(value).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" });
 function Heading({ eyebrow, title, description, action }: {

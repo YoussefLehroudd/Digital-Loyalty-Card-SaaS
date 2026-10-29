@@ -1340,3 +1340,120 @@ html.light .install-help-modal .loyvance-modal-body > div > div:last-of-type but
 html.light .install-help-modal .loyvance-modal-body > div > div:last-of-type button:hover {
   filter:brightness(.97);
 }
+
+
+
+/* ADMIN LIGHT V2: consistent paper, ink and gold surfaces on every admin route.
+   No changes to dark mode, QR data, merchant artwork, or the charcoal sidebar. */
+html.light .admin-workspace {background:#faf8f2!important;color:#29362d!important;}
+html.light .admin-workspace .admin-content {color:#29362d!important;}
+html.light .admin-workspace .app-topbar {background:#fffdfa!important;color:#28362d!important;border-color:#e5d9c4!important;}
+html.light .admin-workspace .app-topbar [class*="text-white"] {color:#29362d!important;}
+html.light .admin-workspace .app-topbar [class*="text-white/"] {color:#637064!important;}
+html.light .admin-workspace .app-topbar [class*="text-emerald-300"] {color:#087d51!important;}
+html.light .admin-sidebar {background:#10151a!important;color:#e4ecf4!important;}
+html.light .admin-sidebar nav a:not([aria-current="page"]) {color:#b9c7d2!important;}
+html.light .admin-sidebar nav a:hover {color:#fff6d9!important;background:rgba(255,255,255,.055)!important;}
+html.light .admin-sidebar nav a[aria-current="page"] {color:#f3c469!important;background:rgba(237,188,98,.13)!important;border-color:rgba(237,188,98,.3)!important;}
+html.light .admin-sidebar [class*="text-white/"] {color:#aebbc7!important;}
+html.light .admin-mobile-nav {background:#10151a!important;color:#e2eaf2!important;border-color:#39444c!important;}
+/* Common KPIs, analytics, payment and affiliate cards. */
+html.light .admin-content :is(.admin-panel,.admin-visits-chart,.admin-renewals-panel),
+html.light .admin-content :is(div,section,article)[class*="bg-[#101319]"],
+html.light .admin-content :is(div,section,article)[class*="bg-[#101318]"],
+html.light .admin-content :is(div,section,article)[class*="bg-[#11130f]"],
+html.light .admin-content :is(div,section,article)[class*="bg-[#12151b]"] {
+  background:#fffdfa!important;color:#29362d!important;border-color:#e3d4bb!important;
+  box-shadow:0 9px 28px rgba(46,36,23,.06)!important;
+}
+html.light .admin-content [class*="text-white"] {color:#28362c!important;}
+html.light .admin-content [class*="text-white/"] {color:#626f64!important;}
+html.light .admin-content [class*="text-white/25"],
+html.light .admin-content [class*="text-white/30"],
+html.light .admin-content [class*="text-white/35"] {color:#68766b!important;}
+html.light .admin-content [class*="border-white/"] {border-color:#ded3bf!important;}
+html.light .admin-content [class*="divide-white/"] {border-color:#e3d7c4!important;}
+html.light .admin-content [class*="bg-black/"],
+html.light .admin-content [class*="bg-[#0b0e12]"],
+html.light .admin-content [class*="bg-[#0e1114]"] {background:#f6f0e4!important;color:#29382e!important;}
+html.light .admin-content [class*="bg-white/[.025]"],
+html.light .admin-content [class*="bg-white/[.035]"],
+html.light .admin-content [class*="bg-white/[.015]"] {background:#f8f2e8!important;}
+html.light .admin-content [class*="text-[#edbc62]"],
+html.light .admin-content [class*="text-[#efbd5d]"] {color:#91610d!important;}
+html.light .admin-content [class*="text-emerald-300"],
+html.light .admin-content [class*="text-emerald-400"] {color:#137b4e!important;}
+html.light .admin-content [class*="text-rose-300"],
+html.light .admin-content [class*="text-rose-400"] {color:#ac364b!important;}
+html.light .admin-content [class*="text-amber-200"] {color:#94600c!important;}
+html.light .admin-content .admin-field,
+html.light .admin-content :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select) {
+  background:#fff!important;color:#2b3a2e!important;border-color:#d9c8ac!important;color-scheme:light;
+}
+html.light .admin-content :is(input,textarea)::placeholder {color:#738073!important;opacity:1;}
+html.light .admin-content :is(input,textarea,select):focus-visible {outline:2px solid #c09a54;outline-offset:1px;}
+html.light .admin-content :is(button,a)[class*="bg-[#edbc62]"],
+html.light .admin-content :is(button,a)[class*="bg-[#efbd5d]"] {color:#271c0b!important;}
+html.light .admin-content thead {background:#f6efdf!important;color:#3e493b!important;}
+html.light .admin-content tr {border-color:#e0d5c0!important;}
+html.light .admin-content tbody tr:hover {background:#fff5df!important;}
+html.light .admin-content [class*="bg-[#171b21]"] {background:#fff2d1!important;color:#614715!important;}
+html.light .admin-content svg text {fill:#5e685d;}
+/* Custom Status / Subscription selects: trigger and menu use light surfaces. */
+html.light .admin-select [role="combobox"] {
+  background:#fffdfa!important;color:#2e3d31!important;border:1px solid #d8c6a5!important;
+  box-shadow:0 4px 10px rgba(40,33,22,.04)!important;
+}
+html.light .admin-select [role="listbox"] {
+  background:#fffdfa!important;color:#2e3d31!important;border:1px solid #ddcba8!important;
+  box-shadow:0 12px 34px rgba(51,40,21,.14)!important;
+}
+html.light .admin-select [role="option"] {color:#2c3b30!important;}
+html.light .admin-select [role="option"][aria-selected="true"],
+html.light .admin-select [role="option"]:hover {background:#fff1d0!important;}
+html.light .admin-select [role="option"] [class*="text-white"] {color:#2c3b30!important;}
+html.light .admin-select [role="option"] [class*="text-white/"] {color:#667268!important;}
+/* All /admin dialogs are portalled: light inputs, headers and nested rows. */
+html.light .loyvance-modal-panel.admin-dialog {
+ background:#fffdfa!important;color:#29362d!important;border-color:#dac9aa!important;
+ box-shadow:0 28px 72px rgba(45,35,21,.23)!important;
+}
+html.light .admin-dialog :is(div,section,article)[class*="bg-black/"],
+html.light .admin-dialog :is(div,section,article)[class*="bg-[#0b0e12]"],
+html.light .admin-dialog :is(div,section,article)[class*="bg-[#0e1114]"],
+html.light .admin-dialog :is(div,section,article)[class*="bg-[#101319]"] {
+  background:#f7f0e5!important;border-color:#e0d2bc!important;color:#29362d!important;
+}
+html.light .admin-dialog [class*="text-white"] {color:#2b392e!important;}
+html.light .admin-dialog [class*="text-white/"] {color:#647165!important;}
+html.light .admin-dialog [class*="border-white/"] {border-color:#ded3c0!important;}
+html.light .admin-dialog [class*="bg-white/"] {background:#f5efdf!important;}
+html.light .admin-dialog [class*="text-[#edbc62]"],
+html.light .admin-dialog [class*="text-[#efbd5d]"] {color:#90610e!important;}
+html.light .admin-dialog [class*="text-rose-300"] {color:#a73349!important;}
+html.light .admin-dialog :is(input:not([type="checkbox"]),textarea,select) {
+ background:#fffdfa!important;color:#29382c!important;border-color:#d7c7a9!important;color-scheme:light;
+}
+html.light .admin-dialog :is(input,textarea)::placeholder {color:#728075!important;}
+html.light .admin-dialog :is(button,a)[class*="bg-[#edbc62]"],
+html.light .admin-dialog :is(button,a)[class*="bg-[#efbd5d]"] {color:#281d0e!important;}
+html.light .admin-dialog .loyvance-modal-body {scrollbar-color:#c1a26f #fffdfa!important;}
+/* Standalone approval and PWA install views. */
+html.light .admin-content .admin-premium {color:#29362d!important;}
+html.light .admin-content .admin-install-page [class*="bg-[#11130f]"] {
+ background:#fffdfa!important;color:#29362d!important;border-color:#e0d2bb!important;
+}
+html.light .admin-content .admin-install-page [class*="text-white"] {color:#29362d!important;}
+html.light .admin-content .admin-install-page [class*="text-white/"] {color:#637064!important;}
+/* Admin login belongs to same light palette; no effect in Dark. */
+html.light .admin-login {
+ background:#fbf8f1 url("/brand/loyvance-light-ribbons.svg") center/cover!important;color:#29362d!important;
+}
+html.light .admin-login section[class*="bg-[#101319]"] {
+ background:#fffdfa!important;border-color:#dfd1b6!important;color:#29362d!important;
+ box-shadow:0 18px 44px rgba(52,42,25,.1)!important;
+}
+html.light .admin-login :is(input,textarea) {background:#fff!important;color:#29362d!important;border-color:#d7c8ad!important;color-scheme:light;}
+html.light .admin-login [class*="text-white"] {color:#29362d!important;}
+html.light .admin-login [class*="text-white/"] {color:#637064!important;}
+html.light .admin-login [class*="text-[#edbc62]"] {color:#91610d!important;}

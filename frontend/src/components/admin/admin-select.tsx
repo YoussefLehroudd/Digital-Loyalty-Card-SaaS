@@ -90,7 +90,7 @@ export function AdminStatusSelect({ value, onChange, variant = "account" }: {
             }
         }
     }
-    return (<div ref={root} className="relative w-full shrink-0 sm:w-48" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+    return (<div ref={root} className="admin-select relative w-full shrink-0 sm:w-48" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null))
         setOpen(false); }}>
       <button ref={trigger} type="button" role="combobox" aria-label={variant === "subscription" ? tr("Filter by subscription") : tr("Filter by account status")} aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open ? `${id}-${active}` : undefined} onKeyDown={onKeyDown} onClick={() => { setActive(selected); setOpen(currentOpen => !currentOpen); }} className={`flex h-11 w-full items-center gap-2.5 rounded-xl border bg-gradient-to-b from-[#191c22] to-[#101319] px-3 text-xs font-semibold text-white shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#edbc62]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101319] motion-reduce:transition-none ${open ? "border-[#edbc62]/50" : "border-white/10 hover:border-[#edbc62]/30"}`}>
         <span className={`grid size-6 shrink-0 place-items-center rounded-lg bg-white/5 ${current.color}`}><Icon aria-hidden="true" className="size-3.5"/></span>

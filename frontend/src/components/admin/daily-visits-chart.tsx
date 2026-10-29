@@ -59,7 +59,7 @@ export function DailyVisitsChart({ data, days }: { data: DailyMetric[]; days: 7 
   const metricName = metric === "sessions" ? "sessions" : "page views";
 
   return (
-    <section className="min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5" aria-label="Daily visitor traffic chart">
+    <section className="admin-visits-chart min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5" aria-label="Daily visitor traffic chart">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-base font-semibold text-white">

@@ -12,7 +12,7 @@ type Summary={ sessions:number; pageviews:number; clicks:number; avg_seconds:num
 type Visitor={id:string;first_seen:string;last_seen:string;entry_path:string;current_path:string;referrer:string;traffic_source:string;country_code:string|null;city:string|null;region:string|null;device:string;browser:string;os:string;active_seconds:number;pageviews:number;clicks:number;user_name:string|null;user_role:string|null};
 type Event={event_type:"page"|"click";page_path:string;target:string|null;happened_at:string};
 type Analytics={days:number;totals:Summary;daily:Array<{day:string;sessions:number;pageviews:number}>;pages:Array<{name:string;views:number;sessions:number}>;countries:Array<{country_code:string;sessions:number}>;cities:Array<{country_code:string;city:string;region:string;sessions:number}>;sources:Array<{name:string;sessions:number}>;devices:Array<{name:string;sessions:number}>;clicks:Array<{name:string;clicks:number}>;sessions:Visitor[]};
-const card="min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5";
+const card="admin-panel min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5";
 const formatNumber=(value:number)=>new Intl.NumberFormat("en").format(Number(value||0));
 const seconds=(n:number)=>n>=3600?Math.floor(n/3600)+"h "+Math.floor(n%3600/60)+"m":n>=60?Math.floor(n/60)+"m "+n%60+"s":n+"s";
 const date=(value:string)=>{try{return new Date(value).toLocaleString(undefined,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}catch{return value;}};

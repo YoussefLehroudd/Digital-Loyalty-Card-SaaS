@@ -15,7 +15,7 @@ type ArchivedReport={
  data:ArchivedItem[];total:number;page:number;per_page:number;
  counts:{business:number;customer:number;affiliate:number};
 };
-const card="min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5";
+const card="admin-panel min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5";
 const categories=[
  {id:"all" as Kind,name:"All recoverable",icon:ArchiveRestore},
  {id:"business" as Kind,name:"Businesses",icon:Building2},
@@ -83,7 +83,7 @@ export default function ArchivedAdminPage(){
   }finally{setWorking(false);}
  }
  const items=report?.data||[];
- return <div className="min-w-0 space-y-5 text-white">
+ return <div className="admin-archived min-w-0 space-y-5 text-white">
   <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
    <div className="min-w-0">
     <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.18em] text-[#edbc62]"><ArchiveRestore className="size-4"/>Platform recovery</p>

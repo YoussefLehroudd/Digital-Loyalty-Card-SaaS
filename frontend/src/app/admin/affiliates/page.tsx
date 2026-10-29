@@ -17,8 +17,8 @@ type Commission = { subscription_event_id:string; business_name:string; duration
 type Business = { id:string;name:string;created_at:string;attributed_at:string;paid_orders:number;earned_centimes:string };
 type Payout = {id:string;month:string;amount_centimes:number;method:string;reference:string;paid_at:string};
 type Report = {affiliate:Partner;summary:{referred_businesses:number;paid_orders:number;total_centimes:string;unpaid_centimes:string;month_centimes:string};commissions:Commission[];businesses:Business[];payouts:Payout[];history:{month:string;orders:number;earned_centimes:string;unpaid_centimes:string}[]};
-const panel = "w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#101319] p-3.5 sm:p-5";
-const field = "block w-full min-w-0 max-w-full rounded-xl border border-white/15 bg-[#0b0e12] px-3 py-2.5 text-sm text-white outline-none focus:border-[#efbd5d]/60";
+const panel = "admin-panel w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#101319] p-3.5 sm:p-5";
+const field = "admin-field block w-full min-w-0 max-w-full rounded-xl border border-white/15 bg-[#0b0e12] px-3 py-2.5 text-sm text-white outline-none focus:border-[#efbd5d]/60";
 const primary = "inline-flex items-center justify-center gap-2 rounded-xl bg-[#efbd5d] px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-[#f7cd7d] disabled:opacity-50";
 const secondary = "inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/5 disabled:opacity-40";
 const formatMoney=(value:number|string|undefined)=>new Intl.NumberFormat("fr-MA",{style:"currency",currency:"MAD"}).format(Number(value??0)/100);
@@ -137,7 +137,7 @@ export default function AdminAffiliatesPage(){
   }catch(e){setError(e instanceof Error?e.message:"Could not record payout.");}
   finally{setBusy(false);}
  }
- return <div className="w-full min-w-0 max-w-full space-y-5 overflow-x-clip text-white sm:space-y-6">
+ return <div className="admin-affiliates w-full min-w-0 max-w-full space-y-5 overflow-x-clip text-white sm:space-y-6">
   <header className="min-w-0"><p className="mb-2 text-[11px] font-bold uppercase tracking-[.16em] text-[#efbd5d] sm:text-xs sm:tracking-[.2em]">{tr("Partner program")}</p><h1 className="flex min-w-0 items-center gap-2.5 text-2xl font-semibold sm:gap-3 sm:text-3xl"><Handshake className="size-6 shrink-0 text-[#efbd5d] sm:size-7"/><span className="min-w-0 break-words">{tr("Affiliate partners")}</span></h1>
   <p className="mt-2 text-sm text-white/50">{tr("Referral links, confirmed subscriptions, commission earnings and monthly settlements.")}</p></header>
   {error&&<p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-4 text-sm text-rose-200">{tr(error)}</p>}

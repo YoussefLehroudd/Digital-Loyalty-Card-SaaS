@@ -1,6 +1,7 @@
 "use client";
 import { useI18n } from "@/components/i18n/language-provider";
 import { useEffect, useId, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ const openModals: symbol[] = [];
 let originalBodyOverflow = "";
 export function Modal({ isOpen, onClose, title, description, icon, allowOverlayClose = false, closeDisabled = false, children, className, }: ModalProps) {
     const { t: tr } = useI18n();
+    const pathname = usePathname();
     const [mounted, setMounted] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
     const callbacks = useRef({ onClose, closeDisabled });
@@ -85,7 +87,7 @@ export function Modal({ isOpen, onClose, title, description, icon, allowOverlayC
             if (event.target === event.currentTarget && allowOverlayClose && !closeDisabled)
                 onClose();
         }}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={title ? id + "-title" : undefined} aria-label={title ? undefined : tr("LOYVANCE dialog")} aria-describedby={description ? id + "-description" : undefined} tabIndex={-1} className={cn("loyvance-modal-panel relative flex max-h-[calc(100dvh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[24px] border border-[#e7b354]/25 bg-[linear-gradient(145deg,#141510,#090a08)] text-white shadow-[0_30px_100px_rgba(0,0,0,.65),0_0_40px_rgba(231,179,84,.06)] outline-none sm:max-h-[calc(100dvh-48px)]", className)}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={title ? id + "-title" : undefined} aria-label={title ? undefined : tr("LOYVANCE dialog")} aria-describedby={description ? id + "-description" : undefined} tabIndex={-1} className={cn("loyvance-modal-panel relative flex max-h-[calc(100dvh-24px)] w-full max-w-md flex-col overflow-hidden rounded-[24px] border border-[#e7b354]/25 bg-[linear-gradient(145deg,#141510,#090a08)] text-white shadow-[0_30px_100px_rgba(0,0,0,.65),0_0_40px_rgba(231,179,84,.06)] outline-none sm:max-h-[calc(100dvh-48px)]", pathname?.startsWith("/admin") && "admin-dialog", className)}>
         <div className="flex shrink-0 items-start gap-3 border-b border-white/[.07] p-5 sm:p-6">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-[#e7b354]/20 bg-[#e7b354]/10 text-[#f3bd55] [&_svg]:size-6">
             {icon ?? <img src="/brand/icon.png" alt="" width={32} height={32} className="size-8 object-contain"/>}
