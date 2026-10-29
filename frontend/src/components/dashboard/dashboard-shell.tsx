@@ -96,14 +96,14 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
             window.removeEventListener("keydown", onKeyDown);
         };
     }, [isMobileMenuOpen]);
-    if(user.role==="staff")return <main className="min-h-screen bg-[#070806] text-white">
+    if(user.role==="staff")return <main className="business-workspace business-staff-workspace min-h-screen bg-[#070806] text-white">
       <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-[#e7b354]/20 bg-[#080907] px-4 py-4 sm:px-8">
         <div className="flex items-center gap-3"><ScanLine className="size-6 text-[#e7b354]"/><div><p className="font-bold">LOYVANCE · Cashier Scanner</p><p className="text-xs text-white/55">{businessName} · {user.name}</p></div></div>
-        <Button variant="outline" onClick={()=>void signOut()}><LogOut className="size-4"/>Logout</Button>
+        <div className="flex items-center gap-2"><ThemeToggle/><Button variant="outline" onClick={()=>void signOut()}><LogOut className="size-4"/>Logout</Button></div>
       </header>
       {children}
     </main>;
-    return (<main className="min-h-screen bg-[#070806] text-white">
+    return (<main className="business-workspace min-h-screen bg-[#070806] text-white">
       <div className="lg:grid lg:grid-cols-[264px_1fr]">
         <aside className="business-sidebar fixed inset-y-0 start-0 z-30 hidden w-[264px] overflow-hidden border-e border-[#d9a52f]/15 bg-[#090a08] lg:block" style={{ backgroundImage: "url('/brand/Élégantes vagues dorées sur fond noir.png')", backgroundSize: "cover", backgroundPosition: "bottom", backgroundRepeat: "no-repeat" }}>
           <div className="business-sidebar-overlay absolute inset-0 bg-black/25" aria-hidden="true"/>
@@ -132,7 +132,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
           </div>
         </aside>
 
-        <section className="relative min-h-screen min-w-0 bg-[#070806] lg:col-start-2">
+        <section className="business-main relative min-h-screen min-w-0 bg-[#070806] lg:col-start-2">
           <div aria-hidden="true" className="business-main-wallpaper pointer-events-none fixed inset-0 start-0 z-0 bg-[#070806] lg:start-[264px]">
             <div className="business-main-ribbons absolute inset-x-0 top-0 h-[460px] bg-[url('/brand/Rubans_dorés_sur_fond_noir.png')] bg-cover bg-top bg-no-repeat opacity-90 sm:h-[520px]"/>
             <div className="business-main-fade absolute inset-x-0 top-0 h-[620px] bg-gradient-to-b from-transparent via-[#070806]/75 to-[#070806] sm:h-[700px]"/>
@@ -170,7 +170,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
           <BusinessSubscriptionModal data={subscription.data} name={businessName} open={subscriptionOpen} token={token ?? ""} onSaved={subscription.refresh} onClose={() => setSubscriptionOpen(false)}/>
           <BusinessSubscriptionAlert data={subscription.data} name={businessName} onOpen={() => setSubscriptionOpen(true)}/>
           <EchoProvider token={token ?? null}>
-            <DashboardRealtimeContent><fieldset disabled={expired && activeItem !== "affiliate"} aria-label={expired && activeItem !== "affiliate" ? tr("Read-only business workspace") : tr("Business workspace")} className="min-w-0 border-0 p-0 [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-40">{premiumKeys[activeItem] && premiumAccess[premiumKeys[activeItem]]!=="approved" ? <div className="mx-auto max-w-3xl space-y-4 p-8"><h1 className="text-2xl font-bold">{tr("Administrator approval required")}</h1><p className="text-sm text-white/60">{tr("This feature is locked until the platform administrator approves your request.")}</p><Link href="/dashboard/premium" className="inline-flex rounded-xl bg-[#e7b354] px-5 py-3 font-bold text-black">{tr("Request access")}</Link></div> : children}</fieldset></DashboardRealtimeContent>
+            <DashboardRealtimeContent><fieldset disabled={expired && activeItem !== "affiliate"} aria-label={expired && activeItem !== "affiliate" ? tr("Read-only business workspace") : tr("Business workspace")} data-business-page={activeItem} className="business-content min-w-0 border-0 p-0 [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-40">{premiumKeys[activeItem] && premiumAccess[premiumKeys[activeItem]]!=="approved" ? <div className="mx-auto max-w-3xl space-y-4 p-8"><h1 className="text-2xl font-bold">{tr("Administrator approval required")}</h1><p className="text-sm text-white/60">{tr("This feature is locked until the platform administrator approves your request.")}</p><Link href="/dashboard/premium" className="inline-flex rounded-xl bg-[#e7b354] px-5 py-3 font-bold text-black">{tr("Request access")}</Link></div> : children}</fieldset></DashboardRealtimeContent>
           </EchoProvider>
           </div>
         </section>
@@ -184,7 +184,7 @@ function SidebarItem({ active, href, icon: Icon, label, }: {
     label: string;
 }) {
     const { t: tr } = useI18n();
-    const className = cn("h-12 w-full justify-start gap-3 rounded-xl border transition-all", active ? "border-[#f6bd46]/40 bg-gradient-to-r from-[#b27a14]/35 to-[#e4a62e]/15 text-[#ffc857] shadow-[0_0_24px_rgba(224,165,46,.10)]" : "border-transparent text-white/55 hover:border-[#d9a52f]/20 hover:bg-[#d9a52f]/5 hover:text-white");
+    const className = cn("business-nav-link h-12 w-full justify-start gap-3 rounded-xl border transition-all", active ? "border-[#f6bd46]/40 bg-gradient-to-r from-[#b27a14]/35 to-[#e4a62e]/15 text-[#ffc857] shadow-[0_0_24px_rgba(224,165,46,.10)]" : "border-transparent text-white/55 hover:border-[#d9a52f]/20 hover:bg-[#d9a52f]/5 hover:text-white");
     if (!href) {
         return (<Button className={className} disabled variant="ghost">
         <Icon className="size-4"/>
@@ -226,7 +226,7 @@ function MobileDrawerItem({ active, href, icon: Icon, label, onNavigate, }: {
     onNavigate: () => void;
 }) {
     const { t: tr } = useI18n();
-    const className = cn("h-12 w-full justify-start gap-3 rounded-xl border transition-all", active ? "border-[#f6bd46]/40 bg-gradient-to-r from-[#b27a14]/35 to-[#e4a62e]/15 text-[#ffc857] shadow-[0_0_24px_rgba(224,165,46,.10)]" : "border-transparent text-white/55 hover:border-[#d9a52f]/20 hover:bg-[#d9a52f]/5 hover:text-white");
+    const className = cn("business-nav-link h-12 w-full justify-start gap-3 rounded-xl border transition-all", active ? "border-[#f6bd46]/40 bg-gradient-to-r from-[#b27a14]/35 to-[#e4a62e]/15 text-[#ffc857] shadow-[0_0_24px_rgba(224,165,46,.10)]" : "border-transparent text-white/55 hover:border-[#d9a52f]/20 hover:bg-[#d9a52f]/5 hover:text-white");
     if (!href) {
         return (<Button className={className} disabled variant="ghost">
         <Icon className="size-4"/>
@@ -391,13 +391,13 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4"><LanguageSwitcher />
+        <div className="flex items-center gap-2 sm:gap-4"><ThemeToggle/><LanguageSwitcher />
           <div ref={notificationsRef} className="relative">
-            <Button aria-label={tr("Notifications")} onClick={() => setNotificationsOpen((open) => !open)} className="relative text-white/75 hover:bg-white/5 hover:text-white" size="icon" variant="ghost">
+            <Button aria-label={tr("Notifications")} onClick={() => setNotificationsOpen((open) => !open)} className="business-notification-trigger relative text-white/75 hover:bg-white/5 hover:text-white" size="icon" variant="ghost">
               <Bell className="size-5"/>
               {unreadNotifications.length > 0 ? <span className="absolute end-1.5 top-1.5 flex min-w-4 h-4 items-center justify-center rounded-full bg-[#f3bd55] px-1 text-[9px] font-black text-black shadow-[0_0_8px_rgba(243,189,85,.8)]">{Math.min(unreadNotifications.length, 99)}</span> : null}
             </Button>
-            {notificationsOpen ? <div className="fixed start-3 end-3 top-[72px] z-50 max-h-[calc(100dvh-84px)] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#090a08]/[.98] shadow-2xl backdrop-blur-xl sm:absolute sm:start-auto sm:end-0 sm:top-12 sm:w-[min(360px,calc(100vw-24px))] sm:max-h-none">
+            {notificationsOpen ? <div className="business-notification-popover fixed start-3 end-3 top-[72px] z-50 max-h-[calc(100dvh-84px)] overflow-hidden rounded-2xl border border-[#e7b354]/25 bg-[#090a08]/[.98] shadow-2xl backdrop-blur-xl sm:absolute sm:start-auto sm:end-0 sm:top-12 sm:w-[min(360px,calc(100vw-24px))] sm:max-h-none">
               <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3"><div className="min-w-0"><p className="font-bold text-white">{tr("Notifications")}</p><p className="text-xs text-white/45">{tr("Latest business activity")}</p></div>{unreadNotifications.length > 0 ? <button type="button" onClick={markAllRead} className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#f3bd55] transition hover:bg-[#f3bd55]/10">{tr("Read all")}</button> : <span className="shrink-0 text-xs text-white/30">{tr("All read")}</span>}</div>
               <div className="max-h-[calc(100dvh-155px)] overscroll-contain overflow-y-auto p-2 sm:max-h-[420px]" onWheel={(event) => event.stopPropagation()} onTouchMove={(event) => event.stopPropagation()}>{liveNotifications.length ? liveNotifications.slice(0, 20).map((item) => <div key={item.type + "-" + item.id} onClick={() => void markOneRead(item)} className={`cursor-pointer rounded-xl px-3 py-3 hover:bg-white/[.04] ${item.is_read ? "opacity-55" : ""}`}><div className="flex items-start gap-3">{!item.is_read ? <span className="mt-1 size-2 shrink-0 rounded-full bg-[#f3bd55]"/> : <span className="mt-1 size-2 shrink-0" aria-hidden="true"/>}<div className="min-w-0"><p className="text-sm font-semibold text-white">{tr(item.title)}</p><p className="mt-0.5 text-xs leading-5 text-white/55">{tr(item.message)}</p><p className="mt-1 whitespace-nowrap text-[10px] text-white/35">{new Date(item.created_at).toLocaleString(getFormattingLocale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p></div></div></div>) : <p className="px-3 py-8 text-center text-sm text-white/40">{tr("No notifications yet.")}</p>}</div>
             </div> : null}

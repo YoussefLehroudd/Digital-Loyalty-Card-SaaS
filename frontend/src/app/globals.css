@@ -1053,3 +1053,97 @@ html.light .customer-loading-indicator svg {
 @media (prefers-reduced-motion:reduce) {
   .customer-loading-block {animation:none!important;}
 }
+
+
+/* Business workspace Light Mode — scoped, preserve Dark Mode & brand card designs. */
+html.light .business-workspace,html.light .business-main {background-color:#faf8f2!important;color:#263126!important;}
+html.light .business-sidebar,html.light .business-mobile-drawer {
+ background:#fffdfa url("/brand/loyvance-light-sidebar.svg") center bottom/cover no-repeat!important;
+ border-color:#dfd3bd!important;color:#273329!important;
+}
+html.light .business-sidebar-overlay {background:transparent!important;}
+html.light .business-sidebar .business-nav-link,
+html.light .business-mobile-drawer .business-nav-link {
+ color:#455145!important;background:rgba(255,253,248,.88)!important;
+ border:1px solid #dfd4c0!important;box-shadow:none!important;
+}
+html.light .business-sidebar .business-nav-link:hover,
+html.light .business-mobile-drawer .business-nav-link:hover {
+ background:#fff2d5!important;border-color:#d2a352!important;color:#71500b!important;
+}
+html.light .business-sidebar .business-nav-link[class*="from-[#b27a14]"],
+html.light .business-mobile-drawer .business-nav-link[class*="from-[#b27a14]"] {
+ background:#ffedc7!important;border-color:#cfa049!important;color:#694705!important;
+}
+html.light .business-sidebar .business-nav-link svg,
+html.light .business-mobile-drawer .business-nav-link svg {color:inherit!important;opacity:1!important;}
+html.light .business-sidebar [class*="text-muted-foreground"],
+html.light .business-mobile-drawer [class*="text-muted-foreground"] {color:#586258!important;}
+html.light .business-sidebar button:not(.business-subscription-card)[class*="text-white/"],
+html.light .business-mobile-drawer button:not(.business-subscription-card)[class*="text-white/"] {color:#465346!important;}
+html.light .business-subscription-card {background:linear-gradient(135deg,#4b3920,#1c211c)!important;color:#fff8e9!important;}
+html.light .business-sidebar .business-subscription-card [class*="text-white"],
+html.light .business-mobile-drawer .business-subscription-card [class*="text-white"] {color:#fff8e9!important;}
+html.light .business-sidebar .business-subscription-card [class*="text-white/"],
+html.light .business-mobile-drawer .business-subscription-card [class*="text-white/"] {color:#d5c7ad!important;}
+html.light .business-workspace .app-topbar {background:#fffdfa!important;border-color:#e1d2b7!important;color:#263126!important;}
+html.light .business-workspace .app-topbar [class*="text-white"] {color:#29342b!important;}
+html.light .business-workspace .app-topbar [class*="text-white/"] {color:#5e685e!important;}
+html.light .business-workspace .app-topbar :is(.business-notification-trigger,.loyvance-theme-toggle) {
+ background:#fff9ed!important;color:#795619!important;border:1px solid #dfcea9!important;
+}
+html.light .business-workspace .app-topbar :is(.business-notification-trigger,.loyvance-theme-toggle) svg {
+ stroke:#795619!important;color:#795619!important;opacity:1!important;
+}
+html.light .business-workspace .business-notification-popover {background:#fffdfa!important;border-color:#dbcbab!important;color:#263126!important;}
+html.light .business-content {color:#283429!important;}
+/* Convert dark first-party dashboard surfaces, but not merchant loyalty artwork or Premium's branded cards. */
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"])
+ :is(section,article,div,form)[class*="rounded-"][class*="bg-[linear-gradient"],
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"])
+ :is(section,article,div,form)[class*="rounded-"][class*="bg-[#0"],
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"])
+ :is(section,article,div,form)[class*="rounded-"][class*="bg-[#1"] {
+ background:#fffdfa!important;border-color:#ded0b4!important;
+ box-shadow:0 7px 24px rgba(51,42,25,.055)!important;color:#29352b!important;
+}
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"]) [class*="text-white"] {color:#29352b!important;}
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"]) [class*="text-white/"] {color:#606b61!important;}
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"]) :is(input,textarea,select) {
+ background-color:#fffdfa!important;border-color:#d6c7ad!important;color:#263126!important;color-scheme:light;
+}
+html.light .business-content :is(input,textarea,select)::placeholder {color:#727b71!important;opacity:1;}
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"]) [class*="bg-black/"] {background-color:#f7f0e3!important;}
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"]) [class*="border-white/"] {border-color:#d9cebd!important;}
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"]) [class*="text-[#ffc857]"],
+html.light .business-content:not([data-business-page="premium"]):not([data-business-page="loyalty"]) [class*="text-[#e7b354]"] {color:#94620c!important;}
+html.light .business-content[data-business-page="premium"] .premium-feature-card {background:#10100c!important;color:#fffdfa!important;}
+html.light .business-content[data-business-page="premium"] .premium-feature-card [class*="text-white"] {color:#fffdfa!important;}
+html.light .business-content[data-business-page="premium"] .premium-feature-card [class*="text-white/"] {color:#b8b6ae!important;}
+
+/* Overview page: hero, KPI tiles, chart, date filters and loading state. */
+html.light .business-overview > section:first-child [class*="text-white"] {color:#253126!important;}
+html.light .business-overview > section:first-child [class*="text-white/"] {color:#59655b!important;}
+html.light .business-overview .business-overview-metric,
+html.light .business-overview .business-overview-activity,
+html.light .business-overview section[class*="bg-[linear-gradient"] {
+ background:#fffdfa!important;border-color:#e0d0b0!important;color:#263126!important;
+ box-shadow:0 9px 26px rgba(47,38,22,.07)!important;
+}
+html.light .business-overview .business-overview-metric [class*="text-white"],
+html.light .business-overview .business-overview-activity [class*="text-white"] {color:#263126!important;}
+html.light .business-overview .business-overview-metric [class*="text-white/"],
+html.light .business-overview .business-overview-activity [class*="text-white/"] {color:#606b60!important;}
+html.light .business-overview .business-overview-metric [class*="text-[#45df71]"] {color:#137b48!important;}
+html.light .business-overview .business-date-picker > button,
+html.light .business-overview .business-date-picker > div {
+ background:#fffdfa!important;color:#293529!important;border:1px solid #decba6!important;
+ box-shadow:0 4px 14px rgba(40,32,18,.05)!important;
+}
+html.light .business-overview .business-date-picker [class*="text-white"] {color:#293529!important;}
+html.light .business-overview .business-date-picker [class*="text-white/"] {color:#5e685e!important;}
+html.light .business-overview .business-date-picker svg {stroke:#906923!important;}
+html.light .business-overview .business-overview-activity svg text {fill:#506151!important;}
+html.light .business-overview .business-overview-activity svg [stroke^="rgba(255"] {stroke:rgba(42,54,42,.2)!important;}
+html.light .business-overview .business-loading > div {background:#e9decb!important;}
+html.light .business-content img {filter:none!important;}
