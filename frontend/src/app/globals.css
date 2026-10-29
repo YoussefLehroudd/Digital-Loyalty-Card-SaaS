@@ -1204,3 +1204,38 @@ html.light .loyvance-modal-panel button[data-variant="outline"] {
 html.light .loyvance-modal-panel button[data-variant="default"] {background:#eeba57!important;color:#21190b!important;}
 html.light .loyvance-modal-panel .loyalty-card-visual,
 html.light .loyvance-modal-panel .loyalty-card-visual [class*="text-white"] {color:#fffefa!important;}
+
+
+
+/* Finish the Business light palette for action tiles and reward editor sections. */
+html.light .business-overview .business-quick-action {
+ background:#fff8ea!important;color:#29382e!important;
+ border:1px solid #ddc7a0!important;
+ box-shadow:0 4px 14px rgba(54,43,25,.045)!important;
+}
+html.light .business-overview .business-quick-action:hover {
+ background:#fff0d3!important;border-color:#cda354!important;
+}
+html.light .business-overview .business-quick-action [class*="text-white"] {color:#29382e!important;}
+html.light .business-overview .business-quick-action [class*="text-white/"] {color:#5f6b61!important;}
+html.light .business-overview .business-quick-action svg {stroke:#93630c!important;}
+html.light .business-loyalty-page .business-loyalty-tools > section,
+html.light .business-loyalty-page .business-reward-levels {
+ background:#fffdfa!important;color:#28372b!important;
+ border-color:#decfae!important;
+ box-shadow:0 8px 24px rgba(51,38,20,.055)!important;
+}
+html.light .business-loyalty-page :is(.business-loyalty-tools,.business-reward-levels)
+ [class*="text-white/"] {color:#596b60!important;}
+html.light .business-loyalty-page :is(.business-loyalty-tools,.business-reward-levels)
+ [class*="text-white"] {color:#26362a!important;}
+html.light .business-loyalty-page :is(.business-loyalty-tools,.business-reward-levels)
+ [class*="bg-black/"] {background:#f6efe4!important;}
+html.light .business-loyalty-page :is(.business-loyalty-tools,.business-reward-levels)
+ [class*="border-white/"] {border-color:#d8c8a7!important;}
+html.light .business-loyalty-page :is(.business-loyalty-tools,.business-reward-levels)
+ :is(input,textarea,select) {
+ background:#fffdfa!important;color:#2a392d!important;border-color:#d9c5a2!important;color-scheme:light;
+}
+html.light .business-loyalty-page :is(.business-loyalty-tools,.business-reward-levels)
+ [class*="text-[#ffc857]"] {color:#966611!important;}
