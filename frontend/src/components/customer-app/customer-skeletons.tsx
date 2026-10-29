@@ -1,12 +1,12 @@
 "use client";
 import { useI18n } from "@/components/i18n/language-provider";
 import { Skeleton } from "@/components/ui/skeleton";
-const panel = "rounded-2xl border border-[#d8a63f]/15 bg-[#10110e]/95";
+const panel = "customer-loading-panel rounded-2xl border border-[#d8a63f]/15 bg-[#10110e]/95";
 function Block({ className = "" }: {
     className?: string;
 }) {
     const { t: tr } = useI18n();
-    return <Skeleton aria-hidden="true" className={`bg-white/[.07] motion-reduce:animate-none ${className}`}/>;
+    return <Skeleton aria-hidden="true" className={`customer-loading-block bg-white/[.07] motion-reduce:animate-none ${className}`}/>;
 }
 export function CustomerStatsSkeleton({ count = 4 }: {
     count?: number;
@@ -22,7 +22,7 @@ export function CustomerStatsSkeleton({ count = 4 }: {
 }
 export function CustomerCardSkeleton() {
     const { t: tr } = useI18n();
-    return (<div aria-hidden="true" className="mx-auto min-h-[240px] w-full max-w-[450px] rounded-[24px] border border-[#d8a63f]/20 bg-[linear-gradient(145deg,#191a14,#0c0d09)] p-5 shadow-xl">
+    return (<div aria-hidden="true" className="customer-loading-card mx-auto min-h-[240px] w-full max-w-[450px] rounded-[24px] border border-[#d8a63f]/20 bg-[linear-gradient(145deg,#191a14,#0c0d09)] p-5 shadow-xl">
       <div className="flex items-center gap-3"><Block className="size-10 shrink-0 rounded-xl"/><div className="flex-1 space-y-2"><Block className="h-4 w-2/3"/><Block className="h-2.5 w-1/3"/></div></div>
       <div className="mt-5 flex items-center justify-between gap-4"><div className="flex-1 space-y-3"><Block className="h-3 w-3/4"/><Block className="h-2 w-full rounded-full"/><Block className="h-3 w-1/2"/></div><Block className="size-16 shrink-0 rounded-xl sm:size-20"/></div>
       <div className="mt-5 grid grid-cols-5 gap-2">{Array.from({ length: 5 }, (_, i) => <Block key={i} className="aspect-square max-h-10 rounded-full"/>)}</div>
@@ -32,7 +32,7 @@ export function CustomerListSkeleton({ rows = 3 }: {
     rows?: number;
 }) {
     const { t: tr } = useI18n();
-    return (<div role="status" aria-label={tr("Loading updates")} className="space-y-3">
+    return (<div role="status" aria-label={tr("Loading updates")} className="customer-loading-skeleton space-y-3">
       {Array.from({ length: rows }, (_, i) => (<div key={i} aria-hidden="true" className={`${panel} flex items-start gap-3 p-4`}>
           <Block className="size-9 shrink-0 rounded-xl"/>
           <div className="min-w-0 flex-1 space-y-2.5"><Block className="h-3.5 w-2/3"/><Block className="h-2.5 w-full"/><Block className="h-2 w-1/3"/></div>
@@ -46,7 +46,7 @@ export function CustomerPageSkeleton({ variant = "dashboard" }: {
     const { t: tr } = useI18n();
     if (variant === "notifications")
         return <CustomerListSkeleton rows={4}/>;
-    return (<div role="status" aria-label={tr("Loading page content")} className="space-y-5">
+    return (<div role="status" aria-label={tr("Loading page content")} className="customer-loading-skeleton space-y-5">
       {variant === "dashboard" ? <CustomerStatsSkeleton /> : variant === "activity" || variant === "rewards" ? <CustomerStatsSkeleton count={3}/> : null}
       {variant === "dashboard" || variant === "cards" || variant === "join" ? (<div aria-hidden="true" className={`${panel} space-y-5 p-4 sm:p-6`}>
           <div className="flex items-center justify-between gap-4"><div className="space-y-2"><Block className="h-4 w-36"/><Block className="h-2.5 w-44"/></div><Block className="h-9 w-20 rounded-xl"/></div>

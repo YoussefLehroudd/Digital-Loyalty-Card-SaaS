@@ -185,7 +185,7 @@ export default function UserExploreBusinessesPage(){
      <p className="mt-2 text-[11px] text-white/40">{filtered.length} matching businesses · Nearby only includes businesses that added their public shop coordinates.</p>
    </section>
    {error?<div role="alert" className="rounded-xl border border-rose-300/25 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">{error}</div>:null}
-   {loading?<div className="flex min-h-48 items-center justify-center gap-2 text-sm text-white/60"><Loader2 className="size-5 animate-spin text-[#efbd5d]"/>{tr("Loading businesses...")}</div>:
+   {loading?<div role="status" className="customer-loading-indicator flex min-h-48 items-center justify-center gap-2 text-sm text-white/60"><Loader2 className="size-5 animate-spin text-[#efbd5d]"/>{tr("Loading businesses...")}</div>:
     filtered.length?<div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{filtered.map(item=><BusinessTile key={item.id} business={item} distanceKm={item.distanceKm} busy={pending===item.id} onGetCard={getCard}/>)}</div>:
     <div className={`${panel} flex flex-col items-center p-8 text-center`}><Store className="size-9 text-[#efbd5d]/70"/><h2 className="mt-3 text-sm font-semibold text-white">{tr("No businesses found")}</h2><p className="mt-2 max-w-sm text-xs leading-5 text-white/45">{tr("Try another search or select All businesses. New stores will appear here as they join LOYVANCE.")}</p><button type="button" className="mt-4 rounded-xl border border-white/15 px-4 py-2 text-xs text-white/70" onClick={()=>{setSearch("");setFilter("all");setCity("all");setCategory("all");setNearby(false);setOnlyOffers(false);setSort("recommended");}}>{tr("Show all businesses")}</button></div>
    }

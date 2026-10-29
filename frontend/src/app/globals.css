@@ -1011,3 +1011,45 @@ html.light .customer-explore-tile .customer-explore-add-btn:disabled {
   background:#e8e3d8!important;
   color:#75736e!important;
 }
+
+
+/* Loading/Skeleton UI follows the selected theme from the first render.
+   Cover the shared Wallet placeholders and the Explore data-fetch indicator,
+   including the pre-login authentication fallback. */
+html.light .customer-loading-panel,
+html.light .customer-loading-card {
+  background:#fffdfa!important;
+  border-color:#e4d5b8!important;
+  box-shadow:0 8px 25px rgba(54,46,31,.055)!important;
+}
+html.light .customer-loading-card {
+  background:linear-gradient(145deg,#fffdfa 0%,#fcf3e3 100%)!important;
+}
+html.light .customer-loading-block {
+  background:#efe4cf!important;
+  border:1px solid #e6dac2!important;
+  opacity:1;
+}
+html.light .customer-loading-auth {
+  background:#faf8f2!important;
+  background-image:url("/brand/loyvance-light-ribbons.svg")!important;
+  background-size:cover!important;
+  background-position:center!important;
+}
+html.light .customer-loading-auth-panel {
+  background:#fffdfa!important;
+  border-color:#e1d2b3!important;
+  box-shadow:0 18px 42px rgba(57,48,30,.09)!important;
+}
+html.light .customer-loading-indicator {
+  background:#fffdfa!important;
+  color:#554e3d!important;
+  border:1px solid #e2d4b6;
+  border-radius:1rem;
+}
+html.light .customer-loading-indicator svg {
+  color:#9b6d12!important;
+}
+@media (prefers-reduced-motion:reduce) {
+  .customer-loading-block {animation:none!important;}
+}

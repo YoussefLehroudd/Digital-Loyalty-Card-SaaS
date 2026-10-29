@@ -22,7 +22,7 @@ export function CustomerPageLoading() {
     const pathname = usePathname();
     const route = pathname.split("/")[2] ?? "dashboard";
     if (route === "login" || route === "register") {
-        return <div role="status" aria-label={tr("Loading account form")} className="flex min-h-dvh items-center justify-center bg-[#080907] p-4"><div aria-hidden="true" className="w-full max-w-md space-y-6 rounded-[26px] border border-[#d8a63f]/20 bg-[#10110e] p-6"><Skeleton className="h-7 w-2/3 bg-white/[.07] motion-reduce:animate-none"/>{[0, 1, 2].map(i => <Skeleton key={i} className="h-11 w-full bg-white/[.07] motion-reduce:animate-none"/>)}</div></div>;
+        return <div role="status" aria-label={tr("Loading account form")} className="customer-loading-auth flex min-h-dvh items-center justify-center bg-[#080907] p-4"><div aria-hidden="true" className="customer-loading-auth-panel w-full max-w-md space-y-6 rounded-[26px] border border-[#d8a63f]/20 bg-[#10110e] p-6"><Skeleton className="customer-loading-block h-7 w-2/3 bg-white/[.07] motion-reduce:animate-none"/>{[0, 1, 2].map(i => <Skeleton key={i} className="customer-loading-block h-11 w-full bg-white/[.07] motion-reduce:animate-none"/>)}</div></div>;
     }
     const page = pages[route] ?? pages.dashboard;
     return <CustomerLayout title={tr(page.title)}><CustomerPageSkeleton variant={page.variant}/></CustomerLayout>;
