@@ -9,7 +9,7 @@ const reply = (value: unknown, status = 200) =>
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, char => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[char] || char));
+  } as Record<string, string>)[char] || char);
 
 /** Process a bounded batch after one administrator click; no client-side recipient selection. */
 export async function sendOutreachBatch(req: Request, database: Sql): Promise<Response> {
