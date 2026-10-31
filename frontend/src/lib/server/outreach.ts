@@ -30,7 +30,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     const status = VALID_STATUSES.includes(search.get("status") || "") ? search.get("status")! : "all";
     const query = "%" + clean(search.get("q"), 100).replace(/[%_\\]/g, "\\$&") + "%";
     const perPage = 25;
-    const [list, counts, ready] = await Promise.all([
+    const [list, counts, ready, regions] = await Promise.all([
       sql`SELECT o.campaign_code,o.business_name,o.contact_name,o.contact_email,o.business_city,
         o.sender_email,o.email_subject,o.status,o.consent_status,o.b2b_review_status,o.b2b_country,o.source_url,o.sent_at::text,o.delivered_at::text,
         o.error,o.content_origin,o.created_at::text,o.provider_message_id,
@@ -43,6 +43,21 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
           AND (o.business_name ILIKE ${query} OR o.contact_email ILIKE ${query} OR o.campaign_code ILIKE ${query})
         ORDER BY o.created_at DESC,o.campaign_code ASC LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
       sql`SELECT status,count(*)::int AS count FROM loyvance_outreach_20261031 WHERE deleted_at IS NULL GROUP BY status`,
+      sql`SELECT
+        CASE
+          WHEN lower(business_city) IN ('london','manchester','glasgow','edinburgh') THEN 'GB'
+          WHEN lower(business_city) = 'dublin' THEN 'IE'
+          WHEN lower(business_city) IN ('toronto','vancouver') THEN 'CA'
+          WHEN lower(business_city) IN ('new york','chicago','seattle') THEN 'US'
+          WHEN lower(business_city) IN ('sydney','melbourne') THEN 'AU'
+          WHEN lower(business_city) = 'singapore' THEN 'SG'
+          ELSE 'OTHER' END AS country,
+        count(*)::int AS pending,
+        count(*) FILTER (WHERE nullif(source_url,'') IS NOT NULL)::int AS sourced,
+        count(*) FILTER (WHERE b2b_review_status='approved' OR consent_status='opted_in')::int AS reviewed
+        FROM loyvance_outreach_20261031
+        WHERE deleted_at IS NULL AND status='prepared'
+        GROUP BY 1 ORDER BY 1`,
       sql`SELECT count(*)::int AS ready FROM loyvance_outreach_20261031
         WHERE deleted_at IS NULL AND status='prepared'
           AND b2b_review_status <> 'rejected' AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
@@ -57,7 +72,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     const stats: Record<string, number> = {};
     for (const item of counts) stats[String(item.status)] = Number(item.count || 0);
     const total = await sql`SELECT count(*)::int AS total FROM loyvance_outreach_20261031 o WHERE o.deleted_at IS NULL AND (${status}='all' OR o.status=${status}) AND (o.business_name ILIKE ${query} OR o.contact_email ILIKE ${query} OR o.campaign_code ILIKE ${query})`;
-    return reply({ data: list, page, per_page: perPage, total: Number(total[0]?.total || 0), stats, ready_to_send: Number(ready[0]?.ready || 0), configured: Boolean(process.env.RESEND_API_KEY && process.env.OUTREACH_FROM_EMAIL), configured_sender: process.env.OUTREACH_FROM_EMAIL || null });
+    return reply({ data: list, page, per_page: perPage, total: Number(total[0]?.total || 0), stats, pending_by_country: regions, ready_to_send: Number(ready[0]?.ready || 0), configured: Boolean(process.env.RESEND_API_KEY && process.env.OUTREACH_FROM_EMAIL), configured_sender: process.env.OUTREACH_FROM_EMAIL || null });
   }
   if (path.length === 2 && req.method === "DELETE") {
     const body = await req.json().catch(() => ({})) as Row;
@@ -65,6 +80,17 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     const removed = await sql`UPDATE loyvance_outreach_20261031 SET deleted_at=now(),updated_at=now()
       WHERE deleted_at IS NULL AND status<>'sending' RETURNING campaign_code`;
     return reply({ deleted: removed.length, note: "Outreach records hidden. Tracking links and historical visitor analytics preserved." });
+  }
+
+  // Read-only bulk export for a single offline, evidence-based review.
+  // This never approves recipients or sends email.
+  if (path.length === 3 && code === "review-export" && req.method === "GET") {
+    const rows = await sql`SELECT campaign_code,business_name,business_city,contact_email,
+      source_url,consent_status,b2b_review_status,b2b_country,b2b_business_type,
+      b2b_review_notes,status,email_subject
+      FROM loyvance_outreach_20261031 WHERE deleted_at IS NULL AND status='prepared'
+      ORDER BY business_city,campaign_code LIMIT 1000`;
+    return reply({ rows, note: "Source URLs and contact details were previously recorded. They are not automatically verified or opted in." });
   }
 
   if (path.length === 3 && validCode(code) && req.method === "GET") {
