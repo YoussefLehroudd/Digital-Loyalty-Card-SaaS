@@ -10,7 +10,7 @@ type Status = "prepared" | "sending" | "sent" | "delivered" | "failed" | "bounce
 type OutreachRow = {
   campaign_code: string; business_name: string; contact_name: string | null; contact_email: string;
   business_city: string | null; sender_email: string; email_subject: string | null;
-  email_body?: string | null; status: Status; consent_status: string; consent_source?: string | null;
+  email_body?: string | null; status: Status; consent_status: string; consent_source?: string | null; b2b_review_status?: string | null; b2b_country?: string | null; b2b_business_type?: string | null; b2b_review_notes?: string | null; b2b_publication_checked?: boolean; b2b_role_relevant?: boolean; b2b_no_opt_out_notice?: boolean;
   sent_at: string | null; delivered_at: string | null; failed_at?: string | null; error: string | null;
   created_at: string; content_origin: string; provider_message_id: string | null;
   provider?: string | null; public_code: string; visits?: number; source_url?: string | null;
@@ -59,7 +59,9 @@ export default function AdminOutreachPage() {
   const [busy,setBusy] = useState(false);
   const [detail,setDetail] = useState<OutreachRow|null>(null);
   const [editing,setEditing] = useState(false);
-  const [draft,setDraft] = useState({ contact_name: "", email_subject: "", email_body: "", consent_status: "unverified", consent_source: "" });
+  const [draft,setDraft] = useState({ contact_name: "", email_subject: "", email_body: "", consent_status: "unverified", consent_source: "",
+    b2b_review_status: "pending", b2b_business_type: "unknown", b2b_review_notes: "",
+    b2b_publication_checked: false, b2b_role_relevant: false, b2b_no_opt_out_notice: false });
   const [error,setError] = useState("");
   const [notice,setNotice] = useState("");
   const [deleteAll,setDeleteAll] = useState(false);
@@ -97,7 +99,12 @@ export default function AdminOutreachPage() {
       const response=await adminRequest<DetailResponse>("outreach/"+encodeURIComponent(code),token,{cache:"no-store"});
       setDetail(response.data);
       setDraft({contact_name: response.data.contact_name || "",email_subject: response.data.email_subject || "",
-        email_body: response.data.email_body || "",consent_status:response.data.consent_status || "unverified",consent_source:response.data.consent_source || ""});
+        email_body: response.data.email_body || "",consent_status:response.data.consent_status || "unverified",
+        consent_source:response.data.consent_source || "",b2b_review_status:response.data.b2b_review_status || "pending",
+        b2b_business_type:response.data.b2b_business_type || "unknown",b2b_review_notes:response.data.b2b_review_notes || "",
+        b2b_publication_checked:response.data.b2b_publication_checked || false,
+        b2b_role_relevant:response.data.b2b_role_relevant || false,
+        b2b_no_opt_out_notice:response.data.b2b_no_opt_out_notice || false});
     } catch(e){setError(e instanceof Error?e.message:"Could not open the message.");}
   }
   async function save() {
@@ -129,7 +136,7 @@ export default function AdminOutreachPage() {
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div><p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#edbc62]">Campaign tracking / Outreach</p>
         <h1 className="mt-2 flex items-center gap-2 text-2xl font-semibold sm:text-3xl"><Mail className="size-7 text-[#edbc62]"/>Outreach Inbox</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">Review business contacts, unique tracking URLs and saved emails. Sending requires documented permission. Status refreshes every 5 seconds.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">Review public B2B contacts and opt-in subscribers separately. A published business address alone is not permission. Only reviewed, eligible contacts can be sent. Status refreshes every 5 seconds.</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={()=>void load()} className={button}><RefreshCw className="size-4"/>Refresh</button>
@@ -167,7 +174,7 @@ export default function AdminOutreachPage() {
           <tbody>{rows.map(r=><tr key={r.campaign_code} className="border-b border-white/[.06] hover:bg-white/[.025]">
             <td className="p-3"><p className="font-semibold">{r.business_name}</p><p className="mt-1 text-white/40">{r.business_city||"—"}{r.contact_name?" · "+r.contact_name:""}</p></td>
             <td className="p-3"><p className="break-all text-[#edbc62]">{r.contact_email}</p><p className="mt-1 break-all text-white/35">From: {r.sender_email}</p></td>
-            <td className="p-3"><Stamp status={r.status}/><p className="mt-1 text-[10px] text-white/40">Consent: {r.consent_status}</p></td>
+            <td className="p-3"><Stamp status={r.status}/><p className="mt-1 text-[10px] text-white/40">Basis: {r.consent_status==="opted_in"?"Explicit opt-in":r.b2b_review_status==="approved"?"Reviewed public B2B":r.consent_status==="unsubscribed"?"Opted out":"Public B2B · needs review"}</p></td>
             <td className="p-3"><p className="font-mono text-white/70">{r.public_code}</p><p className="mt-1 text-white/40">{r.visits||0} sessions</p></td>
             <td className="p-3"><div className="flex gap-2"><button type="button" onClick={()=>void openRow(r.campaign_code)} className={button} title="View message"><Eye className="size-4"/>Details</button><button type="button" disabled={busy} onClick={()=>void remove(r.campaign_code)} className={button} aria-label={"Delete "+r.business_name}><Trash2 className="size-4"/></button></div></td>
           </tr>)}</tbody>
@@ -201,15 +208,39 @@ export default function AdminOutreachPage() {
             <a href={base+encodeURIComponent(detail.public_code)} target="_blank" rel="noreferrer" className={button}>Open tracking link</a>
           </div>
           <p className="break-all rounded-xl border border-white/10 bg-black/20 p-3 font-mono text-xs text-[#edbc62]">{base+encodeURIComponent(detail.public_code)}</p>
-          <div className="flex items-center justify-between gap-3"><h3 className="font-semibold">Saved email</h3>{["prepared","failed","blocked","unsubscribed"].includes(detail.status)?<button type="button" onClick={()=>setEditing(v=>!v)} className={button}>{editing?"Cancel edit":"Edit details"}</button>:null}</div>
+          <div className="flex items-center justify-between gap-3"><h3 className="font-semibold">Saved email</h3>{["prepared","failed"].includes(detail.status)?<button type="button" onClick={()=>setEditing(v=>!v)} className={button}>{editing?"Cancel edit":"Edit details"}</button>:null}</div>
+          <div className="rounded-xl border border-white/10 bg-white/[.025] p-3 text-xs text-white/70">
+            <p className="font-semibold text-[#edbc62]">Contact source / B2B basis</p>
+            <p className="mt-1">Country: {detail.b2b_country || "Not reviewed"} · Review: {detail.b2b_review_status || "pending"} · Consent: {detail.consent_status}</p>
+            {detail.source_url?<a href={detail.source_url} target="_blank" rel="noopener noreferrer" className="mt-2 block break-all text-[#edbc62] underline">{detail.source_url}</a>:<p className="mt-2 text-rose-200">No publicly documented source URL.</p>}
+            <p className="mt-2 leading-5">For the UK, verify the company is a corporate body, not a sole trader. For Canada, check conspicuous publication and relevance. Other locations may require prior consent or separate legal review.</p>
+          </div>
           {editing?<div className="space-y-3">
             <label className="block text-xs text-white/60">Contact name<input value={draft.contact_name} onChange={e=>setDraft(v=>({...v,contact_name:e.target.value}))} className={input+" mt-1"}/></label>
             <label className="block text-xs text-white/60">Subject<input value={draft.email_subject} onChange={e=>setDraft(v=>({...v,email_subject:e.target.value}))} className={input+" mt-1"}/></label>
             <label className="block text-xs text-white/60">Message<textarea rows={12} value={draft.email_body} onChange={e=>setDraft(v=>({...v,email_body:e.target.value}))} className={input+" mt-1 resize-y"}/></label>
-            <label className="block text-xs text-white/60">Contact permission<select value={draft.consent_status} onChange={e=>setDraft(v=>({...v,consent_status:e.target.value}))} className={input+" mt-1"}>
-              <option value="unverified">Not verified — no sending</option><option value="opted_in">Opted in (evidence required)</option><option value="unsubscribed">Opted out</option>
+            <div className="space-y-3 rounded-xl border border-[#edbc62]/20 bg-[#edbc62]/[.04] p-4">
+              <h4 className="text-sm font-semibold text-[#edbc62]">Public B2B outreach review (not an opt-in)</h4>
+              <p className="text-xs leading-5 text-white/60">A business website listing is only a starting point. For eligible jurisdictions, verify its use for business-related contact before sending.</p>
+              <label className="block text-xs text-white/60">B2B review<select className={input+" mt-1"} value={draft.b2b_review_status} onChange={e=>setDraft(v=>({...v,b2b_review_status:e.target.value}))}>
+                <option value="pending">Pending review — do not send</option>
+                <option value="approved">Reviewed: business outreach is eligible</option>
+                <option value="rejected">Excluded from outreach</option>
+              </select></label>
+              <label className="block text-xs text-white/60">Business legal form<select className={input+" mt-1"} value={draft.b2b_business_type} onChange={e=>setDraft(v=>({...v,b2b_business_type:e.target.value}))}>
+                <option value="unknown">Unknown</option><option value="corporate">Registered corporate body</option>
+                <option value="sole_trader">Sole trader / unincorporated</option><option value="other">Other</option>
+              </select></label>
+              <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_publication_checked} onChange={e=>setDraft(v=>({...v,b2b_publication_checked:e.target.checked}))}/>I checked that this exact email was published by the business itself, with a source link.</label>
+              <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_role_relevant} onChange={e=>setDraft(v=>({...v,b2b_role_relevant:e.target.checked}))}/>The LOYVANCE offer is relevant to this business and recipient role.</label>
+              <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_no_opt_out_notice} onChange={e=>setDraft(v=>({...v,b2b_no_opt_out_notice:e.target.checked}))}/>No restriction against marketing is shown at the source, and no opt-out / complaint exists.</label>
+              <label className="block text-xs text-white/60">Review notes and evidence<textarea rows={3} value={draft.b2b_review_notes} onChange={e=>setDraft(v=>({...v,b2b_review_notes:e.target.value}))} className={input+" mt-1"} placeholder="Company registration type, publication/relevance check, country-specific basis and date"/></label>
+              <p className="text-xs text-white/40">Automatic eligibility is limited to individually reviewed GB corporate, Canadian published-relevant and US business contacts. Other locations remain excluded unless explicitly opted in.</p>
+            </div>
+            <label className="block text-xs text-white/60">Explicit permission (if separately obtained)<select value={draft.consent_status} onChange={e=>setDraft(v=>({...v,consent_status:e.target.value}))} className={input+" mt-1"}>
+              <option value="unverified">No explicit opt-in</option><option value="opted_in">Opted in (evidence required)</option><option value="unsubscribed">Opted out — do not contact</option>
             </select></label>
-            <label className="block text-xs text-white/60">Consent evidence (business request, signup source or other proof)<input value={draft.consent_source} onChange={e=>setDraft(v=>({...v,consent_source:e.target.value}))} className={input+" mt-1"} placeholder="e.g. demo form reference and date"/></label>
+            <label className="block text-xs text-white/60">Explicit opt-in evidence<input value={draft.consent_source} onChange={e=>setDraft(v=>({...v,consent_source:e.target.value}))} className={input+" mt-1"} placeholder="Only if the business actually opted in"/></label>
             <button type="button" onClick={()=>void save()} disabled={busy} className="rounded-xl bg-[#edbc62] px-5 py-2.5 text-xs font-bold text-black disabled:opacity-40">Save message</button>
           </div>:<div className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">Subject</p><p className="break-words text-sm font-semibold">{detail.email_subject||"Not prepared"}</p>
