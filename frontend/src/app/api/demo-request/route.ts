@@ -33,8 +33,15 @@ export async function POST(req:Request){
      : [];
    const campaign=codes.length?String(codes[0].campaign_code):null;
    const id=randomUUID();
-   await sql`INSERT INTO visitor_demo_requests(id,contact_name,business_name,email,message,campaign_code)
-     VALUES(${id}::uuid,${name},${business},${email},${message},${campaign})`;
+   // A single statement saves the lead and increments the monotonic badge
+   // counter. Deleted leads do not cause later notifications to be missed.
+   await sql`WITH saved AS (
+     INSERT INTO visitor_demo_requests(id,contact_name,business_name,email,message,campaign_code)
+     VALUES(${id}::uuid,${name},${business},${email},${message},${campaign})
+     RETURNING id
+   ) UPDATE visitor_demo_request_metrics
+      SET total_submitted=total_submitted+1
+      FROM saved WHERE singleton=1`;
    // A saved lead remains available to administrators if email delivery fails.
    if(process.env.RESEND_API_KEY){
      try{
