@@ -9,6 +9,7 @@ import { rejectRenewal, renewalProof } from "@/lib/server/renewal-requests";
 import { handleAdminAffiliates } from "@/lib/server/affiliates";
 import { handleAdminAccounts } from "@/lib/server/admin-accounts";
 import { adminVisitorAnalytics } from "@/lib/server/visitor-analytics";
+import { adminOutreach } from "@/lib/server/outreach";
 import { adminArchived } from "@/lib/server/admin-archived";
 
 type Sql = ReturnType<typeof getSql>;
@@ -85,6 +86,13 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   if (!auth) return reply({ message: "Unauthenticated." }, 401);
   if (!isPlatformAdmin(auth.user)) return reply({ message: "Administrator access required." }, 403);
   if (path[1] === "me" && req.method === "GET") return reply({ user: safeUser(auth.user) });
+  if (path[1] === "outreach") {
+    if (req.method === "POST") {
+      const limit = await deps.rateLimit("admin-outreach-send", 12, 60 * 1000);
+      if (limit) return limit;
+    }
+    return adminOutreach(req, database, path);
+  }
   if (path[1] === "visitors") return adminVisitorAnalytics(req,database,path);
   if (path[1] === "archived") return adminArchived(req,database,path);
   if (path[1] === "affiliates") return handleAdminAffiliates(path,req,database,auth.user);
