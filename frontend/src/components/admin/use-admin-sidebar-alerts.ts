@@ -175,7 +175,7 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
       if (stopped || busy || document.hidden) return;
       busy=true;
       try {
-        const response=await adminRequest<DemoAlertResponse>("visitors/demo-alerts",token,{cache:"no-store"});
+        const response=await adminRequest<DemoAlertResponse>("visitors/demo-alerts",token!,{cache:"no-store"});
         if(stopped)return;
         const total=Number(response.total);
         if(!Number.isFinite(total)||total<0)return;
