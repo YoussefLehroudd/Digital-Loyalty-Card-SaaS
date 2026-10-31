@@ -72,9 +72,9 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
       </div>
       {phase === "sending" ? <button type="button" onClick={() => { stop.current = true; setPhase("paused"); }}
         className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold">Pause after this batch</button> :
-        ready === 0 && unsent > 0 ? <a href="#outreach-contacts"
+        ready === 0 && unsent > 0 ? <a href="#bulk-screening"
           className="inline-flex min-h-11 items-center rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black">
-          Review pending businesses ({unsent})
+          Check entire list ({unsent})
         </a> :
         <button type="button" onClick={() => { void sendQueue(); }} disabled={!configured || ready === 0}
           className="min-h-11 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black disabled:opacity-40">
@@ -93,7 +93,7 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
       {last ? <p>Last: {last}</p> : null}
     </div> : null}
     {problem ? <p role="alert" className="mt-3 text-xs text-rose-300">{problem}</p> : null}
-    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">Only eligible recipients will be sent. {unsent - ready} other unsent records are not ready (e.g. missing consent, B2B review, or duplicate email). See the contact list below.</p> : null}
+    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">{unsent - ready} contacts are not eligible yet. Use the bulk source and country report above; no unverified contact is approved automatically.</p> : null}
     {!configured ? <p className="mt-3 text-xs text-rose-300">Sending provider is not configured.</p> : null}
     <p className="mt-3 text-[11px] text-white/40">Provider accepted does not mean delivered. Bounces and complaints are tracked separately. The queue sends only records with documented opt-in or an individually reviewed, jurisdiction-appropriate B2B basis.</p>
   </section>;
