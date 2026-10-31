@@ -20,15 +20,19 @@ function sessionId(){
   return value.id;
  }catch{return crypto.randomUUID();}
 }
-function campaignForTab(){
+function campaignForTab(session:string){
  try{
   // An affiliate code in /register?ref= belongs to partner commissions,
-  // not marketing campaign analytics.
+  // not marketing campaign analytics. Store the code for this tab session only.
   const marketing=["/","/fr","/ar"].includes(location.pathname);
   const fromUrl=marketing?(new URLSearchParams(location.search).get("ref")||"").trim().toLowerCase():"";
-  const cached=sessionStorage.getItem(CAMPAIGN_KEY)||"";
-  if(validCampaign(cached))return cached;
-  if(validCampaign(fromUrl)){sessionStorage.setItem(CAMPAIGN_KEY,fromUrl);return fromUrl;}
+  const cached=JSON.parse(sessionStorage.getItem(CAMPAIGN_KEY)||"null") as {session?:string;code?:string}|null;
+  if(cached?.session===session && validCampaign(cached.code||""))return cached.code||"";
+  if(validCampaign(fromUrl)){
+    sessionStorage.setItem(CAMPAIGN_KEY,JSON.stringify({session,code:fromUrl}));
+    return fromUrl;
+  }
+  sessionStorage.removeItem(CAMPAIGN_KEY);
  }catch{}
  return "";
 }
@@ -50,7 +54,7 @@ export function VisitorAnalyticsTracker(){
  useEffect(()=>{
   if(trackingDisabled())return;
   visitor.current=sessionId();
-  campaign.current=campaignForTab();
+  campaign.current=campaignForTab(visitor.current);
   page.current=location.pathname;
   const sendEvent=(kind:"page"|"click"|"heartbeat",target?:string)=>{
    if(!visitor.current)return;
