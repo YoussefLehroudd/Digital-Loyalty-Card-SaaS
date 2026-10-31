@@ -20,12 +20,10 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
   useEffect(() => {
     return () => { stop.current = true; };
   }, []);
-  const progress = initial > 0 ? Math.min(100, Math.round(processed / initial * 100)) : 0;
+  const progress = phase === "finished" ? 100 : initial > 0 ? Math.min(100, Math.round(processed / initial * 100)) : 0;
 
   async function sendQueue() {
     if (!configured || !ready || working.current) return;
-    if (!window.confirm("Send eligible, individually reviewed B2B or opted-in outreach emails one by one from " + (sender || "the verified sender") +
-      "? This does not include unverified, bounced, blocked or previously sent recipients.")) return;
     stop.current = false;
     working.current = true;
     setPhase("sending");
@@ -37,18 +35,24 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
     setLast("");
     try {
       while (!stop.current) {
-        const result = await adminRequest<Result>("outreach/send-next", token, {
+        const result = await adminRequest<Result>("outreach/send-batch", token, {
           method: "POST", body: JSON.stringify({ confirm: true })
         });
-        const item = result.results[0];
-        if (!item) { setPhase("finished"); break; }
-        setProcessed(n => n + 1);
+        if (!result.results.length) { setPhase("finished"); break; }
+        setProcessed(n => n + result.results.length);
+        setAccepted(n => n + result.results.filter(item => item.status === "sent").length);
+        const failed = result.results.filter(item => item.status === "failed");
+        setFailures(n => n + failed.length);
+        const item = result.results[result.results.length - 1];
         setLast(item.campaign_code + " · " + item.status);
-        if (item.status === "sent") setAccepted(n => n + 1);
-        else if (item.status === "failed") setFailures(n => n + 1);
         onProgress();
+        if (failed.length) {
+          setProblem(failed[0].error || "Resend could not accept a batch. Review the failures before retrying.");
+          setPhase("error");
+          break;
+        }
         if (result.remaining <= 0) { setPhase("finished"); break; }
-        await new Promise<void>(resolve => { window.setTimeout(resolve, 7500); });
+        await new Promise<void>(resolve => { window.setTimeout(resolve, 850); });
       }
       if (stop.current) setPhase("paused");
     } catch (cause) {
@@ -63,18 +67,18 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
   return <section className="rounded-2xl border border-[#edbc62]/25 bg-[#101318] p-4 text-white sm:p-5">
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h2 className="text-lg font-semibold">Outreach — send eligible contacts</h2>
-        <p className="mt-1 max-w-xl text-xs leading-5 text-white/50">One click, without selecting contacts. One email per request, spaced apart. Keep this page open until finished.</p>
+        <h2 className="text-lg font-semibold">Send business emails in one click</h2>
+        <p className="mt-1 max-w-xl text-xs leading-5 text-white/50">Click once to send all ready messages automatically in batches of up to 20 via Resend. No individual selection or second confirmation. Keep this page open until the queue finishes.</p>
       </div>
       {phase === "sending" ? <button type="button" onClick={() => { stop.current = true; setPhase("paused"); }}
-        className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold">Pause sending</button> :
+        className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold">Pause after this batch</button> :
         ready === 0 && unsent > 0 ? <a href="#outreach-contacts"
           className="inline-flex min-h-11 items-center rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black">
           Review pending businesses ({unsent})
         </a> :
         <button type="button" onClick={() => { void sendQueue(); }} disabled={!configured || ready === 0}
           className="min-h-11 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black disabled:opacity-40">
-          {phase === "paused" || phase === "error" ? "Resume eligible queue" : "Send all eligible"} ({ready})
+          {phase === "paused" || phase === "error" ? "Resume ready emails" : "Send all ready emails"} ({ready})
         </button>}
     </div>
     <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
@@ -89,7 +93,7 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
       {last ? <p>Last: {last}</p> : null}
     </div> : null}
     {problem ? <p role="alert" className="mt-3 text-xs text-rose-300">{problem}</p> : null}
-    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">{unsent - ready} unsent contacts require either an individually reviewed lawful B2B basis or a recorded opt-in. Use the contact list below to review the source and business type.</p> : null}
+    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">Only eligible recipients will be sent. {unsent - ready} other unsent records are not ready (e.g. missing consent, B2B review, or duplicate email). See the contact list below.</p> : null}
     {!configured ? <p className="mt-3 text-xs text-rose-300">Sending provider is not configured.</p> : null}
     <p className="mt-3 text-[11px] text-white/40">Provider accepted does not mean delivered. Bounces and complaints are tracked separately. The queue sends only records with documented opt-in or an individually reviewed, jurisdiction-appropriate B2B basis.</p>
   </section>;
