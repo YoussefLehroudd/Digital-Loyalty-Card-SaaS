@@ -93,11 +93,12 @@ export default function AdminOutreachPage() {
   useEffect(()=>{const id=window.setTimeout(()=>{setPage(1);setSearch(query);},350);return()=>window.clearTimeout(id);},[query]);
   const totalPages=Math.max(1,Math.ceil(total/25));
   const totalAll=Object.values(counts).reduce((a,b)=>a+b,0);
-  async function openRow(code:string) {
+  async function openRow(code:string, review=false) {
     setError("");setEditing(false);setDetail(null);
     try {
       const response=await adminRequest<DetailResponse>("outreach/"+encodeURIComponent(code),token,{cache:"no-store"});
       setDetail(response.data);
+      setEditing(review && response.data.status === "prepared");
       setDraft({contact_name: response.data.contact_name || "",email_subject: response.data.email_subject || "",
         email_body: response.data.email_body || "",consent_status:response.data.consent_status || "unverified",
         consent_source:response.data.consent_source || "",b2b_review_status:response.data.b2b_review_status || "pending",
@@ -106,6 +107,13 @@ export default function AdminOutreachPage() {
         b2b_role_relevant:response.data.b2b_role_relevant || false,
         b2b_no_opt_out_notice:response.data.b2b_no_opt_out_notice || false});
     } catch(e){setError(e instanceof Error?e.message:"Could not open the message.");}
+  }
+  function startReview() {
+    const candidate = rows.find(row => row.status === "prepared" && row.b2b_review_status !== "approved");
+    if (candidate) { void openRow(candidate.campaign_code, true); return; }
+    setFilter("prepared");
+    setPage(1);
+    setNotice("Filter set to Not sent. Choose a business and use Review to check its outreach basis.");
   }
   async function save() {
     if(!detail || busy)return;
@@ -136,7 +144,7 @@ export default function AdminOutreachPage() {
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div><p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#edbc62]">Campaign tracking / Outreach</p>
         <h1 className="mt-2 flex items-center gap-2 text-2xl font-semibold sm:text-3xl"><Mail className="size-7 text-[#edbc62]"/>Outreach Inbox</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">Review public B2B contacts and opt-in subscribers separately. A published business address alone is not permission. Only reviewed, eligible contacts can be sent. Status refreshes every 5 seconds.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">Review public B2B contacts and opt-in subscribers separately. Use the Review action to record a lawful basis for business outreach; unreviewed contacts remain excluded. Status refreshes every 5 seconds.</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={()=>void load()} className={button}><RefreshCw className="size-4"/>Refresh</button>
@@ -160,7 +168,7 @@ export default function AdminOutreachPage() {
     </div>
     {error?<p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>:null}
     {notice?<p role="status" className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-3 text-sm text-emerald-200">{notice}</p>:null}
-    <OutreachSendQueue token={token} ready={readyToSend} unsent={counts.prepared||0} configured={configured} sender={configuredSender} onProgress={()=>{void load();}}/>
+    <OutreachSendQueue token={token} ready={readyToSend} unsent={counts.prepared||0} configured={configured} sender={configuredSender} onProgress={()=>{void load();}} onReview={startReview}/>
     <section className={panel+" p-3 sm:p-4"}>
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative min-w-[190px] flex-1"><Search className="absolute left-3 top-3 size-4 text-white/40"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search business, email, tracking code..." aria-label="Search outreach" className={input+" ps-9"}/></label>
@@ -176,7 +184,7 @@ export default function AdminOutreachPage() {
             <td className="p-3"><p className="break-all text-[#edbc62]">{r.contact_email}</p><p className="mt-1 break-all text-white/35">From: {r.sender_email}</p></td>
             <td className="p-3"><Stamp status={r.status}/><p className="mt-1 text-[10px] text-white/40">Basis: {r.consent_status==="opted_in"?"Explicit opt-in":r.b2b_review_status==="approved"?"Reviewed public B2B":r.consent_status==="unsubscribed"?"Opted out":"Public B2B · needs review"}</p></td>
             <td className="p-3"><p className="font-mono text-white/70">{r.public_code}</p><p className="mt-1 text-white/40">{r.visits||0} sessions</p></td>
-            <td className="p-3"><div className="flex gap-2"><button type="button" onClick={()=>void openRow(r.campaign_code)} className={button} title="View message"><Eye className="size-4"/>Details</button><button type="button" disabled={busy} onClick={()=>void remove(r.campaign_code)} className={button} aria-label={"Delete "+r.business_name}><Trash2 className="size-4"/></button></div></td>
+            <td className="p-3"><div className="flex gap-2"><button type="button" onClick={()=>void openRow(r.campaign_code, r.status==="prepared")} className={button} title={r.status==="prepared"?"Review business eligibility":"View message"}><Eye className="size-4"/>{r.status==="prepared"?"Review":"Details"}</button><button type="button" disabled={busy} onClick={()=>void remove(r.campaign_code)} className={button} aria-label={"Delete "+r.business_name}><Trash2 className="size-4"/></button></div></td>
           </tr>)}</tbody>
         </table>
         {loading&&!rows.length?<p className="p-8 text-center text-white/50">Loading outreach...</p>:!rows.length?<p className="p-8 text-center text-white/50">No matching contacts.</p>:null}
@@ -213,7 +221,7 @@ export default function AdminOutreachPage() {
             <p className="font-semibold text-[#edbc62]">Contact source / B2B basis</p>
             <p className="mt-1">Country: {detail.b2b_country || "Not reviewed"} · Review: {detail.b2b_review_status || "pending"} · Consent: {detail.consent_status}</p>
             {detail.source_url?<a href={detail.source_url} target="_blank" rel="noopener noreferrer" className="mt-2 block break-all text-[#edbc62] underline">{detail.source_url}</a>:<p className="mt-2 text-rose-200">No publicly documented source URL.</p>}
-            <p className="mt-2 leading-5">For the UK, verify the company is a corporate body, not a sole trader. For Canada, check conspicuous publication and relevance. Other locations may require prior consent or separate legal review.</p>
+            <p className="mt-2 leading-5">For UK and Ireland: verify this is a business/corporate subscriber, not an individual or sole trader; Irish businesses may be contacted unless they object. For Canada: verify publicly posted address, relevance and absence of restriction. Other countries may require prior consent or separate legal review.</p>
           </div>
           {editing?<div className="space-y-3">
             <label className="block text-xs text-white/60">Contact name<input value={draft.contact_name} onChange={e=>setDraft(v=>({...v,contact_name:e.target.value}))} className={input+" mt-1"}/></label>
@@ -235,7 +243,7 @@ export default function AdminOutreachPage() {
               <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_role_relevant} onChange={e=>setDraft(v=>({...v,b2b_role_relevant:e.target.checked}))}/>The LOYVANCE offer is relevant to this business and recipient role.</label>
               <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_no_opt_out_notice} onChange={e=>setDraft(v=>({...v,b2b_no_opt_out_notice:e.target.checked}))}/>No restriction against marketing is shown at the source, and no opt-out / complaint exists.</label>
               <label className="block text-xs text-white/60">Review notes and evidence<textarea rows={3} value={draft.b2b_review_notes} onChange={e=>setDraft(v=>({...v,b2b_review_notes:e.target.value}))} className={input+" mt-1"} placeholder="Company registration type, publication/relevance check, country-specific basis and date"/></label>
-              <p className="text-xs text-white/40">Automatic eligibility is limited to individually reviewed GB corporate, Canadian published-relevant and US business contacts. Other locations remain excluded unless explicitly opted in.</p>
+              <p className="text-xs text-white/40">Eligible public B2B paths require individual review: GB and IE corporate subscribers, relevant publicly listed CA businesses, and compliant US businesses. Other locations need a separate basis or actual opt-in.</p>
             </div>
             <label className="block text-xs text-white/60">Explicit permission (if separately obtained)<select value={draft.consent_status} onChange={e=>setDraft(v=>({...v,consent_status:e.target.value}))} className={input+" mt-1"}>
               <option value="unverified">No explicit opt-in</option><option value="opted_in">Opted in (evidence required)</option><option value="unsubscribed">Opted out — do not contact</option>
