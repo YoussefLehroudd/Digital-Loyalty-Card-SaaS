@@ -20,7 +20,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     const status = VALID_STATUSES.includes(search.get("status") || "") ? search.get("status")! : "all";
     const query = "%" + clean(search.get("q"), 100).replace(/[%_\\]/g, "\\$&") + "%";
     const perPage = 25;
-    const [list, counts] = await Promise.all([
+    const [list, counts, ready] = await Promise.all([
       sql`SELECT o.campaign_code,o.business_name,o.contact_name,o.contact_email,o.business_city,
         o.sender_email,o.email_subject,o.status,o.consent_status,o.sent_at::text,o.delivered_at::text,
         o.error,o.content_origin,o.created_at::text,o.provider_message_id,
@@ -32,12 +32,16 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
           AND (${status}='all' OR o.status=${status})
           AND (o.business_name ILIKE ${query} OR o.contact_email ILIKE ${query} OR o.campaign_code ILIKE ${query})
         ORDER BY o.created_at DESC,o.campaign_code ASC LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
-      sql`SELECT status,count(*)::int AS count FROM loyvance_outreach_20261031 WHERE deleted_at IS NULL GROUP BY status`
+      sql`SELECT status,count(*)::int AS count FROM loyvance_outreach_20261031 WHERE deleted_at IS NULL GROUP BY status`,
+      sql`SELECT count(*)::int AS ready FROM loyvance_outreach_20261031
+        WHERE deleted_at IS NULL AND status='prepared' AND consent_status='opted_in'
+          AND length(COALESCE(consent_source,'')) >= 8
+          AND email_subject IS NOT NULL AND email_body IS NOT NULL`
     ]);
     const stats: Record<string, number> = {};
     for (const item of counts) stats[String(item.status)] = Number(item.count || 0);
     const total = await sql`SELECT count(*)::int AS total FROM loyvance_outreach_20261031 o WHERE o.deleted_at IS NULL AND (${status}='all' OR o.status=${status}) AND (o.business_name ILIKE ${query} OR o.contact_email ILIKE ${query} OR o.campaign_code ILIKE ${query})`;
-    return reply({ data: list, page, per_page: perPage, total: Number(total[0]?.total || 0), stats, configured: Boolean(process.env.RESEND_API_KEY && process.env.OUTREACH_FROM_EMAIL), configured_sender: process.env.OUTREACH_FROM_EMAIL || null });
+    return reply({ data: list, page, per_page: perPage, total: Number(total[0]?.total || 0), stats, ready_to_send: Number(ready[0]?.ready || 0), configured: Boolean(process.env.RESEND_API_KEY && process.env.OUTREACH_FROM_EMAIL), configured_sender: process.env.OUTREACH_FROM_EMAIL || null });
   }
   if (path.length === 2 && req.method === "DELETE") {
     const body = await req.json().catch(() => ({})) as Row;
@@ -87,13 +91,26 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     return saved.length ? reply({ ok: true }) : reply({ message: "This item cannot be edited while sending or after it has been sent." }, 409);
   }
 
-  if (path.length === 3 && code === "send" && req.method === "POST") {
+  if (path.length === 3 && (code === "send" || code === "send-next") && req.method === "POST") {
     const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.OUTREACH_FROM_EMAIL;
     if (!apiKey || !from) return reply({ message: "Sending is not configured. Configure a verified OUTREACH_FROM_EMAIL and RESEND_API_KEY on Vercel." }, 503);
     const input = await req.json().catch(() => ({})) as Row;
-    const codes = Array.isArray(input.codes) ? [...new Set(input.codes.filter(x => typeof x === "string" && validCode(x)).slice(0, 3))] : [];
-    if (input.confirm !== true || !codes.length) return reply({ message: "Select up to 3 opted-in recipients and confirm." }, 422);
+    if (input.confirm !== true) return reply({ message: "Confirm sending before starting the queue." }, 422);
+    const sequential = code === "send-next";
+    let codes = Array.isArray(input.codes) ? [...new Set(input.codes.filter(x => typeof x === "string" && validCode(x)).slice(0, 3))] : [];
+    if (sequential) {
+      // Fetch only the next unprocessed, permission-confirmed recipient.
+      // Unverified, blocked, bounced, failed and opted-out contacts are never auto-sent.
+      const next = await sql`SELECT campaign_code FROM loyvance_outreach_20261031
+        WHERE deleted_at IS NULL AND status='prepared' AND consent_status='opted_in'
+          AND length(COALESCE(consent_source,'')) >= 8
+          AND email_subject IS NOT NULL AND email_body IS NOT NULL
+        ORDER BY created_at ASC,campaign_code ASC LIMIT 1`;
+      codes = next.length ? [String(next[0].campaign_code)] : [];
+    } else if (!codes.length) {
+      return reply({ message: "Select up to 3 opted-in recipients and confirm." }, 422);
+    }
     const outcomes: Array<{ campaign_code: string; status: string; error?: string }> = [];
     for (const target of codes) {
       // Atomic claim: simultaneous clicks cannot claim the same address.
@@ -117,7 +134,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
       try {
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST", headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json",
-            "Idempotency-Key": target + "-" + String(row.attempt_count) },
+            "Idempotency-Key": "loyvance-outreach-" + target },
           body: JSON.stringify({ from, reply_to: process.env.OUTREACH_REPLY_TO || 'youssefhrdd@gmail.com', to: [row.contact_email], subject: row.email_subject, html,
             headers: { "List-Unsubscribe": "<" + unsubscribe + ">", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } })
         });
@@ -133,6 +150,14 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
           WHERE campaign_code=${target} AND status='sending'`;
         outcomes.push({ campaign_code: target, status: "failed", error: explanation });
       }
+    }
+    if (sequential) {
+      const ready = await sql`SELECT count(*)::int AS ready FROM loyvance_outreach_20261031
+        WHERE deleted_at IS NULL AND status='prepared' AND consent_status='opted_in'
+          AND length(COALESCE(consent_source,'')) >= 8
+          AND email_subject IS NOT NULL AND email_body IS NOT NULL`;
+      return reply({ results: outcomes, remaining: Number(ready[0]?.ready || 0),
+        note: "Accepted means provider accepted the message, not that delivery is confirmed." });
     }
     return reply({ results: outcomes, note: "Sent means accepted by the provider. Delivery is confirmed only by a signed webhook." });
   }
