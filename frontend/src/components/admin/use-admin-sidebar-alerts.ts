@@ -13,6 +13,7 @@ import { PREMIUM_DECISION_EVENT, isPremiumPending, premiumKey, type PremiumAppro
 type CounterSnapshot = Record<string, number>;
 type ProbeResult = CounterSnapshot;
 const STORAGE_PREFIX = "loyvance.admin.nav-seen.v1:";
+const VISITORS_ROUTE = "/admin/visitors";
 const watchedRoutes = ["/admin", "/admin/businesses", "/admin/customers", "/admin/premium", "/admin/affiliates", "/admin/activity", "/admin/visitors", "/admin/archived"] as const;
 type PremiumResponse = { requests: PremiumApprovalRequest[] };
 type AffiliateResponse = {data:Array<{id:string}>};
@@ -33,8 +34,10 @@ function storedCounters(key: string): CounterSnapshot {
 function persistCounters(key:string, seen:CounterSnapshot) {
   try { window.localStorage.setItem(key, JSON.stringify(seen)); } catch { /* Private browsing: in-memory acknowledgement still works. */ }
 }
-export function useAdminSidebarAlerts(token: string | null, userId: string | null, _pathname: string) {
+export function useAdminSidebarAlerts(token: string | null, userId: string | null, pathname: string) {
   const [badges, setBadges] = useState<Record<string, number>>({});
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
   const seenRef = useRef<CounterSnapshot>({});
   const latestRef = useRef<CounterSnapshot>({});
   const handledPremiumRef = useRef<Set<string>>(new Set());
@@ -101,8 +104,9 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
         for (const [route, value] of Object.entries(current)) {
           if (route === "/admin" || route === "/admin/premium") continue;
           // First-time setup is a baseline, not an invented new alert.
-          // Visiting a page alone never clears the notification.
-          if (seen[route] === undefined || value < seen[route]) {
+          // Visitors is a read-only feed: opening it marks the visible total seen.
+          // Feature Approvals remains action-based and is never auto-cleared.
+          if (seen[route] === undefined || value < seen[route] || (route === VISITORS_ROUTE && pathnameRef.current === VISITORS_ROUTE)) {
             seen[route] = value;
             changed = true;
           }
@@ -128,6 +132,22 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
       document.removeEventListener("visibilitychange", wake);
     };
   }, [token,userId]);
+
+  // Visiting the Visitors page clears its badge without waiting for polling.
+  // A fresh server count is acknowledged on the next poll while the page is open.
+  useEffect(() => {
+    if (!userId || pathname !== VISITORS_ROUTE) return;
+    const latest = latestRef.current[VISITORS_ROUTE];
+    if (typeof latest === "number") {
+      seenRef.current = { ...seenRef.current, [VISITORS_ROUTE]: latest };
+      persistCounters(STORAGE_PREFIX + userId, seenRef.current);
+    }
+    setBadges(previous =>
+      (previous[VISITORS_ROUTE] ?? 0) > 0
+        ? { ...previous, [VISITORS_ROUTE]: 0 }
+        : previous
+    );
+  }, [pathname, userId]);
 
   // Feature Approvals has its own fast live cycle and direct action events.
   useEffect(() => {

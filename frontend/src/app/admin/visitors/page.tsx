@@ -89,17 +89,17 @@ export default function AdminVisitorsPage(){
     <Metric icon={Users} label="Logged-in sessions" value={formatNumber(summary.signed_in_sessions)} note="Recognized authenticated users"/>
    </div>
    <DailyVisitsChart data={report.daily} days={days}/>
-   <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+   <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-2">
     <Ranking title="Most visited pages" scrollable items={report.pages.map(p=>({label:p.name,value:number(p.views),subtitle:p.sessions+" sessions"}))}/>
     <Ranking title="Links visitors clicked" scrollable items={report.clicks.map(p=>({label:p.name,value:number(p.clicks)}))}/>
-    <Ranking title="Countries" items={report.countries.map(c=>({label:nameCountry(c.country_code),flagCode:c.country_code,value:number(c.sessions)}))}/>
-    <Ranking title="Cities (estimated)" items={report.cities.map(c=>({label:c.city+(c.region?" · "+c.region:""),flagCode:c.country_code,value:number(c.sessions),subtitle:nameCountry(c.country_code)}))}/>
+    <Ranking title="Countries" scrollable items={report.countries.map(c=>({label:nameCountry(c.country_code),flagCode:c.country_code,value:number(c.sessions)}))}/>
+    <Ranking title="Cities (estimated)" scrollable items={report.cities.map(c=>({label:c.city+(c.region?" · "+c.region:""),flagCode:c.country_code,value:number(c.sessions),subtitle:nameCountry(c.country_code)}))}/>
     <Ranking title="Where they came from" items={report.sources.map(s=>({label:s.name,value:number(s.sessions)}))}/>
     <Ranking title="Device types" items={report.devices.map(d=>({label:d.name,value:number(d.sessions)}))}/>
    </div>
    <section className={card}>
     <div className="mb-4"><h2 className="text-base font-semibold">Recent visitor sessions</h2><p className="mt-1 text-xs leading-5 text-white/40">Latest 80 sessions. Select one to see page-by-page history and clicked links. Anonymous visitors cannot be personally identified.</p></div>
-    <div className="space-y-2">{report.sessions.map(v=><button key={v.id} type="button" onClick={()=>void details(v)} className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-[#efbd5d]/40 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+    <div className="admin-visitors-ranking-scroll max-h-[460px] min-h-0 space-y-2 overflow-x-hidden overflow-y-auto overscroll-y-contain pe-2 sm:max-h-[550px]" role="region" aria-label="Recent visitor sessions" tabIndex={0}>{report.sessions.map(v=><button key={v.id} type="button" onClick={()=>void details(v)} className="flex w-full min-w-0 flex-col gap-3 rounded-xl border border-white/10 bg-black/20 p-3 text-left transition hover:border-[#efbd5d]/40 sm:flex-row sm:items-center sm:justify-between sm:p-4">
       <div className="min-w-0">
        <div className="flex min-w-0 items-center gap-2"><CountryFlag code={v.country_code}/><span className="truncate text-sm font-semibold text-white">{v.user_name||"Anonymous visitor"}</span><span className="shrink-0 text-[10px] text-white/30">#{v.id.slice(0,8)}</span></div>
        <p className="mt-1 break-words text-[11px] leading-5 text-white/45"><MapPin className="me-1 inline size-3"/>{[v.city||"City unknown",nameCountry(v.country_code)].join(", ")} · {v.device} · {v.browser} / {v.os}</p>
