@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 
 const KEY="loyvance.analytics.session.v1";
 const DAY=86400000;
+const CAMPAIGN_KEY="loyvance.analytics.campaign.v1";
+const validCampaign=(value:string)=>/^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/.test(value);
 const keys=["loyvance_admin_token","digital_loyalty_token","digital_loyalty_customer_token"];
 function trackingDisabled(){
  try{const nav=navigator as Navigator&{globalPrivacyControl?:boolean};return Boolean(nav.globalPrivacyControl||nav.doNotTrack==="1"||localStorage.getItem("loyvance.analytics.optout")==="1");}
@@ -18,6 +20,18 @@ function sessionId(){
   return value.id;
  }catch{return crypto.randomUUID();}
 }
+function campaignForTab(){
+ try{
+  // An affiliate code in /register?ref= belongs to partner commissions,
+  // not marketing campaign analytics.
+  const marketing=["/","/fr","/ar"].includes(location.pathname);
+  const fromUrl=marketing?(new URLSearchParams(location.search).get("ref")||"").trim().toLowerCase():"";
+  const cached=sessionStorage.getItem(CAMPAIGN_KEY)||"";
+  if(validCampaign(cached))return cached;
+  if(validCampaign(fromUrl)){sessionStorage.setItem(CAMPAIGN_KEY,fromUrl);return fromUrl;}
+ }catch{}
+ return "";
+}
 function destination(input:string){
  try{
   const u=new URL(input,location.href);
@@ -28,6 +42,7 @@ function destination(input:string){
 export function VisitorAnalyticsTracker(){
  const pathname=usePathname();
  const visitor=useRef<string|null>(null);
+ const campaign=useRef("");
  const page=useRef("/");
  const active=useRef(0);
  const lastPath=useRef("");
@@ -35,6 +50,7 @@ export function VisitorAnalyticsTracker(){
  useEffect(()=>{
   if(trackingDisabled())return;
   visitor.current=sessionId();
+  campaign.current=campaignForTab();
   page.current=location.pathname;
   const sendEvent=(kind:"page"|"click"|"heartbeat",target?:string)=>{
    if(!visitor.current)return;
@@ -44,6 +60,7 @@ export function VisitorAnalyticsTracker(){
    const ref=document.referrer;
    const data={
     session_id:visitor.current,type:kind,path:page.current,seconds,
+    campaign_ref:campaign.current||undefined,
     target:kind==="click"?target||"":undefined,
     referrer:ref?ref.split(/[?#]/)[0]:""
    };
