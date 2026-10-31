@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 const clean = (v:unknown,max:number)=>typeof v==="string"?v.replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,max):"";
 const validEmail=(s:string)=>s.length<=150&&/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]{2,}$/.test(s);
 const validCode=(s:string)=>/^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/.test(s);
-const html=(s:string)=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]??c));
+const html=(s:string)=>s.replace(/[&<>"']/g,c=>(/* HTML escaping */ ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" } as Record<string,string>)[c]??c));
 const json=(value:unknown,status=200)=>Response.json(value,{status,headers:{"Cache-Control":"no-store"}});
 export async function POST(req:Request){
  try{
