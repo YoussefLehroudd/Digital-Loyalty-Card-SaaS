@@ -118,7 +118,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST", headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json",
             "Idempotency-Key": target + "-" + String(row.attempt_count) },
-          body: JSON.stringify({ from, to: [row.contact_email], subject: row.email_subject, html,
+          body: JSON.stringify({ from, reply_to: process.env.OUTREACH_REPLY_TO || 'youssefhrdd@gmail.com', to: [row.contact_email], subject: row.email_subject, html,
             headers: { "List-Unsubscribe": "<" + unsubscribe + ">", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } })
         });
         const payload = await response.json().catch(() => ({})) as { id?: string; message?: string };
