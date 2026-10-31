@@ -1670,3 +1670,30 @@ html.light .customer-mobile-bottom-nav .customer-mobile-tab:focus-visible {
     scroll-snap-align: start;
   }
 }
+
+
+
+/* Admin sidebar live item counters (desktop + mobile, dark + light). */
+.admin-nav-alert-badge {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+  min-width:1.25rem;
+  height:1.25rem;
+  padding:0 .25rem;
+  border-radius:9999px;
+  background:#eec16a;
+  color:#2c210b;
+  font-size:.625rem;
+  font-weight:800;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+  box-shadow:0 0 0 2px rgba(12,16,21,.68);
+}
+html.light .admin-workspace .admin-sidebar .admin-nav-alert-badge,
+html.light .admin-workspace .admin-mobile-nav .admin-nav-alert-badge {
+  background:#b47b1b!important;
+  color:#fffdf6!important;
+  box-shadow:0 0 0 2px #fffdfa;
+}

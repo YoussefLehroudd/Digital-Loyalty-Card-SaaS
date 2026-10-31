@@ -10,6 +10,7 @@ import { adminRequest, clearAdminToken, getAdminToken, type AdminUser } from "@/
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 import {usePersistentNavScroll} from "@/components/navigation/use-persistent-nav-scroll";
+import { useAdminSidebarAlerts } from "@/components/admin/use-admin-sidebar-alerts";
 type LiveStatus = "connecting" | "live" | "retrying";
 type AdminContextValue = {
     token: string;
@@ -52,6 +53,7 @@ function AdminWorkspace({ children }: {
     } | null>(null);
     const [liveStatus, setLiveStatus] = useState<LiveStatus>("connecting");
     const [authError, setAuthError] = useState("");
+    const alerts = useAdminSidebarAlerts(session?.token ?? null, session?.user.id ?? null, pathname);
     const sidebarScroll=usePersistentNavScroll("admin:"+(session?.user.id??"none")+":desktop",pathname);
     const mobileTabsScroll=usePersistentNavScroll("admin:"+(session?.user.id??"none")+":mobile",pathname,"x");
     useEffect(() => {
@@ -94,7 +96,7 @@ function AdminWorkspace({ children }: {
       <aside ref={sidebarScroll.ref} onScroll={sidebarScroll.onScroll} onClickCapture={sidebarScroll.onClickCapture} className="admin-sidebar loyvance-sidebar-scroll fixed inset-y-0 start-0 z-40 hidden w-64 flex-col overflow-y-auto overscroll-contain border-e border-white/[.07] bg-[#0d1015] p-5 lg:flex">
         <Link href="/admin" aria-label={tr("LOYVANCE administrator home")} className="flex items-center gap-3 rounded-2xl p-2"><span className="grid size-12 place-items-center rounded-2xl border border-[#edbc62]/25 bg-[#edbc62]/10"><img src="/brand/icon.png" alt="" className="size-10 object-contain"/></span><span><span className="block text-lg font-black tracking-[.13em]">LOYVANCE</span><span className="text-[10px] font-semibold uppercase tracking-[.22em] text-[#edbc62]">{tr("Admin workspace")}</span></span></Link>
         <p className="mb-3 mt-10 px-3 text-[10px] font-bold uppercase tracking-[.2em] text-white/30">{tr("Platform management")}</p>
-        <nav aria-label={tr("Administration")} className="space-y-2 pb-4">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${active ? "border border-[#edbc62]/20 bg-[#edbc62]/10 text-[#f4cb80]" : "border border-transparent text-white/55 hover:bg-white/[.04] hover:text-white"}`}><item.icon className="size-[18px]"/>{tr(item.label)}{active ? <span className="ms-auto size-1.5 rounded-full bg-[#edbc62]"/> : null}</Link>; })}</nav>
+        <nav aria-label={tr("Administration")} className="space-y-2 pb-4">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${active ? "border border-[#edbc62]/20 bg-[#edbc62]/10 text-[#f4cb80]" : "border border-transparent text-white/55 hover:bg-white/[.04] hover:text-white"}`}><item.icon className="size-[18px]"/>{tr(item.label)}{alerts[item.href] > 0 ? <span className="admin-nav-alert-badge ms-auto" title={`${alerts[item.href]} ${tr(item.href === "/admin/premium" ? "Pending approvals" : "New updates")}`} aria-label={`${alerts[item.href]} ${tr(item.href === "/admin/premium" ? "Pending approvals" : "New updates")}`}>{alerts[item.href] > 9 ? "9+" : alerts[item.href]}</span> : active ? <span className="ms-auto size-1.5 rounded-full bg-[#edbc62]"/> : null}</Link>; })}</nav>
         <div className="mt-auto space-y-4"><div className="rounded-2xl border border-white/[.07] bg-white/[.025] p-4"><ShieldCheck className="mb-2 size-5 text-[#edbc62]"/><p className="text-sm font-semibold">{tr("Your platform, in focus.")}</p><p className="mt-1 text-xs leading-5 text-white/40">{tr("One workspace for every business and customer.")}</p></div><button onClick={() => void logout()} className="flex w-full items-center gap-3 rounded-xl p-3 text-sm text-white/50 hover:bg-white/[.04] hover:text-white"><LogOut className="size-4"/>{tr("Sign out")}</button></div>
       </aside>
       <div className="lg:ps-64">
@@ -124,7 +126,7 @@ function AdminWorkspace({ children }: {
         </header>
         <main className="admin-content admin-light-content mx-auto min-w-0 max-w-[1500px] px-3 pb-28 pt-6 sm:px-4 sm:px-8 sm:pt-8 lg:pb-10">{children}</main>
       </div>
-      <nav aria-label={tr("Mobile administration")} ref={mobileTabsScroll.ref} onScroll={mobileTabsScroll.onScroll} onClickCapture={mobileTabsScroll.onClickCapture} tabIndex={0} className="admin-mobile-nav customer-bottom-nav-scroll fixed inset-x-0 bottom-0 z-40 flex flex-nowrap gap-1 overflow-x-auto overscroll-x-contain border-t border-white/10 bg-[#0d1015] px-2 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2 lg:hidden">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`flex min-w-[76px] w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-xl px-1 py-2 text-[10px] font-semibold ${active ? "text-[#edbc62]" : "text-white/45"}`}><item.icon className="size-5"/><span className="max-w-full truncate px-0.5">{tr(item.label)}</span></Link>; })}</nav>
+      <nav aria-label={tr("Mobile administration")} ref={mobileTabsScroll.ref} onScroll={mobileTabsScroll.onScroll} onClickCapture={mobileTabsScroll.onClickCapture} tabIndex={0} className="admin-mobile-nav customer-bottom-nav-scroll fixed inset-x-0 bottom-0 z-40 flex flex-nowrap gap-1 overflow-x-auto overscroll-x-contain border-t border-white/10 bg-[#0d1015] px-2 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2 lg:hidden">{adminNavigation.map(item => { const active = pathname === item.href; return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={`relative flex min-w-[76px] w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-xl px-1 py-2 text-[10px] font-semibold ${active ? "text-[#edbc62]" : "text-white/45"}`}><item.icon className="size-5"/><span className="max-w-full truncate px-0.5">{tr(item.label)}</span>{alerts[item.href] > 0 ? <span className="admin-nav-alert-badge absolute end-0 top-0" title={`${alerts[item.href]} ${tr(item.href === "/admin/premium" ? "Pending approvals" : "New updates")}`}>{alerts[item.href] > 9 ? "9+" : alerts[item.href]}</span> : null}</Link>; })}</nav>
     </div>
   </AdminContext.Provider>;
 }
