@@ -77,6 +77,13 @@ export async function ensureVisitorAnalyticsSchema(sql:Sql){
     emailed boolean NOT NULL DEFAULT false
   )`,
   sql`CREATE INDEX IF NOT EXISTS idx_visitor_demo_requests_created ON visitor_demo_requests(created_at DESC)`,
+  // A monotonic submitted total means deletions never hide future new-lead alerts.
+  sql`CREATE TABLE IF NOT EXISTS visitor_demo_request_metrics(
+    singleton smallint PRIMARY KEY CHECK(singleton=1),
+    total_submitted bigint NOT NULL DEFAULT 0
+  )`,
+  sql`INSERT INTO visitor_demo_request_metrics(singleton,total_submitted)
+    SELECT 1,count(*) FROM visitor_demo_requests ON CONFLICT(singleton) DO NOTHING`,
   sql`INSERT INTO visitor_analytics_campaign_aliases(slug,campaign_code)
     SELECT code,code FROM visitor_analytics_campaigns ON CONFLICT(slug) DO NOTHING`,
   sql`CREATE TABLE IF NOT EXISTS visitor_analytics_events(
@@ -154,6 +161,20 @@ export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|
 
 export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):Promise<Response>{
  const q=sql as unknown as Q;
+ // Fast, low-overhead and admin-authenticated endpoint for the sidebar badge.
+ if(path[2]==="demo-alerts" && path.length===3){
+   if(req.method!=="GET")return result({message:"Method not allowed."},405);
+   const rows=await q`SELECT total_submitted::int AS total
+     FROM visitor_demo_request_metrics WHERE singleton=1`;
+   return result({total:Number(rows[0]?.total??0)});
+ }
+ // Only platform admins can delete an individual demo enquiry.
+ if(path[2]==="demo-requests" && path.length===4){
+   if(req.method!=="DELETE")return result({message:"Method not allowed."},405);
+   if(!uuid.test(path[3]||""))return result({message:"Invalid demo request."},422);
+   const deleted=await q`DELETE FROM visitor_demo_requests WHERE id=${path[3]}::uuid RETURNING id::text`;
+   return deleted.length?result({ok:true,id:deleted[0].id}):result({message:"Demo request not found."},404);
+ }
  if(path[2]==="campaigns"){
    // Admin-only read to check URL uniqueness before committing the update.
    if(path[3]==="check" && path.length===4 && req.method==="GET"){
