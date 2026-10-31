@@ -1362,5 +1362,10 @@
   "No demo requests received yet.": "Aucune demande de démo reçue pour le moment.",
   "Reply by email": "Répondre par e-mail",
   "Campaign": "Campagne",
-  "Direct / unknown": "Direct / inconnu"
+  "Direct / unknown": "Direct / inconnu",
+  "Delete demo request": "Supprimer la demande de démo",
+  "Demo request deleted.": "Demande de démo supprimée.",
+  "Could not delete demo request.": "Impossible de supprimer la demande de démo.",
+  "Total demo requests": "Total des demandes de démo",
+  "Permanently delete this demo request? This action cannot be undone.": "Supprimer définitivement cette demande de démo ? Cette action est irréversible."
 }

@@ -1362,5 +1362,10 @@
   "No demo requests received yet.": "ما توصلنا حتى بطلب عرض دابا.",
   "Reply by email": "الجواب بالإيميل",
   "Campaign": "الحملة",
-  "Direct / unknown": "مباشر / غير معروف"
+  "Direct / unknown": "مباشر / غير معروف",
+  "Delete demo request": "حذف طلب العرض",
+  "Demo request deleted.": "تم حذف طلب العرض.",
+  "Could not delete demo request.": "تعذر حذف طلب العرض.",
+  "Total demo requests": "مجموع طلبات العرض",
+  "Permanently delete this demo request? This action cannot be undone.": "واش متأكد بغيتي تمسح طلب العرض نهائياً؟ ما يمكنش ترجعو من بعد."
 }
