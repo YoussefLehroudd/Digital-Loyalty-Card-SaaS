@@ -2,6 +2,7 @@
 import "flag-icons/css/flag-icons.min.css";
 import { CountryFlag } from "@/components/ui/country-flag";
 import { DailyVisitsChart } from "@/components/admin/daily-visits-chart";
+import { VisitorCampaigns, type VisitorCampaign } from "@/components/admin/visitor-campaigns";
 import { useCallback, useEffect, useState } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, Clock3, Computer, ExternalLink, Globe2, Link2, Loader2, MapPin, MousePointerClick, RefreshCw, Smartphone, Users, X } from "lucide-react";
 import { useAdmin } from "@/components/admin/admin-shell";
@@ -11,7 +12,7 @@ type Row={ [key:string]: string|number|null|undefined };
 type Summary={ sessions:number; pageviews:number; clicks:number; avg_seconds:number; recently_active:number; signed_in_sessions:number };
 type Visitor={id:string;first_seen:string;last_seen:string;entry_path:string;current_path:string;referrer:string;traffic_source:string;country_code:string|null;city:string|null;region:string|null;device:string;browser:string;os:string;active_seconds:number;pageviews:number;clicks:number;user_name:string|null;user_role:string|null};
 type Event={event_type:"page"|"click";page_path:string;target:string|null;happened_at:string};
-type Analytics={days:number;totals:Summary;daily:Array<{day:string;sessions:number;pageviews:number}>;pages:Array<{name:string;views:number;sessions:number}>;countries:Array<{country_code:string;sessions:number}>;cities:Array<{country_code:string;city:string;region:string;sessions:number}>;sources:Array<{name:string;sessions:number}>;devices:Array<{name:string;sessions:number}>;clicks:Array<{name:string;clicks:number}>;sessions:Visitor[]};
+type Analytics={days:number;campaigns:VisitorCampaign[];totals:Summary;daily:Array<{day:string;sessions:number;pageviews:number}>;pages:Array<{name:string;views:number;sessions:number}>;countries:Array<{country_code:string;sessions:number}>;cities:Array<{country_code:string;city:string;region:string;sessions:number}>;sources:Array<{name:string;sessions:number}>;devices:Array<{name:string;sessions:number}>;clicks:Array<{name:string;clicks:number}>;sessions:Visitor[]};
 const card="admin-panel min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5";
 const formatNumber=(value:number)=>new Intl.NumberFormat("en").format(Number(value||0));
 const seconds=(n:number)=>n>=3600?Math.floor(n/3600)+"h "+Math.floor(n%3600/60)+"m":n>=60?Math.floor(n/60)+"m "+n%60+"s":n+"s";
@@ -88,6 +89,7 @@ export default function AdminVisitorsPage(){
     <Metric icon={Clock3} label="Average active time" value={seconds(number(summary.avg_seconds))} note="Approx. foreground time"/>
     <Metric icon={Users} label="Logged-in sessions" value={formatNumber(summary.signed_in_sessions)} note="Recognized authenticated users"/>
    </div>
+   <VisitorCampaigns token={token} campaigns={report.campaigns??[]} days={days} onCreated={()=>void load()}/>
    <DailyVisitsChart data={report.daily} days={days}/>
    <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-2">
     <Ranking title="Most visited pages" scrollable items={report.pages.map(p=>({label:p.name,value:number(p.views),subtitle:p.sessions+" sessions"}))}/>
