@@ -1293,5 +1293,10 @@
   "Campaign history": "Historique des campagnes",
   "Smart automations": "Automatisations intelligentes",
   "New updates": "Nouveautés",
-  "Pending approvals": "Approbations en attente"
+  "Pending approvals": "Approbations en attente",
+  "Requests update automatically.": "Les demandes se mettent à jour automatiquement.",
+  "Last checked": "Dernière vérification",
+  "Pending requests": "Demandes en attente",
+  "Reviewed requests": "Demandes traitées",
+  "No pending requests.": "Aucune demande en attente."
 }
