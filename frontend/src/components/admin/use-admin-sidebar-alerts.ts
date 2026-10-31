@@ -144,8 +144,10 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
         const result = await apiFetch<PremiumResponse>("/premium-admin", {token:token!, signal:ctrl.signal, cache:"no-store"});
         if (stopped || ctrl.signal.aborted || !Array.isArray(result.requests)) return;
         const pendingKeys = new Set(result.requests.filter(isPremiumPending).map(premiumKey));
-        for (const item of result.requests) {
-          if (!isPremiumPending(item)) handled.delete(premiumKey(item));
+        // Release handled ids once they no longer appear pending on the server.
+        // A later re-request gets its own requested_at identity and fresh badge.
+        for (const key of handled) {
+          if (!pendingKeys.has(key)) handled.delete(key);
         }
         setBadges(old => ({...old, "/admin/premium": [...pendingKeys].filter(k => !handled.has(k)).length}));
       } catch {

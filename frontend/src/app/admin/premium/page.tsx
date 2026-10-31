@@ -63,7 +63,7 @@ export default function AdminPremiumRequests(){
       active.current?.abort();
       active.current=null;
       setRows(prev=>prev.map(item=>premiumKey(item)===key?{...item,status}:item));
-      notifyPremiumDecision({business_id:row.business_id,feature:row.feature,status});
+      if(isPremiumPending(row)) notifyPremiumDecision({business_id:row.business_id,feature:row.feature,requested_at:row.requested_at,status});
       void refresh();
     }catch(e){setError(e instanceof Error?e.message:"Unable to save decision");}
     finally{setBusy(null);}
