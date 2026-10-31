@@ -60,7 +60,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
             SELECT 1 FROM loyvance_outreach_20261031 prior
             WHERE lower(prior.contact_email)=lower(o.contact_email)
               AND prior.campaign_code<>o.campaign_code
-              AND prior.status IN ('sending','sent','delivered')
+              AND prior.status IN ('sending','sent','delivered','bounced','blocked','unsubscribed')
           )`
     ]);
     const stats: Record<string, number> = {};
