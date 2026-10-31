@@ -149,11 +149,11 @@ export default function AdminOutreachPage() {
       const cols = ["business_name","business_city","contact_email","source_url","campaign_code",
         "status","consent_status","b2b_review_status","b2b_country","b2b_business_type","email_subject","b2b_review_notes"];
       const cell=(v:unknown)=>{
-        let s=String(v??"").replace(/[\\x00-\\x1f\\x7f]/g," ");
-        if (/^\\s*[=+@-]/.test(s)) s="'"+s;
+        let s=String(v??"").replace(/[\x00-\x1f\x7f]/g," ");
+        if (/^\s*[=+@-]/.test(s)) s="'"+s;
         return '"'+s.replace(/"/g,'""')+'"';
       };
-      const csv="\\ufeff"+[cols.map(cell).join(","),...(report.contacts||[]).map(row=>cols.map(k=>cell(row[k])).join(","))].join("\\r\\n");
+      const csv="\ufeff"+[cols.map(cell).join(","),...(report.contacts||[]).map(row=>cols.map(k=>cell(row[k])).join(","))].join("\r\n");
       const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
       const a=document.createElement("a"); a.href=url; a.download="loyvance-outreach-screening.csv";
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
