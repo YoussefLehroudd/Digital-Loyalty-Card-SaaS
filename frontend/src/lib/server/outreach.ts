@@ -7,16 +7,6 @@ type Q = (parts: TemplateStringsArray, ...values: unknown[]) => Promise<Row[]>;
 const reply = (value: unknown, status = 200) => Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
 const clean = (value: unknown, max = 200) => typeof value === "string" ? value.trim().slice(0, max) : "";
 const validCode = (value: string) => /^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/.test(value);
-const countryFromCity = (city: string): string => {
-  const val = city.toLowerCase().trim();
-  if (["london","manchester","glasgow","edinburgh"].includes(val)) return "GB";
-  if (["toronto","vancouver"].includes(val)) return "CA";
-  if (["new york","seattle","chicago"].includes(val)) return "US";
-  if (["sydney","melbourne"].includes(val)) return "AU";
-  if (val === "dublin") return "IE";
-  if (val === "singapore") return "SG";
-  return "";
-};
 const VALID_STATUSES = ["all", "prepared", "sent", "delivered", "sending", "failed", "bounced", "blocked", "unsubscribed"];
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, x => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[x] || x));
 
@@ -76,6 +66,46 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     return reply({ deleted: removed.length, note: "Outreach records hidden. Tracking links and historical visitor analytics preserved." });
   }
 
+  // Read-only, whole-list screening. Never claims consent, marks approved or sends.
+  if (path.length === 3 && code === "screening" && req.method === "GET") {
+    const regions = await sql`SELECT
+      CASE
+        WHEN lower(business_city) IN ('london','manchester','glasgow','edinburgh') THEN 'GB'
+        WHEN lower(business_city) = 'dublin' THEN 'IE'
+        WHEN lower(business_city) IN ('toronto','vancouver') THEN 'CA'
+        WHEN lower(business_city) IN ('new york','seattle','chicago') THEN 'US'
+        WHEN lower(business_city) IN ('sydney','melbourne') THEN 'AU'
+        WHEN lower(business_city) = 'singapore' THEN 'SG'
+        ELSE 'OTHER' END AS country,
+      count(*)::int AS pending,
+      count(*) FILTER (WHERE length(COALESCE(source_url,''))>12)::int AS sources_recorded,
+      count(*) FILTER (WHERE consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
+        OR (b2b_review_status='approved' AND b2b_reviewed_at IS NOT NULL))::int AS evidence_recorded,
+      count(*) FILTER (WHERE source_url IS NULL OR source_url='')::int AS missing_sources
+      FROM loyvance_outreach_20261031
+      WHERE deleted_at IS NULL AND status='prepared' AND consent_status<>'unsubscribed'
+        AND b2b_review_status<>'rejected'
+      GROUP BY 1 ORDER BY 1`;
+    const summary = await sql`SELECT
+      count(*) FILTER(WHERE status='prepared')::int AS pending,
+      count(*) FILTER(WHERE status IN ('sent','delivered'))::int AS processed,
+      count(*) FILTER(WHERE status IN ('blocked','bounced','unsubscribed') OR
+        b2b_review_status='rejected' OR consent_status='unsubscribed')::int AS suppressed,
+      count(*)::int - count(DISTINCT lower(contact_email))::int AS duplicate_addresses
+      FROM loyvance_outreach_20261031 WHERE deleted_at IS NULL`;
+    if (search.get("export") === "1") {
+      const contacts = await sql`SELECT campaign_code,business_name,business_city,contact_email,source_url,
+        status,consent_status,b2b_review_status,b2b_country,b2b_business_type,email_subject,
+        b2b_review_notes
+        FROM loyvance_outreach_20261031
+        WHERE deleted_at IS NULL AND status='prepared'
+        ORDER BY business_city,campaign_code LIMIT 1000`;
+      return reply({ summary: summary[0] || {}, regions, contacts,
+        note: "Recorded source URLs have not been independently reverified; no contacts were approved or sent." });
+    }
+    return reply({ summary: summary[0] || {}, regions,
+      note: "This scan summarizes the saved contact data. It does not certify legal eligibility or send emails." });
+  }
   if (path.length === 3 && validCode(code) && req.method === "GET") {
     const records = await sql`SELECT o.*,o.created_at::text,o.sent_at::text,o.attempted_at::text,
        o.delivered_at::text,o.failed_at::text,o.updated_at::text,o.consent_at::text,
@@ -99,42 +129,13 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     const subject = clean(input.email_subject, 200);
     const message = clean(input.email_body, 12000);
     const contact = clean(input.contact_name, 120);
-    const consent = clean(input.consent_status, 20);
-    const source = clean(input.consent_source, 300);
-    const reviewStatus = clean(input.b2b_review_status, 20);
-    const businessType = clean(input.b2b_business_type, 30);
-    const reviewNotes = clean(input.b2b_review_notes, 1200);
-    const checked = input.b2b_publication_checked === true;
-    const relevant = input.b2b_role_relevant === true;
-    const noOptOut = input.b2b_no_opt_out_notice === true;
-    if (!["pending","approved","rejected"].includes(reviewStatus)) return reply({message:"Invalid B2B review state."},422);
-    if (!["unknown","corporate","sole_trader","other"].includes(businessType)) return reply({message:"Invalid business type."},422);
-    const current = await sql`SELECT business_city,source_url,contact_email,status
-      FROM loyvance_outreach_20261031 WHERE campaign_code=${code} AND deleted_at IS NULL LIMIT 1`;
-    if (!current.length) return reply({message:"Contact not found."},404);
-    const country = countryFromCity(String(current[0].business_city || ""));
-    if (reviewStatus === "approved") {
-      if (!["GB","IE","CA","US"].includes(country)) return reply({message:"This country's outreach requires separate consent or legal review. Do not automatically approve public listings."},422);
-      if (["GB","IE"].includes(country) && businessType!=="corporate") return reply({message:"For UK and Ireland B2B without prior opt-in, verify a corporate/business subscriber rather than an individual or sole trader."},422);
-      if (!checked || !relevant || !noOptOut || reviewNotes.length<20 || String(current[0].source_url||"").length<12)
-        return reply({message:"Verify the original publication, business relevance, no objection, and document the basis for contact."},422);
-    }
     if (subject.length < 5 || message.length < 30) return reply({ message: "Provide a subject and full email message." }, 422);
-    if (!["unverified", "opted_in", "unsubscribed"].includes(consent)) return reply({ message: "Invalid consent status." }, 422);
-    if (consent === "opted_in" && source.length < 8) return reply({ message: "Record evidence of the business's request or consent to receive email." }, 422);
+    // Editing message drafts never changes proof of consent, opt-outs or B2B review.
     const saved = await sql`UPDATE loyvance_outreach_20261031
       SET email_subject=${subject},email_body=${message},contact_name=${contact || null},
-        consent_status=${consent},consent_source=${source || null},
-        consent_at=CASE WHEN ${consent}='opted_in' THEN COALESCE(consent_at,now()) ELSE NULL END,
-        status=CASE WHEN ${consent}='unsubscribed' THEN 'unsubscribed' ELSE status END,
-        b2b_review_status=${reviewStatus},b2b_review_notes=${reviewNotes||null},
-        b2b_reviewed_at=CASE WHEN ${reviewStatus}='approved' THEN now() ELSE NULL END,
-        b2b_country=${country||null},b2b_business_type=${businessType},
-        b2b_publication_checked=${checked},b2b_role_relevant=${relevant},
-        b2b_no_opt_out_notice=${noOptOut},
-        content_origin='admin_edited',updated_at=now()
+      content_origin='admin_edited',updated_at=now()
       WHERE campaign_code=${code} AND deleted_at IS NULL
-        AND status IN ('prepared','failed')
+        AND status='prepared'
       RETURNING campaign_code`;
     return saved.length ? reply({ ok: true }) : reply({ message: "This item cannot be edited while sending or after it has been sent." }, 409);
   }
