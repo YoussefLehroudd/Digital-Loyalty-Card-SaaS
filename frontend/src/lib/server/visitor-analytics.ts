@@ -1,5 +1,4 @@
 import type { getSql } from "@/lib/server/db";
-import { createHash } from "crypto";
 
 type Sql = ReturnType<typeof getSql>;
 type Row = Record<string,unknown>;
@@ -12,6 +11,7 @@ const geo=(value:string|null,max=80)=>{const raw=safe(value,max);try{return deco
 const country=(value:string|null)=>/^[A-Z]{2}$/.test(value||"")?value!:"";
 const bot=(value:string)=>/bot|crawler|spider|headless|lighthouse|uptime|preview|curl|wget/i.test(value);
 const countryCode=(value:string|null)=>country(value?.toUpperCase()??"");
+const campaignCode=(input:unknown)=>{const value=safe(input,48).toLowerCase();return /^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/.test(value)?value:"";};
 const sourceFrom=(ref:string)=>{
  if(!ref)return "Direct / unknown";
  try{
@@ -50,6 +50,11 @@ export async function ensureVisitorAnalyticsSchema(sql:Sql){
   user_id uuid REFERENCES app_users(id) ON DELETE SET NULL,
   pageviews integer NOT NULL DEFAULT 0, clicks integer NOT NULL DEFAULT 0
  )`,
+  sql`ALTER TABLE visitor_analytics_sessions ADD COLUMN IF NOT EXISTS campaign_ref text`,
+  sql`CREATE TABLE IF NOT EXISTS visitor_analytics_campaigns(
+    code text PRIMARY KEY, label text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
   sql`CREATE TABLE IF NOT EXISTS visitor_analytics_events(
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   session_id uuid NOT NULL REFERENCES visitor_analytics_sessions(id) ON DELETE CASCADE,
@@ -60,7 +65,8 @@ export async function ensureVisitorAnalyticsSchema(sql:Sql){
   sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_first ON visitor_analytics_sessions(first_seen DESC)`,
   sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_last ON visitor_analytics_sessions(last_seen DESC)`,
   sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_events_session ON visitor_analytics_events(session_id,happened_at DESC)`,
-  sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_events_recent ON visitor_analytics_events(happened_at DESC)`
+  sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_events_recent ON visitor_analytics_events(happened_at DESC)`,
+  sql`CREATE INDEX IF NOT EXISTS idx_visitor_analytics_campaign_sessions ON visitor_analytics_sessions(campaign_ref,first_seen DESC)`
  ]);
 }
 
@@ -84,6 +90,7 @@ export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|
  let safeRef="";
  try{if(ref){const u=new URL(ref);if(["https:","http:"].includes(u.protocol))safeRef=(u.origin+u.pathname).slice(0,180);}}catch{}
  const traffic=sourceFrom(safeRef);
+ const offeredCampaign=campaignCode(data.campaign_ref);
  const cc=countryCode(req.headers.get("x-vercel-ip-country"));
  const region=geo(req.headers.get("x-vercel-ip-country-region"),60)||null;
  const city=geo(req.headers.get("x-vercel-ip-city"),80)||null;
@@ -91,13 +98,15 @@ export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|
  const q=sql as unknown as Q;
  // Stateless, first-party, per-tab ephemeral session UUID. No IP, GPS or fingerprint stored.
  const session=await q`INSERT INTO visitor_analytics_sessions(
-   id,entry_path,current_path,referrer,traffic_source,country_code,region,city,device,browser,os,user_id
+   id,entry_path,current_path,referrer,traffic_source,country_code,region,city,device,browser,os,user_id,campaign_ref
  ) VALUES(
-   ${id}::uuid,${page},${page},${safeRef},${traffic},${cc||null},${region},${city},${device},${browser},${os},${userId}::uuid
+   ${id}::uuid,${page},${page},${safeRef},${traffic},${cc||null},${region},${city},${device},${browser},${os},${userId}::uuid,
+   (SELECT code FROM visitor_analytics_campaigns WHERE code=${offeredCampaign} LIMIT 1)
  ) ON CONFLICT(id) DO UPDATE SET
    last_seen=now(),current_path=excluded.current_path,
    active_seconds=LEAST(visitor_analytics_sessions.active_seconds+${seconds},86400),
-   user_id=COALESCE(visitor_analytics_sessions.user_id,excluded.user_id)
+   user_id=COALESCE(visitor_analytics_sessions.user_id,excluded.user_id),
+   campaign_ref=COALESCE(visitor_analytics_sessions.campaign_ref,excluded.campaign_ref)
  WHERE visitor_analytics_sessions.first_seen>now()-interval '1 day'
  RETURNING id`;
  if(!session.length)return result({message:"Session expired. Start a fresh tab session."},409);
@@ -118,8 +127,24 @@ export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|
 }
 
 export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):Promise<Response>{
- if(req.method!=="GET")return result({message:"Method not allowed."},405);
  const q=sql as unknown as Q;
+ if(path[2]==="campaigns"){
+   if(path.length!==3)return result({message:"Not found."},404);
+   if(req.method!=="POST")return result({message:"Method not allowed."},405);
+   if(Number(req.headers.get("content-length")||0)>2048)return result({message:"Payload too large."},413);
+   const body=await req.json().catch(()=>null) as Row|null;
+   const code=campaignCode(body?.code);
+   const label=safe(body?.label,100);
+   if(!code||label.length<2||/[<>@]/.test(label))
+     return result({message:"Enter a business name (2–100 characters) and a valid campaign code (3–48 letters, numbers or hyphens)."},422);
+   const count=await q`SELECT count(*)::int AS total FROM visitor_analytics_campaigns`;
+   if(Number(count[0]?.total||0)>=250)return result({message:"Campaign limit reached."},422);
+   const rows=await q`INSERT INTO visitor_analytics_campaigns(code,label) VALUES(${code},${label})
+     ON CONFLICT(code) DO NOTHING RETURNING code,label,created_at::text`;
+   if(!rows.length)return result({message:"This campaign code is already in use. Choose a different one."},409);
+   return result({campaign:rows[0]},201);
+ }
+ if(req.method!=="GET")return result({message:"Method not allowed."},405);
  const params=new URL(req.url).searchParams;
  const days=[7,30,90].includes(Number(params.get("days")))?Number(params.get("days")):7;
  const cutoff=new Date(Date.now()-days*86400000).toISOString();
@@ -137,7 +162,7 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
  if(path.length>2)return result({message:"Not found."},404);
  // Retain a rolling 90 days. Deleting sessions cascades their events.
  await sql`DELETE FROM visitor_analytics_sessions WHERE first_seen<now()-interval '90 days'`;
- const [totals,daily,pages,countries,cities,sources,devices,clicks,sessions]=await Promise.all([
+ const [totals,daily,pages,countries,cities,sources,devices,clicks,sessions,campaigns]=await Promise.all([
   q`SELECT count(*)::int AS sessions,COALESCE(sum(pageviews),0)::int AS pageviews,
     COALESCE(sum(clicks),0)::int AS clicks,
     COALESCE(round(avg(active_seconds)),0)::int AS avg_seconds,
@@ -168,10 +193,18 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
     WHERE event_type='click' AND happened_at>=${cutoff}::timestamptz AND target IS NOT NULL
     GROUP BY target ORDER BY clicks DESC LIMIT 30`,
   q`SELECT s.id::text,s.first_seen::text,s.last_seen::text,s.entry_path,s.current_path,s.referrer,
-    s.traffic_source,trim(s.country_code) AS country_code,s.city,s.region,s.device,s.browser,s.os,
+    s.traffic_source,s.campaign_ref,trim(s.country_code) AS country_code,s.city,s.region,s.device,s.browser,s.os,
     s.active_seconds,s.pageviews,s.clicks,u.name AS user_name,u.role AS user_role
     FROM visitor_analytics_sessions s LEFT JOIN app_users u ON u.id=s.user_id
-    WHERE s.first_seen>=${cutoff}::timestamptz ORDER BY s.first_seen DESC LIMIT 80`
+    WHERE s.first_seen>=${cutoff}::timestamptz ORDER BY s.first_seen DESC LIMIT 80`,
+  q`SELECT c.code,c.label,c.created_at::text,
+    count(s.id)::int AS sessions,
+    max(s.first_seen)::text AS last_visit
+    FROM visitor_analytics_campaigns c
+    LEFT JOIN visitor_analytics_sessions s ON s.campaign_ref=c.code
+      AND s.first_seen>=${cutoff}::timestamptz
+    GROUP BY c.code,c.label,c.created_at
+    ORDER BY sessions DESC,c.created_at DESC LIMIT 250`
  ]);
- return result({days,totals:totals[0],daily,pages,countries,cities,sources,devices,clicks,sessions});
+ return result({days,totals:totals[0],daily,pages,countries,cities,sources,devices,clicks,sessions,campaigns});
 }
