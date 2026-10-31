@@ -107,7 +107,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
       const row = claimed[0];
       if (!row) { outcomes.push({ campaign_code: target, status: "skipped", error: "Not eligible, already processed, or consent not verified." }); continue; }
       const tracking = "https://loyvance.vercel.app/?ref=" + encodeURIComponent(target);
-      const unsubscribe = "https://loyvance.vercel.app/outreach/unsubscribe?token=" + encodeURIComponent(String(row.unsubscribe_token));
+      const unsubscribe = "https://loyvance.vercel.app/api/outreach/unsubscribe?token=" + encodeURIComponent(String(row.unsubscribe_token));
       const body = String(row.email_body);
       // Preserve the saved message while ensuring that the live tracking URL is present.
       const fullBody = body.includes(tracking) ? body : body + "\n\n" + tracking;
