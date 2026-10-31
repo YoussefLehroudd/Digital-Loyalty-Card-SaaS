@@ -11,7 +11,7 @@ import { adminRequest } from "@/lib/admin";
 
 type Row={ [key:string]: string|number|null|undefined };
 type Summary={ sessions:number; pageviews:number; clicks:number; avg_seconds:number; recently_active:number; signed_in_sessions:number };
-type Visitor={id:string;first_seen:string;last_seen:string;entry_path:string;current_path:string;referrer:string;traffic_source:string;campaign_ref:string|null;country_code:string|null;city:string|null;region:string|null;device:string;browser:string;os:string;active_seconds:number;pageviews:number;clicks:number;user_name:string|null;user_role:string|null};
+type Visitor={id:string;first_seen:string;last_seen:string;entry_path:string;current_path:string;referrer:string;traffic_source:string;campaign_ref:string|null;campaign_name:string|null;country_code:string|null;city:string|null;region:string|null;device:string;browser:string;os:string;active_seconds:number;pageviews:number;clicks:number;user_name:string|null;user_role:string|null};
 type Event={event_type:"page"|"click";page_path:string;target:string|null;happened_at:string};
 type Analytics={days:number;campaigns:VisitorCampaign[];demoRequests:VisitorDemoRequest[];totals:Summary;daily:Array<{day:string;sessions:number;pageviews:number}>;pages:Array<{name:string;views:number;sessions:number}>;countries:Array<{country_code:string;sessions:number}>;cities:Array<{country_code:string;city:string;region:string;sessions:number}>;sources:Array<{name:string;sessions:number}>;devices:Array<{name:string;sessions:number}>;clicks:Array<{name:string;clicks:number}>;sessions:Visitor[]};
 const card="admin-panel min-w-0 rounded-2xl border border-white/10 bg-[#101318] p-4 sm:p-5";
@@ -64,6 +64,7 @@ export default function AdminVisitorsPage(){
   setSelected(visitor);setEvents(null);setDetailError("");
   try{
    const response=await adminRequest<{session:Visitor;events:Event[]}>("visitors/session/"+visitor.id+"?days="+days,token);
+   setSelected(response.session);
    setEvents(response.events);
   }catch(e){setDetailError(e instanceof Error?e.message:"Cannot load visitor timeline.");}
  }
@@ -107,7 +108,11 @@ export default function AdminVisitorsPage(){
       <div className="min-w-0">
        <div className="flex min-w-0 items-center gap-2"><CountryFlag code={v.country_code}/><span className="truncate text-sm font-semibold text-white">{v.user_name||"Anonymous visitor"}</span><span className="shrink-0 text-[10px] text-white/30">#{v.id.slice(0,8)}</span></div>
        <p className="mt-1 break-words text-[11px] leading-5 text-white/45"><MapPin className="me-1 inline size-3"/>{[v.city||"City unknown",nameCountry(v.country_code)].join(", ")} · {v.device} · {v.browser} / {v.os}</p>
-       <p className="mt-1 break-all text-[11px] text-white/40">{v.traffic_source} · Entered {v.entry_path}{v.campaign_ref ? " · Campaign: "+v.campaign_ref : ""}</p>
+       <p className="mt-1 break-all text-[11px] text-white/40">{v.traffic_source} · Entered {v.entry_path}</p>
+       {v.campaign_ref?<p className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px]">
+         <span className="break-words font-semibold text-[#efbd5d]">Business / campaign: {v.campaign_name||"Unknown campaign"}</span>
+         <span className="break-all font-mono text-white/45">({v.campaign_ref})</span>
+       </p>:null}
       </div>
       <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
        <div className="text-left text-[11px] text-white/50 sm:text-right"><p>{date(v.first_seen)}</p><p className="mt-1">{v.pageviews} pages · {v.clicks} clicks · {seconds(number(v.active_seconds))}</p></div><ArrowUpRight className="size-4 shrink-0 text-[#efbd5d]"/>
@@ -126,7 +131,7 @@ export default function AdminVisitorsPage(){
        <p className="mt-1 text-xs text-white/45">{selected.city||"Unknown city"}, {nameCountry(selected.country_code)} · {selected.device} · {selected.browser}</p>
       </div><button type="button" aria-label="Close details" onClick={()=>{setSelected(null);setEvents(null);}} className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/15 text-white/75"><X className="size-4"/></button></div>
       <div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-xl border border-white/10 bg-white/[.025] p-3"><p className="text-[11px] text-white/40">Active time</p><p className="mt-1 font-bold">{seconds(number(selected.active_seconds))}</p></div><div className="rounded-xl border border-white/10 bg-white/[.025] p-3"><p className="text-[11px] text-white/40">Arrival source</p><p className="mt-1 break-words text-xs font-semibold">{selected.traffic_source}</p></div></div>
-      <div className="mt-4 space-y-1 text-[11px] leading-5 text-white/45"><p className="break-all"><strong className="text-white/70">Entry page:</strong> {selected.entry_path}</p>{selected.campaign_ref?<p><strong className="text-white/70">Campaign:</strong> {selected.campaign_ref}</p>:null}<p className="break-all"><strong className="text-white/70">Referring URL:</strong> {selected.referrer||"Direct / unavailable"}</p><p><strong className="text-white/70">Last seen:</strong> {date(selected.last_seen)}</p></div>
+      <div className="mt-4 space-y-1 text-[11px] leading-5 text-white/45"><p className="break-all"><strong className="text-white/70">Entry page:</strong> {selected.entry_path}</p>{selected.campaign_ref?<p className="break-words"><strong className="text-white/70">Business / campaign:</strong> <span className="font-semibold text-[#efbd5d]">{selected.campaign_name||"Unknown campaign"}</span> <span className="break-all font-mono text-white/45">({selected.campaign_ref})</span></p>:null}<p className="break-all"><strong className="text-white/70">Referring URL:</strong> {selected.referrer||"Direct / unavailable"}</p><p><strong className="text-white/70">Last seen:</strong> {date(selected.last_seen)}</p></div>
        <p className="mt-5 mb-3 text-sm font-semibold">Page & click timeline</p>
       {detailError?<p className="text-sm text-rose-300">{detailError}</p>:events===null?<p className="flex items-center gap-2 text-xs text-white/40"><Loader2 className="size-4 animate-spin"/>Loading timeline...</p>:
        <div className="space-y-2">{events.map((event,i)=><div key={i} className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-3"><div className="flex items-start gap-3">

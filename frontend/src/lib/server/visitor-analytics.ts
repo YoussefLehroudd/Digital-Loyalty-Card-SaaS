@@ -255,8 +255,11 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
  if(path[2]==="session" && uuid.test(path[3]||"")){
   const id=path[3];
   const [session,events]=await Promise.all([
-   q`SELECT s.*,u.name AS user_name,u.role AS user_role FROM visitor_analytics_sessions s
-    LEFT JOIN app_users u ON u.id=s.user_id WHERE s.id=${id}::uuid AND s.first_seen>=${cutoff}::timestamptz LIMIT 1`,
+   q`SELECT s.*,c.label AS campaign_name,u.name AS user_name,u.role AS user_role
+    FROM visitor_analytics_sessions s
+    LEFT JOIN app_users u ON u.id=s.user_id
+    LEFT JOIN visitor_analytics_campaigns c ON c.code=s.campaign_ref
+    WHERE s.id=${id}::uuid AND s.first_seen>=${cutoff}::timestamptz LIMIT 1`,
    q`SELECT event_type,page_path,target,happened_at::text FROM visitor_analytics_events
     WHERE session_id=${id}::uuid ORDER BY happened_at ASC,id ASC LIMIT 200`
   ]);
@@ -297,9 +300,12 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
     WHERE event_type='click' AND happened_at>=${cutoff}::timestamptz AND target IS NOT NULL
     GROUP BY target ORDER BY clicks DESC LIMIT 30`,
   q`SELECT s.id::text,s.first_seen::text,s.last_seen::text,s.entry_path,s.current_path,s.referrer,
-    s.traffic_source,s.campaign_ref,trim(s.country_code) AS country_code,s.city,s.region,s.device,s.browser,s.os,
+    s.traffic_source,s.campaign_ref,c.label AS campaign_name,
+    trim(s.country_code) AS country_code,s.city,s.region,s.device,s.browser,s.os,
     s.active_seconds,s.pageviews,s.clicks,u.name AS user_name,u.role AS user_role
-    FROM visitor_analytics_sessions s LEFT JOIN app_users u ON u.id=s.user_id
+    FROM visitor_analytics_sessions s
+    LEFT JOIN app_users u ON u.id=s.user_id
+    LEFT JOIN visitor_analytics_campaigns c ON c.code=s.campaign_ref
     WHERE s.first_seen>=${cutoff}::timestamptz ORDER BY s.first_seen DESC LIMIT 80`,
   q`SELECT c.code,c.public_code,c.label,c.created_at::text,
     count(s.id)::int AS sessions,
