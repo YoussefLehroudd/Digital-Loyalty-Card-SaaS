@@ -102,7 +102,7 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
         {(state === "sending" || state === "pausing") ? <button type="button" disabled={state === "pausing"} onClick={pause}
           className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 px-4 text-xs font-bold text-white disabled:opacity-50">
           <CirclePause className="size-4"/>{state === "pausing" ? "Pausing…" : "Pause sending"}</button> :
-        <button type="button" onClick={() => void start()} disabled={!configured || ready === 0 || workingRef.current}
+        <button type="button" onClick={() => void start()} disabled={!configured || ready === 0}
           className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black hover:bg-[#f3cf8c] disabled:cursor-not-allowed disabled:opacity-40">
           {state === "paused" || state === "failed" ? <Play className="size-4"/> : <Send className="size-4"/>}
           {state === "paused" || state === "failed" ? "Resume approved queue" : "Send all approved"} ({ready})
