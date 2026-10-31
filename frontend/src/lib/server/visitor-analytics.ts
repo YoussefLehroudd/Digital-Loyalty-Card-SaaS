@@ -58,6 +58,16 @@ export async function ensureVisitorAnalyticsSchema(sql:Sql){
   // Soft deletion keeps historical campaign attribution and protects
   // existing sent links from accidentally being assigned to a new client.
   sql`ALTER TABLE visitor_analytics_campaigns ADD COLUMN IF NOT EXISTS archived_at timestamptz`,
+  // Keep immutable campaign IDs and reserve every old URL as an alias.
+  sql`ALTER TABLE visitor_analytics_campaigns ADD COLUMN IF NOT EXISTS public_code text`,
+  sql`UPDATE visitor_analytics_campaigns SET public_code=code WHERE public_code IS NULL`,
+  sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_campaigns_public_code ON visitor_analytics_campaigns(public_code)`,
+  sql`CREATE TABLE IF NOT EXISTS visitor_analytics_campaign_aliases(
+    slug text PRIMARY KEY,
+    campaign_code text NOT NULL REFERENCES visitor_analytics_campaigns(code)
+  )`,
+  sql`INSERT INTO visitor_analytics_campaign_aliases(slug,campaign_code)
+    SELECT code,code FROM visitor_analytics_campaigns ON CONFLICT(slug) DO NOTHING`,
   sql`CREATE TABLE IF NOT EXISTS visitor_analytics_events(
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   session_id uuid NOT NULL REFERENCES visitor_analytics_sessions(id) ON DELETE CASCADE,
@@ -104,7 +114,9 @@ export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|
    id,entry_path,current_path,referrer,traffic_source,country_code,region,city,device,browser,os,user_id,campaign_ref
  ) VALUES(
    ${id}::uuid,${page},${page},${safeRef},${traffic},${cc||null},${region},${city},${device},${browser},${os},${userId}::uuid,
-   (SELECT code FROM visitor_analytics_campaigns WHERE code=${offeredCampaign} AND archived_at IS NULL LIMIT 1)
+   (SELECT a.campaign_code FROM visitor_analytics_campaign_aliases a
+      JOIN visitor_analytics_campaigns c ON c.code=a.campaign_code
+      WHERE a.slug=${offeredCampaign} AND c.archived_at IS NULL LIMIT 1)
  ) ON CONFLICT(id) DO UPDATE SET
    last_seen=now(),current_path=excluded.current_path,
    active_seconds=LEAST(visitor_analytics_sessions.active_seconds+${seconds},86400),
@@ -132,9 +144,18 @@ export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|
 export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):Promise<Response>{
  const q=sql as unknown as Q;
  if(path[2]==="campaigns"){
-   // Campaign labels can be edited without breaking distributed links.
-   // Deletion archives the campaign; historical sessions remain available
-   // under Visitors but deleted links stop accepting new attribution.
+   // Admin-only read to check URL uniqueness before committing the update.
+   if(path[3]==="check" && path.length===4){
+     if(req.method!=="GET")return result({message:"Method not allowed."},405);
+     const params=new URL(req.url).searchParams;
+     const offered=campaignCode(params.get("code"));
+     const excluded=campaignCode(params.get("exclude"));
+     if(!offered)return result({available:false,valid:false,message:"Invalid tracking code."},422);
+     const taken=await q`SELECT campaign_code FROM visitor_analytics_campaign_aliases WHERE slug=${offered} LIMIT 1`;
+     return result({code:offered,valid:true,available:!taken.length || (excluded!=="" && taken[0].campaign_code===excluded)});
+   }
+   // Campaign labels + URL slug can be edited. Original identifiers and
+   // old public URLs remain reserved for the same campaign after edits.
    if(path.length===4){
      const code=campaignCode(path[3]);
      if(!code)return result({message:"Invalid campaign code."},422);
@@ -142,10 +163,33 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
        if(Number(req.headers.get("content-length")||0)>2048)return result({message:"Payload too large."},413);
        const input=await req.json().catch(()=>null) as Row|null;
        const label=safe(input?.label,100);
+       const requested=campaignCode(input?.public_code);
        if(label.length<2||/[<>@]/.test(label))return result({message:"Enter a business name between 2 and 100 characters."},422);
-       const edited=await q`UPDATE visitor_analytics_campaigns SET label=${label}
-         WHERE code=${code} AND archived_at IS NULL RETURNING code,label,created_at::text`;
-       return edited.length?result({campaign:edited[0]}):result({message:"Campaign not found."},404);
+       if(!requested)return result({message:"Invalid tracking code."},422);
+       // One SQL statement atomically reserves the requested URL. The
+       // unique alias primary key is the final check against concurrent
+       // attempts by other administrators.
+       const edited=await q`WITH existing AS (
+         SELECT code FROM visitor_analytics_campaigns
+         WHERE code=${code} AND archived_at IS NULL
+       ), reserved AS (
+         INSERT INTO visitor_analytics_campaign_aliases(slug,campaign_code)
+         SELECT ${requested},code FROM existing
+         ON CONFLICT(slug) DO NOTHING RETURNING slug
+       )
+       UPDATE visitor_analytics_campaigns c
+       SET label=${label},public_code=${requested}
+       WHERE c.code=${code} AND c.archived_at IS NULL AND (
+         EXISTS (SELECT 1 FROM reserved)
+         OR EXISTS (SELECT 1 FROM visitor_analytics_campaign_aliases a
+                    WHERE a.slug=${requested} AND a.campaign_code=${code})
+       )
+       RETURNING c.code,c.label,c.public_code,c.created_at::text`;
+       if(edited.length)return result({campaign:edited[0]});
+       const holder=await q`SELECT campaign_code FROM visitor_analytics_campaign_aliases WHERE slug=${requested} LIMIT 1`;
+       if(holder.length && holder[0].campaign_code!==code)
+         return result({message:"This tracking URL is already used by another campaign."},409);
+       return result({message:"Campaign not found."},404);
      }
      if(req.method==="DELETE"){
        const archived=await q`UPDATE visitor_analytics_campaigns SET archived_at=now()
@@ -162,11 +206,15 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
    const label=safe(body?.label,100);
    if(!code||label.length<2||/[<>@]/.test(label))
      return result({message:"Enter a business name (2–100 characters) and a valid campaign code (3–48 letters, numbers or hyphens)."},422);
+   const taken=await q`SELECT campaign_code FROM visitor_analytics_campaign_aliases WHERE slug=${code} LIMIT 1`;
+   if(taken.length)return result({message:"This tracking URL is already used by another campaign."},409);
    const count=await q`SELECT count(*)::int AS total FROM visitor_analytics_campaigns WHERE archived_at IS NULL`;
    if(Number(count[0]?.total||0)>=250)return result({message:"Campaign limit reached."},422);
-   const rows=await q`INSERT INTO visitor_analytics_campaigns(code,label) VALUES(${code},${label})
-     ON CONFLICT(code) DO NOTHING RETURNING code,label,created_at::text`;
+   const rows=await q`INSERT INTO visitor_analytics_campaigns(code,label,public_code) VALUES(${code},${label},${code})
+     ON CONFLICT(code) DO NOTHING RETURNING code,label,public_code,created_at::text`;
    if(!rows.length)return result({message:"This campaign code is already in use. Choose a different one."},409);
+   await q`INSERT INTO visitor_analytics_campaign_aliases(slug,campaign_code)
+     VALUES(${code},${code}) ON CONFLICT(slug) DO NOTHING`;
    return result({campaign:rows[0]},201);
  }
  if(req.method!=="GET")return result({message:"Method not allowed."},405);
@@ -222,7 +270,7 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
     s.active_seconds,s.pageviews,s.clicks,u.name AS user_name,u.role AS user_role
     FROM visitor_analytics_sessions s LEFT JOIN app_users u ON u.id=s.user_id
     WHERE s.first_seen>=${cutoff}::timestamptz ORDER BY s.first_seen DESC LIMIT 80`,
-  q`SELECT c.code,c.label,c.created_at::text,
+  q`SELECT c.code,c.public_code,c.label,c.created_at::text,
     count(s.id)::int AS sessions,
     max(s.first_seen)::text AS last_visit
     FROM visitor_analytics_campaigns c
