@@ -1318,5 +1318,16 @@
   "Copy link": "Copier le lien",
   "Open campaign link": "Ouvrir le lien de campagne",
   "Copied": "Copié",
-  "Tracking is first-party and respects Do Not Track, Global Privacy Control and opt-outs. Campaign codes only are stored; no URL query strings, GPS or raw IP addresses.": "Le suivi respecte les préférences de confidentialité (DNT, GPC, désactivation). Seuls les codes de campagne sont enregistrés, sans paramètres URL, GPS ni adresse IP brute."
+  "Tracking is first-party and respects Do Not Track, Global Privacy Control and opt-outs. Campaign codes only are stored; no URL query strings, GPS or raw IP addresses.": "Le suivi respecte les préférences de confidentialité (DNT, GPC, désactivation). Seuls les codes de campagne sont enregistrés, sans paramètres URL, GPS ni adresse IP brute.",
+  "Total campaigns": "Campagnes au total",
+  "Edit campaign": "Modifier la campagne",
+  "Delete campaign": "Supprimer la campagne",
+  "Confirm delete": "Confirmer la suppression",
+  "Confirm deletion": "Confirmer la suppression",
+  "Deleting…": "Suppression…",
+  "Could not update campaign.": "Impossible de modifier la campagne.",
+  "Could not delete campaign.": "Impossible de supprimer la campagne.",
+  "Campaign name updated. Tracking link unchanged.": "Nom de campagne modifié. Le lien de suivi reste identique.",
+  "Campaign removed. Historical analytics are retained.": "Campagne supprimée. Les données historiques sont conservées.",
+  "Remove this campaign? Its link will stop tracking new visits. Historical analytics will stay saved.": "Supprimer cette campagne ? Son lien ne suivra plus les nouvelles visites. Les statistiques historiques seront conservées."
 }

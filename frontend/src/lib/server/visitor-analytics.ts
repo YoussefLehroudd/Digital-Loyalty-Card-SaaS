@@ -55,6 +55,9 @@ export async function ensureVisitorAnalyticsSchema(sql:Sql){
     code text PRIMARY KEY, label text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
+  // Soft deletion keeps historical campaign attribution and protects
+  // existing sent links from accidentally being assigned to a new client.
+  sql`ALTER TABLE visitor_analytics_campaigns ADD COLUMN IF NOT EXISTS archived_at timestamptz`,
   sql`CREATE TABLE IF NOT EXISTS visitor_analytics_events(
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   session_id uuid NOT NULL REFERENCES visitor_analytics_sessions(id) ON DELETE CASCADE,
@@ -101,7 +104,7 @@ export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|
    id,entry_path,current_path,referrer,traffic_source,country_code,region,city,device,browser,os,user_id,campaign_ref
  ) VALUES(
    ${id}::uuid,${page},${page},${safeRef},${traffic},${cc||null},${region},${city},${device},${browser},${os},${userId}::uuid,
-   (SELECT code FROM visitor_analytics_campaigns WHERE code=${offeredCampaign} LIMIT 1)
+   (SELECT code FROM visitor_analytics_campaigns WHERE code=${offeredCampaign} AND archived_at IS NULL LIMIT 1)
  ) ON CONFLICT(id) DO UPDATE SET
    last_seen=now(),current_path=excluded.current_path,
    active_seconds=LEAST(visitor_analytics_sessions.active_seconds+${seconds},86400),
@@ -129,6 +132,28 @@ export async function collectVisitorAnalytics(req:Request,sql:Sql,userId:string|
 export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):Promise<Response>{
  const q=sql as unknown as Q;
  if(path[2]==="campaigns"){
+   // Campaign labels can be edited without breaking distributed links.
+   // Deletion archives the campaign; historical sessions remain available
+   // under Visitors but deleted links stop accepting new attribution.
+   if(path.length===4){
+     const code=campaignCode(path[3]);
+     if(!code)return result({message:"Invalid campaign code."},422);
+     if(req.method==="PATCH"){
+       if(Number(req.headers.get("content-length")||0)>2048)return result({message:"Payload too large."},413);
+       const input=await req.json().catch(()=>null) as Row|null;
+       const label=safe(input?.label,100);
+       if(label.length<2||/[<>@]/.test(label))return result({message:"Enter a business name between 2 and 100 characters."},422);
+       const edited=await q`UPDATE visitor_analytics_campaigns SET label=${label}
+         WHERE code=${code} AND archived_at IS NULL RETURNING code,label,created_at::text`;
+       return edited.length?result({campaign:edited[0]}):result({message:"Campaign not found."},404);
+     }
+     if(req.method==="DELETE"){
+       const archived=await q`UPDATE visitor_analytics_campaigns SET archived_at=now()
+         WHERE code=${code} AND archived_at IS NULL RETURNING code`;
+       return archived.length?result({ok:true,code:archived[0].code}):result({message:"Campaign not found."},404);
+     }
+     return result({message:"Method not allowed."},405);
+   }
    if(path.length!==3)return result({message:"Not found."},404);
    if(req.method!=="POST")return result({message:"Method not allowed."},405);
    if(Number(req.headers.get("content-length")||0)>2048)return result({message:"Payload too large."},413);
@@ -137,7 +162,7 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
    const label=safe(body?.label,100);
    if(!code||label.length<2||/[<>@]/.test(label))
      return result({message:"Enter a business name (2–100 characters) and a valid campaign code (3–48 letters, numbers or hyphens)."},422);
-   const count=await q`SELECT count(*)::int AS total FROM visitor_analytics_campaigns`;
+   const count=await q`SELECT count(*)::int AS total FROM visitor_analytics_campaigns WHERE archived_at IS NULL`;
    if(Number(count[0]?.total||0)>=250)return result({message:"Campaign limit reached."},422);
    const rows=await q`INSERT INTO visitor_analytics_campaigns(code,label) VALUES(${code},${label})
      ON CONFLICT(code) DO NOTHING RETURNING code,label,created_at::text`;
@@ -203,6 +228,7 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
     FROM visitor_analytics_campaigns c
     LEFT JOIN visitor_analytics_sessions s ON s.campaign_ref=c.code
       AND s.first_seen>=${cutoff}::timestamptz
+    WHERE c.archived_at IS NULL
     GROUP BY c.code,c.label,c.created_at
     ORDER BY sessions DESC,c.created_at DESC LIMIT 250`
  ]);

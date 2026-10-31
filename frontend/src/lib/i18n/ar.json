@@ -1318,5 +1318,16 @@
   "Copy link": "نسخ الرابط",
   "Open campaign link": "فتح رابط الحملة",
   "Copied": "تم النسخ",
-  "Tracking is first-party and respects Do Not Track, Global Privacy Control and opt-outs. Campaign codes only are stored; no URL query strings, GPS or raw IP addresses.": "يحترم التتبع إعدادات الخصوصية وتعطيله، ولا يخزن سوى رموز الحملات دون معاملات الروابط أو موقع GPS أو عناوين IP الأصلية."
+  "Tracking is first-party and respects Do Not Track, Global Privacy Control and opt-outs. Campaign codes only are stored; no URL query strings, GPS or raw IP addresses.": "يحترم التتبع إعدادات الخصوصية وتعطيله، ولا يخزن سوى رموز الحملات دون معاملات الروابط أو موقع GPS أو عناوين IP الأصلية.",
+  "Total campaigns": "مجموع الحملات",
+  "Edit campaign": "تعديل الحملة",
+  "Delete campaign": "حذف الحملة",
+  "Confirm delete": "تأكيد الحذف",
+  "Confirm deletion": "تأكيد الحذف",
+  "Deleting…": "جارٍ الحذف…",
+  "Could not update campaign.": "تعذر تعديل الحملة.",
+  "Could not delete campaign.": "تعذر حذف الحملة.",
+  "Campaign name updated. Tracking link unchanged.": "تم تعديل اسم الحملة دون تغيير رابط التتبع.",
+  "Campaign removed. Historical analytics are retained.": "تم حذف الحملة مع الاحتفاظ بالإحصائيات السابقة.",
+  "Remove this campaign? Its link will stop tracking new visits. Historical analytics will stay saved.": "هل تريد حذف هذه الحملة؟ سيتوقف رابطها عن تتبع الزيارات الجديدة، وستُحفظ الإحصائيات السابقة."
 }
