@@ -42,7 +42,7 @@ export async function sendOutreachBatch(req: Request, database: Sql): Promise<Re
           SELECT 1 FROM loyvance_outreach_20261031 prior
           WHERE lower(prior.contact_email)=lower(o.contact_email)
             AND prior.campaign_code<>o.campaign_code
-            AND prior.status IN ('sending','sent','delivered')
+            AND prior.status IN ('sending','sent','delivered','bounced','blocked','unsubscribed')
         )
     ), chosen AS (
       SELECT o.campaign_code FROM loyvance_outreach_20261031 o
@@ -131,7 +131,7 @@ export async function sendOutreachBatch(req: Request, database: Sql): Promise<Re
         SELECT 1 FROM loyvance_outreach_20261031 prior
         WHERE lower(prior.contact_email)=lower(o.contact_email)
           AND prior.campaign_code<>o.campaign_code
-          AND prior.status IN ('sending','sent','delivered')
+          AND prior.status IN ('sending','sent','delivered','bounced','blocked','unsubscribed')
       )`;
   return reply({
     results, remaining: Number(remaining[0]?.total || 0),
