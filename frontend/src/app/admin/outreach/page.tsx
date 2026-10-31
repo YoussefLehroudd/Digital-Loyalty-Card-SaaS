@@ -161,7 +161,7 @@ export default function AdminOutreachPage() {
     {error?<p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>:null}
     {notice?<p role="status" className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-3 text-sm text-emerald-200">{notice}</p>:null}
     <OutreachSendQueue token={token} ready={readyToSend} unsent={counts.prepared||0} configured={configured} sender={configuredSender} onProgress={()=>{void load();}}/>
-    <section className={panel+" p-3 sm:p-4"}>
+    <section id="outreach-contacts" className={panel+" p-3 sm:p-4"}>
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative min-w-[190px] flex-1"><Search className="absolute left-3 top-3 size-4 text-white/40"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search business, email, tracking code..." aria-label="Search outreach" className={input+" ps-9"}/></label>
         <label className="flex items-center gap-2 text-xs text-white/60"><Filter className="size-4"/><select value={filter} onChange={e=>{setFilter(e.target.value);setPage(1);}} aria-label="Filter status" className={input}>
@@ -213,7 +213,7 @@ export default function AdminOutreachPage() {
             <p className="font-semibold text-[#edbc62]">Contact source / B2B basis</p>
             <p className="mt-1">Country: {detail.b2b_country || "Not reviewed"} · Review: {detail.b2b_review_status || "pending"} · Consent: {detail.consent_status}</p>
             {detail.source_url?<a href={detail.source_url} target="_blank" rel="noopener noreferrer" className="mt-2 block break-all text-[#edbc62] underline">{detail.source_url}</a>:<p className="mt-2 text-rose-200">No publicly documented source URL.</p>}
-            <p className="mt-2 leading-5">For the UK, verify the company is a corporate body, not a sole trader. For Canada, check conspicuous publication and relevance. Other locations may require prior consent or separate legal review.</p>
+            <p className="mt-2 leading-5">For the UK and Ireland, verify a corporate/business subscriber rather than an individual or sole trader. For Canada check conspicuous publication and relevance. Other locations may require prior consent or separate legal review.</p>
           </div>
           {editing?<div className="space-y-3">
             <label className="block text-xs text-white/60">Contact name<input value={draft.contact_name} onChange={e=>setDraft(v=>({...v,contact_name:e.target.value}))} className={input+" mt-1"}/></label>
@@ -235,7 +235,7 @@ export default function AdminOutreachPage() {
               <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_role_relevant} onChange={e=>setDraft(v=>({...v,b2b_role_relevant:e.target.checked}))}/>The LOYVANCE offer is relevant to this business and recipient role.</label>
               <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_no_opt_out_notice} onChange={e=>setDraft(v=>({...v,b2b_no_opt_out_notice:e.target.checked}))}/>No restriction against marketing is shown at the source, and no opt-out / complaint exists.</label>
               <label className="block text-xs text-white/60">Review notes and evidence<textarea rows={3} value={draft.b2b_review_notes} onChange={e=>setDraft(v=>({...v,b2b_review_notes:e.target.value}))} className={input+" mt-1"} placeholder="Company registration type, publication/relevance check, country-specific basis and date"/></label>
-              <p className="text-xs text-white/40">Automatic eligibility is limited to individually reviewed GB corporate, Canadian published-relevant and US business contacts. Other locations remain excluded unless explicitly opted in.</p>
+              <p className="text-xs text-white/40">Automatic eligibility supports individually reviewed GB and IE corporate subscribers, relevant publicly listed CA business contacts, and compliant US business contacts. Other locations require another valid basis.</p>
             </div>
             <label className="block text-xs text-white/60">Explicit permission (if separately obtained)<select value={draft.consent_status} onChange={e=>setDraft(v=>({...v,consent_status:e.target.value}))} className={input+" mt-1"}>
               <option value="unverified">No explicit opt-in</option><option value="opted_in">Opted in (evidence required)</option><option value="unsubscribed">Opted out — do not contact</option>
