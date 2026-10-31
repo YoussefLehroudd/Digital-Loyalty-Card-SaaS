@@ -17,6 +17,12 @@ type OutreachRow = {
 };
 type ListResponse = { data: OutreachRow[]; total: number; page: number; per_page: number; stats: Record<string, number>; ready_to_send: number; configured: boolean; configured_sender: string | null };
 type DetailResponse = { data: OutreachRow };
+type Screening = {
+  summary: { pending?: number; processed?: number; suppressed?: number; duplicate_addresses?: number };
+  regions: Array<{ country:string; pending:number; sources_recorded:number; missing_sources:number; evidence_recorded:number }>;
+  contacts?: Array<Record<string,unknown>>;
+  note: string;
+};
 const base = "https://loyvance.vercel.app/?ref=";
 const panel = "rounded-2xl border border-white/10 bg-[#101318]";
 const button = "inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-semibold text-white/75 transition hover:border-[#edbc62]/50 hover:text-[#edbc62] disabled:cursor-not-allowed disabled:opacity-40";
@@ -59,9 +65,9 @@ export default function AdminOutreachPage() {
   const [busy,setBusy] = useState(false);
   const [detail,setDetail] = useState<OutreachRow|null>(null);
   const [editing,setEditing] = useState(false);
-  const [draft,setDraft] = useState({ contact_name: "", email_subject: "", email_body: "", consent_status: "unverified", consent_source: "",
-    b2b_review_status: "pending", b2b_business_type: "unknown", b2b_review_notes: "",
-    b2b_publication_checked: false, b2b_role_relevant: false, b2b_no_opt_out_notice: false });
+  const [draft,setDraft] = useState({contact_name:"",email_subject:"",email_body:""});
+  const [screening,setScreening] = useState<Screening|null>(null);
+  const [screenBusy,setScreenBusy] = useState(false);
   const [error,setError] = useState("");
   const [notice,setNotice] = useState("");
   const [deleteAll,setDeleteAll] = useState(false);
@@ -98,13 +104,7 @@ export default function AdminOutreachPage() {
     try {
       const response=await adminRequest<DetailResponse>("outreach/"+encodeURIComponent(code),token,{cache:"no-store"});
       setDetail(response.data);
-      setDraft({contact_name: response.data.contact_name || "",email_subject: response.data.email_subject || "",
-        email_body: response.data.email_body || "",consent_status:response.data.consent_status || "unverified",
-        consent_source:response.data.consent_source || "",b2b_review_status:response.data.b2b_review_status || "pending",
-        b2b_business_type:response.data.b2b_business_type || "unknown",b2b_review_notes:response.data.b2b_review_notes || "",
-        b2b_publication_checked:response.data.b2b_publication_checked || false,
-        b2b_role_relevant:response.data.b2b_role_relevant || false,
-        b2b_no_opt_out_notice:response.data.b2b_no_opt_out_notice || false});
+      setDraft({contact_name:response.data.contact_name||"",email_subject:response.data.email_subject||"",email_body:response.data.email_body||""});
     } catch(e){setError(e instanceof Error?e.message:"Could not open the message.");}
   }
   async function save() {
@@ -112,7 +112,7 @@ export default function AdminOutreachPage() {
     setBusy(true);setError("");setNotice("");
     try {
       await adminRequest("outreach/"+encodeURIComponent(detail.campaign_code),token,{method:"PATCH",body:JSON.stringify(draft)});
-      setNotice("Message and consent details saved.");
+      setNotice("Saved business message. Existing delivery and suppression status unchanged.");
       setEditing(false);await openRow(detail.campaign_code);await load();
     }catch(e){setError(e instanceof Error?e.message:"Unable to save.");}
     finally{setBusy(false);}
@@ -131,12 +131,43 @@ export default function AdminOutreachPage() {
     catch(e){setError(e instanceof Error?e.message:"Could not delete records.");}
     finally{setBusy(false);}
   }
+  async function scanWholeList() {
+    if (screenBusy) return;
+    setScreenBusy(true); setError("");
+    try {
+      const report = await adminRequest<Screening>("outreach/screening",token,{cache:"no-store"});
+      setScreening(report);
+      setNotice("List scanned: no messages sent and no contact status changed.");
+    } catch(e) { setError(e instanceof Error?e.message:"Could not scan contact list."); }
+    finally { setScreenBusy(false); }
+  }
+  async function exportScreening() {
+    if (screenBusy) return;
+    setScreenBusy(true); setError("");
+    try {
+      const report = await adminRequest<Screening>("outreach/screening?export=1",token,{cache:"no-store"});
+      const cols = ["business_name","business_city","contact_email","source_url","campaign_code",
+        "status","consent_status","b2b_review_status","b2b_country","b2b_business_type","email_subject","b2b_review_notes"];
+      const cell=(v:unknown)=>{
+        let s=String(v??"").replace(/[\x00-\x1f\x7f]/g," ");
+        if (/^\s*[=+@-]/.test(s)) s="'"+s;
+        return '"'+s.replace(/"/g,'""')+'"';
+      };
+      const csv="\ufeff"+[cols.map(cell).join(","),...(report.contacts||[]).map(row=>cols.map(k=>cell(row[k])).join(","))].join("\r\n");
+      const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+      const a=document.createElement("a"); a.href=url; a.download="loyvance-outreach-screening.csv";
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      setScreening(report);
+      setNotice("Downloaded pending contact list. No messages were sent.");
+    } catch(e) { setError(e instanceof Error?e.message:"Could not export contacts."); }
+    finally { setScreenBusy(false); }
+  }
   async function copy(url:string){try{await navigator.clipboard.writeText(url);setNotice("Link copied.");}catch{setError("Clipboard unavailable.");}}
   return <div className="min-w-0 space-y-5 text-white">
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div><p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#edbc62]">Campaign tracking / Outreach</p>
         <h1 className="mt-2 flex items-center gap-2 text-2xl font-semibold sm:text-3xl"><Mail className="size-7 text-[#edbc62]"/>Outreach Inbox</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">Review public B2B contacts and opt-in subscribers separately. A published business address alone is not permission. Only reviewed, eligible contacts can be sent. Status refreshes every 5 seconds.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">Manage business emails, saved messages and campaign tracking from one place. Scan the full pending list by country and recorded contact source. Sending updates every 5 seconds.</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={()=>void load()} className={button}><RefreshCw className="size-4"/>Refresh</button>
@@ -160,6 +191,34 @@ export default function AdminOutreachPage() {
     </div>
     {error?<p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>:null}
     {notice?<p role="status" className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-3 text-sm text-emerald-200">{notice}</p>:null}
+    <section id="bulk-screening" className={panel+" space-y-3 p-4"} aria-label="All-contact screening">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Check all contacts at once</h2>
+          <p className="mt-1 text-xs leading-5 text-white/55">One scan of all pending businesses: country, saved website links, duplicates and existing delivery statuses. No need to inspect each email individually just to see the list.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={()=>void scanWholeList()} disabled={screenBusy} className={button}>{screenBusy?"Checking...":"Check entire list"}</button>
+          <button type="button" onClick={()=>void exportScreening()} disabled={screenBusy} className={button}>Export all pending (CSV)</button>
+        </div>
+      </div>
+      {screening ? <>
+        <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+          {[
+            ["Pending",screening.summary.pending||0],["Previously sent",screening.summary.processed||0],
+            ["Excluded / suppressed",screening.summary.suppressed||0],["Duplicate addresses",screening.summary.duplicate_addresses||0]
+          ].map(([label,value])=><div key={String(label)} className="rounded-xl border border-white/10 bg-white/[.03] p-3">
+            <p className="text-white/45">{label}</p><p className="mt-2 text-xl font-semibold">{value}</p>
+          </div>)}
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs text-white/70">
+          {screening.regions.map(r=><div key={r.country} className="rounded-xl border border-white/10 bg-white/[.035] px-3 py-2">
+            <strong className="text-[#edbc62]">{r.country}</strong> · {r.pending} pending · {r.sources_recorded} saved sources
+          </div>)}
+        </div>
+        <p className="text-xs leading-5 text-white/45">Source URLs are existing database records, not independently verified proof of permission. The scan is read-only; eligible recipients are determined separately before Resend sends.</p>
+      </> : null}
+    </section>
     <OutreachSendQueue token={token} ready={readyToSend} unsent={counts.prepared||0} configured={configured} sender={configuredSender} onProgress={()=>{void load();}}/>
     <section id="outreach-contacts" className={panel+" p-3 sm:p-4"}>
       <div className="flex flex-wrap items-center gap-2">
@@ -174,7 +233,7 @@ export default function AdminOutreachPage() {
           <tbody>{rows.map(r=><tr key={r.campaign_code} className="border-b border-white/[.06] hover:bg-white/[.025]">
             <td className="p-3"><p className="font-semibold">{r.business_name}</p><p className="mt-1 text-white/40">{r.business_city||"—"}{r.contact_name?" · "+r.contact_name:""}</p></td>
             <td className="p-3"><p className="break-all text-[#edbc62]">{r.contact_email}</p><p className="mt-1 break-all text-white/35">{r.status==="prepared"?"Will send from: ":"From: "}{r.status==="prepared" && configuredSender ? configuredSender : r.sender_email}</p></td>
-            <td className="p-3"><Stamp status={r.status}/><p className="mt-1 text-[10px] text-white/40">Basis: {r.consent_status==="opted_in"?"Explicit opt-in":r.b2b_review_status==="approved"?"Reviewed public B2B":r.consent_status==="unsubscribed"?"Opted out":"Public B2B · needs review"}</p></td>
+            <td className="p-3"><Stamp status={r.status}/></td>
             <td className="p-3"><p className="font-mono text-white/70">{r.public_code}</p><p className="mt-1 text-white/40">{r.visits||0} sessions</p></td>
             <td className="p-3"><div className="flex gap-2"><button type="button" onClick={()=>void openRow(r.campaign_code)} className={button} title="View message"><Eye className="size-4"/>Details</button><button type="button" disabled={busy} onClick={()=>void remove(r.campaign_code)} className={button} aria-label={"Delete "+r.business_name}><Trash2 className="size-4"/></button></div></td>
           </tr>)}</tbody>
@@ -209,38 +268,11 @@ export default function AdminOutreachPage() {
           </div>
           <p className="break-all rounded-xl border border-white/10 bg-black/20 p-3 font-mono text-xs text-[#edbc62]">{base+encodeURIComponent(detail.public_code)}</p>
           <div className="flex items-center justify-between gap-3"><h3 className="font-semibold">Saved email</h3>{["prepared","failed"].includes(detail.status)?<button type="button" onClick={()=>setEditing(v=>!v)} className={button}>{editing?"Cancel edit":"Edit details"}</button>:null}</div>
-          <div className="rounded-xl border border-white/10 bg-white/[.025] p-3 text-xs text-white/70">
-            <p className="font-semibold text-[#edbc62]">Contact source / B2B basis</p>
-            <p className="mt-1">Country: {detail.b2b_country || "Not reviewed"} · Review: {detail.b2b_review_status || "pending"} · Consent: {detail.consent_status}</p>
-            {detail.source_url?<a href={detail.source_url} target="_blank" rel="noopener noreferrer" className="mt-2 block break-all text-[#edbc62] underline">{detail.source_url}</a>:<p className="mt-2 text-rose-200">No publicly documented source URL.</p>}
-            <p className="mt-2 leading-5">For the UK and Ireland, verify a corporate/business subscriber rather than an individual or sole trader. For Canada check conspicuous publication and relevance. Other locations may require prior consent or separate legal review.</p>
-          </div>
+          {detail.source_url?<p className="break-all text-xs text-white/60">Recorded business website: <a href={detail.source_url} target="_blank" rel="noopener noreferrer" className="text-[#edbc62] underline">{detail.source_url}</a></p>:null}
           {editing?<div className="space-y-3">
             <label className="block text-xs text-white/60">Contact name<input value={draft.contact_name} onChange={e=>setDraft(v=>({...v,contact_name:e.target.value}))} className={input+" mt-1"}/></label>
             <label className="block text-xs text-white/60">Subject<input value={draft.email_subject} onChange={e=>setDraft(v=>({...v,email_subject:e.target.value}))} className={input+" mt-1"}/></label>
             <label className="block text-xs text-white/60">Message<textarea rows={12} value={draft.email_body} onChange={e=>setDraft(v=>({...v,email_body:e.target.value}))} className={input+" mt-1 resize-y"}/></label>
-            <div className="space-y-3 rounded-xl border border-[#edbc62]/20 bg-[#edbc62]/[.04] p-4">
-              <h4 className="text-sm font-semibold text-[#edbc62]">Public B2B outreach review (not an opt-in)</h4>
-              <p className="text-xs leading-5 text-white/60">A business website listing is only a starting point. For eligible jurisdictions, verify its use for business-related contact before sending.</p>
-              <label className="block text-xs text-white/60">B2B review<select className={input+" mt-1"} value={draft.b2b_review_status} onChange={e=>setDraft(v=>({...v,b2b_review_status:e.target.value}))}>
-                <option value="pending">Pending review — do not send</option>
-                <option value="approved">Reviewed: business outreach is eligible</option>
-                <option value="rejected">Excluded from outreach</option>
-              </select></label>
-              <label className="block text-xs text-white/60">Business legal form<select className={input+" mt-1"} value={draft.b2b_business_type} onChange={e=>setDraft(v=>({...v,b2b_business_type:e.target.value}))}>
-                <option value="unknown">Unknown</option><option value="corporate">Registered corporate body</option>
-                <option value="sole_trader">Sole trader / unincorporated</option><option value="other">Other</option>
-              </select></label>
-              <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_publication_checked} onChange={e=>setDraft(v=>({...v,b2b_publication_checked:e.target.checked}))}/>I checked that this exact email was published by the business itself, with a source link.</label>
-              <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_role_relevant} onChange={e=>setDraft(v=>({...v,b2b_role_relevant:e.target.checked}))}/>The LOYVANCE offer is relevant to this business and recipient role.</label>
-              <label className="flex items-start gap-2 text-xs text-white/70"><input type="checkbox" checked={draft.b2b_no_opt_out_notice} onChange={e=>setDraft(v=>({...v,b2b_no_opt_out_notice:e.target.checked}))}/>No restriction against marketing is shown at the source, and no opt-out / complaint exists.</label>
-              <label className="block text-xs text-white/60">Review notes and evidence<textarea rows={3} value={draft.b2b_review_notes} onChange={e=>setDraft(v=>({...v,b2b_review_notes:e.target.value}))} className={input+" mt-1"} placeholder="Company registration type, publication/relevance check, country-specific basis and date"/></label>
-              <p className="text-xs text-white/40">Automatic eligibility supports individually reviewed GB and IE corporate subscribers, relevant publicly listed CA business contacts, and compliant US business contacts. Other locations require another valid basis.</p>
-            </div>
-            <label className="block text-xs text-white/60">Explicit permission (if separately obtained)<select value={draft.consent_status} onChange={e=>setDraft(v=>({...v,consent_status:e.target.value}))} className={input+" mt-1"}>
-              <option value="unverified">No explicit opt-in</option><option value="opted_in">Opted in (evidence required)</option><option value="unsubscribed">Opted out — do not contact</option>
-            </select></label>
-            <label className="block text-xs text-white/60">Explicit opt-in evidence<input value={draft.consent_source} onChange={e=>setDraft(v=>({...v,consent_source:e.target.value}))} className={input+" mt-1"} placeholder="Only if the business actually opted in"/></label>
             <button type="button" onClick={()=>void save()} disabled={busy} className="rounded-xl bg-[#edbc62] px-5 py-2.5 text-xs font-bold text-black disabled:opacity-40">Save message</button>
           </div>:<div className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">Subject</p><p className="break-words text-sm font-semibold">{detail.email_subject||"Not prepared"}</p>
