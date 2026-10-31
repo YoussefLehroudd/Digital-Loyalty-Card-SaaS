@@ -59,8 +59,6 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
 
   // Read-only, whole-list screening. Never claims consent, marks approved or sends.
   if (path.length === 3 && code === "screening" && req.method === "GET") {
-    const countryCase = "unused";
-    void countryCase;
     const regions = await sql`SELECT
       CASE
         WHEN lower(business_city) IN ('london','manchester','glasgow','edinburgh') THEN 'GB'
