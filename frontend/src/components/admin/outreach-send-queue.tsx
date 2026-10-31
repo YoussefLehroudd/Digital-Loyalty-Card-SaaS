@@ -24,7 +24,7 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
 
   async function sendQueue() {
     if (!configured || !ready || working.current) return;
-    if (!window.confirm("Send approved pending outreach emails one by one from " + (sender || "the verified sender") +
+    if (!window.confirm("Send eligible, individually reviewed B2B or opted-in outreach emails one by one from " + (sender || "the verified sender") +
       "? This does not include unverified, bounced, blocked or previously sent recipients.")) return;
     stop.current = false;
     working.current = true;
@@ -63,14 +63,14 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
   return <section className="rounded-2xl border border-[#edbc62]/25 bg-[#101318] p-4 text-white sm:p-5">
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h2 className="text-lg font-semibold">Outreach — send all approved</h2>
+        <h2 className="text-lg font-semibold">Outreach — send eligible contacts</h2>
         <p className="mt-1 max-w-xl text-xs leading-5 text-white/50">One click, without selecting contacts. One email per request, spaced apart. Keep this page open until finished.</p>
       </div>
       {phase === "sending" ? <button type="button" onClick={() => { stop.current = true; setPhase("paused"); }}
         className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold">Pause sending</button> :
         <button type="button" onClick={() => { void sendQueue(); }} disabled={!configured || ready === 0}
           className="min-h-11 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black disabled:opacity-40">
-          {phase === "paused" || phase === "error" ? "Resume" : "Send all approved"} ({ready})
+          {phase === "paused" || phase === "error" ? "Resume eligible queue" : "Send all eligible"} ({ready})
         </button>}
     </div>
     <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
@@ -85,8 +85,8 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
       {last ? <p>Last: {last}</p> : null}
     </div> : null}
     {problem ? <p role="alert" className="mt-3 text-xs text-rose-300">{problem}</p> : null}
-    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">{unsent - ready} unsent contacts are not yet eligible because permission is not recorded. They will not be auto-sent.</p> : null}
+    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">{unsent - ready} unsent contacts still require a per-business B2B eligibility review or explicit opt-in. They will not be auto-sent.</p> : null}
     {!configured ? <p className="mt-3 text-xs text-rose-300">Sending provider is not configured.</p> : null}
-    <p className="mt-3 text-[11px] text-white/40">Provider accepted does not mean delivered. Bounces and complaints are tracked separately. The queue only sends permission-verified records.</p>
+    <p className="mt-3 text-[11px] text-white/40">Provider accepted does not mean delivered. Bounces and complaints are tracked separately. The queue sends only records with documented opt-in or an individually reviewed, jurisdiction-appropriate B2B basis.</p>
   </section>;
 }
