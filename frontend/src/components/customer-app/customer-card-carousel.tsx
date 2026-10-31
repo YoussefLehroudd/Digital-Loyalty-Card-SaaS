@@ -354,9 +354,9 @@ export function CustomerCardCarousel({ cards, selectedId, onChange, onRefresh, d
               {addingToWallet ? <p role="status" className="text-xs text-white/70">{tr("Opening Google Wallet...")}</p> : null}
             </div>
             <div className="flex flex-col items-center gap-2 p-2 lg:px-0">
-              <button type="button" className="flex h-[50px] w-[283px] max-w-full items-center justify-center rounded-xl bg-black p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-[#10110f] disabled:cursor-default" onClick={() => void handleAppleWallet()} disabled={!appleWalletReady || addingToAppleWallet} aria-label={appleWalletReady ? tr("Add to Apple Wallet") : tr("Apple Wallet — coming soon")} aria-describedby="apple-wallet-availability" aria-busy={addingToAppleWallet}>
+              <button type="button" className="block w-[283px] max-w-full overflow-hidden rounded-full border-0 bg-transparent p-0 shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f1c76b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#10110f] disabled:cursor-default" onClick={() => void handleAppleWallet()} disabled={!appleWalletReady || addingToAppleWallet} aria-label={appleWalletReady ? tr("Add to Apple Wallet") : tr("Apple Wallet — coming soon")} aria-describedby="apple-wallet-availability" aria-busy={addingToAppleWallet}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/add-to-apple-wallet.svg" alt={tr("Add to Apple Wallet")} width={283} height={50} className="block h-full w-full"/>
+                <img src="/images/add-to-apple-wallet.svg" alt={tr("Add to Apple Wallet")} width={283} height={50} className="block h-auto w-[283px] max-w-full rounded-full"/>
               </button>
               <p id="apple-wallet-availability" role="status" className="text-center text-xs text-white/60">
                 {addingToAppleWallet ? tr("Opening Apple Wallet...") : appleWalletReady ? tr("Open on iPhone to add your card.") : tr("Coming soon")}
