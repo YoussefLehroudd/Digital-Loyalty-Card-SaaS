@@ -66,6 +66,17 @@ export async function ensureVisitorAnalyticsSchema(sql:Sql){
     slug text PRIMARY KEY,
     campaign_code text NOT NULL REFERENCES visitor_analytics_campaigns(code)
   )`,
+  sql`CREATE TABLE IF NOT EXISTS visitor_demo_requests(
+    id uuid PRIMARY KEY,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    contact_name text NOT NULL,
+    business_name text NOT NULL,
+    email text NOT NULL,
+    message text NOT NULL DEFAULT '',
+    campaign_code text,
+    emailed boolean NOT NULL DEFAULT false
+  )`,
+  sql`CREATE INDEX IF NOT EXISTS idx_visitor_demo_requests_created ON visitor_demo_requests(created_at DESC)`,
   sql`INSERT INTO visitor_analytics_campaign_aliases(slug,campaign_code)
     SELECT code,code FROM visitor_analytics_campaigns ON CONFLICT(slug) DO NOTHING`,
   sql`CREATE TABLE IF NOT EXISTS visitor_analytics_events(
@@ -234,7 +245,7 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
  if(path.length>2)return result({message:"Not found."},404);
  // Retain a rolling 90 days. Deleting sessions cascades their events.
  await sql`DELETE FROM visitor_analytics_sessions WHERE first_seen<now()-interval '90 days'`;
- const [totals,daily,pages,countries,cities,sources,devices,clicks,sessions,campaigns]=await Promise.all([
+ const [totals,daily,pages,countries,cities,sources,devices,clicks,sessions,campaigns,demoRequests]=await Promise.all([
   q`SELECT count(*)::int AS sessions,COALESCE(sum(pageviews),0)::int AS pageviews,
     COALESCE(sum(clicks),0)::int AS clicks,
     COALESCE(round(avg(active_seconds)),0)::int AS avg_seconds,
@@ -277,7 +288,11 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
       AND s.first_seen>=${cutoff}::timestamptz
     WHERE c.archived_at IS NULL
     GROUP BY c.code,c.label,c.created_at
-    ORDER BY sessions DESC,c.created_at DESC LIMIT 250`
+    ORDER BY sessions DESC,c.created_at DESC LIMIT 250`,
+  q`SELECT id::text,created_at::text,contact_name,business_name,email,message,campaign_code,emailed
+    FROM visitor_demo_requests
+    WHERE created_at>=now()-interval '90 days'
+    ORDER BY created_at DESC LIMIT 100`
  ]);
- return result({days,totals:totals[0],daily,pages,countries,cities,sources,devices,clicks,sessions,campaigns});
+ return result({days,totals:totals[0],daily,pages,countries,cities,sources,devices,clicks,sessions,campaigns,demoRequests});
 }
