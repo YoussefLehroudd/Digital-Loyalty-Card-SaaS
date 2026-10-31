@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, BarChart3, Building2, CreditCard, Gift, Layers3, Menu, Palette, Play, QrCode, Send, Sparkles, Store, Users, Zap, Settings, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MarketingDemoContact } from "@/components/marketing/demo-contact";
 
 export default function MarketingHome({ locale: initialLocale = "en" }: { locale?: "en" | "fr" | "ar" }) {
   const { language, ready } = useI18n();
@@ -112,6 +113,7 @@ const features: Array<[LucideIcon, string, string]> = [
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="h-14 rounded-xl border border-[#ffd36d] bg-[#f3bd55] px-8 font-bold text-black shadow-[0_0_24px_rgba(243,189,85,.34),inset_0_1px_0_rgba(255,255,255,.4)] hover:bg-[#ffd16f]"><Link href="/register">{t("Create your free account")} <ArrowRight className="size-4"/></Link></Button>
               <Button asChild size="lg" variant="outline" className="h-14 rounded-xl border-[#f3bd55]/25 bg-black/55 px-7 font-semibold text-white shadow-[0_0_20px_rgba(0,0,0,.25)] backdrop-blur hover:border-[#f3bd55]/55 hover:bg-black/70"><a href="#how"><span className="me-2 flex size-8 shrink-0 items-center justify-center rounded-full border border-[#f3bd55]/80 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[0_0_12px_rgba(243,189,85,.18)]"><Play className="size-4 fill-[#f3bd55] stroke-[2.2]"/></span>{t("See how it works")}</a></Button>
+              <Button asChild size="lg" variant="outline" className="h-14 rounded-xl border-[#f3bd55]/45 bg-black/70 px-6 font-bold text-[#f3bd55] hover:bg-[#f3bd55]/10"><a href="#request-demo"><Send className="size-4"/>{t("Request a personal demo")}</a></Button>
             </div>
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
               {([[Settings,t("No technical skills required")],[Zap,t("Quick setup in minutes")],[Layers3,t("Everything in one platform")]] as Array<[LucideIcon,string]>).map(([Icon,label])=><div key={label} className="flex min-h-[68px] items-center gap-3 rounded-xl border border-[#e7b354]/20 bg-black/55 px-3 py-3 text-xs font-semibold shadow-[0_8px_24px_rgba(0,0,0,.25)] backdrop-blur-md"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#f3bd55]/35 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[0_0_14px_rgba(243,189,85,.12)]"><Icon className="size-5"/></span><span className="leading-4">{label}</span></div>)}
@@ -185,6 +187,8 @@ const features: Array<[LucideIcon, string, string]> = [
           <div className="shrink-0 text-center"><Button asChild size="lg" className="h-14 w-full sm:h-16 sm:min-w-[310px] bg-[#f3bd55] px-8 font-bold text-black shadow-[0_0_16px_rgba(243,189,85,.35),0_10px_35px_rgba(243,189,85,.2)] hover:bg-[#ffd16f]"><Link href="/register">{t("Create your free account")} <ArrowRight className="size-4"/></Link></Button><p className="mt-4 text-sm text-white/55">{t("No credit card required")} <span className="mx-2 text-[#f3bd55]">•</span> {t("Setup in minutes")}</p></div>
         </div>
       </section>
+
+      <MarketingDemoContact />
 
       <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>{t("© LOYVANCE. Digital loyalty, made simple.")}</span><div className="flex gap-6"><Link href="/login">{t("Sign in")}</Link><Link href="/register">{t("Create account")}</Link><Link href="/analytics-privacy" className="text-[#efbd5d]/70 hover:text-[#efbd5d]">Visitor privacy</Link></div></div></footer>
     </main>
