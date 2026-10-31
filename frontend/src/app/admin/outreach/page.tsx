@@ -154,7 +154,7 @@ export default function AdminOutreachPage() {
     <div className={panel+" space-y-3 p-4"}>
       <div className="flex flex-wrap items-center gap-2 text-xs text-white/60">
         <ShieldAlert className="size-4 text-[#edbc62]"/>
-        {configured?"Verified sender configured: "+configuredSender:"Sending inactive: configure RESEND_API_KEY and a verified OUTREACH_FROM_EMAIL. Draft previews and tracking still work."}
+        {configured?"Sending provider: Resend · Verified sender: "+configuredSender:"Resend sending inactive: configure RESEND_API_KEY and a verified OUTREACH_FROM_EMAIL. Draft previews and tracking still work."}
       </div>
       <p className="text-xs leading-5 text-white/45">Previously sent Gmail messages are marked as accepted, not confirmed delivered. Delivery is shown only when the email provider confirms it. Never re-send blocked or opted-out emails.</p>
     </div>
@@ -173,7 +173,7 @@ export default function AdminOutreachPage() {
           <thead className="border-b border-white/10 text-white/45"><tr><th className="p-3">Business</th><th className="p-3">Email / sender</th><th className="p-3">Status</th><th className="p-3">Campaign</th><th className="p-3">Actions</th></tr></thead>
           <tbody>{rows.map(r=><tr key={r.campaign_code} className="border-b border-white/[.06] hover:bg-white/[.025]">
             <td className="p-3"><p className="font-semibold">{r.business_name}</p><p className="mt-1 text-white/40">{r.business_city||"—"}{r.contact_name?" · "+r.contact_name:""}</p></td>
-            <td className="p-3"><p className="break-all text-[#edbc62]">{r.contact_email}</p><p className="mt-1 break-all text-white/35">From: {r.sender_email}</p></td>
+            <td className="p-3"><p className="break-all text-[#edbc62]">{r.contact_email}</p><p className="mt-1 break-all text-white/35">{r.status==="prepared"?"Will send from: ":"From: "}{r.status==="prepared" && configuredSender ? configuredSender : r.sender_email}</p></td>
             <td className="p-3"><Stamp status={r.status}/><p className="mt-1 text-[10px] text-white/40">Basis: {r.consent_status==="opted_in"?"Explicit opt-in":r.b2b_review_status==="approved"?"Reviewed public B2B":r.consent_status==="unsubscribed"?"Opted out":"Public B2B · needs review"}</p></td>
             <td className="p-3"><p className="font-mono text-white/70">{r.public_code}</p><p className="mt-1 text-white/40">{r.visits||0} sessions</p></td>
             <td className="p-3"><div className="flex gap-2"><button type="button" onClick={()=>void openRow(r.campaign_code)} className={button} title="View message"><Eye className="size-4"/>Details</button><button type="button" disabled={busy} onClick={()=>void remove(r.campaign_code)} className={button} aria-label={"Delete "+r.business_name}><Trash2 className="size-4"/></button></div></td>
@@ -196,7 +196,7 @@ export default function AdminOutreachPage() {
           <dl className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
             {[
               ["Business",detail.business_name],["Contact",detail.contact_name||"Not provided"],
-              ["Recipient",detail.contact_email],["Sender",detail.sender_email],
+              ["Recipient",detail.contact_email],[detail.status==="prepared"?"Planned sender (Resend)":"Sender",detail.status==="prepared" && configuredSender ? configuredSender : detail.sender_email],
               ["Sent",when(detail.sent_at)],["Delivered",when(detail.delivered_at)],
               ["Provider ID",detail.provider_message_id||"—"],["Content",detail.content_origin]
             ].map(([label,value])=><div key={label} className="min-w-0 rounded-xl bg-white/[.03] p-3"><dt className="text-white/40">{label}</dt><dd className="mt-1 break-all font-medium text-white/85">{value}</dd></div>)}
