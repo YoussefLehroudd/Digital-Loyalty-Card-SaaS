@@ -90,7 +90,7 @@ export default function AdminVisitorsPage(){
     <Metric icon={Clock3} label="Average active time" value={seconds(number(summary.avg_seconds))} note="Approx. foreground time"/>
     <Metric icon={Users} label="Logged-in sessions" value={formatNumber(summary.signed_in_sessions)} note="Recognized authenticated users"/>
    </div>
-   <VisitorDemoRequests requests={report.demoRequests??[]}/>
+   <VisitorDemoRequests requests={report.demoRequests??[]} token={token} onDeleted={()=>void load()}/>
    <VisitorCampaigns token={token} campaigns={report.campaigns??[]} days={days} onCreated={()=>void load()}/>
    <DailyVisitsChart data={report.daily} days={days}/>
    <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-2">
