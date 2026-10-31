@@ -68,7 +68,7 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h2 className="text-lg font-semibold">Send business emails in one click</h2>
-        <p className="mt-1 max-w-xl text-xs leading-5 text-white/50">Click once to send all ready messages automatically in batches of up to 20 via Resend. No individual selection or second confirmation. Keep this page open until the queue finishes.</p>
+        <p className="mt-1 max-w-xl text-xs leading-5 text-white/50">Click once to send all ready messages automatically in batches of up to 20 via Resend. No individual selection or second confirmation. Keep this page open until the queue finishes. {sender ? "Sender: " + sender + "." : ""}</p>
       </div>
       {phase === "sending" ? <button type="button" onClick={() => { stop.current = true; setPhase("paused"); }}
         className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold">Pause after this batch</button> :
