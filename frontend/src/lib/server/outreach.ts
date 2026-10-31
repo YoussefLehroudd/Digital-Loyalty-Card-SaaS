@@ -45,7 +45,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
           AND (o.business_name ILIKE ${query} OR o.contact_email ILIKE ${query} OR o.campaign_code ILIKE ${query})
         ORDER BY o.created_at DESC,o.campaign_code ASC LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
       sql`SELECT status,count(*)::int AS count FROM loyvance_outreach_20261031 WHERE deleted_at IS NULL GROUP BY status`,
-      sql`SELECT count(*)::int AS ready FROM loyvance_outreach_20261031
+      sql`SELECT count(DISTINCT lower(o.contact_email))::int AS ready FROM loyvance_outreach_20261031 o
         WHERE deleted_at IS NULL AND status='prepared'
           AND b2b_review_status <> 'rejected' AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
           OR (b2b_review_status='approved' AND b2b_country IN ('GB','IE','CA','US')
@@ -54,7 +54,14 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
             AND length(COALESCE(b2b_review_notes,''))>=20
             AND length(COALESCE(source_url,''))>12
             AND (b2b_country NOT IN ('GB','IE') OR b2b_business_type='corporate')))
-          AND email_subject IS NOT NULL AND email_body IS NOT NULL`
+          AND email_subject IS NOT NULL AND email_body IS NOT NULL
+          AND o.contact_email ~* '^[^ @]+@[^ @]+\.[^ @]+$'
+          AND NOT EXISTS (
+            SELECT 1 FROM loyvance_outreach_20261031 prior
+            WHERE lower(prior.contact_email)=lower(o.contact_email)
+              AND prior.campaign_code<>o.campaign_code
+              AND prior.status IN ('sending','sent','delivered')
+          )`
     ]);
     const stats: Record<string, number> = {};
     for (const item of counts) stats[String(item.status)] = Number(item.count || 0);
