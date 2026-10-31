@@ -14,11 +14,14 @@ type CounterSnapshot = Record<string, number>;
 type ProbeResult = CounterSnapshot;
 const STORAGE_PREFIX = "loyvance.admin.nav-seen.v1:";
 const VISITORS_ROUTE = "/admin/visitors";
+// Internal counter key, combined with Visitors in the sidebar.
+const DEMO_ALERT_KEY = "/admin/visitors/demo-alerts";
 const watchedRoutes = ["/admin", "/admin/businesses", "/admin/customers", "/admin/premium", "/admin/affiliates", "/admin/activity", "/admin/visitors", "/admin/archived"] as const;
 type PremiumResponse = { requests: PremiumApprovalRequest[] };
 type AffiliateResponse = {data:Array<{id:string}>};
 type ArchivedResponse = {counts:{business:number;customer:number;affiliate:number}};
 type VisitorsResponse = {totals:{sessions:number}};
+type DemoAlertResponse = {total:number};
 
 function storedCounters(key: string): CounterSnapshot {
   try {
@@ -26,7 +29,7 @@ function storedCounters(key: string): CounterSnapshot {
     if (!raw) return {};
     const value: unknown = JSON.parse(raw);
     if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-    return Object.fromEntries(Object.entries(value).filter(([k,v]) => watchedRoutes.includes(k as typeof watchedRoutes[number]) && typeof v === "number" && Number.isFinite(v) && v >= 0)) as CounterSnapshot;
+    return Object.fromEntries(Object.entries(value).filter(([k,v]) => (watchedRoutes.includes(k as typeof watchedRoutes[number]) || k===DEMO_ALERT_KEY) && typeof v === "number" && Number.isFinite(v) && v >= 0)) as CounterSnapshot;
   } catch {
     return {};
   }
@@ -62,6 +65,13 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
         } else {
           result[route] = Math.max(0, value - (seen[route] ?? value));
         }
+      }
+      // Demo requests have their own monotonic total, so deleting old
+      // requests cannot mask a future unread enquiry.
+      const demoTotal=current[DEMO_ALERT_KEY];
+      if(typeof demoTotal==="number"){
+        result[VISITORS_ROUTE]=(result[VISITORS_ROUTE]??0)
+          +Math.max(0,demoTotal-(seen[DEMO_ALERT_KEY]??0));
       }
       setBadges(result);
     }
@@ -106,7 +116,7 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
           // First-time setup is a baseline, not an invented new alert.
           // Visitors is a read-only feed: opening it marks the visible total seen.
           // Feature Approvals remains action-based and is never auto-cleared.
-          if (seen[route] === undefined || value < seen[route] || (route === VISITORS_ROUTE && pathnameRef.current === VISITORS_ROUTE)) {
+          if (seen[route] === undefined || value < seen[route] || ((route === VISITORS_ROUTE || route === DEMO_ALERT_KEY) && pathnameRef.current === VISITORS_ROUTE)) {
             seen[route] = value;
             changed = true;
           }
@@ -138,8 +148,13 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
   useEffect(() => {
     if (!userId || pathname !== VISITORS_ROUTE) return;
     const latest = latestRef.current[VISITORS_ROUTE];
-    if (typeof latest === "number") {
-      seenRef.current = { ...seenRef.current, [VISITORS_ROUTE]: latest };
+    const latestDemo = latestRef.current[DEMO_ALERT_KEY];
+    if (typeof latest === "number" || typeof latestDemo === "number") {
+      seenRef.current = {
+        ...seenRef.current,
+        ...(typeof latest==="number" ? {[VISITORS_ROUTE]:latest} : {}),
+        ...(typeof latestDemo==="number" ? {[DEMO_ALERT_KEY]:latestDemo} : {}),
+      };
       persistCounters(STORAGE_PREFIX + userId, seenRef.current);
     }
     setBadges(previous =>
@@ -148,6 +163,53 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
         : previous
     );
   }, [pathname, userId]);
+
+  // Poll new demo requests separately every 5 seconds, without repeatedly
+  // loading the full analytics dashboard or exposing lead contact details.
+  useEffect(() => {
+    if (!token || !userId) return;
+    const storageKey=STORAGE_PREFIX+userId;
+    let stopped=false;
+    let busy=false;
+    async function checkDemos(){
+      if (stopped || busy || document.hidden) return;
+      busy=true;
+      try {
+        const response=await adminRequest<DemoAlertResponse>("visitors/demo-alerts",token,{cache:"no-store"});
+        if(stopped)return;
+        const total=Number(response.total);
+        if(!Number.isFinite(total)||total<0)return;
+        latestRef.current={...latestRef.current,[DEMO_ALERT_KEY]:total};
+        const previouslySeen=seenRef.current[DEMO_ALERT_KEY];
+        const shouldAcknowledge=pathnameRef.current===VISITORS_ROUTE;
+        const nextSeen=shouldAcknowledge?total:previouslySeen===undefined?0:Math.min(previouslySeen,total);
+        if(previouslySeen!==nextSeen){
+          seenRef.current={...seenRef.current,[DEMO_ALERT_KEY]:nextSeen};
+          persistCounters(storageKey,seenRef.current);
+        }
+        const sessionTotal=latestRef.current[VISITORS_ROUTE];
+        const unreadSessions=typeof sessionTotal==="number"
+          ? Math.max(0,sessionTotal-(seenRef.current[VISITORS_ROUTE]??sessionTotal)):0;
+        const unreadDemos=shouldAcknowledge?0:Math.max(0,total-nextSeen);
+        setBadges(previous=>({...previous,[VISITORS_ROUTE]:unreadSessions+unreadDemos}));
+      } catch {
+        // Keep the last known badge if the network is temporarily unavailable.
+      } finally {
+        busy=false;
+      }
+    }
+    const wake=()=>{if(!document.hidden)void checkDemos();};
+    void checkDemos();
+    const timer=window.setInterval(()=>{void checkDemos();},5000);
+    window.addEventListener("focus",wake);
+    document.addEventListener("visibilitychange",wake);
+    return ()=>{
+      stopped=true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus",wake);
+      document.removeEventListener("visibilitychange",wake);
+    };
+  },[token,userId]);
 
   // Feature Approvals has its own fast live cycle and direct action events.
   useEffect(() => {
