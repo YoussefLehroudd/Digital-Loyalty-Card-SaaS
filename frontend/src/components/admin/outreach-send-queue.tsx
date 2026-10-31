@@ -26,12 +26,15 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
   const [last, setLast] = useState("");
   const [error, setError] = useState("");
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [initialCount, setInitialCount] = useState(0);
   const stopRef = useRef(false);
   const workingRef = useRef(false);
   useEffect(() => () => { stopRef.current = true; }, []);
 
   const unverified = Math.max(0, unsent - ready);
   const pending = remaining ?? ready;
+  const finishedCount = accepted + failed + skipped;
+  const percent = initialCount ? Math.min(100, Math.round((finishedCount / initialCount) * 100)) : 0;
   async function start() {
     if (workingRef.current || !configured || !ready) return;
     if (!window.confirm(
@@ -44,6 +47,11 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
     setState("sending");
     setError("");
     setRemaining(null);
+    setInitialCount(ready);
+    setAccepted(0);
+    setFailed(0);
+    setSkipped(0);
+    setLast("");
     try {
       while (!stopRef.current) {
         const response = await adminRequest<QueueResult>("outreach/send-next", token, {
@@ -112,6 +120,7 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
         <p className="mt-2 text-2xl font-bold tabular-nums text-white">{item.value}</p>
       </div>)}
     </div>
+    {initialCount > 0 && state !== "idle" ? <div className="mt-3 space-y-1.5" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Sending queue progress"><div className="flex justify-between text-[11px] text-white/50"><span>{finishedCount} / {initialCount} processed</span><span>{percent}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#edbc62] transition-all" style={{width:percent+"%"}}/></div></div> : null}
     {state !== "idle" ? <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-white/70" role="status">
       <p><strong className="text-[#edbc62]">Queue: {state}</strong>{state === "sending" ? " · one message approximately every 8 seconds" : ""}</p>
       {last ? <p className="mt-1 break-words">Last: {last}</p> : null}
