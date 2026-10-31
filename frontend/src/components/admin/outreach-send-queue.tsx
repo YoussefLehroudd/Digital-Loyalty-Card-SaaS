@@ -5,8 +5,8 @@ import { adminRequest } from "@/lib/admin";
 type Result = { remaining: number; results: Array<{ campaign_code: string; status: string; error?: string }> };
 type QueuePhase = "idle" | "sending" | "paused" | "finished" | "error";
 
-export function OutreachSendQueue({ token, ready, unsent, configured, sender, onProgress }: {
-  token: string; ready: number; unsent: number; configured: boolean; sender: string | null; onProgress: () => void;
+export function OutreachSendQueue({ token, ready, unsent, configured, sender, onProgress, onReview }: {
+  token: string; ready: number; unsent: number; configured: boolean; sender: string | null; onProgress: () => void; onReview: () => void;
 }) {
   const [phase, setPhase] = useState<QueuePhase>("idle");
   const [processed, setProcessed] = useState(0);
@@ -68,6 +68,10 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
       </div>
       {phase === "sending" ? <button type="button" onClick={() => { stop.current = true; setPhase("paused"); }}
         className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold">Pause sending</button> :
+        ready === 0 && unsent > 0 ? <button type="button" onClick={onReview}
+          className="min-h-11 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black">
+          Review pending businesses ({unsent})
+        </button> :
         <button type="button" onClick={() => { void sendQueue(); }} disabled={!configured || ready === 0}
           className="min-h-11 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black disabled:opacity-40">
           {phase === "paused" || phase === "error" ? "Resume eligible queue" : "Send all eligible"} ({ready})
@@ -85,7 +89,7 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
       {last ? <p>Last: {last}</p> : null}
     </div> : null}
     {problem ? <p role="alert" className="mt-3 text-xs text-rose-300">{problem}</p> : null}
-    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">{unsent - ready} unsent contacts still require a per-business B2B eligibility review or explicit opt-in. They will not be auto-sent.</p> : null}
+    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">{unsent - ready} unsent contacts need a verified B2B eligibility review or an actual opt-in. Use "Review pending businesses" to check each business and its country-specific rules; they are not automatically authorized.</p> : null}
     {!configured ? <p className="mt-3 text-xs text-rose-300">Sending provider is not configured.</p> : null}
     <p className="mt-3 text-[11px] text-white/40">Provider accepted does not mean delivered. Bounces and complaints are tracked separately. The queue sends only records with documented opt-in or an individually reviewed, jurisdiction-appropriate B2B basis.</p>
   </section>;
