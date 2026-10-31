@@ -1697,3 +1697,37 @@ html.light .admin-workspace .admin-mobile-nav .admin-nav-alert-badge {
   color:#fffdf6!important;
   box-shadow:0 0 0 2px #fffdfa;
 }
+
+
+/* Admin Visitors: independent, keyboard-accessible scrolling for long
+   "Most visited pages" and "Links visitors clicked" rankings. */
+.admin-visitors-ranking-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #a88749 #252a30;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-visitors-ranking-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-visitors-ranking-scroll::-webkit-scrollbar-track {
+  background: #252a30;
+  border-radius: 999px;
+}
+.admin-visitors-ranking-scroll::-webkit-scrollbar-thumb {
+  background: #a88749;
+  border-radius: 999px;
+}
+.admin-visitors-ranking-scroll:focus-visible {
+  outline: 2px solid #edbc62;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+html.light .admin-visitors-ranking-scroll {
+  scrollbar-color: #ad813b #e9e1d5;
+}
+html.light .admin-visitors-ranking-scroll::-webkit-scrollbar-track {
+  background: #e9e1d5;
+}
+html.light .admin-visitors-ranking-scroll::-webkit-scrollbar-thumb {
+  background: #ad813b;
+}

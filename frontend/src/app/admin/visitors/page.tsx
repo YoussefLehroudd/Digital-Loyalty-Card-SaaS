@@ -21,12 +21,12 @@ const number=(value:unknown)=>Number(value||0);
 function Metric({label,value,note,icon:Icon}:{label:string;value:string;note:string;icon:typeof Users}){
  return <div className={card}><div className="flex min-w-0 items-start justify-between gap-3"><p className="text-xs font-semibold text-white/50">{label}</p><Icon className="size-5 shrink-0 text-[#efbd5d]"/></div><p className="mt-3 text-2xl font-bold text-white sm:text-3xl">{value}</p><p className="mt-1 text-[11px] leading-5 text-white/40">{note}</p></div>;
 }
-function Ranking({title,items,formatter}:{title:string;items:Array<{label:string;value:number;subtitle?:string;flagCode?:string|null}>;formatter?:(value:number)=>string}){
+function Ranking({title,items,formatter,scrollable=false}:{title:string;items:Array<{label:string;value:number;subtitle?:string;flagCode?:string|null}>;formatter?:(value:number)=>string;scrollable?:boolean}){
  const max=Math.max(1,...items.map(x=>number(x.value)));
  return <section className={card}>
   <h2 className="mb-5 text-base font-semibold text-white">{title}</h2>
   {!items.length?<p className="py-5 text-xs text-white/40">No data collected yet.</p>:
-  <div className="space-y-4">{items.map((item,i)=><div key={item.label+"_"+i} className="min-w-0 space-y-1.5">
+  <div className={`space-y-4 ${scrollable?"admin-visitors-ranking-scroll max-h-[360px] overflow-y-auto overscroll-y-contain pe-2 sm:max-h-[400px]":""}`} role={scrollable?"region":undefined} aria-label={scrollable?title:undefined} tabIndex={scrollable?0:undefined}>{items.map((item,i)=><div key={item.label+"_"+i} className="min-w-0 space-y-1.5">
    <div className="flex min-w-0 items-center justify-between gap-3 text-xs">
     <div className="min-w-0"><p className="flex min-w-0 items-center gap-2 break-all font-medium text-white/80">{item.flagCode!==undefined?<CountryFlag code={item.flagCode}/>:null}<span className="min-w-0 break-words">{item.label}</span></p>{item.subtitle?<p className="mt-0.5 text-[10px] text-white/35">{item.subtitle}</p>:null}</div>
     <span className="shrink-0 tabular-nums font-semibold text-[#efbd5d]">{formatter?formatter(item.value):formatNumber(item.value)}</span>
@@ -90,8 +90,8 @@ export default function AdminVisitorsPage(){
    </div>
    <DailyVisitsChart data={report.daily} days={days}/>
    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
-    <Ranking title="Most visited pages" items={report.pages.map(p=>({label:p.name,value:number(p.views),subtitle:p.sessions+" sessions"}))}/>
-    <Ranking title="Links visitors clicked" items={report.clicks.map(p=>({label:p.name,value:number(p.clicks)}))}/>
+    <Ranking title="Most visited pages" scrollable items={report.pages.map(p=>({label:p.name,value:number(p.views),subtitle:p.sessions+" sessions"}))}/>
+    <Ranking title="Links visitors clicked" scrollable items={report.clicks.map(p=>({label:p.name,value:number(p.clicks)}))}/>
     <Ranking title="Countries" items={report.countries.map(c=>({label:nameCountry(c.country_code),flagCode:c.country_code,value:number(c.sessions)}))}/>
     <Ranking title="Cities (estimated)" items={report.cities.map(c=>({label:c.city+(c.region?" · "+c.region:""),flagCode:c.country_code,value:number(c.sessions),subtitle:nameCountry(c.country_code)}))}/>
     <Ranking title="Where they came from" items={report.sources.map(s=>({label:s.name,value:number(s.sessions)}))}/>
