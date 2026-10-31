@@ -63,14 +63,14 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
   return <section className="rounded-2xl border border-[#edbc62]/25 bg-[#101318] p-4 text-white sm:p-5">
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h2 className="text-lg font-semibold">Outreach — send eligible contacts</h2>
+        <h2 className="text-lg font-semibold">Send prepared messages</h2>
         <p className="mt-1 max-w-xl text-xs leading-5 text-white/50">One click, without selecting contacts. One email per request, spaced apart. Keep this page open until finished.</p>
       </div>
       {phase === "sending" ? <button type="button" onClick={() => { stop.current = true; setPhase("paused"); }}
         className="min-h-11 rounded-xl border border-white/20 px-4 text-xs font-bold">Pause sending</button> :
-        ready === 0 && unsent > 0 ? <a href="#outreach-contacts"
+        ready === 0 && unsent > 0 ? <a href="#bulk-screening"
           className="inline-flex min-h-11 items-center rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black">
-          Review pending businesses ({unsent})
+          Check all pending ({unsent})
         </a> :
         <button type="button" onClick={() => { void sendQueue(); }} disabled={!configured || ready === 0}
           className="min-h-11 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-black disabled:opacity-40">
@@ -89,8 +89,8 @@ export function OutreachSendQueue({ token, ready, unsent, configured, sender, on
       {last ? <p>Last: {last}</p> : null}
     </div> : null}
     {problem ? <p role="alert" className="mt-3 text-xs text-rose-300">{problem}</p> : null}
-    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">{unsent - ready} unsent contacts require either an individually reviewed lawful B2B basis or a recorded opt-in. Use the contact list below to review the source and business type.</p> : null}
+    {unsent > ready ? <p className="mt-3 text-xs text-amber-200">{unsent - ready} saved contacts are not yet eligible to send. Check the whole list above; the report does not automatically authorize sending.</p> : null}
     {!configured ? <p className="mt-3 text-xs text-rose-300">Sending provider is not configured.</p> : null}
-    <p className="mt-3 text-[11px] text-white/40">Provider accepted does not mean delivered. Bounces and complaints are tracked separately. The queue sends only records with documented opt-in or an individually reviewed, jurisdiction-appropriate B2B basis.</p>
+    <p className="mt-3 text-[11px] text-white/40">Provider accepted does not mean delivered. Bounces and complaints are tracked separately. Only eligible contacts enter the queue; already sent, blocked, bounced and opted-out contacts stay excluded.</p>
   </section>;
 }
