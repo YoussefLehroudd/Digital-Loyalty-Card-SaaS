@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAdmin } from "@/components/admin/admin-shell";
 import { adminRequest } from "@/lib/admin";
-import { Check, CheckCheck, ChevronLeft, ChevronRight, Clock3, Copy, Eye, Filter, Mail, MailCheck, RefreshCw, Search, Send, ShieldAlert, Trash2, X } from "lucide-react";
+import { OutreachSendQueue } from "@/components/admin/outreach-send-queue";
+import { Check, CheckCheck, ChevronLeft, ChevronRight, Clock3, Copy, Eye, Filter, Mail, MailCheck, RefreshCw, Search, ShieldAlert, Trash2, X } from "lucide-react";
 
 type Status = "prepared" | "sending" | "sent" | "delivered" | "failed" | "bounced" | "blocked" | "unsubscribed";
 type OutreachRow = {
@@ -14,7 +15,7 @@ type OutreachRow = {
   created_at: string; content_origin: string; provider_message_id: string | null;
   provider?: string | null; public_code: string; visits?: number; source_url?: string | null;
 };
-type ListResponse = { data: OutreachRow[]; total: number; page: number; per_page: number; stats: Record<string, number>; configured: boolean; configured_sender: string | null };
+type ListResponse = { data: OutreachRow[]; total: number; page: number; per_page: number; stats: Record<string, number>; ready_to_send: number; configured: boolean; configured_sender: string | null };
 type DetailResponse = { data: OutreachRow };
 const base = "https://loyvance.vercel.app/?ref=";
 const panel = "rounded-2xl border border-white/10 bg-[#101318]";
@@ -47,6 +48,7 @@ export default function AdminOutreachPage() {
   const [rows, setRows] = useState<OutreachRow[]>([]);
   const [counts, setCounts] = useState<Record<string,number>>({});
   const [total,setTotal] = useState(0);
+  const [readyToSend,setReadyToSend] = useState(0);
   const [configured,setConfigured] = useState(false);
   const [configuredSender,setConfiguredSender] = useState<string|null>(null);
   const [page,setPage] = useState(1);
@@ -55,7 +57,6 @@ export default function AdminOutreachPage() {
   const [search,setSearch] = useState("");
   const [loading,setLoading] = useState(true);
   const [busy,setBusy] = useState(false);
-  const [selected,setSelected] = useState<string[]>([]);
   const [detail,setDetail] = useState<OutreachRow|null>(null);
   const [editing,setEditing] = useState(false);
   const [draft,setDraft] = useState({ contact_name: "", email_subject: "", email_body: "", consent_status: "unverified", consent_source: "" });
@@ -70,6 +71,7 @@ export default function AdminOutreachPage() {
       setRows(data.data);
       setTotal(data.total);
       setCounts(data.stats);
+      setReadyToSend(data.ready_to_send);
       setConfigured(data.configured);
       setConfiguredSender(data.configured_sender);
       setError("");
@@ -87,9 +89,7 @@ export default function AdminOutreachPage() {
     return ()=>{controller.abort();window.clearInterval(id);};
   },[load,busy]);
   useEffect(()=>{const id=window.setTimeout(()=>{setPage(1);setSearch(query);},350);return()=>window.clearTimeout(id);},[query]);
-  const eligible=useMemo(()=>rows.filter(r=>selected.includes(r.campaign_code)&&["prepared","failed"].includes(r.status)&&r.consent_status==="opted_in"),[rows,selected]);
   const totalPages=Math.max(1,Math.ceil(total/25));
-  const allVisible=rows.length>0&&rows.every(r=>selected.includes(r.campaign_code));
   const totalAll=Object.values(counts).reduce((a,b)=>a+b,0);
   async function openRow(code:string) {
     setError("");setEditing(false);setDetail(null);
@@ -113,30 +113,15 @@ export default function AdminOutreachPage() {
   async function remove(code:string) {
     if(busy||!window.confirm("Remove this outreach record? Historical tracking will be preserved."))return;
     setBusy(true);
-    try{await adminRequest("outreach/"+encodeURIComponent(code),token,{method:"DELETE"});setDetail(null);setSelected(x=>x.filter(k=>k!==code));setNotice("Record removed. Tracking data preserved.");await load();}
+    try{await adminRequest("outreach/"+encodeURIComponent(code),token,{method:"DELETE"});setDetail(null);setNotice("Record removed. Tracking data preserved.");await load();}
     catch(e){setError(e instanceof Error?e.message:"Deletion failed.");}
     finally{setBusy(false);}
   }
   async function removeAll() {
     if(busy||deleteAllText!=="DELETE ALL")return;
     setBusy(true);setError("");
-    try{const result=await adminRequest<{deleted:number}>("outreach",token,{method:"DELETE",body:JSON.stringify({confirm:deleteAllText})});setDeleteAll(false);setDetail(null);setSelected([]);setNotice(result.deleted+" records hidden; tracking visits remain intact.");await load();}
+    try{const result=await adminRequest<{deleted:number}>("outreach",token,{method:"DELETE",body:JSON.stringify({confirm:deleteAllText})});setDeleteAll(false);setDetail(null);setNotice(result.deleted+" records hidden; tracking visits remain intact.");await load();}
     catch(e){setError(e instanceof Error?e.message:"Could not delete records.");}
-    finally{setBusy(false);}
-  }
-  async function sendSelected() {
-    if(busy||!eligible.length)return;
-    if(!configured){setError("A verified sending domain and Resend API credentials must be set in Vercel.");return;}
-    const codes=eligible.slice(0,3).map(r=>r.campaign_code);
-    if(!window.confirm("Send "+codes.length+" approved message(s) now from "+(configuredSender||"the verified sender")+"? 'Sent' confirms provider acceptance, not delivery."))return;
-    setBusy(true);setError("");setNotice("");
-    try {
-      const result=await adminRequest<{results:Array<{status:string;error?:string}>}>("outreach/send",token,{method:"POST",body:JSON.stringify({codes,confirm:true})});
-      setNotice(result.results.map(x=>x.status).join(", ")+" — provider acceptance only; delivery status updates when a signed webhook arrives.");
-      setSelected(old=>old.filter(x=>!codes.includes(x)));
-      await load();
-      if(detail && codes.includes(detail.campaign_code))await openRow(detail.campaign_code);
-    }catch(e){setError(e instanceof Error?e.message:"Could not send.");}
     finally{setBusy(false);}
   }
   async function copy(url:string){try{await navigator.clipboard.writeText(url);setNotice("Link copied.");}catch{setError("Clipboard unavailable.");}}
@@ -168,22 +153,18 @@ export default function AdminOutreachPage() {
     </div>
     {error?<p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm text-rose-200">{error}</p>:null}
     {notice?<p role="status" className="rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-3 text-sm text-emerald-200">{notice}</p>:null}
+    <OutreachSendQueue token={token} ready={readyToSend} unsent={counts.prepared||0} configured={configured} sender={configuredSender} onProgress={()=>{void load();}}/>
     <section className={panel+" p-3 sm:p-4"}>
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative min-w-[190px] flex-1"><Search className="absolute left-3 top-3 size-4 text-white/40"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search business, email, tracking code..." aria-label="Search outreach" className={input+" ps-9"}/></label>
-        <label className="flex items-center gap-2 text-xs text-white/60"><Filter className="size-4"/><select value={filter} onChange={e=>{setFilter(e.target.value);setPage(1);setSelected([]);}} aria-label="Filter status" className={input}>
+        <label className="flex items-center gap-2 text-xs text-white/60"><Filter className="size-4"/><select value={filter} onChange={e=>{setFilter(e.target.value);setPage(1);}} aria-label="Filter status" className={input}>
           {["all","prepared","sending","sent","delivered","failed","bounced","blocked","unsubscribed"].map(x=><option value={x} key={x}>{x==="all"?"All statuses":x==="prepared"?"Not sent":statusText[x as Status]}</option>)}
         </select></label>
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-white/60">
-        <label className="flex items-center gap-2"><input type="checkbox" checked={allVisible} onChange={e=>setSelected(e.target.checked?rows.map(x=>x.campaign_code):[])} className="accent-[#edbc62]"/>Select page ({selected.length} selected)</label>
-        <button type="button" onClick={()=>void sendSelected()} disabled={busy||!configured||eligible.length===0} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#edbc62] px-4 font-bold text-[#171717] disabled:opacity-40"><Send className="size-4"/>Send next {Math.min(3,eligible.length)} approved</button>
-      </div>
       <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[740px] border-collapse text-left text-xs">
-          <thead className="border-b border-white/10 text-white/45"><tr><th className="p-3">Select</th><th className="p-3">Business</th><th className="p-3">Email / sender</th><th className="p-3">Status</th><th className="p-3">Campaign</th><th className="p-3">Actions</th></tr></thead>
+        <table className="w-full min-w-[680px] border-collapse text-left text-xs">
+          <thead className="border-b border-white/10 text-white/45"><tr><th className="p-3">Business</th><th className="p-3">Email / sender</th><th className="p-3">Status</th><th className="p-3">Campaign</th><th className="p-3">Actions</th></tr></thead>
           <tbody>{rows.map(r=><tr key={r.campaign_code} className="border-b border-white/[.06] hover:bg-white/[.025]">
-            <td className="p-3 align-middle"><input type="checkbox" aria-label={"Select "+r.business_name} checked={selected.includes(r.campaign_code)} onChange={e=>setSelected(old=>e.target.checked?[...old,r.campaign_code]:old.filter(x=>x!==r.campaign_code))} className="accent-[#edbc62]"/></td>
             <td className="p-3"><p className="font-semibold">{r.business_name}</p><p className="mt-1 text-white/40">{r.business_city||"—"}{r.contact_name?" · "+r.contact_name:""}</p></td>
             <td className="p-3"><p className="break-all text-[#edbc62]">{r.contact_email}</p><p className="mt-1 break-all text-white/35">From: {r.sender_email}</p></td>
             <td className="p-3"><Stamp status={r.status}/><p className="mt-1 text-[10px] text-white/40">Consent: {r.consent_status}</p></td>
