@@ -35,6 +35,17 @@ export async function POST(req: Request) {
        SET status='bounced',failed_at=now(),last_delivery_event_at=now(),error='Recipient server bounced the message',updated_at=now(),
          consent_status='unsubscribed',consent_source='Suppressed following delivery bounce'
        WHERE provider_message_id=${id} AND provider='resend' AND status IN ('sent','sending','delivered')`;
+  } else if (event.type === "email.failed" || event.type === "email.suppressed") {
+    const rejected = event.type === "email.suppressed";
+    const newStatus = rejected ? "blocked" : "failed";
+    const explanation = rejected ? "Email provider suppressed this address" : "Email delivery failed";
+    await sql`UPDATE loyvance_outreach_20261031
+       SET status=${newStatus},failed_at=now(),last_delivery_event_at=now(),error=${explanation},updated_at=now()
+       WHERE provider_message_id=${id} AND provider='resend' AND status IN ('sent','sending')`;
+  } else if (event.type === "email.delivery_delayed") {
+    await sql`UPDATE loyvance_outreach_20261031
+       SET last_delivery_event_at=now(),error='Delivery delayed by receiving server',updated_at=now()
+       WHERE provider_message_id=${id} AND provider='resend' AND status='sent'`;
   } else if (event.type === "email.complained") {
     await sql`UPDATE loyvance_outreach_20261031
        SET status='blocked',failed_at=now(),last_delivery_event_at=now(),error='Spam complaint: further messages suppressed',updated_at=now(),
