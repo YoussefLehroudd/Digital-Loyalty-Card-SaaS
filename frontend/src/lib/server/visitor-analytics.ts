@@ -145,8 +145,7 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
  const q=sql as unknown as Q;
  if(path[2]==="campaigns"){
    // Admin-only read to check URL uniqueness before committing the update.
-   if(path[3]==="check" && path.length===4){
-     if(req.method!=="GET")return result({message:"Method not allowed."},405);
+   if(path[3]==="check" && path.length===4 && req.method==="GET"){
      const params=new URL(req.url).searchParams;
      const offered=campaignCode(params.get("code"));
      const excluded=campaignCode(params.get("exclude"));
