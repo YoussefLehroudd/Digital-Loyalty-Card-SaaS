@@ -1329,5 +1329,12 @@
   "Could not delete campaign.": "Impossible de supprimer la campagne.",
   "Campaign name updated. Tracking link unchanged.": "Nom de campagne modifié. Le lien de suivi reste identique.",
   "Campaign removed. Historical analytics are retained.": "Campagne supprimée. Les données historiques sont conservées.",
-  "Remove this campaign? Its link will stop tracking new visits. Historical analytics will stay saved.": "Supprimer cette campagne ? Son lien ne suivra plus les nouvelles visites. Les statistiques historiques seront conservées."
+  "Remove this campaign? Its link will stop tracking new visits. Historical analytics will stay saved.": "Supprimer cette campagne ? Son lien ne suivra plus les nouvelles visites. Les statistiques historiques seront conservées.",
+  "Tracking URL code": "Code de l’URL de suivi",
+  "URL available": "URL disponible",
+  "This tracking URL is already used": "Cette URL de suivi est déjà utilisée",
+  "Invalid URL code": "Code URL invalide",
+  "Checking URL availability…": "Vérification de la disponibilité…",
+  "Could not verify URL availability": "Impossible de vérifier la disponibilité de l’URL",
+  "Campaign updated. Previous links still work and are tracked.": "Campagne modifiée. Les anciens liens fonctionnent toujours et restent suivis."
 }

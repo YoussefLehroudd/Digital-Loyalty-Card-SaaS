@@ -1329,5 +1329,12 @@
   "Could not delete campaign.": "تعذر حذف الحملة.",
   "Campaign name updated. Tracking link unchanged.": "تم تعديل اسم الحملة دون تغيير رابط التتبع.",
   "Campaign removed. Historical analytics are retained.": "تم حذف الحملة مع الاحتفاظ بالإحصائيات السابقة.",
-  "Remove this campaign? Its link will stop tracking new visits. Historical analytics will stay saved.": "هل تريد حذف هذه الحملة؟ سيتوقف رابطها عن تتبع الزيارات الجديدة، وستُحفظ الإحصائيات السابقة."
+  "Remove this campaign? Its link will stop tracking new visits. Historical analytics will stay saved.": "هل تريد حذف هذه الحملة؟ سيتوقف رابطها عن تتبع الزيارات الجديدة، وستُحفظ الإحصائيات السابقة.",
+  "Tracking URL code": "رمز رابط التتبع",
+  "URL available": "الرابط متاح",
+  "This tracking URL is already used": "رابط التتبع مستعمل مسبقاً",
+  "Invalid URL code": "رمز الرابط غير صالح",
+  "Checking URL availability…": "جارٍ التحقق من توفر الرابط…",
+  "Could not verify URL availability": "تعذر التحقق من توفر الرابط",
+  "Campaign updated. Previous links still work and are tracked.": "تم تعديل الحملة، والروابط القديمة لا تزال تعمل ويستمر تتبعها."
 }
