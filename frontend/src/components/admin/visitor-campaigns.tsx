@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Check, Copy, ExternalLink, Link2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { useI18n } from "@/components/i18n/language-provider";
 import { adminRequest } from "@/lib/admin";
 
 export type VisitorCampaign = {
   code: string;
+  public_code: string;
   label: string;
   created_at: string;
   sessions: number;
@@ -32,11 +33,33 @@ export function VisitorCampaigns({ token, campaigns, days, onCreated }: {
   const [acting, setActing] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
+  const [editCode, setEditCode] = useState("");
+  const [slugStatus, setSlugStatus] = useState<"idle"|"checking"|"available"|"taken"|"invalid"|"error">("idle");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const totalVisits = campaigns.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
+  const validCode = (value:string) => /^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/.test(value);
+
+  useEffect(() => {
+    if (!editing) { setSlugStatus("idle"); return; }
+    if (!validCode(editCode)) { setSlugStatus("invalid"); return; }
+    const controller = new AbortController();
+    setSlugStatus("checking");
+    const timer = window.setTimeout(async () => {
+      try {
+        const response=await adminRequest<{available:boolean}>(
+          "visitors/campaigns/check?code="+encodeURIComponent(editCode)+"&exclude="+encodeURIComponent(editing),
+          token,{signal:controller.signal,cache:"no-store"}
+        );
+        if(!controller.signal.aborted) setSlugStatus(response.available?"available":"taken");
+      } catch {
+        if(!controller.signal.aborted) setSlugStatus("error");
+      }
+    },350);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  },[editing,editCode,token]);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,19 +83,19 @@ export function VisitorCampaigns({ token, campaigns, days, onCreated }: {
     } catch { setError(t("Could not copy. Select the link manually.")); }
   }
   function startEdit(c: VisitorCampaign) {
-    setEditing(c.code); setEditLabel(c.label);
+    setEditing(c.code); setEditLabel(c.label); setEditCode(c.public_code ?? c.code);
     setConfirmDelete(null); setError(""); setNotice("");
   }
   async function saveEdit(c: VisitorCampaign) {
     const updated = editLabel.trim();
-    if (acting || creating || updated.length < 2 || updated.length > 100) return;
+    if (acting || creating || updated.length < 2 || updated.length > 100 || slugStatus!=="available") return;
     setActing(c.code); setError(""); setNotice("");
     try {
       await adminRequest("visitors/campaigns/" + encodeURIComponent(c.code), token, {
-        method: "PATCH", body: JSON.stringify({ label: updated }),
+        method: "PATCH", body: JSON.stringify({ label: updated, public_code: editCode }),
       });
       setEditing(null);
-      setNotice(t("Campaign name updated. Tracking link unchanged."));
+      setNotice(t("Campaign updated. Previous links still work and are tracked."));
       onCreated();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("Could not update campaign."));
@@ -139,30 +162,47 @@ export function VisitorCampaigns({ token, campaigns, days, onCreated }: {
         {campaigns.map(c => <article key={c.code} className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-3">
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
-              {editing===c.code ? <form onSubmit={e=>{e.preventDefault();void saveEdit(c);}} className="flex min-w-0 flex-wrap items-center gap-2">
-                <input value={editLabel} required minLength={2} maxLength={100} autoFocus
-                  onChange={e=>setEditLabel(e.target.value)}
-                  aria-label={t("Business / campaign name")}
-                  className="min-h-9 min-w-0 flex-1 rounded-lg border border-[#edbc62]/45 bg-[#090b0e] px-3 text-sm text-white focus:outline-none"/>
-                <button type="submit" disabled={acting!==null||editLabel.trim().length<2} className={iconButton} title={t("Save changes")} aria-label={t("Save changes")}><Save className="size-4"/></button>
-                <button type="button" disabled={acting!==null} onClick={()=>setEditing(null)} className={iconButton} title={t("Cancel")} aria-label={t("Cancel")}><X className="size-4"/></button>
+              {editing===c.code ? <form onSubmit={e=>{e.preventDefault();void saveEdit(c);}} className="min-w-0 space-y-2">
+                <label className="block text-[11px] text-white/60">
+                  {t("Business / campaign name")}
+                  <input value={editLabel} required minLength={2} maxLength={100} autoFocus
+                    onChange={e=>setEditLabel(e.target.value)}
+                    className="mt-1 block min-h-9 w-full min-w-0 rounded-lg border border-[#edbc62]/45 bg-[#090b0e] px-3 text-sm text-white focus:outline-none"/>
+                </label>
+                <label className="block text-[11px] text-white/60">
+                  {t("Tracking URL code")}
+                  <input value={editCode} required minLength={3} maxLength={48} pattern="[a-z0-9][a-z0-9-]*[a-z0-9]"
+                    onChange={e=>setEditCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,""))}
+                    className="mt-1 block min-h-9 w-full min-w-0 rounded-lg border border-[#edbc62]/45 bg-[#090b0e] px-3 font-mono text-xs text-white focus:outline-none"/>
+                </label>
+                <p className="break-all font-mono text-[11px] text-[#edbc62]/75">{campaignUrl(editCode)}</p>
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                  <p role="status" aria-live="polite" className={`flex min-w-0 items-center gap-1.5 text-xs ${slugStatus==="available"?"text-emerald-300":slugStatus==="taken"||slugStatus==="invalid"||slugStatus==="error"?"text-rose-300":"text-white/50"}`}>
+                    {slugStatus==="available"?<Check className="size-3.5"/>:slugStatus==="taken"?<X className="size-3.5"/>:null}
+                    {t(({available:"URL available",taken:"This tracking URL is already used",invalid:"Invalid URL code",checking:"Checking URL availability…",error:"Could not verify URL availability",idle:"Checking URL availability…"} as const)[slugStatus])}
+                  </p>
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={acting!==null||slugStatus!=="available"||editLabel.trim().length<2} className={iconButton} title={t("Save changes")} aria-label={t("Save changes")}><Save className="size-4"/></button>
+                    <button type="button" disabled={acting!==null} onClick={()=>setEditing(null)} className={iconButton} title={t("Cancel")} aria-label={t("Cancel")}><X className="size-4"/></button>
+                  </div>
+                </div>
               </form>:
               <div className="flex min-w-0 items-center gap-2">
                 <strong className="min-w-0 break-words text-sm font-semibold text-white">{c.label}</strong>
                 <span className="shrink-0 rounded-md bg-[#edbc62]/10 px-2 py-0.5 text-xs font-bold tabular-nums text-[#edbc62]">{c.sessions}</span>
               </div>}
-              <a href={campaignUrl(c.code)} target="_blank" rel="noopener noreferrer"
+              <a href={campaignUrl(c.public_code ?? c.code)} target="_blank" rel="noopener noreferrer"
                 className="mt-2 block w-full break-all font-mono text-[11px] leading-5 text-white/60 underline-offset-2 hover:text-[#edbc62] hover:underline"
                 title={t("Open campaign link")+" "+c.label}>
-                {campaignUrl(c.code)}
+                {campaignUrl(c.public_code ?? c.code)}
               </a>
               <p className="mt-1 text-[10px] text-white/40">{c.last_visit?t("Last visit")+": "+new Date(c.last_visit).toLocaleDateString():t("No visits yet")}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5 self-end sm:self-start">
-              <button type="button" onClick={()=>void copy(c.code)} className={iconButton} title={t("Copy link")} aria-label={t("Copy link")+" "+c.label}>
-                {copied===c.code?<Check className="size-4 text-emerald-300"/>:<Copy className="size-4"/>}
+              <button type="button" onClick={()=>void copy(c.public_code ?? c.code)} className={iconButton} title={t("Copy link")} aria-label={t("Copy link")+" "+c.label}>
+                {copied===(c.public_code ?? c.code)?<Check className="size-4 text-emerald-300"/>:<Copy className="size-4"/>}
               </button>
-              <a target="_blank" rel="noopener noreferrer" href={campaignUrl(c.code)} title={t("Open campaign link")}
+              <a target="_blank" rel="noopener noreferrer" href={campaignUrl(c.public_code ?? c.code)} title={t("Open campaign link")}
                 aria-label={t("Open campaign link")+" "+c.label} className={iconButton}><ExternalLink className="size-4"/></a>
               <button type="button" onClick={()=>startEdit(c)} disabled={acting!==null} className={iconButton} title={t("Edit campaign")} aria-label={t("Edit campaign")+" "+c.label}><Pencil className="size-4"/></button>
               <button type="button" onClick={()=>{setEditing(null);setConfirmDelete(c.code);setError("");}} disabled={acting!==null} className={iconButton+" hover:border-rose-400/50 hover:text-rose-300"} title={t("Delete campaign")} aria-label={t("Delete campaign")+" "+c.label}><Trash2 className="size-4"/></button>
