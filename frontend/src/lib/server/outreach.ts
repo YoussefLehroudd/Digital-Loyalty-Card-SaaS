@@ -45,7 +45,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
       sql`SELECT status,count(*)::int AS count FROM loyvance_outreach_20261031 WHERE deleted_at IS NULL GROUP BY status`,
       sql`SELECT count(*)::int AS ready FROM loyvance_outreach_20261031
         WHERE deleted_at IS NULL AND status='prepared'
-          AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
+          AND b2b_review_status <> 'rejected' AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
           OR (b2b_review_status='approved' AND b2b_country IN ('GB','CA','US')
             AND b2b_publication_checked=true AND b2b_role_relevant=true
             AND b2b_no_opt_out_notice=true AND b2b_reviewed_at IS NOT NULL
@@ -143,7 +143,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
       // Unverified, blocked, bounced, failed and opted-out contacts are never auto-sent.
       const next = await sql`SELECT campaign_code FROM loyvance_outreach_20261031
         WHERE deleted_at IS NULL AND status='prepared'
-          AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
+          AND b2b_review_status <> 'rejected' AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
           OR (b2b_review_status='approved' AND b2b_country IN ('GB','CA','US')
             AND b2b_publication_checked=true AND b2b_role_relevant=true
             AND b2b_no_opt_out_notice=true AND b2b_reviewed_at IS NOT NULL
@@ -163,7 +163,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
         status='sending',attempted_at=now(),attempt_count=attempt_count+1,error=NULL,updated_at=now()
         WHERE campaign_code=${target} AND deleted_at IS NULL
         AND status IN ('prepared','failed')
-        AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
+        AND b2b_review_status <> 'rejected' AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
           OR (b2b_review_status='approved' AND b2b_country IN ('GB','CA','US')
             AND b2b_publication_checked=true AND b2b_role_relevant=true
             AND b2b_no_opt_out_notice=true AND b2b_reviewed_at IS NOT NULL
@@ -205,7 +205,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     if (sequential) {
       const ready = await sql`SELECT count(*)::int AS ready FROM loyvance_outreach_20261031
         WHERE deleted_at IS NULL AND status='prepared'
-          AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
+          AND b2b_review_status <> 'rejected' AND consent_status <> 'unsubscribed' AND (consent_status='opted_in' AND length(COALESCE(consent_source,''))>=8
           OR (b2b_review_status='approved' AND b2b_country IN ('GB','CA','US')
             AND b2b_publication_checked=true AND b2b_role_relevant=true
             AND b2b_no_opt_out_notice=true AND b2b_reviewed_at IS NOT NULL
