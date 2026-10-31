@@ -1,4 +1,5 @@
 import type { getSql } from "@/lib/server/db";
+import { sendOutreachBatch } from "@/lib/server/outreach-batch";
 
 type Sql = ReturnType<typeof getSql>;
 type Row = Record<string, unknown>;
@@ -24,6 +25,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
   const search = new URL(req.url).searchParams;
   const code = clean(path[2], 48);
   if (path.length > 3) return reply({ message: "Not found." }, 404);
+  if (path.length === 3 && code === "send-batch") return sendOutreachBatch(req, database);
 
   if (path.length === 2 && req.method === "GET") {
     const page = Math.max(1, Math.min(10000, Math.floor(Number(search.get("page")) || 1)));
