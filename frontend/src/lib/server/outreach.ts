@@ -30,7 +30,7 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
     const status = VALID_STATUSES.includes(search.get("status") || "") ? search.get("status")! : "all";
     const query = "%" + clean(search.get("q"), 100).replace(/[%_\\]/g, "\\$&") + "%";
     const perPage = 25;
-    const [list, counts, ready, regions] = await Promise.all([
+    const [list, counts, regions, ready] = await Promise.all([
       sql`SELECT o.campaign_code,o.business_name,o.contact_name,o.contact_email,o.business_city,
         o.sender_email,o.email_subject,o.status,o.consent_status,o.b2b_review_status,o.b2b_country,o.source_url,o.sent_at::text,o.delivered_at::text,
         o.error,o.content_origin,o.created_at::text,o.provider_message_id,
