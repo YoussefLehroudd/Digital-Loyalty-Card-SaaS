@@ -23,12 +23,14 @@ export async function POST(req:Request){
      return json({message:"Please provide your name, business, valid email and consent."},422);
    const sql=getSql();
    await ensureVisitorAnalyticsSchema(sql);
-   const previous=await sql`SELECT count(*)::int AS count FROM visitor_demo_requests
-     WHERE email=${email} AND created_at>now()-interval '24 hours'`;
+   const previous=(await sql`SELECT count(*)::int AS count FROM visitor_demo_requests
+     WHERE email=${email} AND created_at>now()-interval '24 hours'`) as unknown as Array<{count:number}>;
    if(Number(previous[0]?.count||0)>=3)return json({message:"Too many requests. Please contact us directly by email."},429);
-   const codes=validCode(slug)?await sql`SELECT a.campaign_code FROM visitor_analytics_campaign_aliases a
+   const codes: Array<{campaign_code:string}>=validCode(slug)
+     ? (await sql`SELECT a.campaign_code FROM visitor_analytics_campaign_aliases a
      JOIN visitor_analytics_campaigns c ON c.code=a.campaign_code
-     WHERE a.slug=${slug} AND c.archived_at IS NULL LIMIT 1`:[];
+     WHERE a.slug=${slug} AND c.archived_at IS NULL LIMIT 1`) as unknown as Array<{campaign_code:string}>
+     : [];
    const campaign=codes.length?String(codes[0].campaign_code):null;
    const id=randomUUID();
    await sql`INSERT INTO visitor_demo_requests(id,contact_name,business_name,email,message,campaign_code)
