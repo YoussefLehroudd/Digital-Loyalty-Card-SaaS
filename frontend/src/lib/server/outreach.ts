@@ -30,13 +30,13 @@ export async function adminOutreach(req: Request, database: Sql, path: string[])
         LEFT JOIN visitor_analytics_campaigns c ON c.code=o.campaign_code
         WHERE o.deleted_at IS NULL
           AND (${status}='all' OR o.status=${status})
-          AND (o.business_name ILIKE ${query} ESCAPE '\\' OR o.contact_email ILIKE ${query} ESCAPE '\\' OR o.campaign_code ILIKE ${query} ESCAPE '\\')
+          AND (o.business_name ILIKE ${query} OR o.contact_email ILIKE ${query} OR o.campaign_code ILIKE ${query})
         ORDER BY o.created_at DESC,o.campaign_code ASC LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
       sql`SELECT status,count(*)::int AS count FROM loyvance_outreach_20261031 WHERE deleted_at IS NULL GROUP BY status`
     ]);
     const stats: Record<string, number> = {};
     for (const item of counts) stats[String(item.status)] = Number(item.count || 0);
-    const total = await sql`SELECT count(*)::int AS total FROM loyvance_outreach_20261031 o WHERE o.deleted_at IS NULL AND (${status}='all' OR o.status=${status}) AND (o.business_name ILIKE ${query} ESCAPE '\\' OR o.contact_email ILIKE ${query} ESCAPE '\\' OR o.campaign_code ILIKE ${query} ESCAPE '\\')`;
+    const total = await sql`SELECT count(*)::int AS total FROM loyvance_outreach_20261031 o WHERE o.deleted_at IS NULL AND (${status}='all' OR o.status=${status}) AND (o.business_name ILIKE ${query} OR o.contact_email ILIKE ${query} OR o.campaign_code ILIKE ${query})`;
     return reply({ data: list, page, per_page: perPage, total: Number(total[0]?.total || 0), stats, configured: Boolean(process.env.RESEND_API_KEY && process.env.OUTREACH_FROM_EMAIL), configured_sender: process.env.OUTREACH_FROM_EMAIL || null });
   }
   if (path.length === 2 && req.method === "DELETE") {
