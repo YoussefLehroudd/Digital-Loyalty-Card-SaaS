@@ -2679,6 +2679,7 @@ async function dispatch(req: Request, context: RouteContext) {
       const auth = await requireBusinessOwner(req, sql);
       response = json(await subscriptionDetails(sql, auth.business!.id));
     }
+    else if(path[0]==="device-push") {const actor=await requireAuth(req,sql);if(actor.user.role!=="customer"&&actor.user.role!=="business_owner")return error("Forbidden.",403);response=await handleCustomerPush(req,sql,actor.user.id,["user","push",path[1]??""]);}
     else if (path[0] === "auth") response = await handleAuth(path, req, sql);
     else if(path[0]==="cron" && path[1]==="birthdays"){
       const secret=process.env.CRON_SECRET;
