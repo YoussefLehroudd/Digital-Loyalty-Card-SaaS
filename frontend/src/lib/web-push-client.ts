@@ -50,3 +50,17 @@ export async function disablePushOnDevice(token:string){
  await apiFetch("/user/push/subscriptions",{token,method:"DELETE",body:JSON.stringify({endpoint:subscription.endpoint})});
  await subscription.unsubscribe();
 }
+
+/** Registers an existing consented device silently; never prompts for permission. */
+export async function syncConsentedDevice(token:string){
+ if(!token||!supportsWebPush()||Notification.permission!=="granted"||isIosPwaRequired())return false;
+ const cfg=await apiFetch<PushConfig>("/device-push/config",{token,cache:"no-store"});
+ if(!cfg.configured||!cfg.public_key)return false;
+ const registration=await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});
+ await navigator.serviceWorker.ready;
+ let subscription=await registration.pushManager.getSubscription();
+ if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:publicKeyBytes(cfg.public_key)});
+ const result=await apiFetch<{current_device_subscribed:boolean}>("/device-push/subscriptions?endpoint="+encodeURIComponent(subscription.endpoint),{token,cache:"no-store"});
+ if(!result.current_device_subscribed)await apiFetch("/device-push/subscriptions",{token,method:"POST",body:JSON.stringify({subscription:subscription.toJSON()})});
+ return true;
+}
