@@ -20,7 +20,7 @@ import { ensureStaffSchema, isActiveCashier, manageStaff, staffAudit } from "@/l
 import {ensureEngagementSchema,customerReferralApi,recordVerifiedReferral,referralBusinessForCode,qualifyReferralAfterVisit,applyPendingReferralBonuses,handleFeedback,handleBirthday,issueBirthdayRewards,handleAnalyticsPro} from "@/lib/server/customer-engagement";
 import {ensureDiscoverSchema,getDiscoverCatalog,recordDiscoverJoin,handleOwnerDiscover} from "@/lib/server/discover-pro";
 import {ensurePushSchema,handleCustomerPush,deliverQueuedPush} from "@/lib/server/push-delivery";
-import {handlePushTest} from "@/lib/server/push-test";
+
 import {ensurePasskeySchema,handlePasskeys} from "@/lib/server/customer-passkeys";
 import {after} from "next/server";
 export const runtime = "nodejs";
@@ -2679,7 +2679,6 @@ async function dispatch(req: Request, context: RouteContext) {
       const auth = await requireBusinessOwner(req, sql);
       response = json(await subscriptionDetails(sql, auth.business!.id));
     }
-    else if(path[0]==="push-test") {const actor=await requireAuth(req,sql);response=await handlePushTest(req,sql,actor.user.id,actor.user.role,path);}
     else if (path[0] === "auth") response = await handleAuth(path, req, sql);
     else if(path[0]==="cron" && path[1]==="birthdays"){
       const secret=process.env.CRON_SECRET;
