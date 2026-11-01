@@ -1,3 +1,4 @@
+import {handleAdminPushTest} from "@/lib/server/admin-push-test";
 import {effectiveRewardCard} from "@/lib/server/reward-levels";
 import { adminBusinessFeatures, ensureFeatureSchema } from "@/lib/server/business-features";
 import { randomUUID } from "crypto";
@@ -85,6 +86,7 @@ export async function handleAdmin(path: string[], req: Request, database: Sql, d
   if (!auth) return reply({ message: "Unauthenticated." }, 401);
   if (!isPlatformAdmin(auth.user)) return reply({ message: "Administrator access required." }, 403);
   if (path[1] === "me" && req.method === "GET") return reply({ user: safeUser(auth.user) });
+  if (path[1] === "push-test" && path.length===2) return handleAdminPushTest(req,database,auth.user.id);
   if (path[1] === "visitors") return adminVisitorAnalytics(req,database,path);
   if (path[1] === "archived") return adminArchived(req,database,path);
   if (path[1] === "affiliates") return handleAdminAffiliates(path,req,database,auth.user);
