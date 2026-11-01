@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bell, CreditCard, Gift, Handshake, Home, Download, LogOut, Megaphone, Menu, Sparkles, ScanLine, Settings, Users, UserCog, BarChart3, MessageSquare, Cake, Compass, } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import {syncConsentedDevice} from "@/lib/web-push-client";
 import { useAuth } from "@/components/auth/auth-guard";
 import { EchoProvider, useEcho } from "@/components/echo/echo-provider";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ export function DashboardShell({ activeItem, children }: DashboardShellProps) {
     const expired = subscription.data?.subscription.state === "expired";
     const [subscriptionOpen, setSubscriptionOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    useEffect(()=>{if(!token)return;let alive=true;const sync=()=>{if(alive)void syncConsentedDevice(token).catch(()=>{});};sync();window.addEventListener("focus",sync);return()=>{alive=false;window.removeEventListener("focus",sync);};},[token]);
     const [notifications, setNotifications] = useState<BusinessNotification[]>([]);
     const [isAffiliate, setIsAffiliate] = useState(false);
     useEffect(() => { if(user.role==="staff")return; let valid = true; apiFetch("/affiliate/me", {token,cache:"no-store"}).then(()=>{if(valid)setIsAffiliate(true);}).catch(()=>{if(valid)setIsAffiliate(false);});return()=>{valid=false;}; },[token]);
