@@ -39,6 +39,13 @@ export function VisitorCampaigns({ token, campaigns, days, onCreated }: {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  const [campaignSearch, setCampaignSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(50);
+  const normalizedSearch = campaignSearch.trim().toLocaleLowerCase();
+  const filteredCampaigns = campaigns.filter(c =>
+    c.label.toLocaleLowerCase().includes(normalizedSearch) || c.code.includes(normalizedSearch) || (c.public_code ?? "").includes(normalizedSearch)
+  );
+  const visibleCampaigns = filteredCampaigns.slice(0, visibleCount);
   const totalVisits = campaigns.reduce((sum, item) => sum + Number(item.sessions || 0), 0);
   const validCode = (value:string) => /^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/.test(value);
 
@@ -156,10 +163,16 @@ export function VisitorCampaigns({ token, campaigns, days, onCreated }: {
     {error?<p role="alert" className="mt-3 rounded-lg border border-rose-500/25 bg-rose-500/5 p-3 text-xs text-rose-300">{error}</p>:null}
     {notice?<p role="status" className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-emerald-300">{notice}</p>:null}
 
+    {campaigns.length>0?<div className="mt-4 flex flex-wrap items-center gap-2">
+      <input type="search" value={campaignSearch} onChange={e=>{setCampaignSearch(e.target.value);setVisibleCount(50);}}
+        placeholder="Search business or tracking code" aria-label="Search campaigns"
+        className="h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-[#090b0e] px-3 text-xs text-white outline-none focus:border-[#edbc62]/50"/>
+      <span className="text-xs text-white/50">{filteredCampaigns.length} / {campaigns.length}</span>
+    </div>:null}
     {campaigns.length===0?
       <p className="mt-4 rounded-xl border border-dashed border-white/15 p-5 text-xs text-white/50">{t("No tracked business links yet. Create a campaign above, then share its unique URL.")}</p>:
       <div className="admin-visitors-ranking-scroll mt-4 max-h-[360px] space-y-2 overflow-y-auto overscroll-y-contain pe-1 sm:max-h-[400px]" role="region" aria-label={t("Campaign tracking")} tabIndex={0}>
-        {campaigns.map(c => <article key={c.code} className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-3">
+        {visibleCampaigns.map(c => <article key={c.code} className="min-w-0 rounded-xl border border-white/10 bg-black/20 p-3">
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
               {editing===c.code ? <form onSubmit={e=>{e.preventDefault();void saveEdit(c);}} className="min-w-0 space-y-2">
@@ -216,6 +229,11 @@ export function VisitorCampaigns({ token, campaigns, days, onCreated }: {
         </article>)}
       </div>
     }
+    {campaigns.length>0 && filteredCampaigns.length===0?<p className="mt-3 text-xs text-white/50">No campaigns match your search.</p>:null}
+    {filteredCampaigns.length>visibleCount?<button type="button" onClick={()=>setVisibleCount(count=>count+50)}
+      className="mt-3 min-h-9 rounded-lg border border-white/15 px-4 text-xs font-semibold text-white/80 hover:border-[#edbc62]/50">
+      Show 50 more ({filteredCampaigns.length-visibleCount} remaining)
+    </button>:null}
     <p className="mt-3 text-[11px] leading-5 text-white/40">{t("Tracking is first-party and respects Do Not Track, Global Privacy Control and opt-outs. Campaign codes only are stored; no URL query strings, GPS or raw IP addresses.")}</p>
   </section>;
 }
