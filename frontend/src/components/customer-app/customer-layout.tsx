@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useCustomerAuth } from "@/components/customer-app/customer-auth-provider";
 import { cn } from "@/lib/utils";
 import { CustomerNotificationBell } from "@/components/customer-app/customer-notification-bell";
+import {syncConsentedDevice} from "@/lib/web-push-client";
 import {usePersistentNavScroll} from "@/components/navigation/use-persistent-nav-scroll";
 export function CustomerLayout({ children, title, subtitle, }: {
     children: React.ReactNode;
@@ -21,6 +22,7 @@ export function CustomerLayout({ children, title, subtitle, }: {
     const { t: tr } = useI18n();
     const pathname = usePathname();
     const { user, token, logout } = useCustomerAuth();
+    useEffect(()=>{if(!token)return;let alive=true;const sync=()=>{if(alive)void syncConsentedDevice(token).catch(()=>{});};sync();window.addEventListener("focus",sync);return()=>{alive=false;window.removeEventListener("focus",sync);};},[token]);
     const [isAffiliate,setIsAffiliate] = useState(false);
     // Desktop sidebar only: do not refetch affiliate information on every
     // customer page transition in the mobile PWA. The persistent mobile nav
