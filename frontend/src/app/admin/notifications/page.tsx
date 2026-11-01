@@ -4,7 +4,7 @@ import {BellRing,Send,RefreshCcw} from "lucide-react";
 import {AdminShell,useAdmin} from "@/components/admin/admin-shell";
 import {adminRequest} from "@/lib/admin";
 type Recipient={id:string;name:string;role:string;devices:number};
-export default function AdminNotificationsPage(){
+function AdminNotificationsContent(){
  const {token}=useAdmin();
  const [users,setUsers]=useState<Recipient[]>([]);
  const [configured,setConfigured]=useState(false);
@@ -20,7 +20,7 @@ export default function AdminNotificationsPage(){
   const r=await adminRequest<{message:string;accepted:number;failed:number}>("push-test",token,{method:"POST",body:JSON.stringify({user_id:selected})});
   setNotice(r.message);
  }catch(e){setError(e instanceof Error?e.message:"Notification test failed.");}finally{setBusy(false);}};
- return <AdminShell><div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-7">
+ return <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-7">
   <div className="flex items-center gap-3"><BellRing className="size-7 text-amber-400"/><div><h1 className="text-2xl font-bold">Test notifications</h1><p className="text-sm opacity-65">Administrator-only Web Push test for registered customer and business devices.</p></div></div>
   <section className="space-y-4 rounded-2xl border border-white/15 p-5">
    <div className="flex justify-between gap-3"><h2 className="font-semibold">Choose a recipient</h2><button onClick={()=>void load()} type="button" aria-label="Refresh devices"><RefreshCcw className="size-4"/></button></div>
@@ -33,5 +33,6 @@ export default function AdminNotificationsPage(){
    {error?<p role="alert" className="text-sm text-red-400">{error}</p>:null}
    <p className="text-xs opacity-60">A successful request means the browser push provider accepted the message, not that Android displayed it. No marketing campaign is created.</p>
   </section>
- </div></AdminShell>;
+ </div>;
 }
+export default function AdminNotificationsPage(){return <AdminShell><AdminNotificationsContent/></AdminShell>;}
