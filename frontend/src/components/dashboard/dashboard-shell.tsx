@@ -379,21 +379,21 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
         birthdays: "Birthdays",
     };
     return (<header className="app-topbar fixed inset-x-0 top-0 z-30 border-b border-[#d9a52f]/15 bg-[#080907]/95 backdrop-blur-xl lg:sticky lg:inset-x-auto lg:z-20">
-      <div className="flex h-16 items-center justify-between gap-2 px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button aria-label={tr("Open menu")} className="lg:hidden" onClick={onOpenMobileMenu} size="icon" type="button" variant="ghost">
+      <div className="flex h-16 min-w-0 items-center justify-between gap-1 px-2 min-[360px]:gap-2 min-[360px]:px-3 sm:h-20 sm:gap-3 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-1 sm:gap-3">
+          <Button aria-label={tr("Open menu")} className="size-9 shrink-0 p-0 sm:size-10 lg:hidden" onClick={onOpenMobileMenu} size="icon" type="button" variant="ghost">
             <Menu className="size-5"/>
           </Button>
           <h1 className="hidden text-xl font-bold tracking-tight lg:block">{tr(pageTitle[activeItem])}</h1>
-          <div className="flex min-w-0 items-center gap-2 lg:hidden">
-            <Image alt={"LOYVANCE"} className="size-7 object-contain sm:size-8" height={32} priority src="/brand/icon.png" width={48}/>
-            <p className="truncate text-sm font-semibold">LOYVANCE</p>
+          <div className="flex min-w-0 shrink-0 items-center gap-1.5 lg:hidden">
+            <Image alt={"LOYVANCE"} className="size-7 shrink-0 object-contain sm:size-8" height={32} priority src="/brand/icon.png" width={48}/>
+            <p className="hidden max-w-24 truncate text-sm font-semibold min-[440px]:block sm:max-w-none">LOYVANCE</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4"><ThemeToggle/><LanguageSwitcher />
+        <div className="flex shrink-0 items-center gap-1 min-[360px]:gap-1.5 sm:gap-4"><ThemeToggle/><LanguageSwitcher />
           <div ref={notificationsRef} className="relative">
-            <Button aria-label={tr("Notifications")} onClick={() => setNotificationsOpen((open) => !open)} className="business-notification-trigger relative text-white/75 hover:bg-white/5 hover:text-white" size="icon" variant="ghost">
+            <Button aria-label={tr("Notifications")} onClick={() => setNotificationsOpen((open) => !open)} className="business-notification-trigger relative size-9 shrink-0 p-0 text-white/75 hover:bg-white/5 hover:text-white sm:size-10" size="icon" variant="ghost">
               <Bell className="size-5"/>
               {unreadNotifications.length > 0 ? <span className="absolute end-1.5 top-1.5 flex min-w-4 h-4 items-center justify-center rounded-full bg-[#f3bd55] px-1 text-[9px] font-black text-black shadow-[0_0_8px_rgba(243,189,85,.8)]">{Math.min(unreadNotifications.length, 99)}</span> : null}
             </Button>
@@ -402,9 +402,9 @@ function TopNav({ activeItem, userName, avatarUrl, onOpenMobileMenu, notificatio
               <div className="max-h-[calc(100dvh-155px)] overscroll-contain overflow-y-auto p-2 sm:max-h-[420px]" onWheel={(event) => event.stopPropagation()} onTouchMove={(event) => event.stopPropagation()}>{liveNotifications.length ? liveNotifications.slice(0, 20).map((item) => <div key={item.type + "-" + item.id} onClick={() => void markOneRead(item)} className={`cursor-pointer rounded-xl px-3 py-3 hover:bg-white/[.04] ${item.is_read ? "opacity-55" : ""}`}><div className="flex items-start gap-3">{!item.is_read ? <span className="mt-1 size-2 shrink-0 rounded-full bg-[#f3bd55]"/> : <span className="mt-1 size-2 shrink-0" aria-hidden="true"/>}<div className="min-w-0"><p className="text-sm font-semibold text-white">{tr(item.title)}</p><p className="mt-0.5 text-xs leading-5 text-white/55">{tr(item.message)}</p><p className="mt-1 whitespace-nowrap text-[10px] text-white/35">{new Date(item.created_at).toLocaleString(getFormattingLocale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p></div></div></div>) : <p className="px-3 py-8 text-center text-sm text-white/40">{tr("No notifications yet.")}</p>}</div>
             </div> : null}
           </div>
-          <div className="h-8 w-px bg-white/10"/>
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#e7b354]/25 bg-[#5b451b] font-bold text-white shadow-[0_0_14px_rgba(231,179,84,.10)]">{avatarUrl ? <img alt={userName} src={avatarUrl} className="h-full w-full object-cover object-center"/> : initial}</div>
+          <div className="mx-0.5 hidden h-8 w-px shrink-0 bg-white/10 sm:block"/>
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href="/dashboard/settings" aria-label={`${tr("Settings")} — ${userName}`} title={userName} className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#e7b354]/70 bg-[#5b451b] text-sm font-bold text-white shadow-[0_0_14px_rgba(231,179,84,.16)] transition hover:border-[#e7b354] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e7b354] focus-visible:ring-offset-2 focus-visible:ring-offset-[#080907] sm:size-11">{avatarUrl ? <img alt={userName} src={avatarUrl} className="h-full w-full object-cover object-center"/> : initial}</Link>
             <div className="hidden min-w-0 sm:block">
               <p className="max-w-44 truncate text-sm font-semibold text-white">{userName}</p>
               <p className="text-xs text-white/40">{tr("Business Owner")}</p>
