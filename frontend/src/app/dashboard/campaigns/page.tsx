@@ -48,6 +48,7 @@ export default function BusinessCampaignsPage(){
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState("");
  const [success,setSuccess]=useState("");
+ const [deliveryNotice,setDeliveryNotice]=useState<{kind:"warning"|"success";text:string}|null>(null);
  const refresh=useCallback(async()=>{
   try{
    const data=await apiFetch<{campaigns:Campaign[];automations:Automation[]}>("/campaigns/business",{token,cache:"no-store"});
@@ -109,10 +110,23 @@ export default function BusinessCampaignsPage(){
  const action=(id:string,name:"send"|"cancel"|"schedule")=>{
   const note=name==="send"?"Send this campaign to eligible customers now? Only opted-in customers will be notified.":null;
   if(note&&!window.confirm(note))return;
-  return perform(async()=>{
+  if(name!=="send")return perform(async()=>{
    await apiFetch(`/campaigns/business/${id}/${name}`,{token,method:"POST",body:JSON.stringify(name==="schedule"?{scheduled_at:new Date(schedule).toISOString()}:{})});
    await inspect(id);
-  },name==="send"?"Notifications processed. Promotional email delivery follows the scheduled queue.":name==="cancel"?"Campaign cancelled.":"Campaign scheduled. It will run at the next scheduled processing cycle.");
+  },name==="cancel"?"Campaign cancelled.":"Campaign scheduled. It will run at the next scheduled processing cycle.");
+  if(busy)return;
+  void (async()=>{
+   setBusy(true);setError("");setSuccess("");setDeliveryNotice(null);
+   try{
+    const result=await apiFetch<{analytics:Analytics}>(`/campaigns/business/${id}/send`,{token,method:"POST",body:"{}"});
+    const notified=Number(result.analytics?.recipients??0);
+    setDeliveryNotice(notified===0
+      ?{kind:"warning",text:"Campaign processed, but no customer notifications were created. Customers may have been excluded by campaign frequency limits (7 days for this business or 48 hours across campaigns), opt-in changes, or account eligibility. Check the campaign details; this is not confirmation of delivery to a phone."}
+      :{kind:"success",text:`${notified} in-app notification${notified===1?"":"s"} created. Push delivery to phones is separate and is not guaranteed; check device subscriptions and push delivery logs if needed.`});
+    await refresh();await inspect(id);
+   }catch(e){setError(e instanceof Error?e.message:"Unable to send campaign.");}
+   finally{setBusy(false);}
+  })();
  };
  const createAutomation=async(e:FormEvent)=>{
   e.preventDefault();
@@ -165,6 +179,7 @@ export default function BusinessCampaignsPage(){
     <div className="min-w-0 space-y-4">
      <section className={panel}>
       <h2 className="flex items-center gap-2 text-base font-semibold text-white"><CalendarClock className="size-5 text-[#efbd5d]"/>{trI18n("Campaign history")}</h2>
+      {deliveryNotice?<div role="status" className={`mt-3 rounded-xl border p-3 text-xs leading-5 ${deliveryNotice.kind==="warning"?"border-amber-400/40 bg-amber-400/10 text-amber-100":"border-emerald-400/30 bg-emerald-400/10 text-emerald-100"}`}>{deliveryNotice.text}</div>:null}
       {loading?<p className="mt-4 flex items-center gap-2 text-sm text-white/50"><Loader2 className="size-4 animate-spin"/>Loading…</p>:!campaigns.length?<p className="mt-4 text-sm text-white/45">No campaigns created yet. Save a draft to start.</p>:<div className="mt-4 max-h-[460px] space-y-2 overflow-y-auto">
         {campaigns.map(c=><div key={c.id} className={`min-w-0 rounded-xl border p-3 transition ${selected===c.id?"border-[#efbd5d]/45 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
          <button type="button" onClick={()=>void inspect(c.id)} className="flex w-full min-w-0 items-start justify-between gap-2 text-left" aria-label={`View campaign ${c.title}`}>
@@ -181,6 +196,8 @@ export default function BusinessCampaignsPage(){
      {selectedCampaign?<section className={panel}>
       <h2 className="break-words text-base font-semibold text-white">{selectedCampaign.title}</h2>
       <p className="mt-2 break-words text-sm leading-6 text-white/60">{selectedCampaign.message}</p>
+      {selectedCampaign.status==="sent"&&analytics&&analytics.recipients===0?<div role="alert" className="mt-4 rounded-xl border border-amber-400/35 bg-amber-400/10 p-3 text-sm text-amber-100"><div className="flex items-center gap-2 font-semibold"><Bell className="size-4"/>No customers notified</div><p className="mt-1 text-xs leading-5">This campaign was processed, but no in-app notifications were created. Possible reasons: promotional opt-in changed, recipient eligibility changed, or the 7-day business / 48-hour global campaign frequency limits. Status “sent” does not confirm phone push delivery.</p></div>:null}
+      {selectedCampaign.status==="sent"&&analytics&&analytics.recipients>0?<p className="mt-3 rounded-xl border border-emerald-400/25 bg-emerald-400/5 p-3 text-xs text-emerald-100">{analytics.recipients} in-app notification{analytics.recipients===1?"":"s"} created. This does not confirm push delivery to a phone.</p>:null}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
        {([{label:"Eligible",value:audience?.eligible??"…",icon:Users},{label:"Notified",value:analytics?.recipients??"…",icon:Bell},{label:"Viewed",value:analytics?.viewed??"…",icon:CheckCheck},{label:"Emails sent",value:analytics?.emails_sent??"…",icon:Mail},{label:"Visited in 7d",value:analytics?.returned_7d??"…",icon:Users}]).map(k=><div key={k.label} className="min-w-0 rounded-xl border border-white/10 bg-black/15 p-2.5"><k.icon className="size-4 text-[#efbd5d]"/><p className="mt-2 break-words text-lg font-bold text-white">{k.value}</p><p className="text-[10px] text-white/45">{k.label}</p></div>)}
       </div>
