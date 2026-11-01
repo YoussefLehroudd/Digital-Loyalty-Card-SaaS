@@ -2,6 +2,7 @@
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import { BusinessPrivacySettings } from "@/components/settings/business-privacy-settings";
+import {PushTestPanel} from "@/components/push-test-panel";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BadgeCheck, Building2, ExternalLink, ImageUp, KeyRound, Trash2, Loader2, Mail, MapPin, Star, Palette, Phone, Save, ShieldCheck, UserRound, ZoomIn, MoveHorizontal, MoveVertical, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, } from "lucide-react";
@@ -325,6 +326,7 @@ export function BusinessProfileSettings() {
         </div>
 
         <BusinessPrivacySettings token={token}/>
+        <PushTestPanel token={token}/>
 
         {success ? (<Alert className="border-success/30 text-foreground">{tr(success)}</Alert>) : null}
         {error ? (<Alert className="border-red-500/30 text-red-600">{tr(error)}</Alert>) : null}
