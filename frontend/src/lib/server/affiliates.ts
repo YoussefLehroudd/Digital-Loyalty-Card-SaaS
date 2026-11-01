@@ -97,6 +97,7 @@ export async function ensureAffiliateSchema(sql: Sql) {
     )`,
     sql`CREATE INDEX IF NOT EXISTS idx_affiliate_link_visits_partner ON affiliate_link_visits(affiliate_id,visited_at DESC)`
   ]);
+  await q`ALTER TABLE affiliate_link_visits ADD COLUMN IF NOT EXISTS country_code text`;
 }
 
 export async function affiliateCodeIsValid(sql: Sql, code: string) {
@@ -173,7 +174,8 @@ export async function affiliateReport(sql: Sql, affiliateId: string) {
       FROM affiliate_commissions c JOIN subscription_events e ON e.id=c.subscription_event_id
       WHERE c.affiliate_id=${affiliateId} GROUP BY 1 ORDER BY 1 DESC LIMIT 24`,
   ]);
-  return { summary: summary[0], businesses, commissions, payouts, history };
+  const visits=await q`SELECT visited_at::text AS visited_at,country_code FROM affiliate_link_visits WHERE affiliate_id=${affiliateId}::uuid ORDER BY visited_at DESC LIMIT 100`;
+  return { summary: summary[0], businesses, commissions, payouts, history, visits };
 }
 
 // The public business directory displays businesses.email, which can differ from the owner's login email.
@@ -421,8 +423,11 @@ export async function handleAffiliate(path: string[], req: Request, sql: Sql) {
     if(!codePattern.test(code)||!uuidPattern.test(visitId))return reply({message:"Invalid referral."},422);
     // Anonymous visit counter: one event per browser tab session and referral code.
     // No IP, device ID, name, email or fingerprint enters the affiliate visit table.
-    await q`INSERT INTO affiliate_link_visits(visit_id,affiliate_id)
-      SELECT ${visitId}::uuid,p.id FROM affiliate_partners p
+    // Geo is provided by the trusted deployment edge, never by browser input.
+    const edgeCountry=(req.headers.get("x-vercel-ip-country")??"").toUpperCase();
+    const country=/^[A-Z]{2}$/.test(edgeCountry)?edgeCountry:null;
+    await q`INSERT INTO affiliate_link_visits(visit_id,affiliate_id,country_code)
+      SELECT ${visitId}::uuid,p.id,${country} FROM affiliate_partners p
       WHERE p.code=${code} AND p.is_active=true AND p.archived_at IS NULL
       ON CONFLICT(visit_id) DO NOTHING`;
     return reply({ok:true});
