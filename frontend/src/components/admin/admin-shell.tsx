@@ -5,7 +5,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, ArchiveRestore, ArrowUpRight, Building2, Handshake, LayoutDashboard, LogOut, Download, Settings2, ShieldCheck, Users, ChartNoAxesCombined } from "lucide-react";
+import { Activity, ArchiveRestore, ArrowUpRight, Building2, Handshake, LayoutDashboard, LogOut, Download, Settings2, ShieldCheck, Users, ChartNoAxesCombined, BellRing } from "lucide-react";
 import { adminRequest, clearAdminToken, getAdminToken, type AdminUser } from "@/lib/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
@@ -26,6 +26,7 @@ export const adminNavigation = [
     { href: "/admin/premium", label: "Feature Approvals", icon: ShieldCheck },
     { href: "/admin/affiliates", label: "Affiliates", icon: Handshake },
     { href: "/admin/customers", label: "Customers", icon: Users },
+    { href: "/admin/notifications", label: "Test notifications", icon: BellRing },
     { href: "/admin/activity", label: "Activity", icon: Activity },
     { href: "/admin/visitors", label: "Visitors", icon: ChartNoAxesCombined },
     { href: "/admin/archived", label: "Archived", icon: ArchiveRestore },
