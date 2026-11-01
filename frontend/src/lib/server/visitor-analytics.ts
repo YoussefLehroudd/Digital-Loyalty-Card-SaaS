@@ -239,8 +239,6 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
      return result({message:"Enter a business name (2–100 characters) and a valid campaign code (3–48 letters, numbers or hyphens)."},422);
    const taken=await q`SELECT campaign_code FROM visitor_analytics_campaign_aliases WHERE slug=${code} LIMIT 1`;
    if(taken.length)return result({message:"This tracking URL is already used by another campaign."},409);
-   const count=await q`SELECT count(*)::int AS total FROM visitor_analytics_campaigns WHERE archived_at IS NULL`;
-   if(Number(count[0]?.total||0)>=250)return result({message:"Campaign limit reached."},422);
    const rows=await q`INSERT INTO visitor_analytics_campaigns(code,label,public_code) VALUES(${code},${label},${code})
      ON CONFLICT(code) DO NOTHING RETURNING code,label,public_code,created_at::text`;
    if(!rows.length)return result({message:"This campaign code is already in use. Choose a different one."},409);
@@ -315,7 +313,7 @@ export async function adminVisitorAnalytics(req:Request,sql:Sql,path:string[]):P
       AND s.first_seen>=${cutoff}::timestamptz
     WHERE c.archived_at IS NULL
     GROUP BY c.code,c.label,c.created_at
-    ORDER BY sessions DESC,c.created_at DESC LIMIT 250`,
+    ORDER BY sessions DESC,c.created_at DESC`,
   q`SELECT id::text,created_at::text,contact_name,business_name,email,message,campaign_code,emailed
     FROM visitor_demo_requests
     WHERE created_at>=now()-interval '90 days'
