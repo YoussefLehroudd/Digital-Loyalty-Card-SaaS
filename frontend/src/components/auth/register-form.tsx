@@ -199,6 +199,7 @@ function EmailOtpVerification({ email, accountType, onBack, onResend }: {
     const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error">("idle");
     const [message, setMessage] = useState<string | null>(null);
     const [seconds, setSeconds] = useState(60);
+    const [elapsed, setElapsed] = useState(0);
     const [resending, setResending] = useState(false);
     const refs = useRef<Array<HTMLInputElement | null>>([]);
     useEffect(() => {
@@ -207,6 +208,7 @@ function EmailOtpVerification({ email, accountType, onBack, onResend }: {
         const timer = window.setInterval(() => setSeconds((value) => Math.max(0, value - 1)), 1000);
         return () => window.clearInterval(timer);
     }, [seconds]);
+    useEffect(() => { const timer=window.setInterval(()=>setElapsed(v=>Math.min(600,v+1)),1000);return()=>window.clearInterval(timer); },[]);
     const code = digits.join("");
     const updateDigit = (index: number, raw: string) => {
         if (status === "verifying" || status === "success")
@@ -262,6 +264,14 @@ function EmailOtpVerification({ email, accountType, onBack, onResend }: {
         <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{tr("We sent a 6-digit code to ")}<span className="font-medium text-white">{email}</span></p>
       </div>
 
+      <div className="rounded-xl border border-[#efbd5d]/25 bg-[#efbd5d]/5 p-3 text-left text-xs leading-5 text-white/75">
+        <p className="font-semibold text-[#efbd5d]">Check the email address carefully</p>
+        <p className="mt-1 break-all">{email}</p>
+        <button type="button" onClick={onBack} className="mt-2 inline-flex min-h-9 items-center rounded-lg border border-[#efbd5d]/40 px-3 font-semibold text-[#efbd5d]">Wrong email? Correct it now</button>
+      </div>
+      {elapsed>=30&&status!=="success"?<div role="status" className="rounded-xl border border-amber-400/35 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
+        Still no code? Check Spam and confirm the address above. If it is wrong, select “Correct it now” and request a fresh code. A bounce may prevent delivery even if the request was accepted.
+      </div>:null}
       <div className="relative py-2">
         {status === "success" ? (<div className="animate-in zoom-in-75 fade-in flex h-[74px] items-center justify-center gap-3 rounded-2xl border border-emerald-400/60 bg-emerald-500/10 text-emerald-300 shadow-[0_0_35px_rgba(52,211,153,.14)] duration-500">
             <CheckCircle2 className="size-7"/>
@@ -289,7 +299,7 @@ function EmailOtpVerification({ email, accountType, onBack, onResend }: {
         <button type="button" disabled={seconds > 0 || resending || status === "verifying" || status === "success"} onClick={() => {
             setResending(true); setMessage(null);
             void onResend().then(() => {
-                setDigits(["", "", "", "", "", ""]);setSeconds(60);setStatus("idle");
+                setDigits(["", "", "", "", "", ""]);setSeconds(60);setElapsed(0);setStatus("idle");
                 refs.current[0]?.focus();
             }).catch((cause) => {
                 setMessage(cause instanceof ApiError ? cause.message : "Could not resend the code. Try again.");
