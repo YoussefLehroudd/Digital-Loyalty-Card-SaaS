@@ -11,7 +11,7 @@ import { PREMIUM_DECISION_EVENT, isPremiumPending, premiumKey, type PremiumAppro
  */
 type Counters = Record<string, number>;
 const STORAGE_PREFIX = "loyvance.admin.nav-seen.v2:";
-const routes = ["/admin/businesses", "/admin/customers", "/admin/affiliates", "/admin/premium", "/admin/visitors"] as const;
+const routes = ["/admin/businesses", "/admin/customers", "/admin/premium", "/admin/visitors"] as const;
 const DEMO_KEY = "/admin/visitors/demo-alerts";
 const PREMIUM_SEEN_PREFIX = "loyvance.admin.premium-seen.v1:";
 const VISITORS_ROUTE = "/admin/visitors";
@@ -97,9 +97,6 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
             "/admin/businesses": r.data.stats.businesses,
             "/admin/customers": r.data.stats.customers,
           })),
-          adminRequest<AffiliateResponse>("affiliates?archived=false", token!, { signal:controller.signal, cache:"no-store" }).then(r => ({
-            "/admin/affiliates": r.data.length,
-          })),
           adminRequest<DemoAlertResponse>("visitors/demo-alerts", token!, { signal:controller.signal, cache:"no-store" }).then(r => ({
             [DEMO_KEY]: r.total,
           })),
@@ -108,7 +105,7 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
         if (stopped || controller.signal.aborted) return;
         const seen = { ...seenRef.current };
         let changed = false;
-        for (let index = 0; index < 4; index++) {
+        for (let index = 0; index < 2; index++) {
           const item = results[index];
           if (item.status !== "fulfilled") continue;
           const counts = item.value as Counters;
@@ -124,7 +121,7 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
             }
           }
         }
-        const premium = results[4];
+        const premium = results[2];
         if (premium.status === "fulfilled" && Array.isArray(premium.value.requests)) {
           const pending = new Set(premium.value.requests.filter(isPremiumPending).map(premiumKey));
           pendingRef.current = pending;
