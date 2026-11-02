@@ -1,270 +1,186 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { adminRequest, type AdminActivity, type AdminOverview } from "@/lib/admin";
+import { adminRequest, type AdminOverview } from "@/lib/admin";
 import { apiFetch } from "@/lib/api";
 import { PREMIUM_DECISION_EVENT, isPremiumPending, premiumKey, type PremiumApprovalRequest, type PremiumDecision } from "@/lib/premium-approval-live";
 
-/**
- * Polls existing authenticated admin endpoints, without a new backend or
- * fake client-only notifications. Admin data refreshes roughly every 20s
- * while the tab is visible, and immediately when the tab regains focus.
+/** Only user/business-originated changes should create sidebar notifications.
+ * Counts are acknowledged on page visit; they are not workload counters.
+ * Per-admin acknowledgement is persisted locally (not across devices).
  */
-type CounterSnapshot = Record<string, number>;
-type ProbeResult = CounterSnapshot;
-const STORAGE_PREFIX = "loyvance.admin.nav-seen.v1:";
+type Counters = Record<string, number>;
+const STORAGE_PREFIX = "loyvance.admin.nav-seen.v2:";
+const routes = ["/admin/businesses", "/admin/customers", "/admin/affiliates", "/admin/premium", "/admin/visitors"] as const;
+const DEMO_KEY = "/admin/visitors/demo-alerts";
 const VISITORS_ROUTE = "/admin/visitors";
-// Internal counter key, combined with Visitors in the sidebar.
-const DEMO_ALERT_KEY = "/admin/visitors/demo-alerts";
-const watchedRoutes = ["/admin", "/admin/businesses", "/admin/customers", "/admin/premium", "/admin/affiliates", "/admin/activity", "/admin/visitors", "/admin/archived"] as const;
 type PremiumResponse = { requests: PremiumApprovalRequest[] };
-type AffiliateResponse = {data:Array<{id:string}>};
-type ArchivedResponse = {counts:{business:number;customer:number;affiliate:number}};
-type VisitorsResponse = {totals:{sessions:number}};
-type DemoAlertResponse = {total:number};
+type AffiliateResponse = { data: Array<{ id: string }> };
+type DemoAlertResponse = { total: number };
 
-function storedCounters(key: string): CounterSnapshot {
+function readSeen(key: string): Counters {
   try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return {};
-    const value: unknown = JSON.parse(raw);
-    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-    return Object.fromEntries(Object.entries(value).filter(([k,v]) => (watchedRoutes.includes(k as typeof watchedRoutes[number]) || k===DEMO_ALERT_KEY) && typeof v === "number" && Number.isFinite(v) && v >= 0)) as CounterSnapshot;
-  } catch {
-    return {};
-  }
+    const data: unknown = JSON.parse(window.localStorage.getItem(key) || "{}");
+    if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+    return Object.fromEntries(Object.entries(data).filter(([key, value]) =>
+      (routes.some(route => route === key) || key === DEMO_KEY) &&
+      typeof value === "number" && Number.isFinite(value) && value >= 0
+    )) as Counters;
+  } catch { return {}; }
 }
-function persistCounters(key:string, seen:CounterSnapshot) {
-  try { window.localStorage.setItem(key, JSON.stringify(seen)); } catch { /* Private browsing: in-memory acknowledgement still works. */ }
+function storeSeen(key: string, seen: Counters) {
+  try { window.localStorage.setItem(key, JSON.stringify(seen)); } catch { /* storage disabled */ }
 }
+
 export function useAdminSidebarAlerts(token: string | null, userId: string | null, pathname: string) {
-  const [badges, setBadges] = useState<Record<string, number>>({});
+  const [badges, setBadges] = useState<Counters>({});
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
-  const seenRef = useRef<CounterSnapshot>({});
-  const latestRef = useRef<CounterSnapshot>({});
-  const handledPremiumRef = useRef<Set<string>>(new Set());
+  const seenRef = useRef<Counters>({});
+  const latestRef = useRef<Counters>({});
+  const pendingRef = useRef<Set<string>>(new Set());
+  const handledRef = useRef<Set<string>>(new Set());
+  const premiumSeenRef = useRef<Set<string>>(new Set());
+  const premiumInitialized = useRef(false);
 
   useEffect(() => {
     if (!token || !userId) { setBadges({}); return; }
     const storageKey = STORAGE_PREFIX + userId;
-    seenRef.current = storedCounters(storageKey);
+    seenRef.current = readSeen(storageKey);
     latestRef.current = {};
+    pendingRef.current = new Set();
+    handledRef.current = new Set();
+    premiumSeenRef.current = new Set();
+    premiumInitialized.current = false;
     let stopped = false;
-    let busy = false;
+    let running = false;
     const controller = new AbortController();
 
-    function displayAlerts(current:CounterSnapshot, seen:CounterSnapshot) {
-      const result: Record<string, number> = {};
-      for (const route of watchedRoutes) {
-        const value = current[route];
-        if (typeof value !== "number") continue;
-        // Open approvals and payment renewals require action until resolved.
-        if (route === "/admin/premium" || route === "/admin") {
-          result[route] = Math.max(0, value);
-        } else {
-          result[route] = Math.max(0, value - (seen[route] ?? value));
-        }
+    const acknowledge = (route: string) => {
+      const seen = { ...seenRef.current };
+      const latest = latestRef.current;
+      if (route === VISITORS_ROUTE && latest[DEMO_KEY] !== undefined) seen[DEMO_KEY] = latest[DEMO_KEY];
+      if (latest[route] !== undefined) seen[route] = latest[route];
+      if (route === "/admin/premium") {
+        premiumSeenRef.current = new Set([...pendingRef.current]);
       }
-      // Demo requests have their own monotonic total, so deleting old
-      // requests cannot mask a future unread enquiry.
-      const demoTotal=current[DEMO_ALERT_KEY];
-      if(typeof demoTotal==="number"){
-        result[VISITORS_ROUTE]=(result[VISITORS_ROUTE]??0)
-          +Math.max(0,demoTotal-(seen[DEMO_ALERT_KEY]??0));
+      seenRef.current = seen;
+      storeSeen(storageKey, seen);
+      setBadges(previous => ({ ...previous, [route]: 0 }));
+    };
+
+    const refreshBadges = () => {
+      const result: Counters = {};
+      for (const route of routes) {
+        if (route === "/admin/premium") {
+          result[route] = [...pendingRef.current].filter(key =>
+            !premiumSeenRef.current.has(key) && !handledRef.current.has(key)).length;
+        } else if (route === VISITORS_ROUTE) {
+          result[route] = Math.max(0, (latestRef.current[DEMO_KEY] ?? 0) - (seenRef.current[DEMO_KEY] ?? 0));
+        } else {
+          const current = latestRef.current[route];
+          result[route] = current === undefined ? 0 : Math.max(0, current - (seenRef.current[route] ?? current));
+        }
+        if (pathnameRef.current === route) result[route] = 0;
       }
       setBadges(result);
-    }
+    };
 
-    async function checkForUpdates() {
-      if (stopped || busy || document.hidden) return;
-      busy = true;
+    async function check() {
+      if (stopped || running || document.hidden) return;
+      running = true;
       try {
-        // Independent checks: if one endpoint is unavailable, all other badges
-        // continue working. The responses contain actual server-side totals.
-        const results = await Promise.allSettled<ProbeResult>([
-          adminRequest<AdminOverview>("overview", token!, {signal: controller.signal, cache:"no-store"}).then(r => ({
-            "/admin": r.data.subscriptions?.pending_requests ?? 0,
+        const results = await Promise.allSettled([
+          adminRequest<AdminOverview>("overview", token!, { signal:controller.signal, cache:"no-store" }).then(r => ({
             "/admin/businesses": r.data.stats.businesses,
             "/admin/customers": r.data.stats.customers,
           })),
-          adminRequest<AffiliateResponse>("affiliates?archived=false", token!, {signal: controller.signal, cache:"no-store"}).then(r => ({
+          adminRequest<AffiliateResponse>("affiliates?archived=false", token!, { signal:controller.signal, cache:"no-store" }).then(r => ({
             "/admin/affiliates": r.data.length,
           })),
-          adminRequest<AdminActivity>("activity?kind=all&page=1", token!, {signal: controller.signal, cache:"no-store"}).then(r => ({
-            "/admin/activity": r.total,
+          adminRequest<DemoAlertResponse>("visitors/demo-alerts", token!, { signal:controller.signal, cache:"no-store" }).then(r => ({
+            [DEMO_KEY]: r.total,
           })),
-          adminRequest<ArchivedResponse>("archived?type=all&page=1", token!, {signal: controller.signal, cache:"no-store"}).then(r => ({
-            "/admin/archived": r.counts.business + r.counts.customer + r.counts.affiliate,
-          })),
-          adminRequest<VisitorsResponse>("visitors?days=7", token!, {signal: controller.signal, cache:"no-store"}).then(r => ({
-            "/admin/visitors": r.totals.sessions,
-          })),
-        ]);
+          apiFetch<PremiumResponse>("/premium-admin", { token:token!, signal:controller.signal, cache:"no-store" }),
+        ] as const);
         if (stopped || controller.signal.aborted) return;
-        const current = { ...latestRef.current };
-        for (const probe of results) {
-          if (probe.status !== "fulfilled") continue;
-          for (const [route, value] of Object.entries(probe.value)) {
-            if (typeof value === "number" && Number.isFinite(value) && value >= 0) current[route] = value;
-          }
-        }
         const seen = { ...seenRef.current };
         let changed = false;
-        for (const [route, value] of Object.entries(current)) {
-          if (route === "/admin" || route === "/admin/premium") continue;
-          // First-time setup is a baseline, not an invented new alert.
-          // Visitors is a read-only feed: opening it marks the visible total seen.
-          // Feature Approvals remains action-based and is never auto-cleared.
-          if (seen[route] === undefined || value < seen[route] || ((route === VISITORS_ROUTE || route === DEMO_ALERT_KEY) && pathnameRef.current === VISITORS_ROUTE)) {
-            seen[route] = value;
-            changed = true;
+        for (let index = 0; index < 4; index++) {
+          const item = results[index];
+          if (item.status !== "fulfilled") continue;
+          const counts = item.value as Counters;
+          for (const [route, value] of Object.entries(counts)) {
+            if (typeof value !== "number" || !Number.isFinite(value) || value < 0) continue;
+            const previous = latestRef.current[route];
+            latestRef.current[route] = value;
+            // Initial load establishes a baseline, not a fake notification.
+            // A decrease means deleted records, not new events.
+            if (seen[route] === undefined || (previous !== undefined && value < previous && value < seen[route]) ||
+                pathnameRef.current === route || (route === DEMO_KEY && pathnameRef.current === VISITORS_ROUTE)) {
+              if (seen[route] !== value) { seen[route] = value; changed = true; }
+            }
           }
         }
-        latestRef.current = current;
+        const premium = results[4];
+        if (premium.status === "fulfilled" && Array.isArray(premium.value.requests)) {
+          const pending = new Set(premium.value.requests.filter(isPremiumPending).map(premiumKey));
+          pendingRef.current = pending;
+          for (const key of handledRef.current) if (!pending.has(key)) handledRef.current.delete(key);
+          for (const key of premiumSeenRef.current) if (!pending.has(key)) premiumSeenRef.current.delete(key);
+          // Pending requests already present when admin opens the app are new
+          // until their dedicated page is visited.
+          premiumInitialized.current = true;
+          if (pathnameRef.current === "/admin/premium") premiumSeenRef.current = new Set(pending);
+        }
         seenRef.current = seen;
-        if (changed) persistCounters(storageKey, seen);
-        displayAlerts(current, seen);
-      } finally {
-        busy = false;
-      }
+        if (changed) storeSeen(storageKey, seen);
+        refreshBadges();
+      } finally { running = false; }
     }
-    const wake = () => { if (!document.hidden) void checkForUpdates(); };
-    void checkForUpdates();
-    const timer = window.setInterval(() => { void checkForUpdates(); }, 20000);
+    const onDecision = (event: Event) => {
+      const detail = (event as CustomEvent<PremiumDecision>).detail;
+      if (!detail || !["approved","rejected"].includes(detail.status)) return;
+      handledRef.current.add(premiumKey(detail));
+      refreshBadges();
+      void check();
+    };
+    const wake = () => { if (!document.hidden) void check(); };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== storageKey) return;
+      seenRef.current = readSeen(storageKey);
+      refreshBadges();
+    };
+    // When mounted on a target route, acknowledge the server snapshot after loading.
+    void check();
+    const timer = window.setInterval(() => { void check(); }, 5000);
     window.addEventListener("focus", wake);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(PREMIUM_DECISION_EVENT, onDecision);
     document.addEventListener("visibilitychange", wake);
     return () => {
       stopped = true;
       controller.abort();
       window.clearInterval(timer);
       window.removeEventListener("focus", wake);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(PREMIUM_DECISION_EVENT, onDecision);
       document.removeEventListener("visibilitychange", wake);
     };
-  }, [token,userId]);
+  }, [token, userId]);
 
-  // Visiting the Visitors page clears its badge without waiting for polling.
-  // A fresh server count is acknowledged on the next poll while the page is open.
   useEffect(() => {
-    if (!userId || pathname !== VISITORS_ROUTE) return;
-    const latest = latestRef.current[VISITORS_ROUTE];
-    const latestDemo = latestRef.current[DEMO_ALERT_KEY];
-    if (typeof latest === "number" || typeof latestDemo === "number") {
-      seenRef.current = {
-        ...seenRef.current,
-        ...(typeof latest==="number" ? {[VISITORS_ROUTE]:latest} : {}),
-        ...(typeof latestDemo==="number" ? {[DEMO_ALERT_KEY]:latestDemo} : {}),
-      };
-      persistCounters(STORAGE_PREFIX + userId, seenRef.current);
-    }
-    setBadges(previous =>
-      (previous[VISITORS_ROUTE] ?? 0) > 0
-        ? { ...previous, [VISITORS_ROUTE]: 0 }
-        : previous
-    );
+    if (!userId) return;
+    const route = pathname;
+    if (!routes.some(item => item === route)) return;
+    const seen = { ...seenRef.current };
+    if (route === VISITORS_ROUTE && latestRef.current[DEMO_KEY] !== undefined) seen[DEMO_KEY] = latestRef.current[DEMO_KEY];
+    if (latestRef.current[route] !== undefined) seen[route] = latestRef.current[route];
+    if (route === "/admin/premium") premiumSeenRef.current = new Set(pendingRef.current);
+    seenRef.current = seen;
+    storeSeen(STORAGE_PREFIX + userId, seen);
+    setBadges(previous => ({ ...previous, [route]: 0 }));
   }, [pathname, userId]);
-
-  // Poll new demo requests separately every 5 seconds, without repeatedly
-  // loading the full analytics dashboard or exposing lead contact details.
-  useEffect(() => {
-    if (!token || !userId) return;
-    const storageKey=STORAGE_PREFIX+userId;
-    let stopped=false;
-    let busy=false;
-    async function checkDemos(){
-      if (stopped || busy || document.hidden) return;
-      busy=true;
-      try {
-        const response=await adminRequest<DemoAlertResponse>("visitors/demo-alerts",token!,{cache:"no-store"});
-        if(stopped)return;
-        const total=Number(response.total);
-        if(!Number.isFinite(total)||total<0)return;
-        latestRef.current={...latestRef.current,[DEMO_ALERT_KEY]:total};
-        const previouslySeen=seenRef.current[DEMO_ALERT_KEY];
-        const shouldAcknowledge=pathnameRef.current===VISITORS_ROUTE;
-        const nextSeen=shouldAcknowledge?total:previouslySeen===undefined?0:Math.min(previouslySeen,total);
-        if(previouslySeen!==nextSeen){
-          seenRef.current={...seenRef.current,[DEMO_ALERT_KEY]:nextSeen};
-          persistCounters(storageKey,seenRef.current);
-        }
-        const sessionTotal=latestRef.current[VISITORS_ROUTE];
-        const unreadSessions=typeof sessionTotal==="number"
-          ? Math.max(0,sessionTotal-(seenRef.current[VISITORS_ROUTE]??sessionTotal)):0;
-        const unreadDemos=shouldAcknowledge?0:Math.max(0,total-nextSeen);
-        setBadges(previous=>({...previous,[VISITORS_ROUTE]:unreadSessions+unreadDemos}));
-      } catch {
-        // Keep the last known badge if the network is temporarily unavailable.
-      } finally {
-        busy=false;
-      }
-    }
-    const wake=()=>{if(!document.hidden)void checkDemos();};
-    void checkDemos();
-    const timer=window.setInterval(()=>{void checkDemos();},5000);
-    window.addEventListener("focus",wake);
-    document.addEventListener("visibilitychange",wake);
-    return ()=>{
-      stopped=true;
-      window.clearInterval(timer);
-      window.removeEventListener("focus",wake);
-      document.removeEventListener("visibilitychange",wake);
-    };
-  },[token,userId]);
-
-  // Feature Approvals has its own fast live cycle and direct action events.
-  useEffect(() => {
-    if (!token || !userId) return;
-    let stopped = false;
-    let active: AbortController | null = null;
-    const handled = handledPremiumRef.current;
-    handled.clear();
-    async function sync() {
-      if (stopped || document.hidden || active) return;
-      const ctrl = new AbortController();
-      active = ctrl;
-      try {
-        const result = await apiFetch<PremiumResponse>("/premium-admin", {token:token!, signal:ctrl.signal, cache:"no-store"});
-        if (stopped || ctrl.signal.aborted || !Array.isArray(result.requests)) return;
-        const pendingKeys = new Set(result.requests.filter(isPremiumPending).map(premiumKey));
-        // Release handled ids once they no longer appear pending on the server.
-        // A later re-request gets its own requested_at identity and fresh badge.
-        for (const key of handled) {
-          if (!pendingKeys.has(key)) handled.delete(key);
-        }
-        setBadges(old => ({...old, "/admin/premium": [...pendingKeys].filter(k => !handled.has(k)).length}));
-      } catch {
-        // A temporary API error never hides a known pending approval.
-      } finally {
-        if (active === ctrl) active = null;
-      }
-    }
-    const onDecision = (event: Event) => {
-      const detail = (event as CustomEvent<PremiumDecision>).detail;
-      if (!detail || !["approved","rejected"].includes(detail.status)) return;
-      const key = premiumKey(detail);
-      if (!handled.has(key)) {
-        handled.add(key);
-        setBadges(old => ({...old, "/admin/premium": Math.max(0, (old["/admin/premium"] ?? 1)-1)}));
-      }
-      active?.abort();
-      active = null;
-      void sync();
-    };
-    const wake = () => { if (!document.hidden) { active?.abort(); active=null; void sync(); } };
-    void sync();
-    const timer = window.setInterval(() => {void sync();}, 4000);
-    window.addEventListener(PREMIUM_DECISION_EVENT,onDecision);
-    window.addEventListener("focus",wake);
-    document.addEventListener("visibilitychange",wake);
-    return () => {
-      stopped=true;
-      active?.abort();
-      window.clearInterval(timer);
-      window.removeEventListener(PREMIUM_DECISION_EVENT,onDecision);
-      window.removeEventListener("focus",wake);
-      document.removeEventListener("visibilitychange",wake);
-    };
-  }, [token,userId]);
 
   return badges;
 }
