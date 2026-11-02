@@ -22,13 +22,14 @@ const date=(value:string)=>{try{return new Date(value).toLocaleString(undefined,
 const nameCountry=(code:string|null)=>{if(!code||code==="Unknown")return "Unknown country";try{return new Intl.DisplayNames(["en"],{type:"region"}).of(code)||code;}catch{return code;}};
 const number=(value:unknown)=>Number(value||0);
 function Metric({label,value,note,icon:Icon}:{label:string;value:string;note:string;icon:typeof Users}){
- return <div className={card}><div className="flex min-w-0 items-start justify-between gap-3"><p className="text-xs font-semibold text-white/50">{label}</p><Icon className="size-5 shrink-0 text-[#efbd5d]"/></div><p className="mt-3 text-2xl font-bold text-white sm:text-3xl">{value}</p><p className="mt-1 text-[11px] leading-5 text-white/40">{note}</p></div>;
+ const {t:tr}=useI18n();
+ return <div className={card}><div className="flex min-w-0 items-start justify-between gap-3"><p className="text-xs font-semibold text-white/50">{tr(label)}</p><Icon className="size-5 shrink-0 text-[#efbd5d]"/></div><p className="mt-3 text-2xl font-bold text-white sm:text-3xl">{value}</p><p className="mt-1 text-[11px] leading-5 text-white/40">{tr(note)}</p></div>;
 }
 function Ranking({title,items,formatter,scrollable=false}:{title:string;items:Array<{label:string;value:number;subtitle?:string;flagCode?:string|null}>;formatter?:(value:number)=>string;scrollable?:boolean}){
  const {t:tr}=useI18n();
  const max=Math.max(1,...items.map(x=>number(x.value)));
  return <section className={card}>
-  <h2 className="mb-5 text-base font-semibold text-white">{title}</h2>
+  <h2 className="mb-5 text-base font-semibold text-white">{tr(title)}</h2>
   {!items.length?<p className="py-5 text-xs text-white/40">{tr("No data collected yet.")}</p>:
   <div className={`space-y-4 ${scrollable?"admin-visitors-ranking-scroll max-h-[360px] overflow-y-auto overscroll-y-contain pe-2 sm:max-h-[400px]":""}`} role={scrollable?"region":undefined} aria-label={scrollable?title:undefined} tabIndex={scrollable?0:undefined}>{items.map((item,i)=><div key={item.label+"_"+i} className="min-w-0 space-y-1.5">
    <div className="flex min-w-0 items-center justify-between gap-3 text-xs">
