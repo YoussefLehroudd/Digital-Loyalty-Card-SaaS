@@ -1,4 +1,5 @@
 "use client";
+import {useI18n} from "@/components/i18n/language-provider";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -34,6 +35,7 @@ function date(value:string){
  catch{return value;}
 }
 export default function ArchivedAdminPage(){
+ const {t:tr}=useI18n();
  const {token}=useAdmin();
  const [kind,setKind]=useState<Kind>("all");
  const [search,setSearch]=useState("");
@@ -86,11 +88,11 @@ export default function ArchivedAdminPage(){
  return <div className="admin-archived min-w-0 space-y-5 text-white">
   <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
    <div className="min-w-0">
-    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.18em] text-[#edbc62]"><ArchiveRestore className="size-4"/>Platform recovery</p>
-    <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Archived & recoverable</h1>
-    <p className="mt-2 max-w-2xl text-xs leading-6 text-white/50 sm:text-sm">Restore archived affiliate partners and suspended business or customer accounts in one place. Existing data stays intact.</p>
+    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.18em] text-[#edbc62]"><ArchiveRestore className="size-4"/>{tr("Platform recovery")}</p>
+    <h1 className="mt-2 text-2xl font-bold sm:text-3xl">{tr("Archived & recoverable")}</h1>
+    <p className="mt-2 max-w-2xl text-xs leading-6 text-white/50 sm:text-sm">{tr("Restore archived affiliate partners and suspended business or customer accounts in one place. Existing data stays intact.")}</p>
    </div>
-   <button type="button" onClick={()=>setRevision(v=>v+1)} disabled={loading} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-semibold text-[#edbc62] hover:bg-white/5 disabled:opacity-40"><RefreshCcw className={`size-4 ${loading?"animate-spin":""}`}/>Refresh</button>
+   <button type="button" onClick={()=>setRevision(v=>v+1)} disabled={loading} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-semibold text-[#edbc62] hover:bg-white/5 disabled:opacity-40"><RefreshCcw className={`size-4 ${loading?"animate-spin":""}`}/>{tr("Refresh")}</button>
   </div>
 
   <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -108,7 +110,7 @@ export default function ArchivedAdminPage(){
 
   <div className="rounded-xl border border-amber-400/15 bg-amber-400/[.04] px-4 py-3 text-xs leading-6 text-white/55">
    <ShieldCheck className="me-2 inline size-4 text-[#edbc62]"/>
-   Affiliates are <strong className="text-white/75">archived</strong>; businesses and customers listed here are <strong className="text-white/75">suspended</strong>. Both are recoverable. Accounts permanently deleted in the past cannot be restored from this page.
+   Affiliates are <strong className="text-white/75">{tr("archived")}</strong>; businesses and customers listed here are <strong className="text-white/75">{tr("suspended")}</strong>. Both are recoverable. Accounts permanently deleted in the past cannot be restored from this page.
   </div>
 
   <section className={card}>
@@ -121,7 +123,7 @@ export default function ArchivedAdminPage(){
    {error&&<p role="alert" className="mt-3 rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">{error}</p>}
    {message&&<p role="status" className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300"><CheckCircle2 className="size-4 shrink-0"/>{message}</p>}
    <div className="mt-4 flex items-center justify-between gap-3"><h2 className="text-sm font-semibold">{kind==="all"?"All recoverable accounts":categories.find(item=>item.id===kind)?.name}</h2><span className="text-xs text-white/40">{report?.total??0} results</span></div>
-   {loading?<div className="flex min-h-44 items-center justify-center gap-2 text-xs text-white/50"><Loader2 className="size-4 animate-spin"/>Loading recoverable records...</div>:
+   {loading?<div className="flex min-h-44 items-center justify-center gap-2 text-xs text-white/50"><Loader2 className="size-4 animate-spin"/>{tr("Loading recoverable records...")}</div>:
      items.length?<div className="mt-3 space-y-2">{items.map(item=>{
       const Icon=item.type==="business"?Building2:item.type==="customer"?Users:Handshake;
       return <article key={item.type+item.id} className="flex min-w-0 flex-col gap-3 rounded-xl border border-white/10 bg-black/20 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
@@ -139,17 +141,17 @@ export default function ArchivedAdminPage(){
         </div>
        </div>
        <div className="flex shrink-0 items-center gap-2 ps-[52px] sm:ps-0">
-        <Link href={origin(item)} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/15 px-3 text-xs text-white/65 hover:text-white">Directory</Link>
-        <button type="button" onClick={()=>setPending(item)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-[#11120e] transition hover:bg-[#f5cd80]"><ArchiveRestore className="size-4"/>Restore</button>
+        <Link href={origin(item)} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/15 px-3 text-xs text-white/65 hover:text-white">{tr("Directory")}</Link>
+        <button type="button" onClick={()=>setPending(item)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#edbc62] px-4 text-xs font-bold text-[#11120e] transition hover:bg-[#f5cd80]"><ArchiveRestore className="size-4"/>{tr("Restore")}</button>
        </div>
       </article>;
      })}</div>:
-     <div className="mt-4 rounded-xl border border-dashed border-white/10 py-12 text-center"><ArchiveRestore className="mx-auto size-7 text-[#edbc62]/60"/><p className="mt-3 text-sm font-semibold text-white/70">Nothing recoverable in this view</p><p className="mt-1 text-xs text-white/40">Try another filter or search.</p></div>}
+     <div className="mt-4 rounded-xl border border-dashed border-white/10 py-12 text-center"><ArchiveRestore className="mx-auto size-7 text-[#edbc62]/60"/><p className="mt-3 text-sm font-semibold text-white/70">{tr("Nothing recoverable in this view")}</p><p className="mt-1 text-xs text-white/40">{tr("Try another filter or search.")}</p></div>}
    <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
     <p className="text-[11px] text-white/40">Page {report?.page||page} of {totalPages}</p>
     <div className="flex gap-2">
-     <button type="button" disabled={loading||page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/70 disabled:opacity-30">Previous</button>
-     <button type="button" disabled={loading||page>=totalPages} onClick={()=>setPage(p=>p+1)} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/70 disabled:opacity-30">Next</button>
+     <button type="button" disabled={loading||page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/70 disabled:opacity-30">{tr("Previous")}</button>
+     <button type="button" disabled={loading||page>=totalPages} onClick={()=>setPage(p=>p+1)} className="rounded-lg border border-white/15 px-3 py-2 text-xs text-white/70 disabled:opacity-30">{tr("Next")}</button>
     </div>
    </div>
   </section>
@@ -158,9 +160,9 @@ export default function ArchivedAdminPage(){
    <div className="w-full max-w-md rounded-t-2xl border border-white/15 bg-[#11151a] p-5 shadow-2xl sm:rounded-2xl sm:p-6" onClick={e=>e.stopPropagation()}>
     <div className="flex items-start justify-between gap-3"><div><ArchiveRestore className="mb-2 size-7 text-[#edbc62]"/><h2 className="text-lg font-semibold">Restore {pending.name}?</h2></div><button type="button" aria-label="Cancel" disabled={working} onClick={()=>setPending(null)} className="grid size-9 shrink-0 place-items-center rounded-lg border border-white/15 text-white/55"><X className="size-4"/></button></div>
     <p className="mt-3 text-sm leading-6 text-white/55">{describe(pending)}</p>
-    <p className="mt-3 text-xs text-white/40">This only restores access and does not undo an expired subscription or alter previous financial transactions.</p>
+    <p className="mt-3 text-xs text-white/40">{tr("This only restores access and does not undo an expired subscription or alter previous financial transactions.")}</p>
     <div className="mt-5 flex min-w-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-     <button type="button" disabled={working} onClick={()=>setPending(null)} className="min-h-11 rounded-xl border border-white/15 px-4 text-sm text-white/70 disabled:opacity-40">Cancel</button>
+     <button type="button" disabled={working} onClick={()=>setPending(null)} className="min-h-11 rounded-xl border border-white/15 px-4 text-sm text-white/70 disabled:opacity-40">{tr("Cancel")}</button>
      <button type="button" disabled={working} onClick={()=>void restore()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#edbc62] px-5 text-sm font-bold text-black disabled:opacity-50">{working?<Loader2 className="size-4 animate-spin"/>:<ArchiveRestore className="size-4"/>}Confirm restoration</button>
     </div>
    </div>
