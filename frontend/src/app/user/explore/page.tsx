@@ -48,11 +48,11 @@ function BusinessTile({business,onGetCard,busy,distanceKm}:{business:Discoverabl
       <span className="mt-2 text-[11px] font-medium text-white/45">{business.required_stamps} {tr("stamps to collect")}</span>
     </div>
     {business.active_offers?.length?<div className="customer-explore-offers mt-3 rounded-xl border border-emerald-400/20 bg-emerald-500/[.055] p-3">
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300"><Sparkles className="size-4"/>Special Offers</p>
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300"><Sparkles className="size-4"/>{tr("Special Offers")}</p>
       <div className="mt-2 space-y-1.5">{business.active_offers.map(offer=><p key={offer.id} className="text-xs text-white/70">
         <span className="font-medium">{offer.title}</span> <span className="text-[11px] text-white/40">· Until {new Date(offer.ends_at).toLocaleDateString("fr-MA")}</span>
       </p>)}</div>
-      <p className="mt-2 text-[11px] text-white/40">Eligibility and limits checked at your next visit.</p>
+      <p className="mt-2 text-[11px] text-white/40">{tr("Eligibility and limits checked at your next visit.")}</p>
     </div>:null}
     {(business.google_maps_url || business.google_reviews_url) ?
       <div className="mt-3 grid min-w-0 grid-cols-1 gap-2 min-[340px]:grid-cols-2">
@@ -168,18 +168,18 @@ export default function UserExploreBusinessesPage(){
     {([{id:"all",label:"All businesses",count:items.length},{id:"available",label:"Get a card",count:availableCount},{id:"joined",label:"My cards",count:joinedCount}] as const).map(option=><button key={option.id} type="button" onClick={()=>setFilter(option.id)} aria-pressed={filter===option.id} className={`customer-explore-filter-tab min-h-10 shrink-0 snap-start whitespace-nowrap rounded-xl border px-3 text-xs font-semibold transition ${filter===option.id?"border-[#efbd5d] bg-[#efbd5d] text-[#11120e]":"border-[#e7b354]/20 bg-[#11140f] text-white/65 hover:text-white"}`}>{tr(option.label)} <span className="ms-1 opacity-70">{option.count}</span></button>)}
    </div>
    <section className="rounded-2xl border border-[#e7b354]/15 bg-[#11130f] p-3 sm:p-4">
-     <div className="flex items-center gap-2 text-xs font-semibold text-[#e7b354]"><SlidersHorizontal className="size-4"/>Discover filters</div>
+     <div className="flex items-center gap-2 text-xs font-semibold text-[#e7b354]"><SlidersHorizontal className="size-4"/>{tr("Discover filters")}</div>
      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-       <label className="min-w-0 text-xs text-white/55">City<select aria-label="City" value={city} onChange={e=>setCity(e.target.value)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="all">All cities</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>
-       <label className="min-w-0 text-xs text-white/55">Category<select aria-label="Business category" value={category} onChange={e=>setCategory(e.target.value)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="all">All categories</option>{categories.map(c=><option key={c}>{c}</option>)}</select></label>
-       <label className="min-w-0 text-xs text-white/55">Sort<select aria-label="Sort businesses" value={sort} onChange={e=>setSort(e.target.value as Sort)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="recommended">Recommended</option><option value="alphabetical">Name A–Z</option>{location?<option value="nearest">Nearest first</option>:null}</select></label>
-       <label className="min-w-0 text-xs text-white/55">Distance<select aria-label="Nearby radius" value={radius} disabled={!location} onChange={e=>setRadius(Number(e.target.value))} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white disabled:opacity-40">{[5,10,25,50,100].map(n=><option key={n} value={n}>{n} km</option>)}</select></label>
+       <label className="min-w-0 text-xs text-white/55">{tr("City")}<select aria-label="City" value={city} onChange={e=>setCity(e.target.value)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="all">{tr("All cities")}</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>
+       <label className="min-w-0 text-xs text-white/55">{tr("Category")}<select aria-label="Business category" value={category} onChange={e=>setCategory(e.target.value)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="all">{tr("All categories")}</option>{categories.map(c=><option key={c}>{c}</option>)}</select></label>
+       <label className="min-w-0 text-xs text-white/55">{tr("Sort")}<select aria-label="Sort businesses" value={sort} onChange={e=>setSort(e.target.value as Sort)} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white"><option value="recommended">{tr("Recommended")}</option><option value="alphabetical">{tr("Name A–Z")}</option>{location?<option value="nearest">{tr("Nearest first")}</option>:null}</select></label>
+       <label className="min-w-0 text-xs text-white/55">{tr("Distance")}<select aria-label="Nearby radius" value={radius} disabled={!location} onChange={e=>setRadius(Number(e.target.value))} className="mt-1.5 w-full min-w-0 rounded-xl border border-white/15 bg-[#080907] px-2 py-2.5 text-sm text-white disabled:opacity-40">{[5,10,25,50,100].map(n=><option key={n} value={n}>{n} km</option>)}</select></label>
      </div>
      <div className="mt-3 flex flex-wrap items-center gap-2">
        <button type="button" onClick={requestLocation} disabled={locating} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#e7b354]/25 bg-[#e7b354]/10 px-3 text-xs font-semibold text-[#f5c86d]"><LocateFixed className="size-4"/>{locating?"Finding location…":location?"Update location":"Near me"}</button>
-       <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-white/15 px-3 text-xs text-white/75"><input type="checkbox" checked={onlyOffers} onChange={e=>setOnlyOffers(e.target.checked)} className="accent-[#e7b354]"/>Special Offers only</label>
+       <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-white/15 px-3 text-xs text-white/75"><input type="checkbox" checked={onlyOffers} onChange={e=>setOnlyOffers(e.target.checked)} className="accent-[#e7b354]"/>{tr("Special Offers only")}</label>
        {location?<label className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs text-white/75"><input type="checkbox" checked={nearby} onChange={e=>setNearby(e.target.checked)} className="accent-[#e7b354]"/>Within {radius} km</label>:null}
-       <button type="button" className="ms-auto rounded-xl border border-white/15 px-3 py-2.5 text-xs text-white/60" onClick={()=>{setCity("all");setCategory("all");setOnlyOffers(false);setNearby(false);setSort("recommended");setSearch("");}}>Reset filters</button>
+       <button type="button" className="ms-auto rounded-xl border border-white/15 px-3 py-2.5 text-xs text-white/60" onClick={()=>{setCity("all");setCategory("all");setOnlyOffers(false);setNearby(false);setSort("recommended");setSearch("");}}>{tr("Reset filters")}</button>
      </div>
      {locationNotice?<p role="status" className="mt-3 text-xs text-white/55">{locationNotice}</p>:null}
      <p className="mt-2 text-[11px] text-white/40">{filtered.length} matching businesses · Nearby only includes businesses that added their public shop coordinates.</p>
