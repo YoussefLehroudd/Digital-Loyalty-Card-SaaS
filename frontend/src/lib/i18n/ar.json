@@ -1637,5 +1637,15 @@
   "Share the invitation for one of your loyalty cards. Your friend creates a new account, verifies their email, joins that business and makes their first QR-confirmed visit. You both receive one bonus stamp when your loyalty card has room. Pending stamps wait for available space.": "شارك دعوة إحدى بطاقات ولائك. ينشئ صديقك حساباً ويؤكد بريده وينضم إلى المتجر ويقوم بأول زيارة مؤكدة عبر QR. تحصلان على طابع إضافي عندما تسمح البطاقة بذلك.",
   "Account and reward alerts are enabled by default. Promotional offers are optional. Phone notifications require permission on each device.": "تنبيهات الحساب والمكافآت مفعّلة افتراضياً. العروض الترويجية اختيارية. تتطلب إشعارات الهاتف إذناً من كل جهاز.",
   "Real phone notifications": "إشعارات الهاتف الحقيقية",
-  "Stamps & rewards": "الطوابع والمكافآت"
+  "Stamps & rewards": "الطوابع والمكافآت",
+  "Optional birthday surprises from your loyalty businesses.": "مفاجآت عيد ميلاد اختيارية من متاجرك المفضلة.",
+  "Your birthday": "عيد ميلادك",
+  "Add your date of birth if you want to receive a birthday gift or a bonus stamp from businesses where you have a loyalty card. This is optional and kept private from individual business owners.": "أضف تاريخ ميلادك إذا أردت هدية أو طابعاً إضافياً من المتاجر التي لديك بطاقات ولاء فيها. هذا اختياري ويبقى مخفياً عن أصحاب المتاجر.",
+  "Date of birth": "تاريخ الميلاد",
+  "I agree to birthday reward notifications": "أوافق على إشعارات مكافآت عيد الميلاد",
+  "Businesses with an enabled birthday program may send you one birthday reward per year. Disable anytime to stop future birthday messages.": "قد ترسل المتاجر التي فعّلت برنامج أعياد الميلاد مكافأة واحدة سنوياً. يمكنك إلغاء التفعيل في أي وقت.",
+  "Save birthday preferences": "حفظ تفضيلات عيد الميلاد",
+  "Your full birth date is not shown to businesses. Gifts may be issued only once per loyalty business per year. Bonus stamps respect reward-card limits.": "لا يظهر تاريخ ميلادك الكامل للمتاجر. تُمنح الهدايا مرة واحدة سنوياً لكل متجر، وتحترم الطوابع الإضافية حدود البطاقات.",
+  "Your birthday preferences were saved.": "تم حفظ تفضيلات عيد الميلاد.",
+  "Could not save birthday preferences.": "تعذر حفظ تفضيلات عيد الميلاد."
 }
