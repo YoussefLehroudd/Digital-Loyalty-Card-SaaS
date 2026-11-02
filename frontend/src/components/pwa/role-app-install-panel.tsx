@@ -87,24 +87,24 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
    {!available&&!standalone?<p className="mt-3 text-xs text-white/50">{mobile?"If the phone browser does not offer a one-tap installer, tap Install to see clear phone-specific steps.":"If the browser does not offer a one-tap installer, use its menu (Install app / Add to Home Screen)."} This is a PWA, not an APK.</p>:null}
    <Modal isOpen={instructions} onClose={()=>setInstructions(false)} title={t("Install")+" "+app.name} description={t("Follow these steps to add this app to your Home Screen.")} icon={<Smartphone className="size-6"/>} className="install-help-modal">
      <div className="space-y-4">
-       {otherAppWindow?<div className="rounded-xl border border-[#edbc62]/25 bg-[#edbc62]/10 p-3 text-xs leading-5 text-[#edbc62]">Copy the link below and open it in Chrome (Android) or Safari (iPhone), outside the already-installed application. Then install <strong>{app.name}</strong> using its own name and icon.</div>:null}
-       {inAppBrowser?<div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">You are viewing Loyvance inside another app. Open the browser menu and choose <strong>Open in browser</strong>. Use Chrome on Android or Safari on iPhone to install.</div>:null}
+       {otherAppWindow?<div className="rounded-xl border border-[#edbc62]/25 bg-[#edbc62]/10 p-3 text-xs leading-5 text-[#edbc62]">{t("Copy the link below and open it in Chrome (Android) or Safari (iPhone), outside the already-installed application. Then install")}<strong>{app.name}</strong> {t("using its own name and icon.")}</div>:null}
+       {inAppBrowser?<div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">{t("You are viewing Loyvance inside another app. Open the browser menu and choose")}<strong>{t("Open in browser")}</strong>. Use Chrome on Android or Safari on iPhone to install.</div>:null}
        {ios?<ol className="list-decimal space-y-3 ps-5 text-sm leading-6 text-white/80">
-          <li>Open this install page in <strong className="text-white">Safari</strong>.</li>
-          <li>Tap <Share2 className="inline size-4 text-[#edbc62]"/> <strong className="text-white">Share</strong> (square with upward arrow).</li>
-          <li>Select <strong className="text-white">Add to Home Screen</strong>. Scroll in the Share menu if needed.</li>
-          <li>Keep <strong className="text-white">Open as Web App</strong> enabled when offered, then tap <strong className="text-white">Add</strong>.</li>
+          <li>{t("Open this install page in")}<strong className="text-white">{t("Safari")}</strong>.</li>
+          <li>{t("Tap")}<Share2 className="inline size-4 text-[#edbc62]"/> <strong className="text-white">{t("Share")}</strong> (square with upward arrow).</li>
+          <li>{t("Select")}<strong className="text-white">{t("Add to Home Screen")}</strong>. Scroll in the Share menu if needed.</li>
+          <li>{t("Keep")}<strong className="text-white">{t("Open as Web App")}</strong> {t("enabled when offered, then tap")}<strong className="text-white">{t("Add")}</strong>.</li>
         </ol>:android?<ol className="list-decimal space-y-3 ps-5 text-sm leading-6 text-white/80">
-          <li>Open this page directly in <strong className="text-white">Chrome</strong> (or a browser that supports PWA installation).</li>
-          <li>Tap the browser menu <strong className="text-white">⋮</strong> (usually in the top-right corner).</li>
-          <li>Tap <strong className="text-white">Install app</strong>, or <strong className="text-white">Add to Home screen</strong> if that is the available option.</li>
-          <li>Confirm <strong className="text-white">Install / Add</strong> to create the Home Screen icon.</li>
+          <li>{t("Open this page directly in")}<strong className="text-white">{t("Chrome")}</strong> (or a browser that supports PWA installation).</li>
+          <li>{t("Tap the browser menu")}<strong className="text-white">⋮</strong> (usually in the top-right corner).</li>
+          <li>{t("Tap")}<strong className="text-white">{t("Install app")}</strong>, or <strong className="text-white">{t("Add to Home screen")}</strong> {t("if that is the available option.")}</li>
+          <li>{t("Confirm")}<strong className="text-white">{t("Install / Add")}</strong> {t("to create the Home Screen icon.")}</li>
         </ol>:<ol className="list-decimal space-y-3 ps-5 text-sm leading-6 text-white/80">
-          <li>Open this page in Chrome or Microsoft Edge.</li>
-          <li>Select the <strong className="text-white">Install</strong> icon in the address bar, or use the browser menu → Install app.</li>
+          <li>{t("Open this page in Chrome or Microsoft Edge.")}</li>
+          <li>{t("Select the")}<strong className="text-white">{t("Install")}</strong> icon in the address bar, or use the browser menu → Install app.</li>
           <li>Confirm installation to open {app.name} in its own window.</li>
         </ol>}
-       {android?<p className="flex items-start gap-2 rounded-xl border border-white/10 p-3 text-xs leading-5 text-white/60"><Globe2 className="mt-0.5 size-4 shrink-0 text-[#edbc62]"/>Some Android browsers, including in-app browsers, do not expose the automatic install popup. The menu method is the reliable alternative.</p>:null}
+       {android?<p className="flex items-start gap-2 rounded-xl border border-white/10 p-3 text-xs leading-5 text-white/60"><Globe2 className="mt-0.5 size-4 shrink-0 text-[#edbc62]"/>{t("Some Android browsers, including in-app browsers, do not expose the automatic install popup. The menu method is the reliable alternative.")}</p>:null}
        <p className="text-xs leading-5 text-white/50">Each role has a separate manifest, icon and name. Install from this {role} page in the normal browser to create another shortcut. Login and role permissions still apply.</p>
        <div className="flex flex-wrap gap-2 pt-2">
          <button type="button" onClick={()=>void copyInstallLink()} className="flex min-h-11 items-center gap-2 rounded-xl border border-[#edbc62]/30 px-4 py-2.5 text-sm font-semibold text-[#edbc62]"><Copy className="size-4"/>{t("Copy installation link")}</button>
@@ -113,13 +113,13 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
        {notice?<p role="status" className="text-xs text-[#edbc62]">{notice}</p>:null}
      </div>
    </Modal>
-   <p className="mt-4 flex items-center gap-2 text-xs text-white/45"><ShieldCheck className="size-4"/>Separate installation does not bypass login or role permissions. The normal account session remains server-verified.</p>
+   <p className="mt-4 flex items-center gap-2 text-xs text-white/45"><ShieldCheck className="size-4"/>{t("Separate installation does not bypass login or role permissions. The normal account session remains server-verified.")}</p>
   </section>
   {role==="customer"?
    <p className="rounded-xl border border-[#edbc62]/15 bg-[#edbc62]/5 p-4 text-sm leading-6 text-white/70">
-     Fingerprint / Face ID is managed in <Link href="/user/settings" className="font-semibold text-[#edbc62] underline underline-offset-4">Customer Settings</Link>. Your existing passkeys stay active.
+     Fingerprint / Face ID is managed in <Link href="/user/settings" className="font-semibold text-[#edbc62] underline underline-offset-4">{t("Customer Settings")}</Link>. Your existing passkeys stay active.
    </p>
    :<AccountPasskeySettings token={token} elevated/>}
-  <p className="text-xs leading-5 text-white/45"><Smartphone className="me-1 inline size-4"/>Stay signed in during ordinary app closes. Fingerprint / Face ID is an optional secure way to sign in again after the session expires or when signing into a new device.</p>
+  <p className="text-xs leading-5 text-white/45"><Smartphone className="me-1 inline size-4"/>{t("Stay signed in during ordinary app closes. Fingerprint / Face ID is an optional secure way to sign in again after the session expires or when signing into a new device.")}</p>
  </div>;
 }
