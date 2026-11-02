@@ -90,7 +90,7 @@ export default function UserActivityPage() {
     const visible = items.filter((item) => {
         const stamp = item.type === "visit" || item.type.includes("stamp");
         const matchesType = filter === "all" || (filter === "stamps" ? stamp : item.type.includes("reward"));
-        return matchesType && `${item.business_name} ${item.reward_name ?? ""} ${labelForType(item.type)}`.toLowerCase().includes(query.trim().toLowerCase());
+        return matchesType && `${item.business_name} ${item.reward_name ?? ""} ${tr(labelForType(item.type))}`.toLowerCase().includes(query.trim().toLowerCase());
     });
     const groups = new Map<string, ActivityItem[]>();
     for (const item of visible) {
@@ -150,7 +150,7 @@ export default function UserActivityPage() {
                           <div className={`mt-1 flex size-8 shrink-0 items-center justify-center rounded-full border ${rewardEvent ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border-[#f3bd55]/20 bg-[#f3bd55]/10 text-[#f3bd55]"}`}><Icon className="size-3.5"/></div>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                              <p className="text-sm font-semibold text-white">{labelForType(item.type)}</p>
+                              <p className="text-sm font-semibold text-white">{tr(labelForType(item.type))}</p>
                               {typeof item.points === "number" ? <span className="text-xs font-semibold text-[#f3bd55]">+{item.points} {item.points === 1 ? tr("stamp") : tr("stamps")}</span> : rewardEvent ? <Badge className="border-emerald-400/20 bg-emerald-400/10 text-[10px] text-emerald-300">{item.type === "reward_redeemed" ? tr("Redeemed") : tr("Unlocked")}</Badge> : null}
                             </div>
                             <div className="mt-2 flex items-center gap-2">
