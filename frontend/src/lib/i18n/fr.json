@@ -1577,5 +1577,8 @@
   "Passkey": "Clé d’accès",
   "Customer Settings": "Paramètres client",
   "Stay signed in during ordinary app closes. Fingerprint / Face ID is an optional secure way to sign in again after the session expires or when signing into a new device.": "Restez connecté lorsque l’application se ferme normalement. L’empreinte ou Face ID permettent une reconnexion sécurisée facultative.",
-  "Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.": "Seuls les membres consentants sont éligibles. Les e-mails exigent également l’accord pour les mises à jour ; aucune liste de contacts n’est exportée."
+  "Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.": "Seuls les membres consentants sont éligibles. Les e-mails exigent également l’accord pour les mises à jour ; aucune liste de contacts n’est exportée.",
+  "Passkeys need a compatible device and HTTPS. You can always continue using email and password.": "Les clés d’accès nécessitent un appareil compatible et HTTPS. Vous pouvez toujours utiliser votre e-mail et mot de passe.",
+  "Confirm your account password to protect this privileged workspace": "Confirmez votre mot de passe pour protéger cet espace privilégié",
+  "Your normal login stays available as a fallback. You can register or remove multiple passkeys from this account.": "La connexion habituelle reste disponible. Vous pouvez ajouter ou supprimer plusieurs clés d’accès."
 }
