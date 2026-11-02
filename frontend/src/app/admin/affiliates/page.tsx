@@ -1,5 +1,4 @@
 "use client";
-import {useI18n} from "@/components/i18n/language-provider";
 
 import { useCallback, useEffect, useState } from "react";
 import { ArchiveRestore, ArrowRight, Check, Copy, Handshake, Plus, RefreshCcw, Save, Trash2, Wallet } from "lucide-react";
