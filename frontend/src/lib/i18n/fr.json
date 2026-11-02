@@ -1637,5 +1637,15 @@
   "Share the invitation for one of your loyalty cards. Your friend creates a new account, verifies their email, joins that business and makes their first QR-confirmed visit. You both receive one bonus stamp when your loyalty card has room. Pending stamps wait for available space.": "Partagez l’invitation d’une de vos cartes. Votre ami crée un compte, vérifie son e-mail, rejoint ce commerce et effectue sa première visite confirmée par QR. Vous recevez chacun un tampon bonus si la carte a de la place.",
   "Account and reward alerts are enabled by default. Promotional offers are optional. Phone notifications require permission on each device.": "Les alertes de compte et de récompense sont activées par défaut. Les offres promotionnelles sont facultatives. Les notifications mobiles exigent une autorisation par appareil.",
   "Real phone notifications": "Notifications sur le téléphone",
-  "Stamps & rewards": "Tampons et récompenses"
+  "Stamps & rewards": "Tampons et récompenses",
+  "Optional birthday surprises from your loyalty businesses.": "Des surprises d’anniversaire facultatives de vos commerces fidèles.",
+  "Your birthday": "Votre anniversaire",
+  "Add your date of birth if you want to receive a birthday gift or a bonus stamp from businesses where you have a loyalty card. This is optional and kept private from individual business owners.": "Indiquez votre date de naissance pour recevoir éventuellement un cadeau ou un tampon bonus des commerces dont vous détenez une carte. Cela reste facultatif et privé.",
+  "Date of birth": "Date de naissance",
+  "I agree to birthday reward notifications": "J’accepte les notifications de récompenses d’anniversaire",
+  "Businesses with an enabled birthday program may send you one birthday reward per year. Disable anytime to stop future birthday messages.": "Les commerces ayant activé ce programme peuvent vous offrir une récompense par an. Désactivez cette option à tout moment.",
+  "Save birthday preferences": "Enregistrer les préférences d’anniversaire",
+  "Your full birth date is not shown to businesses. Gifts may be issued only once per loyalty business per year. Bonus stamps respect reward-card limits.": "Votre date complète de naissance est masquée aux commerces. Chaque commerce ne peut attribuer qu’une récompense par an. Les tampons bonus respectent les limites des cartes.",
+  "Your birthday preferences were saved.": "Préférences d’anniversaire enregistrées.",
+  "Could not save birthday preferences.": "Impossible d’enregistrer les préférences d’anniversaire."
 }
