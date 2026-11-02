@@ -1602,5 +1602,18 @@
   "Your browser does not support location access.": "Votre navigateur ne prend pas en charge la géolocalisation.",
   "Location permission denied or unavailable. You can enter coordinates manually.": "Accès à la localisation refusé ou indisponible. Saisissez les coordonnées manuellement.",
   "Could not save Discover profile.": "Impossible d’enregistrer le profil Discover.",
-  "Unable to load Discover settings.": "Impossible de charger les paramètres Discover."
+  "Unable to load Discover settings.": "Impossible de charger les paramètres Discover.",
+  "Please wait…": "Veuillez patienter…",
+  "Added": "Ajouté le",
+  "Last used": "Dernière utilisation",
+  "Remove passkey": "Supprimer la clé d’accès",
+  "Remove this passkey from Loyvance? You can still sign in with your password.": "Supprimer cette clé d’accès de Loyvance ? Vous pourrez toujours vous connecter avec votre mot de passe.",
+  "Keep your loyalty cards, rewards and QR code one tap away on your phone.": "Gardez vos cartes de fidélité, récompenses et code QR à portée de main sur votre téléphone.",
+  "Install the separate administrator PWA to launch the private platform panel. Only authorized administrators can access its data.": "Installez l’application d’administration séparée pour ouvrir l’espace privé. Seuls les administrateurs autorisés peuvent consulter ses données.",
+  "LOYVANCE app icon": "Icône de l’application LOYVANCE",
+  "Unable to load your passkeys.": "Impossible de charger vos clés d’accès.",
+  "Unable to set up a passkey.": "Impossible de configurer la clé d’accès.",
+  "Unable to remove passkey.": "Impossible de supprimer la clé d’accès.",
+  "Passkey removed from Loyvance.": "Clé d’accès supprimée de Loyvance.",
+  "Fingerprint / Face ID passkey is ready. You can use it next time your session expires.": "Votre clé d’accès est prête. Vous pourrez l’utiliser lors de votre prochaine connexion."
 }
