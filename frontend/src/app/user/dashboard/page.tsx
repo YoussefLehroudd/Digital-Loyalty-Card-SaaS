@@ -132,7 +132,7 @@ export default function UserDashboardPage() {
                       </div>
                     </div>
                     <div className="mt-2.5 border-t border-[#d8a63f]/15 pt-2">
-                      <p className="whitespace-normal break-words text-[9px] leading-[1.35] text-muted-foreground sm:text-[11px]">{stat.note}</p>
+                      <p className="whitespace-normal break-words text-[9px] leading-[1.35] text-muted-foreground sm:text-[11px]">{tr(stat.note)}</p>
                     </div>
                     <div className="absolute end-3 top-3 text-[#d8a63f]/65 sm:end-4 sm:top-4 transition group-hover:text-[#ffc857]">
                       <svg viewBox="0 0 24 24" className="size-3 sm:size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
