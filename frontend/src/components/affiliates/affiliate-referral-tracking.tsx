@@ -1,6 +1,9 @@
 "use client";
 import { CalendarClock, Check, Clock3, Eye, Users, BadgeCheck } from "lucide-react";
+import {useI18n} from "@/components/i18n/language-provider";
 
+const trackingTranslations:Record<string,[string,string]>={"Referral link opened":["Lien de parrainage ouvert","زيارات رابط الإحالة"],"Tracked opens since activation":["Ouvertures enregistrées depuis l'activation","الزيارات المسجلة منذ التفعيل"],"Signed-up businesses":["Entreprises inscrites","المتاجر المسجلة"],"Completed account and email verification":["Compte créé et e-mail vérifié","الحسابات التي أكملت تأكيد البريد"],"Active paid subscriptions":["Abonnements payants actifs","الاشتراكات المدفوعة النشطة"],"Currently paid and not expired":["Paiement confirmé et abonnement actif","المدفوعة والسارية حالياً"],"Last recorded referral link open:":["Dernière ouverture enregistrée :","آخر زيارة مسجلة للرابط:"],"None recorded yet":["Aucune pour le moment","لا توجد زيارات بعد"],"Referral link visits · Countries & flags":["Visites du lien · Pays et drapeaux","زيارات الرابط · الدول والأعلام"],"No referral visits recorded yet.":["Aucune visite enregistrée.","لا توجد زيارات مسجلة بعد."],"No confirmed signups through your link yet":["Aucune inscription confirmée via votre lien","لا توجد تسجيلات مؤكدة عبر رابطك بعد"],"Share your personal business referral link above. Registrations will appear after OTP verification.":["Partagez votre lien. Les inscriptions apparaissent après vérification du code.","شارك رابط الإحالة. ستظهر التسجيلات بعد تأكيد رمز التحقق."],"Unknown country":["Pays inconnu","دولة غير معروفة"],"Paid subscription active":["Abonnement payant actif","اشتراك مدفوع نشط"],"Free access granted":["Accès gratuit accordé","تم منح وصول مجاني"],"Free trial active":["Essai gratuit actif","تجربة مجانية نشطة"],"Subscription expired":["Abonnement expiré","انتهى الاشتراك"],"Trial expired":["Essai expiré","انتهت الفترة التجريبية"],"14-day trial ends":["Fin de l'essai de 14 jours","نهاية التجربة لمدة 14 يوماً"],"Payment & subscription":["Paiement et abonnement","الدفع والاشتراك"],"Paid plan expires":["Expiration de l'abonnement","انتهاء الاشتراك المدفوع"],"Access expires":["Expiration de l'accès","انتهاء الوصول"],"Trial expires":["Expiration de l'essai","انتهاء التجربة"],"Last access expired":["Dernier accès expiré","انتهى آخر وصول"],"Trial time remaining":["Temps d'essai restant","الوقت المتبقي للتجربة"],"No confirmed payment yet":["Aucun paiement confirmé","لا يوجد دفع مؤكد"],"Not subscribed yet":["Pas encore abonné","لم يشترك بعد"],"No active subscription":["Aucun abonnement actif","لا يوجد اشتراك نشط"],"Needs renewal":["Renouvellement nécessaire","يحتاج إلى تجديد"],"Previously subscribed":["Abonnement précédent","اشتراك سابق"],"Trial finished / replaced":["Essai terminé ou remplacé","انتهت التجربة أو تم استبدالها"]};
+function useTrackingLanguage(){const {language}=useI18n();return {language,tr:(key:string)=>language==="ar"?trackingTranslations[key]?.[1]??key:language==="fr"?trackingTranslations[key]?.[0]??key:key};}
 export type ReferredBusiness = {
  id:string;name:string;attributed_at:string;paid_orders:number;earned_centimes:string;
  trial_started_at:string|null;trial_ends_at:string|null;paid_started_at:string|null;paid_ends_at:string|null;
@@ -18,6 +21,7 @@ function Step({icon:Icon,label,value,note}:{icon:typeof Users;label:string;value
  </div>;
 }
 function TrackingCard({business:b}:{business:ReferredBusiness}){
+ const {tr}=useTrackingLanguage();
  const trial=b.subscription_status==="trial",paid=b.subscription_status==="subscribed";
  const wasPaid=b.subscription_status==="subscription_expired";
  const granted=b.subscription_status==="access_granted";
@@ -33,16 +37,16 @@ function TrackingCard({business:b}:{business:ReferredBusiness}){
     <h3 className="break-words text-sm font-bold text-white">{b.name}</h3>
     <p className="mt-1 text-[11px] leading-5 text-white/45"><Check className="me-1 inline size-3 text-emerald-300"/>Account created and email verified · {day(b.attributed_at)}</p>
    </div>
-   <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${badge}`}>{state}</span>
+   <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${badge}`}>{tr(state)}</span>
   </div>
   <div className="mt-4 grid min-w-0 grid-cols-1 gap-2 min-[370px]:grid-cols-2 lg:grid-cols-3">
    <div className="min-w-0 rounded-lg border border-white/5 bg-white/[.025] p-3">
-    <p className="text-[11px] text-white/40">14-day trial ends</p>
+    <p className="text-[11px] text-white/40">{tr("14-day trial ends")}</p>
     <p className="mt-1 text-xs font-semibold text-white/85">{day(b.trial_ends_at)}</p>
     <p className="mt-1 text-[11px] text-white/45">{trial?`${b.trial_days_left} days remaining`:"Trial finished / replaced"}</p>
    </div>
    <div className="min-w-0 rounded-lg border border-white/5 bg-white/[.025] p-3">
-    <p className="text-[11px] text-white/40">Payment & subscription</p>
+    <p className="text-[11px] text-white/40">{tr("Payment & subscription")}</p>
     <p className="mt-1 text-xs font-semibold text-white/85">{paid?`Paid · ${b.latest_plan_months||"—"}-month plan`:granted?"Admin-granted access · no confirmed payment":wasPaid?"Previously subscribed":trial?"Not subscribed yet":"No active subscription"}</p>
     <p className="mt-1 text-[11px] leading-5 text-white/45">{b.latest_paid_at?`Last confirmed: ${day(b.latest_paid_at)}`:"No confirmed payment yet"}</p>
    </div>
@@ -53,7 +57,7 @@ function TrackingCard({business:b}:{business:ReferredBusiness}){
    </div>
   </div>
   {trial&&<div className="mt-3">
-   <div className="mb-1 flex justify-between gap-2 text-[11px] text-white/45"><span><Clock3 className="me-1 inline size-3"/>Trial time remaining</span><span>{b.trial_days_left} day(s)</span></div>
+   <div className="mb-1 flex justify-between gap-2 text-[11px] text-white/45"><span><Clock3 className="me-1 inline size-3"/>{tr("Trial time remaining")}</span><span>{b.trial_days_left} day(s)</span></div>
    <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-sky-400/80" style={{width:trialProgress+"%"}}/></div>
   </div>}
   {b.pending_plan_months&&<div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-amber-300/20 bg-amber-300/5 p-3 text-[11px] leading-5 text-amber-200">
@@ -66,28 +70,29 @@ function TrackingCard({business:b}:{business:ReferredBusiness}){
  </article>;
 }
 type ReferralOpen={visited_at:string;country_code:string|null};
-function countryInfo(code:string|null){
- if(!code||!/^[A-Z]{2}$/.test(code))return {flag:"🌐",name:"Unknown country"};
+function countryInfo(code:string|null,language:"ar"|"fr"|"en"){
+ if(!code||!/^[A-Z]{2}$/.test(code))return {flag:"🌐",name:language==="ar"?"دولة غير معروفة":language==="fr"?"Pays inconnu":"Unknown country"};
  const flag=String.fromCodePoint(...[...code].map(c=>127397+c.charCodeAt(0)));
  let name=code;
- try{name=new Intl.DisplayNames(["en"],{type:"region"}).of(code)??code;}catch{}
+ try{name=new Intl.DisplayNames([language],{type:"region"}).of(code)??code;}catch{}
  return {flag,name};
 }
-export function AffiliateReferralTracking({visits,signups,activePaid,lastVisit,businesses,recentVisits=[]}:{visits:number;signups:number;activePaid:number;lastVisit:string|null;businesses:ReferredBusiness[];recentVisits?:ReferralOpen[]}){
+export function AffiliateReferralTracking({visits,signups,activePaid,lastVisit,businesses,recentVisits=[]}:{visits:number;signups:number;activePaid:number;lastVisit:string|null;businesses:ReferredBusiness[];recentVisits?:ReferralOpen[];language?:"ar"|"fr"|"en"}){
+ const {language,tr}=useTrackingLanguage();
  return <div className="min-w-0 space-y-4">
   <div className="grid min-w-0 grid-cols-1 gap-2 min-[340px]:grid-cols-2 lg:grid-cols-3">
-   <Step icon={Eye} label="Referral link opened" value={visits} note="Tracked opens since activation"/>
-   <Step icon={Users} label="Signed-up businesses" value={signups} note="Completed account and email verification"/>
-   <Step icon={BadgeCheck} label="Active paid subscriptions" value={activePaid} note="Currently paid and not expired"/>
+   <Step icon={Eye} label={tr("Referral link opened")} value={visits} note={tr("Tracked opens since activation")}/>
+   <Step icon={Users} label={tr("Signed-up businesses")} value={signups} note={tr("Completed account and email verification")}/>
+   <Step icon={BadgeCheck} label={tr("Active paid subscriptions")} value={activePaid} note={tr("Currently paid and not expired")}/>
   </div>
-  <p className="text-[11px] font-medium text-[#efbd5d]/80">Last recorded referral link open: {lastVisit?day(lastVisit):"None recorded yet"}</p>
+  <p className="text-[11px] font-medium text-[#efbd5d]/80">{tr("Last recorded referral link open:")} {lastVisit?day(lastVisit):tr("None recorded yet")}</p>
   <p className="text-[11px] leading-5 text-white/40">An opened link does not identify the visitor. A business appears below only after account creation and email verification. Link visits are approximate; private browsing, opt-outs and reloads may affect the count. Earlier visits cannot be recovered.</p>
   <section className="rounded-xl border border-white/10 bg-black/20 p-3 sm:p-4">
-   <h3 className="text-sm font-semibold text-white">Referral link visits · Countries & flags</h3>
+   <h3 className="text-sm font-semibold text-white">{tr("Referral link visits · Countries & flags")}</h3>
    <p className="mt-1 text-[11px] leading-5 text-white/45">Latest 100 recorded opens. Country is approximate (Vercel edge), not a visitor&apos;s precise location. Anonymous visits only; no IP addresses or visitor identities are shown. Older country data is unavailable.</p>
-   {!recentVisits.length?<p className="mt-3 rounded-lg border border-dashed border-white/10 p-4 text-xs text-white/50">No referral visits recorded yet.</p>:
+   {!recentVisits.length?<p className="mt-3 rounded-lg border border-dashed border-white/10 p-4 text-xs text-white/50">{tr("No referral visits recorded yet.")}</p>:
     <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
-     {recentVisits.map((visit,index)=>{const geo=countryInfo(visit.country_code);return <div key={visit.visited_at+index} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[.025] px-3 py-2">
+     {recentVisits.map((visit,index)=>{const geo=countryInfo(visit.country_code,language);return <div key={visit.visited_at+index} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[.025] px-3 py-2">
       <span className="flex items-center gap-2 text-xs text-white/85"><span aria-hidden="true" className="text-lg">{geo.flag}</span>{geo.name}</span>
       <time className="text-[11px] text-white/45" dateTime={visit.visited_at}>{new Date(visit.visited_at).toLocaleString("fr-MA",{timeZone:"Africa/Casablanca",dateStyle:"medium",timeStyle:"short"})}</time>
      </div>;})}
@@ -95,8 +100,8 @@ export function AffiliateReferralTracking({visits,signups,activePaid,lastVisit,b
   </section>
   {businesses.length?<div className="space-y-3">{businesses.map(b=><TrackingCard key={b.id} business={b}/>)}</div>:
    <div className="rounded-xl border border-dashed border-white/15 px-4 py-8 text-center">
-    <p className="text-sm font-semibold text-white/70">No confirmed signups through your link yet</p>
-    <p className="mt-2 text-xs leading-5 text-white/45">Share your personal business referral link above. Registrations will appear after OTP verification.</p>
+    <p className="text-sm font-semibold text-white/70">{tr("No confirmed signups through your link yet")}</p>
+    <p className="mt-2 text-xs leading-5 text-white/45">{tr("Share your personal business referral link above. Registrations will appear after OTP verification.")}</p>
    </div>}
  </div>;
 }
