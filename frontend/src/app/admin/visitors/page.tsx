@@ -25,6 +25,7 @@ function Metric({label,value,note,icon:Icon}:{label:string;value:string;note:str
  return <div className={card}><div className="flex min-w-0 items-start justify-between gap-3"><p className="text-xs font-semibold text-white/50">{label}</p><Icon className="size-5 shrink-0 text-[#efbd5d]"/></div><p className="mt-3 text-2xl font-bold text-white sm:text-3xl">{value}</p><p className="mt-1 text-[11px] leading-5 text-white/40">{note}</p></div>;
 }
 function Ranking({title,items,formatter,scrollable=false}:{title:string;items:Array<{label:string;value:number;subtitle?:string;flagCode?:string|null}>;formatter?:(value:number)=>string;scrollable?:boolean}){
+ const {t:tr}=useI18n();
  const max=Math.max(1,...items.map(x=>number(x.value)));
  return <section className={card}>
   <h2 className="mb-5 text-base font-semibold text-white">{title}</h2>
