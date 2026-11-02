@@ -1593,5 +1593,14 @@
   "Make customer contact details private": "إخفاء معلومات اتصال العملاء",
   "Off by default: the platform administrator can view customer emails and phone numbers. Turn on to hide contact details in the admin directory. Your business keeps access to its own customers. If any connected business enables privacy, the shared customer's contact details remain hidden.": "معطّل افتراضياً: يمكن لمسؤول المنصة رؤية بريد العملاء وأرقام هواتفهم. فعّله لإخفائها من دليل الإدارة. يحتفظ متجرك بإمكانية الوصول إلى عملائه. وإذا فعّل متجر مرتبط الخصوصية، تبقى بيانات العميل المشتركة مخفية.",
   "Customer contact details are visible to the platform administrator.": "معلومات اتصال العملاء ظاهرة لمسؤول المنصة.",
-  "Customer contact details are private in the admin panel.": "معلومات اتصال العملاء مخفية في لوحة الإدارة."
+  "Customer contact details are private in the admin panel.": "معلومات اتصال العملاء مخفية في لوحة الإدارة.",
+  "Use my current location": "استخدام موقعي الحالي",
+  "Locating…": "جارٍ تحديد الموقع…",
+  "Save Discover profile": "حفظ ملف اكتشف",
+  "Coordinates added to the form. Save to publish the location.": "تمت إضافة الإحداثيات إلى النموذج. احفظ لنشر الموقع.",
+  "Discover profile saved. Public visitors can now filter your business by its details.": "تم حفظ ملف اكتشف. يمكن للزوار الآن العثور على متجرك باستخدام تفاصيله.",
+  "Your browser does not support location access.": "متصفحك لا يدعم الوصول إلى الموقع.",
+  "Location permission denied or unavailable. You can enter coordinates manually.": "تم رفض إذن الموقع أو أنه غير متاح. يمكنك إدخال الإحداثيات يدوياً.",
+  "Could not save Discover profile.": "تعذر حفظ ملف اكتشف.",
+  "Unable to load Discover settings.": "تعذر تحميل إعدادات اكتشف."
 }
