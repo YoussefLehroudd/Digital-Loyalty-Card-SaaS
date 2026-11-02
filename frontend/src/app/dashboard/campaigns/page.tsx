@@ -13,10 +13,10 @@ type Automation={id:string;name:string;title:string;message:string;segment:Segme
 type Analytics={recipients:number;emails_sent:number;emails_waiting:number;viewed:number;returned_7d:number};
 type DeliveredRecipient={customer_id:string;customer_name:string;notified_at:string;read_at:string|null;email_state:string};
 const segments:{value:Segment;name:string;description:string;icon:typeof Users}[]=[
- {value:"all",name:trI18n("All opted-in customers"),description:"Customers who enabled Promotions",icon:Users},
- {value:"inactive_30",name:trI18n("Win back after 30 days"),description:"Joined 30+ days ago, no recent visits",icon:Clock},
- {value:"one_away",name:trI18n("One stamp away"),description:"Only 1 stamp remaining until a reward",icon:Gift},
- {value:"new_7",name:trI18n("Welcome new members"),description:"Registered at the business within 7 days",icon:Bell}
+ {value:"all",name:"All opted-in customers",description:"Customers who enabled Promotions",icon:Users},
+ {value:"inactive_30",name:"Win back after 30 days",description:"Joined 30+ days ago, no recent visits",icon:Clock},
+ {value:"one_away",name:"One stamp away",description:"Only 1 stamp remaining until a reward",icon:Gift},
+ {value:"new_7",name:"Welcome new members",description:"Registered at the business within 7 days",icon:Bell}
 ];
 const panel="min-w-0 rounded-2xl border border-[#ecb95e]/15 bg-[#10130f]/95 p-4 sm:p-6";
 const input="mt-1.5 block w-full min-w-0 rounded-xl border border-white/15 bg-[#0a0d0a] px-3 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#ecb95e]/50";
@@ -162,7 +162,7 @@ export default function BusinessCampaignsPage(){
       <fieldset className="space-y-2"><legend className="mb-2 text-xs font-semibold text-white/70">{trI18n("Target audience")}</legend>
        {segments.map(item=><label key={item.value} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition ${segment===item.value?"border-[#efbd5d]/50 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
         <input type="radio" name="segment" className="accent-[#efbd5d]" checked={segment===item.value} onChange={()=>setSegment(item.value)}/><item.icon className="size-5 shrink-0 text-[#efbd5d]"/>
-        <span className="min-w-0"><span className="block text-sm font-semibold text-white">{item.name}</span><span className="block text-xs text-white/45">{item.description}</span></span>
+        <span className="min-w-0"><span className="block text-sm font-semibold text-white">{trI18n(item.name)}</span><span className="block text-xs text-white/45">{trI18n(item.description)}</span></span>
        </label>)}
       </fieldset>
       <fieldset><legend className="mb-2 text-xs font-semibold text-white/70">{trI18n("Delivery channel")}</legend>
