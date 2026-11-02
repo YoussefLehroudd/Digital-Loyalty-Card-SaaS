@@ -67,14 +67,14 @@ export function RoleAppInstallPanel({role,token}:{role:Role;token:string|null}){
  };
  return <div className="space-y-5">
   <section className="rounded-2xl border border-[#edbc62]/25 bg-[#11130f] p-5 sm:p-6">
-   <div className="flex items-center gap-4"><img src={app.icon} width={64} height={64} alt="LOYVANCE app icon" className="size-16 rounded-2xl border border-[#edbc62]/20"/>
+   <div className="flex items-center gap-4"><img src={app.icon} width={64} height={64} alt={t("LOYVANCE app icon")} className="size-16 rounded-2xl border border-[#edbc62]/20"/>
     <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-[.19em] text-[#edbc62]">{t("INSTALL YOUR APP")}</p><h2 className="mt-1 text-xl font-bold text-white">{app.name}</h2><p className="mt-1 text-sm text-white/55">{t("Launch your own workspace from the Home Screen.")}</p></div>
    </div>
    {otherAppWindow?<div role="status" className="mt-4 rounded-xl border border-[#edbc62]/25 bg-[#edbc62]/10 p-3 text-sm leading-6 text-[#edbc62]">
       You are currently using a different installed LOYVANCE app. To install <strong>{app.name}</strong> as a second app, open this page in your normal browser.
    </div>:null}
    <p className="mt-4 text-sm leading-6 text-white/65">
-     {role==="admin"?"Install the separate administrator PWA to launch the private platform panel. Only authorized administrators can access its data.":role==="business"?"Open your business tools, QR scanner and dashboard quickly, without searching for the website.":"Keep your loyalty cards, rewards and QR code one tap away on your phone."}
+     {role==="admin"?t("Install the separate administrator PWA to launch the private platform panel. Only authorized administrators can access its data."):role==="business"?t("Open your business tools, QR scanner and dashboard quickly, without searching for the website."):t("Keep your loyalty cards, rewards and QR code one tap away on your phone.")}
    </p>
    <div className="mt-4 flex flex-wrap gap-3">
     <button type="button" disabled={busy||standalone} onClick={()=>void install()} className="flex items-center gap-2 rounded-xl bg-[#edbc62] px-5 py-3 text-sm font-bold text-black disabled:opacity-55">
