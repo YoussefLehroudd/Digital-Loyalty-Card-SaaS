@@ -1580,5 +1580,18 @@
   "Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.": "Seuls les membres consentants sont éligibles. Les e-mails exigent également l’accord pour les mises à jour ; aucune liste de contacts n’est exportée.",
   "Passkeys need a compatible device and HTTPS. You can always continue using email and password.": "Les clés d’accès nécessitent un appareil compatible et HTTPS. Vous pouvez toujours utiliser votre e-mail et mot de passe.",
   "Confirm your account password to protect this privileged workspace": "Confirmez votre mot de passe pour protéger cet espace privilégié",
-  "Your normal login stays available as a fallback. You can register or remove multiple passkeys from this account.": "La connexion habituelle reste disponible. Vous pouvez ajouter ou supprimer plusieurs clés d’accès."
+  "Your normal login stays available as a fallback. You can register or remove multiple passkeys from this account.": "La connexion habituelle reste disponible. Vous pouvez ajouter ou supprimer plusieurs clés d’accès.",
+  "Google Maps & customer reviews": "Google Maps et avis clients",
+  "Add your exact Google Maps business location and your direct Google review-request link. These buttons will appear on your business card in Explore Businesses.": "Ajoutez l’emplacement précis de votre commerce sur Google Maps et le lien direct pour demander des avis. Ces boutons apparaîtront sur la fiche de votre commerce dans Explorer les entreprises.",
+  "Google Maps location link": "Lien de localisation Google Maps",
+  "Preview location on Google Maps": "Voir l’emplacement sur Google Maps",
+  "Direct Google Reviews link": "Lien direct vers les avis Google",
+  "Preview direct review link": "Voir le lien direct des avis",
+  "To get the exact review link: open your Google Business Profile on desktop, select Read reviews → Get more reviews → Copy link. Leave either field blank to hide that button.": "Pour obtenir le lien direct : ouvrez votre fiche d'établissement Google sur ordinateur, puis Avis → Recevoir plus d’avis → Copier le lien. Laissez un champ vide pour masquer son bouton.",
+  "Google instructions for getting a review link": "Instructions Google pour obtenir le lien d’avis",
+  "Choose whether to hide customer contact details from the platform administrator. Existing privacy choices are respected.": "Choisissez si vous souhaitez masquer les coordonnées de vos clients à l’administrateur de la plateforme. Les choix de confidentialité existants sont respectés.",
+  "Make customer contact details private": "Masquer les coordonnées des clients",
+  "Off by default: the platform administrator can view customer emails and phone numbers. Turn on to hide contact details in the admin directory. Your business keeps access to its own customers. If any connected business enables privacy, the shared customer's contact details remain hidden.": "Désactivé par défaut : l’administrateur peut voir les e-mails et numéros de téléphone des clients. Activez pour les masquer dans l’annuaire administratif. Votre commerce conserve l’accès à ses propres clients. Si un commerce lié active la confidentialité, les coordonnées partagées restent masquées.",
+  "Customer contact details are visible to the platform administrator.": "Les coordonnées des clients sont visibles par l’administrateur de la plateforme.",
+  "Customer contact details are private in the admin panel.": "Les coordonnées des clients sont masquées dans le panneau d’administration."
 }
