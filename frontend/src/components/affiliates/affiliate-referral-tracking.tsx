@@ -84,7 +84,7 @@ export function AffiliateReferralTracking({visits,signups,activePaid,lastVisit,b
   <p className="text-[11px] leading-5 text-white/40">An opened link does not identify the visitor. A business appears below only after account creation and email verification. Link visits are approximate; private browsing, opt-outs and reloads may affect the count. Earlier visits cannot be recovered.</p>
   <section className="rounded-xl border border-white/10 bg-black/20 p-3 sm:p-4">
    <h3 className="text-sm font-semibold text-white">Referral link visits · Countries & flags</h3>
-   <p className="mt-1 text-[11px] leading-5 text-white/45">Latest 100 recorded opens. Country is approximate (Vercel edge), not a visitor's precise location. Anonymous visits only; no IP addresses or visitor identities are shown. Older country data is unavailable.</p>
+   <p className="mt-1 text-[11px] leading-5 text-white/45">Latest 100 recorded opens. Country is approximate (Vercel edge), not a visitor&apos;s precise location. Anonymous visits only; no IP addresses or visitor identities are shown. Older country data is unavailable.</p>
    {!recentVisits.length?<p className="mt-3 rounded-lg border border-dashed border-white/10 p-4 text-xs text-white/50">No referral visits recorded yet.</p>:
     <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
      {recentVisits.map((visit,index)=>{const geo=countryInfo(visit.country_code);return <div key={visit.visited_at+index} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[.025] px-3 py-2">
