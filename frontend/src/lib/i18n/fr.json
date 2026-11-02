@@ -1593,5 +1593,14 @@
   "Make customer contact details private": "Masquer les coordonnées des clients",
   "Off by default: the platform administrator can view customer emails and phone numbers. Turn on to hide contact details in the admin directory. Your business keeps access to its own customers. If any connected business enables privacy, the shared customer's contact details remain hidden.": "Désactivé par défaut : l’administrateur peut voir les e-mails et numéros de téléphone des clients. Activez pour les masquer dans l’annuaire administratif. Votre commerce conserve l’accès à ses propres clients. Si un commerce lié active la confidentialité, les coordonnées partagées restent masquées.",
   "Customer contact details are visible to the platform administrator.": "Les coordonnées des clients sont visibles par l’administrateur de la plateforme.",
-  "Customer contact details are private in the admin panel.": "Les coordonnées des clients sont masquées dans le panneau d’administration."
+  "Customer contact details are private in the admin panel.": "Les coordonnées des clients sont masquées dans le panneau d’administration.",
+  "Use my current location": "Utiliser ma position actuelle",
+  "Locating…": "Localisation en cours…",
+  "Save Discover profile": "Enregistrer le profil Discover",
+  "Coordinates added to the form. Save to publish the location.": "Coordonnées ajoutées au formulaire. Enregistrez pour publier l’emplacement.",
+  "Discover profile saved. Public visitors can now filter your business by its details.": "Profil Discover enregistré. Les visiteurs peuvent désormais filtrer votre établissement selon ses informations.",
+  "Your browser does not support location access.": "Votre navigateur ne prend pas en charge la géolocalisation.",
+  "Location permission denied or unavailable. You can enter coordinates manually.": "Accès à la localisation refusé ou indisponible. Saisissez les coordonnées manuellement.",
+  "Could not save Discover profile.": "Impossible d’enregistrer le profil Discover.",
+  "Unable to load Discover settings.": "Impossible de charger les paramètres Discover."
 }
