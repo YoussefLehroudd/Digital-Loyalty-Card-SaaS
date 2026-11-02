@@ -13,10 +13,10 @@ type Automation={id:string;name:string;title:string;message:string;segment:Segme
 type Analytics={recipients:number;emails_sent:number;emails_waiting:number;viewed:number;returned_7d:number};
 type DeliveredRecipient={customer_id:string;customer_name:string;notified_at:string;read_at:string|null;email_state:string};
 const segments:{value:Segment;name:string;description:string;icon:typeof Users}[]=[
- {value:"all",name:"All opted-in customers",description:"Customers who enabled Promotions",icon:Users},
- {value:"inactive_30",name:"Win back after 30 days",description:"Joined 30+ days ago, no recent visits",icon:Clock},
- {value:"one_away",name:"One stamp away",description:"Only 1 stamp remaining until a reward",icon:Gift},
- {value:"new_7",name:"Welcome new members",description:"Registered at the business within 7 days",icon:Bell}
+ {value:"all",name:trI18n("All opted-in customers"),description:"Customers who enabled Promotions",icon:Users},
+ {value:"inactive_30",name:trI18n("Win back after 30 days"),description:"Joined 30+ days ago, no recent visits",icon:Clock},
+ {value:"one_away",name:trI18n("One stamp away"),description:"Only 1 stamp remaining until a reward",icon:Gift},
+ {value:"new_7",name:trI18n("Welcome new members"),description:"Registered at the business within 7 days",icon:Bell}
 ];
 const panel="min-w-0 rounded-2xl border border-[#ecb95e]/15 bg-[#10130f]/95 p-4 sm:p-6";
 const input="mt-1.5 block w-full min-w-0 rounded-xl border border-white/15 bg-[#0a0d0a] px-3 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#ecb95e]/50";
@@ -153,12 +153,12 @@ export default function BusinessCampaignsPage(){
    {success?<p role="status" className="break-words rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-sm text-emerald-200">{success}</p>:null}
    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,.95fr)]">
     <section id="campaign-editor" className={panel+" scroll-mt-24"}>
-     <h2 className="flex items-center gap-2 text-lg font-semibold text-white"><Megaphone className="size-5 text-[#efbd5d]"/>{editingId?"Edit campaign":copyFrom?"Edit as new draft":"Create a campaign"}</h2>
-     {copyFrom?<p className="mt-2 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-xs text-amber-100">Previously delivered messages cannot be changed. This creates a new editable draft.</p>:null}
-     {editingId?<p className="mt-2 text-xs text-white/55">Scheduled campaigns keep the original delivery time.</p>:null}
+     <h2 className="flex items-center gap-2 text-lg font-semibold text-white"><Megaphone className="size-5 text-[#efbd5d]"/>{editingId?"Edit campaign":copyFrom?"Edit as new draft":trI18n("Create a campaign")}</h2>
+     {copyFrom?<p className="mt-2 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-xs text-amber-100">{trI18n("Previously delivered messages cannot be changed. This creates a new editable draft.")}</p>:null}
+     {editingId?<p className="mt-2 text-xs text-white/55">{trI18n("Scheduled campaigns keep the original delivery time.")}</p>:null}
      <form onSubmit={e=>void create(e)} className="mt-4 space-y-4">
       <label className="block text-xs font-medium text-white/60">{trI18n("Campaign title")}<input className={input} maxLength={80} minLength={3} required value={title} onChange={e=>setTitle(e.target.value)} placeholder="A special offer from your business"/></label>
-      <label className="block text-xs font-medium text-white/60">Message<textarea className={input+" min-h-28 resize-y"} maxLength={300} minLength={10} required value={message} onChange={e=>setMessage(e.target.value)}/><span className="mt-1 block text-right text-[11px] text-white/40">{message.length}/300</span></label>
+      <label className="block text-xs font-medium text-white/60">{trI18n("Message")}<textarea className={input+" min-h-28 resize-y"} maxLength={300} minLength={10} required value={message} onChange={e=>setMessage(e.target.value)}/><span className="mt-1 block text-right text-[11px] text-white/40">{message.length}/300</span></label>
       <fieldset className="space-y-2"><legend className="mb-2 text-xs font-semibold text-white/70">{trI18n("Target audience")}</legend>
        {segments.map(item=><label key={item.value} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-left transition ${segment===item.value?"border-[#efbd5d]/50 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
         <input type="radio" name="segment" className="accent-[#efbd5d]" checked={segment===item.value} onChange={()=>setSegment(item.value)}/><item.icon className="size-5 shrink-0 text-[#efbd5d]"/>
@@ -167,28 +167,28 @@ export default function BusinessCampaignsPage(){
       </fieldset>
       <fieldset><legend className="mb-2 text-xs font-semibold text-white/70">{trI18n("Delivery channel")}</legend>
        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-xs ${channel==="inapp"?"border-[#efbd5d]/50 text-[#efbd5d]":"border-white/10 text-white/65"}`}><input type="radio" checked={channel==="inapp"} onChange={()=>setChannel("inapp")}/><Bell className="size-4"/>In-app notifications</label>
-        <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-xs ${channel==="inapp_email"?"border-[#efbd5d]/50 text-[#efbd5d]":"border-white/10 text-white/65"}`}><input type="radio" checked={channel==="inapp_email"} onChange={()=>setChannel("inapp_email")}/><Mail className="size-4"/>In-app + email</label>
+        <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-xs ${channel==="inapp"?"border-[#efbd5d]/50 text-[#efbd5d]":"border-white/10 text-white/65"}`}><input type="radio" checked={channel==="inapp"} onChange={()=>setChannel("inapp")}/><Bell className="size-4"/>{trI18n("In-app notifications")}</label>
+        <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-xs ${channel==="inapp_email"?"border-[#efbd5d]/50 text-[#efbd5d]":"border-white/10 text-white/65"}`}><input type="radio" checked={channel==="inapp_email"} onChange={()=>setChannel("inapp_email")}/><Mail className="size-4"/>{trI18n("In-app + email")}</label>
        </div>
       </fieldset>
-      <p className="flex items-start gap-2 rounded-xl bg-[#efbd5d]/5 p-3 text-xs leading-5 text-white/60"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#efbd5d]"/>Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.</p>
+      <p className="flex items-start gap-2 rounded-xl bg-[#efbd5d]/5 p-3 text-xs leading-5 text-white/60"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#efbd5d]"/>{trI18n("Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.")}</p>
       <button type="submit" disabled={busy||title.trim().length<3||message.trim().length<10} className={primary+" w-full"}>{busy?<Loader2 className="size-4 animate-spin"/>:<Megaphone className="size-4"/>}{editingId?"Save changes":copyFrom?"Create edited draft":"Save draft campaign"}</button>
-      {(editingId||copyFrom)?<button type="button" className={secondary+" w-full"} disabled={busy} onClick={clearEditor}><X className="size-4"/>Cancel editing</button>:null}
+      {(editingId||copyFrom)?<button type="button" className={secondary+" w-full"} disabled={busy} onClick={clearEditor}><X className="size-4"/>{trI18n("Cancel editing")}</button>:null}
      </form>
     </section>
     <div className="min-w-0 space-y-4">
      <section className={panel}>
       <h2 className="flex items-center gap-2 text-base font-semibold text-white"><CalendarClock className="size-5 text-[#efbd5d]"/>{trI18n("Campaign history")}</h2>
       {deliveryNotice?<div role="status" className={`mt-3 rounded-xl border p-3 text-xs leading-5 ${deliveryNotice.kind==="warning"?"border-amber-400/40 bg-amber-400/10 text-amber-100":"border-emerald-400/30 bg-emerald-400/10 text-emerald-100"}`}>{deliveryNotice.text}</div>:null}
-      {loading?<p className="mt-4 flex items-center gap-2 text-sm text-white/50"><Loader2 className="size-4 animate-spin"/>Loading…</p>:!campaigns.length?<p className="mt-4 text-sm text-white/45">No campaigns created yet. Save a draft to start.</p>:<div className="mt-4 max-h-[460px] space-y-2 overflow-y-auto">
+      {loading?<p className="mt-4 flex items-center gap-2 text-sm text-white/50"><Loader2 className="size-4 animate-spin"/>Loading…</p>:!campaigns.length?<p className="mt-4 text-sm text-white/45">{trI18n("No campaigns created yet. Save a draft to start.")}</p>:<div className="mt-4 max-h-[460px] space-y-2 overflow-y-auto">
         {campaigns.map(c=><div key={c.id} className={`min-w-0 rounded-xl border p-3 transition ${selected===c.id?"border-[#efbd5d]/45 bg-[#efbd5d]/10":"border-white/10 hover:border-white/25"}`}>
          <button type="button" onClick={()=>void inspect(c.id)} className="flex w-full min-w-0 items-start justify-between gap-2 text-left" aria-label={`View campaign ${c.title}`}>
           <span className="min-w-0"><span className="block break-words text-sm font-semibold text-white">{c.title}</span><span className="mt-1 block text-[11px] text-white/45">{labelOf(c.segment)} · {date(c.created_at)}</span></span>
           <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${c.status==="sent"?"bg-emerald-400/10 text-emerald-300":c.status==="scheduled"?"bg-blue-400/10 text-blue-300":"bg-white/10 text-white/60"}`}>{c.status}</span>
          </button>
          <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-2">
-          <button type="button" disabled={busy||c.status==="processing"} onClick={()=>editCampaign(c)} className={secondary+" min-h-9 px-3 py-1.5"} aria-label={`Edit campaign ${c.title}`} title={c.status==="sent"||c.status==="cancelled"?"Create editable copy":"Edit this campaign"}><Pencil className="size-3.5"/>Edit</button>
-          <button type="button" disabled={busy||c.status==="processing"} onClick={()=>deleteCampaign(c)} className={secondary+" min-h-9 border-rose-400/20 px-3 py-1.5 text-rose-300"} aria-label={`Delete campaign ${c.title}`}><Trash2 className="size-3.5"/>Delete</button>
+          <button type="button" disabled={busy||c.status==="processing"} onClick={()=>editCampaign(c)} className={secondary+" min-h-9 px-3 py-1.5"} aria-label={`Edit campaign ${c.title}`} title={c.status==="sent"||c.status==="cancelled"?"Create editable copy":"Edit this campaign"}><Pencil className="size-3.5"/>{trI18n("Edit")}</button>
+          <button type="button" disabled={busy||c.status==="processing"} onClick={()=>deleteCampaign(c)} className={secondary+" min-h-9 border-rose-400/20 px-3 py-1.5 text-rose-300"} aria-label={`Delete campaign ${c.title}`}><Trash2 className="size-3.5"/>{trI18n("Delete")}</button>
          </div>
         </div>)}
        </div>}
@@ -196,19 +196,19 @@ export default function BusinessCampaignsPage(){
      {selectedCampaign?<section className={panel}>
       <h2 className="break-words text-base font-semibold text-white">{selectedCampaign.title}</h2>
       <p className="mt-2 break-words text-sm leading-6 text-white/60">{selectedCampaign.message}</p>
-      {selectedCampaign.status==="sent"&&analytics&&analytics.recipients===0?<div role="alert" className="mt-4 rounded-xl border border-amber-400/35 bg-amber-400/10 p-3 text-sm text-amber-100"><div className="flex items-center gap-2 font-semibold"><Bell className="size-4"/>No customers notified</div><p className="mt-1 text-xs leading-5">This campaign was processed, but no in-app notifications were created. Possible reasons: promotional opt-in changed, recipient eligibility changed, or the 7-day business / 48-hour global campaign frequency limits. Status “sent” does not confirm phone push delivery.</p></div>:null}
+      {selectedCampaign.status==="sent"&&analytics&&analytics.recipients===0?<div role="alert" className="mt-4 rounded-xl border border-amber-400/35 bg-amber-400/10 p-3 text-sm text-amber-100"><div className="flex items-center gap-2 font-semibold"><Bell className="size-4"/>{trI18n("No customers notified")}</div><p className="mt-1 text-xs leading-5">This campaign was processed, but no in-app notifications were created. Possible reasons: promotional opt-in changed, recipient eligibility changed, or the 7-day business / 48-hour global campaign frequency limits. Status “sent” does not confirm phone push delivery.</p></div>:null}
       {selectedCampaign.status==="sent"&&analytics&&analytics.recipients>0?<p className="mt-3 rounded-xl border border-emerald-400/25 bg-emerald-400/5 p-3 text-xs text-emerald-100">{analytics.recipients} in-app notification{analytics.recipients===1?"":"s"} created. This does not confirm push delivery to a phone.</p>:null}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
        {([{label:"Eligible",value:audience?.eligible??"…",icon:Users},{label:"Notified",value:analytics?.recipients??"…",icon:Bell},{label:"Viewed",value:analytics?.viewed??"…",icon:CheckCheck},{label:"Emails sent",value:analytics?.emails_sent??"…",icon:Mail},{label:"Visited in 7d",value:analytics?.returned_7d??"…",icon:Users}]).map(k=><div key={k.label} className="min-w-0 rounded-xl border border-white/10 bg-black/15 p-2.5"><k.icon className="size-4 text-[#efbd5d]"/><p className="mt-2 break-words text-lg font-bold text-white">{k.value}</p><p className="text-[10px] text-white/45">{k.label}</p></div>)}
       </div>
       <section className="mt-5 min-w-0 rounded-xl border border-white/10 bg-black/15 p-3 sm:p-4" aria-label="Delivered recipients">
         <div className="flex flex-wrap items-center justify-between gap-2">
-         <h3 className="flex items-center gap-2 text-sm font-semibold text-white"><Users className="size-4 text-[#efbd5d]"/>Notified customers</h3>
+         <h3 className="flex items-center gap-2 text-sm font-semibold text-white"><Users className="size-4 text-[#efbd5d]"/>{trI18n("Notified customers")}</h3>
          <span className="rounded-full bg-[#efbd5d]/10 px-2.5 py-1 text-xs font-semibold text-[#efbd5d]">{delivered?.length??"…"} notified</span>
         </div>
-        <p className="mt-1 text-[11px] leading-5 text-white/45">Customers from your business who received an in-app notification. No contact details exposed.</p>
+        <p className="mt-1 text-[11px] leading-5 text-white/45">{trI18n("Customers from your business who received an in-app notification. No contact details exposed.")}</p>
         {delivered===null?<p className="mt-3 flex items-center gap-2 text-xs text-white/50"><Loader2 className="size-4 animate-spin"/>Loading recipients…</p>:
-         delivered.length===0?<p className="mt-3 rounded-lg border border-white/10 p-3 text-xs text-white/50">No customers were notified for this campaign.</p>:
+         delivered.length===0?<p className="mt-3 rounded-lg border border-white/10 p-3 text-xs text-white/50">{trI18n("No customers were notified for this campaign.")}</p>:
          <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
           {delivered.map((recipient,idx)=><div key={recipient.customer_id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[.025] p-3">
            <div className="flex min-w-0 items-center gap-3">
@@ -223,22 +223,22 @@ export default function BusinessCampaignsPage(){
           </div>)}
          </div>}
        </section>
-       {audience?.limited?<p className="mt-3 text-xs text-amber-200">Audience exceeds the 500-recipient limit; narrow the segment before sending.</p>:null}
+       {audience?.limited?<p className="mt-3 text-xs text-amber-200">{trI18n("Audience exceeds the 500-recipient limit; narrow the segment before sending.")}</p>:null}
       <p className="mt-3 text-[11px] leading-5 text-white/40">7-day visits show observed activity after notification, not proof the campaign caused the visit.</p>
       {selectedCampaign.status==="draft"?<div className="mt-4 space-y-3">
-        <button disabled={busy||!audience||audience.limited} className={primary+" w-full"} type="button" onClick={()=>void action(selectedCampaign.id,"send")}><Play className="size-4"/>Send now</button>
-        <label className="block text-xs text-white/55">Schedule delivery (local time)<input type="datetime-local" className={input} value={schedule} onChange={e=>setSchedule(e.target.value)}/></label>
-        <button disabled={busy||!schedule} className={secondary+" w-full"} type="button" onClick={()=>void action(selectedCampaign.id,"schedule")}><CalendarClock className="size-4"/>Schedule campaign</button>
-        </div>:selectedCampaign.status==="scheduled"?<div className="mt-4"><p className="text-xs text-white/55">Scheduled: {date(selectedCampaign.scheduled_at)}. The daily delivery processor runs campaigns at or after the chosen time.</p><button type="button" disabled={busy} className={secondary+" mt-3 w-full"} onClick={()=>void action(selectedCampaign.id,"cancel")}>Cancel scheduled campaign</button></div>:<p className="mt-4 text-xs text-white/45">{selectedCampaign.status==="sent"?"Delivered to opted-in members; email processing may continue on the next run.":"Campaign cancelled."} Email jobs pending: {analytics?.emails_waiting??0}.</p>}
+        <button disabled={busy||!audience||audience.limited} className={primary+" w-full"} type="button" onClick={()=>void action(selectedCampaign.id,"send")}><Play className="size-4"/>{trI18n("Send now")}</button>
+        <label className="block text-xs text-white/55">{trI18n("Schedule delivery (local time)")}<input type="datetime-local" className={input} value={schedule} onChange={e=>setSchedule(e.target.value)}/></label>
+        <button disabled={busy||!schedule} className={secondary+" w-full"} type="button" onClick={()=>void action(selectedCampaign.id,"schedule")}><CalendarClock className="size-4"/>{trI18n("Schedule campaign")}</button>
+        </div>:selectedCampaign.status==="scheduled"?<div className="mt-4"><p className="text-xs text-white/55">Scheduled: {date(selectedCampaign.scheduled_at)}. The daily delivery processor runs campaigns at or after the chosen time.</p><button type="button" disabled={busy} className={secondary+" mt-3 w-full"} onClick={()=>void action(selectedCampaign.id,"cancel")}>{trI18n("Cancel scheduled campaign")}</button></div>:<p className="mt-4 text-xs text-white/45">{selectedCampaign.status==="sent"?"Delivered to opted-in members; email processing may continue on the next run.":"Campaign cancelled."} Email jobs pending: {analytics?.emails_waiting??0}.</p>}
      </section>:null}
      <section className={panel}>
       <h2 className="flex items-center gap-2 text-base font-semibold text-white"><Zap className="size-5 text-[#efbd5d]"/>{trI18n("Smart automations")}</h2>
-      <p className="mt-2 text-xs leading-5 text-white/50">Recurring reminders are created paused, and run at most once per configured interval. Global and business send limits still apply.</p>
+      <p className="mt-2 text-xs leading-5 text-white/50">{trI18n("Recurring reminders are created paused, and run at most once per configured interval. Global and business send limits still apply.")}</p>
       <form className="mt-4 space-y-3" onSubmit={e=>void createAutomation(e)}>
-       <label className="block text-xs text-white/60">Automation name<input className={input} value={automationName} minLength={3} maxLength={60} required onChange={e=>setAutomationName(e.target.value)}/></label>
-       <label className="block text-xs text-white/60">Repeat interval<select className={input} value={automationInterval} onChange={e=>setAutomationInterval(Number(e.target.value))}><option value={7}>Every 7 days</option><option value={14}>Every 14 days</option><option value={30}>Every 30 days</option></select></label>
-       <p className="text-xs leading-5 text-white/45">Uses the title, message, channel and segment from the campaign form. Select Win-back, One stamp away or Welcome first.</p>
-       <button type="submit" disabled={busy||segment==="all"||message.length<10} className={secondary+" w-full"}><Zap className="size-4"/>Create paused automation</button>
+       <label className="block text-xs text-white/60">{trI18n("Automation name")}<input className={input} value={automationName} minLength={3} maxLength={60} required onChange={e=>setAutomationName(e.target.value)}/></label>
+       <label className="block text-xs text-white/60">{trI18n("Repeat interval")}<select className={input} value={automationInterval} onChange={e=>setAutomationInterval(Number(e.target.value))}><option value={7}>{trI18n("Every 7 days")}</option><option value={14}>{trI18n("Every 14 days")}</option><option value={30}>{trI18n("Every 30 days")}</option></select></label>
+       <p className="text-xs leading-5 text-white/45">{trI18n("Uses the title, message, channel and segment from the campaign form. Select Win-back, One stamp away or Welcome first.")}</p>
+       <button type="submit" disabled={busy||segment==="all"||message.length<10} className={secondary+" w-full"}><Zap className="size-4"/>{trI18n("Create paused automation")}</button>
       </form>
       <div className="mt-4 space-y-2">{automations.map(a=><div key={a.id} className="min-w-0 rounded-xl border border-white/10 p-3">
        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2"><div className="min-w-0"><p className="break-words text-sm font-semibold text-white">{a.name}</p><p className="mt-1 text-[11px] text-white/40">{labelOf(a.segment)} · every {a.interval_days} days</p></div><span className={a.is_active?"text-xs text-emerald-300":"text-xs text-white/45"}>{a.is_active?"Active":"Paused"}</span></div>
