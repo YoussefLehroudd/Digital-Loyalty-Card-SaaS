@@ -132,7 +132,7 @@ export default function UserSettingsPage() {
             <CardTitle className="text-base">{tr("Notification preferences")}</CardTitle>
           </CardHeader>
           <CardContent className="min-w-0 space-y-2">
-            <p className="text-xs leading-5 text-muted-foreground">Account and reward alerts are enabled by default. Promotional offers are optional. Phone notifications require permission on each device.</p>
+            <p className="text-xs leading-5 text-muted-foreground">{tr("Account and reward alerts are enabled by default. Promotional offers are optional. Phone notifications require permission on each device.")}</p>
             <ToggleRow title={tr("Email updates")} description={tr("Receive account and loyalty updates by email.")} checked={emailUpdates} onToggle={() => setEmailUpdates((v) => !v)}/>
             <ToggleRow title={tr("Reward alerts")} description={tr("Get notified when rewards are ready.")} checked={rewardAlerts} onToggle={() => setRewardAlerts((v) => !v)}/>
             <ToggleRow title={tr("Promotions")} description={tr("Receive occasional promotional offers.")} checked={promotions} onToggle={() => setPromotions((v) => !v)}/>
@@ -140,11 +140,11 @@ export default function UserSettingsPage() {
           </CardContent>
         </Card>
         <Card className="lg:hidden">
-          <CardHeader><CardTitle className="flex items-center gap-2 text-base"><BellRing className="size-4 text-[#e7b354]"/>Real phone notifications</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2 text-base"><BellRing className="size-4 text-[#e7b354]"/>{tr("Real phone notifications")}</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <p className="text-muted-foreground">Receive loyalty stamp updates, unlocked rewards, promotions (only if opted in), and birthday surprises even when Loyvance is closed.</p>
-            {pushConfig?.configured===false?<p className="text-amber-300">Push delivery is not configured on the server yet (VAPID keys required).</p>:null}
-            {typeof window!=="undefined"&&!supportsWebPush()?<p className="text-amber-300">This browser does not support Web Push or this page is not on HTTPS.</p>:null}
+            <p className="text-muted-foreground">{tr("Receive loyalty stamp updates, unlocked rewards, promotions (only if opted in), and birthday surprises even when Loyvance is closed.")}</p>
+            {pushConfig?.configured===false?<p className="text-amber-300">{tr("Push delivery is not configured on the server yet (VAPID keys required).")}</p>:null}
+            {typeof window!=="undefined"&&!supportsWebPush()?<p className="text-amber-300">{tr("This browser does not support Web Push or this page is not on HTTPS.")}</p>:null}
             {typeof window!=="undefined"&&supportsWebPush()&&isIosPwaRequired()?<p className="text-amber-300">On iPhone: install Loyvance using Safari → Share → Add to Home Screen, then open the installed app to enable notifications.</p>:null}
             {permission==="denied"?<p className="text-amber-300">Notifications are blocked in this device&apos;s browser settings. You must allow them there first.</p>:null}
             <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/10 p-3"><Smartphone className="size-5 text-[#e7b354]"/><span className="flex-1">{deviceSubscribed?"This device is subscribed":"This device is not subscribed"}</span><ShieldCheck className="size-4 text-white/40"/></div>
@@ -152,7 +152,7 @@ export default function UserSettingsPage() {
               <Button type="button" disabled={pushBusy||!token||!pushConfig?.configured||!pushConfig?.public_key||deviceSubscribed||!supportsWebPush()||isIosPwaRequired()} onClick={()=>void enableDevice()}>
                 {pushBusy?"Updating…":"Enable on this device"}
               </Button>
-              <Button type="button" variant="outline" disabled={pushBusy||!token||!deviceSubscribed} onClick={()=>void disableDevice()}>Remove this device</Button>
+              <Button type="button" variant="outline" disabled={pushBusy||!token||!deviceSubscribed} onClick={()=>void disableDevice()}>{tr("Remove this device")}</Button>
             </div>
             <p className="text-xs text-muted-foreground">Permission is requested only after tapping Enable. You can disable alerts globally with the switch above and Save settings. Browser-level permission can also be revoked from device settings.</p>
           </CardContent>
