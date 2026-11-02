@@ -13,6 +13,7 @@ type Counters = Record<string, number>;
 const STORAGE_PREFIX = "loyvance.admin.nav-seen.v2:";
 const routes = ["/admin/businesses", "/admin/customers", "/admin/affiliates", "/admin/premium", "/admin/visitors"] as const;
 const DEMO_KEY = "/admin/visitors/demo-alerts";
+const PREMIUM_SEEN_PREFIX = "loyvance.admin.premium-seen.v1:";
 const VISITORS_ROUTE = "/admin/visitors";
 type PremiumResponse = { requests: PremiumApprovalRequest[] };
 type AffiliateResponse = { data: Array<{ id: string }> };
@@ -50,7 +51,8 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
     latestRef.current = {};
     pendingRef.current = new Set();
     handledRef.current = new Set();
-    premiumSeenRef.current = new Set();
+    try { premiumSeenRef.current = new Set(JSON.parse(window.localStorage.getItem(PREMIUM_SEEN_PREFIX + userId) || "[]") as string[]); }
+    catch { premiumSeenRef.current = new Set(); }
     premiumInitialized.current = false;
     let stopped = false;
     let running = false;
@@ -131,7 +133,10 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
           // Pending requests already present when admin opens the app are new
           // until their dedicated page is visited.
           premiumInitialized.current = true;
-          if (pathnameRef.current === "/admin/premium") premiumSeenRef.current = new Set(pending);
+          if (pathnameRef.current === "/admin/premium") {
+            premiumSeenRef.current = new Set(pending);
+            try { window.localStorage.setItem(PREMIUM_SEEN_PREFIX + userId, JSON.stringify([...pending])); } catch { /* storage disabled */ }
+          }
         }
         seenRef.current = seen;
         if (changed) storeSeen(storageKey, seen);
@@ -147,8 +152,11 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
     };
     const wake = () => { if (!document.hidden) void check(); };
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== storageKey) return;
-      seenRef.current = readSeen(storageKey);
+      if (event.key === storageKey) seenRef.current = readSeen(storageKey);
+      else if (event.key === PREMIUM_SEEN_PREFIX + userId) {
+        try { premiumSeenRef.current = new Set(JSON.parse(event.newValue || "[]") as string[]); }
+        catch { premiumSeenRef.current = new Set(); }
+      } else return;
       refreshBadges();
     };
     // When mounted on a target route, acknowledge the server snapshot after loading.
@@ -176,7 +184,10 @@ export function useAdminSidebarAlerts(token: string | null, userId: string | nul
     const seen = { ...seenRef.current };
     if (route === VISITORS_ROUTE && latestRef.current[DEMO_KEY] !== undefined) seen[DEMO_KEY] = latestRef.current[DEMO_KEY];
     if (latestRef.current[route] !== undefined) seen[route] = latestRef.current[route];
-    if (route === "/admin/premium") premiumSeenRef.current = new Set(pendingRef.current);
+    if (route === "/admin/premium") {
+      premiumSeenRef.current = new Set(pendingRef.current);
+      try { window.localStorage.setItem(PREMIUM_SEEN_PREFIX + userId, JSON.stringify([...pendingRef.current])); } catch { /* storage disabled */ }
+    }
     seenRef.current = seen;
     storeSeen(STORAGE_PREFIX + userId, seen);
     setBadges(previous => ({ ...previous, [route]: 0 }));
