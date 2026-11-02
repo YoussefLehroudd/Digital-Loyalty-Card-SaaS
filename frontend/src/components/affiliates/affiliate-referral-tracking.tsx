@@ -77,7 +77,7 @@ function countryInfo(code:string|null,language:"ar"|"fr"|"en"){
  try{name=new Intl.DisplayNames([language],{type:"region"}).of(code)??code;}catch{}
  return {flag,name};
 }
-export function AffiliateReferralTracking({visits,signups,activePaid,lastVisit,businesses,recentVisits=[]}:{visits:number;signups:number;activePaid:number;lastVisit:string|null;businesses:ReferredBusiness[];recentVisits?:ReferralOpen[];language?:"ar"|"fr"|"en"}){
+export function AffiliateReferralTracking({visits,signups,activePaid,lastVisit,businesses,recentVisits=[]}:{visits:number;signups:number;activePaid:number;lastVisit:string|null;businesses:ReferredBusiness[];recentVisits?:ReferralOpen[]}){
  const {language,tr}=useTrackingLanguage();
  return <div className="min-w-0 space-y-4">
   <div className="grid min-w-0 grid-cols-1 gap-2 min-[340px]:grid-cols-2 lg:grid-cols-3">
@@ -86,10 +86,10 @@ export function AffiliateReferralTracking({visits,signups,activePaid,lastVisit,b
    <Step icon={BadgeCheck} label={tr("Active paid subscriptions")} value={activePaid} note={tr("Currently paid and not expired")}/>
   </div>
   <p className="text-[11px] font-medium text-[#efbd5d]/80">{tr("Last recorded referral link open:")} {lastVisit?day(lastVisit):tr("None recorded yet")}</p>
-  <p className="text-[11px] leading-5 text-white/40">An opened link does not identify the visitor. A business appears below only after account creation and email verification. Link visits are approximate; private browsing, opt-outs and reloads may affect the count. Earlier visits cannot be recovered.</p>
+  <p className="text-[11px] leading-5 text-white/40">{language==="ar"?"فتح الرابط لا يكشف هوية الزائر. تظهر المتاجر بعد تأكيد البريد الإلكتروني. الأرقام تقريبية ولا يمكن استرجاع الزيارات القديمة.":language==="fr"?"L’ouverture du lien ne révèle pas l’identité du visiteur. Les entreprises apparaissent après vérification de l’e-mail. Les visites sont approximatives et les anciennes données ne sont pas récupérables.":"An opened link does not identify the visitor. A business appears below only after account creation and email verification. Link visits are approximate; private browsing, opt-outs and reloads may affect the count. Earlier visits cannot be recovered."}</p>
   <section className="rounded-xl border border-white/10 bg-black/20 p-3 sm:p-4">
    <h3 className="text-sm font-semibold text-white">{tr("Referral link visits · Countries & flags")}</h3>
-   <p className="mt-1 text-[11px] leading-5 text-white/45">Latest 100 recorded opens. Country is approximate (Vercel edge), not a visitor&apos;s precise location. Anonymous visits only; no IP addresses or visitor identities are shown. Older country data is unavailable.</p>
+   <p className="mt-1 text-[11px] leading-5 text-white/45">{language==="ar"?"آخر 100 زيارة مسجلة. البلد تقريبي ولا تُعرض عناوين IP أو هويات الزوار. بيانات الدول القديمة غير متاحة.":language==="fr"?"Les 100 dernières visites. Le pays est approximatif ; ni adresse IP ni identité du visiteur ne sont affichées. Les anciens pays sont indisponibles.":"Latest 100 recorded opens. Country is approximate (Vercel edge), not a visitor’s precise location. Anonymous visits only; no IP addresses or visitor identities are shown. Older country data is unavailable."}</p>
    {!recentVisits.length?<p className="mt-3 rounded-lg border border-dashed border-white/10 p-4 text-xs text-white/50">{tr("No referral visits recorded yet.")}</p>:
     <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
      {recentVisits.map((visit,index)=>{const geo=countryInfo(visit.country_code,language);return <div key={visit.visited_at+index} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[.025] px-3 py-2">
