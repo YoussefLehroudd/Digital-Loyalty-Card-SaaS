@@ -1577,5 +1577,8 @@
   "Passkey": "مفتاح مرور",
   "Customer Settings": "إعدادات العميل",
   "Stay signed in during ordinary app closes. Fingerprint / Face ID is an optional secure way to sign in again after the session expires or when signing into a new device.": "ابق مسجلاً عند الإغلاق العادي للتطبيق. البصمة والتعرف على الوجه خيار آمن لإعادة الدخول عند انتهاء الجلسة أو استخدام جهاز جديد.",
-  "Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.": "يستفيد فقط الأعضاء الموافقون على العروض. ويتطلب البريد الإلكتروني موافقة إضافية، ولا تُصدَّر قوائم الاتصال."
+  "Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.": "يستفيد فقط الأعضاء الموافقون على العروض. ويتطلب البريد الإلكتروني موافقة إضافية، ولا تُصدَّر قوائم الاتصال.",
+  "Passkeys need a compatible device and HTTPS. You can always continue using email and password.": "تتطلب مفاتيح المرور جهازاً متوافقاً واتصال HTTPS. يمكنك دائماً استخدام البريد وكلمة المرور.",
+  "Confirm your account password to protect this privileged workspace": "أكد كلمة مرور حسابك لحماية مساحة العمل هذه",
+  "Your normal login stays available as a fallback. You can register or remove multiple passkeys from this account.": "تظل طريقة الدخول العادية متاحة. يمكنك إضافة عدة مفاتيح مرور أو حذفها من هذا الحساب."
 }
