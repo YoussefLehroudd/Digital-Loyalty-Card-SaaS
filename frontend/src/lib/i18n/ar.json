@@ -1580,5 +1580,18 @@
   "Only members who opted in to promotions are eligible. Email also requires Email updates consent; no contact lists are exported.": "يستفيد فقط الأعضاء الموافقون على العروض. ويتطلب البريد الإلكتروني موافقة إضافية، ولا تُصدَّر قوائم الاتصال.",
   "Passkeys need a compatible device and HTTPS. You can always continue using email and password.": "تتطلب مفاتيح المرور جهازاً متوافقاً واتصال HTTPS. يمكنك دائماً استخدام البريد وكلمة المرور.",
   "Confirm your account password to protect this privileged workspace": "أكد كلمة مرور حسابك لحماية مساحة العمل هذه",
-  "Your normal login stays available as a fallback. You can register or remove multiple passkeys from this account.": "تظل طريقة الدخول العادية متاحة. يمكنك إضافة عدة مفاتيح مرور أو حذفها من هذا الحساب."
+  "Your normal login stays available as a fallback. You can register or remove multiple passkeys from this account.": "تظل طريقة الدخول العادية متاحة. يمكنك إضافة عدة مفاتيح مرور أو حذفها من هذا الحساب.",
+  "Google Maps & customer reviews": "خرائط Google وتقييمات العملاء",
+  "Add your exact Google Maps business location and your direct Google review-request link. These buttons will appear on your business card in Explore Businesses.": "أضف الموقع الدقيق لمتجرك على خرائط Google ورابط طلب التقييمات المباشر. ستظهر هذه الأزرار في بطاقة متجرك ضمن استكشاف الأنشطة التجارية.",
+  "Google Maps location link": "رابط الموقع على خرائط Google",
+  "Preview location on Google Maps": "معاينة الموقع على خرائط Google",
+  "Direct Google Reviews link": "الرابط المباشر لتقييمات Google",
+  "Preview direct review link": "معاينة رابط التقييم المباشر",
+  "To get the exact review link: open your Google Business Profile on desktop, select Read reviews → Get more reviews → Copy link. Leave either field blank to hide that button.": "للحصول على رابط التقييم المباشر: افتح ملف نشاطك التجاري على Google من الحاسوب، ثم التقييمات ← الحصول على مزيد من التقييمات ← نسخ الرابط. اترك أي حقل فارغاً لإخفاء زره.",
+  "Google instructions for getting a review link": "تعليمات Google للحصول على رابط التقييم",
+  "Choose whether to hide customer contact details from the platform administrator. Existing privacy choices are respected.": "اختر ما إذا كنت تريد إخفاء معلومات الاتصال بالعملاء عن مسؤول المنصة. تُحترم اختيارات الخصوصية الحالية.",
+  "Make customer contact details private": "إخفاء معلومات اتصال العملاء",
+  "Off by default: the platform administrator can view customer emails and phone numbers. Turn on to hide contact details in the admin directory. Your business keeps access to its own customers. If any connected business enables privacy, the shared customer's contact details remain hidden.": "معطّل افتراضياً: يمكن لمسؤول المنصة رؤية بريد العملاء وأرقام هواتفهم. فعّله لإخفائها من دليل الإدارة. يحتفظ متجرك بإمكانية الوصول إلى عملائه. وإذا فعّل متجر مرتبط الخصوصية، تبقى بيانات العميل المشتركة مخفية.",
+  "Customer contact details are visible to the platform administrator.": "معلومات اتصال العملاء ظاهرة لمسؤول المنصة.",
+  "Customer contact details are private in the admin panel.": "معلومات اتصال العملاء مخفية في لوحة الإدارة."
 }
