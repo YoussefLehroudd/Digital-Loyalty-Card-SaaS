@@ -1602,5 +1602,18 @@
   "Your browser does not support location access.": "متصفحك لا يدعم الوصول إلى الموقع.",
   "Location permission denied or unavailable. You can enter coordinates manually.": "تم رفض إذن الموقع أو أنه غير متاح. يمكنك إدخال الإحداثيات يدوياً.",
   "Could not save Discover profile.": "تعذر حفظ ملف اكتشف.",
-  "Unable to load Discover settings.": "تعذر تحميل إعدادات اكتشف."
+  "Unable to load Discover settings.": "تعذر تحميل إعدادات اكتشف.",
+  "Please wait…": "يرجى الانتظار…",
+  "Added": "أضيف في",
+  "Last used": "آخر استخدام",
+  "Remove passkey": "حذف مفتاح المرور",
+  "Remove this passkey from Loyvance? You can still sign in with your password.": "هل تريد حذف مفتاح المرور هذا من لويفانس؟ سيظل بإمكانك تسجيل الدخول بكلمة المرور.",
+  "Keep your loyalty cards, rewards and QR code one tap away on your phone.": "احتفظ ببطاقات الولاء والمكافآت ورمز QR في متناول يدك على الهاتف.",
+  "Install the separate administrator PWA to launch the private platform panel. Only authorized administrators can access its data.": "ثبّت تطبيق الإدارة المستقل لفتح لوحة المنصة الخاصة. لا يمكن الوصول لبياناتها إلا للمسؤولين المصرح لهم.",
+  "LOYVANCE app icon": "أيقونة تطبيق لويفانس",
+  "Unable to load your passkeys.": "تعذر تحميل مفاتيح المرور.",
+  "Unable to set up a passkey.": "تعذر إعداد مفتاح المرور.",
+  "Unable to remove passkey.": "تعذر حذف مفتاح المرور.",
+  "Passkey removed from Loyvance.": "تم حذف مفتاح المرور من لويفانس.",
+  "Fingerprint / Face ID passkey is ready. You can use it next time your session expires.": "مفتاح المرور بالبصمة أو الوجه جاهز. يمكنك استخدامه عند انتهاء جلستك القادمة."
 }
