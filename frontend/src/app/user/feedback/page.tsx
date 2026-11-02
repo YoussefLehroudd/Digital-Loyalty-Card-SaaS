@@ -9,7 +9,7 @@ type Visit={visit_id:string;visit_date:string;business_name:string;business_id:s
 export default function CustomerFeedback(){
  const {token:customerToken}=useCustomerAuth();
  const {t:tr}=useI18n();const token=customerToken??undefined;const [visits,setVisits]=useState<Visit[]>([]),[rating,setRating]=useState<Record<string,number>>({}),[notes,setNotes]=useState<Record<string,string>>({}),[busy,setBusy]=useState(""),[error,setError]=useState(""),[success,setSuccess]=useState("");
- const load=useCallback(()=>{tr("apiFetch")}<{visits:Visit[]}>("/growth/feedback",{token,cache:"no-store"}).then(r=>setVisits(r.visits)).catch(e=>setError(e instanceof Error?e.message:"Could not load visits.")),[token]);
+ const load=useCallback(()=>apiFetch<{visits:Visit[]}>("/growth/feedback",{token,cache:"no-store"}).then(r=>setVisits(r.visits)).catch(e=>setError(e instanceof Error?e.message:"Could not load visits.")),[token]);
  useEffect(()=>{void load();},[load]);
  const submit=async(v:Visit)=>{setBusy(v.visit_id);setError("");setSuccess("");try{await apiFetch("/growth/feedback",{token,method:"POST",body:JSON.stringify({visit_id:v.visit_id,rating:rating[v.visit_id]??0,note:notes[v.visit_id]??""})});setSuccess("Private feedback sent to the business owner.");await load();}catch(e){setError(e instanceof Error?e.message:"Cannot submit feedback.");}finally{setBusy("");}};
  return <CustomerLayout title={tr("Customer Feedback")} subtitle="Rate the service after a verified visit. Only you and the business owner can read your note.">
