@@ -1,4 +1,5 @@
 import Link from "next/link";
+import release from "@/lib/android-release.json";
 import { Download, Smartphone, ShieldCheck, Globe2 } from "lucide-react";
 
 export const metadata = {
@@ -6,32 +7,8 @@ export const metadata = {
   description: "Official Loyvance Android app and installation instructions.",
 };
 
-const releasesApi = "https://api.github.com/repos/YoussefLehroudd/Digital-Loyalty-Card-SaaS/releases?per_page=20";
-
-async function findApk() {
-  try {
-    const response = await fetch(releasesApi, {
-      headers: { Accept: "application/vnd.github+json" },
-      next: { revalidate: 300 },
-    });
-    if (!response.ok) return null;
-    const releases = await response.json() as Array<{
-      draft?: boolean;
-      prerelease?: boolean;
-      assets?: Array<{ name: string; browser_download_url: string }>;
-    }>;
-    const asset = releases.filter((release) => !release.draft && !release.prerelease)
-      .flatMap((release) => release.assets ?? [])
-      .find((item) => item.name === "Loyvance-Android.apk");
-    if (!asset || !asset.browser_download_url.startsWith("https://github.com/")) return null;
-    return asset.browser_download_url;
-  } catch {
-    return null;
-  }
-}
-
-export default async function AndroidDownloadPage() {
-  const apk = await findApk();
+export default function AndroidDownloadPage() {
+  const apk = release.available ? "/downloads/Loyvance-Android.apk" : null;
   return (
     <main className="min-h-screen bg-[#090b09] px-4 py-16 text-white">
       <section className="mx-auto max-w-xl space-y-5 rounded-3xl border border-[#e7b354]/30 bg-[#14150f] p-6 shadow-2xl sm:p-9">
@@ -45,7 +22,7 @@ export default async function AndroidDownloadPage() {
           <p className="text-xs text-white/55">Android may ask you to allow installation from this browser. Download only from the official release linked here.</p>
         </> : <>
           <div role="status" className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
-            The official APK has not been published yet. Download will appear here after the signed Android release is available.
+            The official signed APK has not been published yet. Once the Android release is signed, the download will appear here automatically.
           </div>
           <Link className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#e7b354]/50 px-4 font-semibold text-[#e7b354]" href="/user/install">
             <Globe2 className="size-5"/> Install the current web app instead
