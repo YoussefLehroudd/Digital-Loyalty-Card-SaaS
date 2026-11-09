@@ -1647,5 +1647,15 @@
   "Save birthday preferences": "حفظ تفضيلات عيد الميلاد",
   "Your full birth date is not shown to businesses. Gifts may be issued only once per loyalty business per year. Bonus stamps respect reward-card limits.": "لا يظهر تاريخ ميلادك الكامل للمتاجر. تُمنح الهدايا مرة واحدة سنوياً لكل متجر، وتحترم الطوابع الإضافية حدود البطاقات.",
   "Your birthday preferences were saved.": "تم حفظ تفضيلات عيد الميلاد.",
-  "Could not save birthday preferences.": "تعذر حفظ تفضيلات عيد الميلاد."
+  "Could not save birthday preferences.": "تعذر حفظ تفضيلات عيد الميلاد.",
+  "Android app": "تطبيق أندرويد",
+  "LOYVANCE Android": "لويفانس أندرويد",
+  "Same account · Same rewards · Same website data": "نفس الحساب · نفس المكافآت · نفس بيانات الموقع",
+  "Download the official signed Loyvance Android APK. Your account and cards remain synchronized with the website.": "حمّل تطبيق لويفانس الرسمي الموقّع لأندرويد. حسابك وبطاقاتك تبقى متزامنة مع الموقع.",
+  "Download Android APK": "تحميل تطبيق أندرويد APK",
+  "Android may ask you to allow installation from this browser. Download only from the official site.": "قد يطلب أندرويد السماح بالتثبيت من هذا المتصفح. حمّل التطبيق فقط من الموقع الرسمي.",
+  "The official signed APK has not been published yet. Once the Android release is signed, the download will appear here automatically.": "نسخة APK الرسمية الموقّعة لم تُنشر بعد. سيظهر زر التحميل هنا تلقائياً عند نشر الإصدار الموقّع.",
+  "Install the current web app instead": "تثبيت تطبيق الويب الحالي بدلاً من ذلك",
+  "The Android app needs a compatible browser and internet connection for live data. QR camera and notifications depend on device permissions.": "يحتاج تطبيق أندرويد لمتصفح متوافق واتصال بالإنترنت للبيانات المباشرة. الكاميرا والإشعارات تتطلبان أذونات الجهاز.",
+  "Back to Loyvance": "العودة إلى لويفانس"
 }
