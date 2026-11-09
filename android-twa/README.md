@@ -22,15 +22,19 @@ Set these GitHub Actions repository secrets:
 - ANDROID_KEY_PASSWORD
 
 From GitHub > Actions > Build Loyvance Android APK > Run workflow, provide a
-version tag. The workflow builds and signs Loyvance-Android.apk and creates a
-GitHub Release. The /download/android website page then offers the actual APK.
-Never show a download button for a nonexistent release.
+version tag. The workflow builds and signs the APK, then commits it into
+frontend/public/downloads/Loyvance-Android.apk along with the public release
+metadata. A Vercel deploy exposes the APK on /download/android, without
+requiring visitors to access this private GitHub repository.
+Never show a download button for a nonexistent APK.
 
 **Required for full-screen verification**:
 - Copy the signing certificate's SHA-256 fingerprint printed by keytool.
-- Set Vercel production environment variable LOYVANCE_ANDROID_SHA256 to it.
-- Redeploy and verify https://loyvance.vercel.app/.well-known/assetlinks.json
-  has package com.loyvance.app with the exact matching fingerprint.
+- The release workflow writes the public fingerprint to
+  frontend/src/lib/android-release.json, which the website serves via
+  https://loyvance.vercel.app/.well-known/assetlinks.json.
+- Verify the published fingerprint matches the signing key. The private
+  keystore remains only in GitHub Actions secrets / secure local backup.
 
 Without this the TWA opens as a browser Custom Tab (with address bar), so do
 not describe the app as fully configured until verified. Keep a stable signing
