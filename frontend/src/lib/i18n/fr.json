@@ -1647,5 +1647,15 @@
   "Save birthday preferences": "Enregistrer les préférences d’anniversaire",
   "Your full birth date is not shown to businesses. Gifts may be issued only once per loyalty business per year. Bonus stamps respect reward-card limits.": "Votre date complète de naissance est masquée aux commerces. Chaque commerce ne peut attribuer qu’une récompense par an. Les tampons bonus respectent les limites des cartes.",
   "Your birthday preferences were saved.": "Préférences d’anniversaire enregistrées.",
-  "Could not save birthday preferences.": "Impossible d’enregistrer les préférences d’anniversaire."
+  "Could not save birthday preferences.": "Impossible d’enregistrer les préférences d’anniversaire.",
+  "Android app": "Application Android",
+  "LOYVANCE Android": "LOYVANCE Android",
+  "Same account · Same rewards · Same website data": "Même compte · Mêmes récompenses · Mêmes données",
+  "Download the official signed Loyvance Android APK. Your account and cards remain synchronized with the website.": "Téléchargez l’APK Android officiel et signé de Loyvance. Votre compte et vos cartes restent synchronisés avec le site.",
+  "Download Android APK": "Télécharger l’APK Android",
+  "Android may ask you to allow installation from this browser. Download only from the official site.": "Android peut demander l’autorisation d’installer depuis ce navigateur. Téléchargez uniquement depuis le site officiel.",
+  "The official signed APK has not been published yet. Once the Android release is signed, the download will appear here automatically.": "L’APK officiel signé n’est pas encore publié. Le téléchargement apparaîtra ici après la publication de la version signée.",
+  "Install the current web app instead": "Installer l’application web actuelle",
+  "The Android app needs a compatible browser and internet connection for live data. QR camera and notifications depend on device permissions.": "L’application Android nécessite un navigateur compatible et une connexion Internet pour les données en direct. La caméra QR et les notifications nécessitent des autorisations.",
+  "Back to Loyvance": "Retour à Loyvance"
 }
