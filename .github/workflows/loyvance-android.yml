@@ -76,6 +76,7 @@ jobs:
       - name: Publish signed APK on Loyvance website
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git pull --rebase origin main
@@ -100,5 +101,10 @@ jobs:
             git commit -m "Publish signed Loyvance Android APK on the website"
             git push origin HEAD:main
           fi
-          echo "Signed Android APK published via the website's Vercel deployment."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" Loyvance-Android.apk --clobber
+          else
+            gh release create "$RELEASE_TAG" Loyvance-Android.apk --title "Loyvance Android $RELEASE_TAG" --notes "Official signed APK. Also offered at https://loyvance.vercel.app/download/android."
+          fi
+          echo "Signed Android APK published to GitHub Releases and Loyvance website."
           echo "Fingerprint: $FINGERPRINT"
