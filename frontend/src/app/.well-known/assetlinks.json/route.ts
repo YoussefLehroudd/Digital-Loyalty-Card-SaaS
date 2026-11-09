@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import androidRelease from "@/lib/android-release.json";
 
 export const dynamic = "force-dynamic";
 
@@ -7,8 +8,7 @@ export const dynamic = "force-dynamic";
  * must stay private in GitHub Actions secrets. Never expose a signing key.
  */
 export async function GET() {
-  const values = (process.env.LOYVANCE_ANDROID_SHA256 ?? "")
-    .split(",")
+  const values = [ ...androidRelease.sha256_cert_fingerprints, ...(process.env.LOYVANCE_ANDROID_SHA256 ?? "").split(",") ]
     .map((value) => value.trim().toUpperCase())
     .filter((value) => /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(value));
   const statements = values.length ? [{
