@@ -73,14 +73,32 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
           keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" | grep -E 'SHA256:'
           cp "$APK" Loyvance-Android.apk
-      - name: Publish versioned release
+      - name: Publish signed APK on Loyvance website
         env:
-          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" Loyvance-Android.apk --clobber
-          else
-            gh release create "$RELEASE_TAG" Loyvance-Android.apk --title "Loyvance Android $RELEASE_TAG" --notes "Signed Android Trusted Web Activity. Requires matching SHA-256 in https://loyvance.vercel.app/.well-known/assetlinks.json."
+          set -euo pipefail
+          mkdir -p frontend/public/downloads
+          cp Loyvance-Android.apk frontend/public/downloads/Loyvance-Android.apk
+
+          FINGERPRINT="$(keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -alias "$ANDROID_KEY_ALIAS" -storepass "$ANDROID_KEYSTORE_PASSWORD" | sed -n 's/.*SHA256: //p' | head -1 | tr -d '\r')"
+          export FINGERPRINT
+          test -n "$FINGERPRINT"
+          python3 - <<'PY'
+          import json, os
+          fingerprint=os.environ["FINGERPRINT"].strip()
+          data={"available": True, "version": os.environ["RELEASE_TAG"], "sha256_cert_fingerprints":[fingerprint]}
+          with open("frontend/src/lib/android-release.json","w",encoding="utf-8") as f:
+              json.dump(data,f,indent=2)
+              f.write("\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add frontend/public/downloads/Loyvance-Android.apk frontend/src/lib/android-release.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish signed Loyvance Android APK on the website"
+            git push origin HEAD:main
           fi
-          echo "Publish the printed signing-certificate SHA256 as LOYVANCE_ANDROID_SHA256 in Vercel."
+          echo "Signed Android APK published via the website's Vercel deployment."
+          echo "Fingerprint: $FINGERPRINT"
