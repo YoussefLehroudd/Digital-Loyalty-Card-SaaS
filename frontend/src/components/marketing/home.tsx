@@ -68,6 +68,7 @@ const features: Array<[LucideIcon, string, string]> = [
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <LanguageSwitcher />
+            <Link href="/download/android" className="hidden rounded-xl border border-[#f3bd55]/35 px-3 py-2 text-xs font-semibold text-[#f3bd55] hover:bg-[#f3bd55]/10 lg:inline-flex">{t("Android app")}</Link>
             <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link href="/login">{t("Sign in")}</Link></Button>
             <Button asChild className="hidden bg-[#f3bd55] text-black hover:bg-[#ffd16f] min-[390px]:inline-flex sm:px-4"><Link href="/register"><span className="hidden min-[430px]:inline">{t("Create account")}</span><span className="min-[430px]:hidden">{t("Join")}</span> <ArrowRight className="size-4"/></Link></Button>
             <Button
@@ -89,6 +90,7 @@ const features: Array<[LucideIcon, string, string]> = [
                 <a href="#features" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">{t("Features")}</a>
                 <a href="#how" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">{t("How it works")}</a>
                 <a href="#businesses" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 hover:bg-[#f3bd55]/10 hover:text-[#f3bd55]">{t("Businesses")}</a>
+                <Link href="/download/android" onClick={() => setMobileMenuOpen(false)} className="rounded-xl px-4 py-3 text-[#f3bd55] hover:bg-[#f3bd55]/10">{t("Android app")}</Link>
                 <div className="mt-1 grid grid-cols-2 gap-2 border-t border-white/10 pt-2">
                   <Button asChild variant="outline" className="border-white/15 bg-transparent"><Link href="/login" onClick={() => setMobileMenuOpen(false)}>{t("Sign in")}</Link></Button>
                   <Button asChild className="bg-[#f3bd55] text-black hover:bg-[#ffd16f]"><Link href="/register" onClick={() => setMobileMenuOpen(false)}>{t("Create account")}</Link></Button>
