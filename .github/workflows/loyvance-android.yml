@@ -78,6 +78,7 @@ jobs:
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
+          git pull --rebase origin main
           mkdir -p frontend/public/downloads
           cp Loyvance-Android.apk frontend/public/downloads/Loyvance-Android.apk
 
@@ -94,7 +95,6 @@ jobs:
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
           git add frontend/public/downloads/Loyvance-Android.apk frontend/src/lib/android-release.json
           if ! git diff --cached --quiet; then
             git commit -m "Publish signed Loyvance Android APK on the website"
