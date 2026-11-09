@@ -6,7 +6,7 @@ export const metadata = {
   description: "Official Loyvance Android app and installation instructions.",
 };
 
-const releasesApi = "https://api.github.com/repos/YoussefLehroudd/Digital-Loyalty-Card-SaaS/releases/latest";
+const releasesApi = "https://api.github.com/repos/YoussefLehroudd/Digital-Loyalty-Card-SaaS/releases?per_page=20";
 
 async function findApk() {
   try {
@@ -15,10 +15,14 @@ async function findApk() {
       next: { revalidate: 300 },
     });
     if (!response.ok) return null;
-    const release = await response.json() as {
+    const releases = await response.json() as Array<{
+      draft?: boolean;
+      prerelease?: boolean;
       assets?: Array<{ name: string; browser_download_url: string }>;
-    };
-    const asset = release.assets?.find((item) => item.name === "Loyvance-Android.apk");
+    }>;
+    const asset = releases.filter((release) => !release.draft && !release.prerelease)
+      .flatMap((release) => release.assets ?? [])
+      .find((item) => item.name === "Loyvance-Android.apk");
     if (!asset || !asset.browser_download_url.startsWith("https://github.com/")) return null;
     return asset.browser_download_url;
   } catch {
