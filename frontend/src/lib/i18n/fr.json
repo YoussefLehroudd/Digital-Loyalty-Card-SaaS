@@ -1657,5 +1657,7 @@
   "The official signed APK has not been published yet. Once the Android release is signed, the download will appear here automatically.": "L’APK officiel signé n’est pas encore publié. Le téléchargement apparaîtra ici après la publication de la version signée.",
   "Install the current web app instead": "Installer l’application web actuelle",
   "The Android app needs a compatible browser and internet connection for live data. QR camera and notifications depend on device permissions.": "L’application Android nécessite un navigateur compatible et une connexion Internet pour les données en direct. La caméra QR et les notifications nécessitent des autorisations.",
-  "Back to Loyvance": "Retour à Loyvance"
+  "Back to Loyvance": "Retour à Loyvance",
+  "Download Loyvance for Android": "Télécharger Loyvance pour Android",
+  "Android phone? Download the official APK directly from Loyvance.": "Vous utilisez Android ? Téléchargez l’APK officielle directement depuis Loyvance."
 }
