@@ -1,5 +1,7 @@
 {
-  "available": false,
-  "version": "",
-  "sha256_cert_fingerprints": []
+  "available": true,
+  "version": "android-v1.0.0",
+  "sha256_cert_fingerprints": [
+    "7C:58:33:12:A3:C4:20:88:11:E4:82:55:D6:53:3A:22:04:6E:F5:94:33:AC:90:45:E6:59:69:C6:0F:BB:A0:F4"
+  ]
 }
