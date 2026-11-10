@@ -5,7 +5,7 @@ import { useI18n, translate } from "@/components/i18n/language-provider";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, BarChart3, Building2, CreditCard, Gift, Layers3, Menu, Palette, Play, QrCode, Send, Sparkles, Store, Users, Zap, Settings, type LucideIcon } from "lucide-react";
+import { ArrowRight, BarChart3, Building2, CreditCard, Download, Gift, Layers3, Menu, Palette, Play, QrCode, Send, Smartphone, Sparkles, Store, Users, Zap, Settings, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarketingDemoContact } from "@/components/marketing/demo-contact";
 
@@ -116,7 +116,13 @@ const features: Array<[LucideIcon, string, string]> = [
               <Button asChild size="lg" className="h-14 rounded-xl border border-[#ffd36d] bg-[#f3bd55] px-8 font-bold text-black shadow-[0_0_24px_rgba(243,189,85,.34),inset_0_1px_0_rgba(255,255,255,.4)] hover:bg-[#ffd16f]"><Link href="/register">{t("Create your free account")} <ArrowRight className="size-4"/></Link></Button>
               <Button asChild size="lg" variant="outline" className="h-14 rounded-xl border-[#f3bd55]/25 bg-black/55 px-7 font-semibold text-white shadow-[0_0_20px_rgba(0,0,0,.25)] backdrop-blur hover:border-[#f3bd55]/55 hover:bg-black/70"><a href="#how"><span className="me-2 flex size-8 shrink-0 items-center justify-center rounded-full border border-[#f3bd55]/80 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[0_0_12px_rgba(243,189,85,.18)]"><Play className="size-4 fill-[#f3bd55] stroke-[2.2]"/></span>{t("See how it works")}</a></Button>
               <Button asChild size="lg" variant="outline" className="h-14 rounded-xl border-[#f3bd55]/45 bg-black/70 px-6 font-bold text-[#f3bd55] hover:bg-[#f3bd55]/10"><a href="#request-demo"><Send className="size-4"/>{t("Request a personal demo")}</a></Button>
+              <Link href="/download/android" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border border-[#f3bd55]/65 bg-[#f3bd55]/15 px-6 py-3 text-sm font-extrabold text-[#ffd475] shadow-[0_0_20px_rgba(243,189,85,.15)] transition hover:bg-[#f3bd55]/25"><Download className="size-5"/>{t("Download Loyvance for Android")}</Link>
             </div>
+            <Link href="/download/android" className="mt-4 flex max-w-xl items-center gap-3 rounded-xl border border-[#f3bd55]/25 bg-black/65 px-4 py-3 text-xs text-white/75 hover:border-[#f3bd55]/55">
+              <Smartphone className="size-5 shrink-0 text-[#f3bd55]"/>
+              <span>{t("Android phone? Download the official APK directly from Loyvance.")}</span>
+              <ArrowRight className="ms-auto size-4 shrink-0 text-[#f3bd55]"/>
+            </Link>
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
               {([[Settings,t("No technical skills required")],[Zap,t("Quick setup in minutes")],[Layers3,t("Everything in one platform")]] as Array<[LucideIcon,string]>).map(([Icon,label])=><div key={label} className="flex min-h-[68px] items-center gap-3 rounded-xl border border-[#e7b354]/20 bg-black/55 px-3 py-3 text-xs font-semibold shadow-[0_8px_24px_rgba(0,0,0,.25)] backdrop-blur-md"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#f3bd55]/35 bg-[#f3bd55]/10 text-[#f3bd55] shadow-[0_0_14px_rgba(243,189,85,.12)]"><Icon className="size-5"/></span><span className="leading-4">{label}</span></div>)}
             </div>
@@ -192,7 +198,7 @@ const features: Array<[LucideIcon, string, string]> = [
 
       <MarketingDemoContact />
 
-      <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>{t("© LOYVANCE. Digital loyalty, made simple.")}</span><div className="flex gap-6"><Link href="/login">{t("Sign in")}</Link><Link href="/register">{t("Create account")}</Link><Link href="/analytics-privacy" className="text-[#efbd5d]/70 hover:text-[#efbd5d]">Visitor privacy</Link></div></div></footer>
+      <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-5 text-sm text-white/35 sm:flex-row lg:px-8"><span>{t("© LOYVANCE. Digital loyalty, made simple.")}</span><div className="flex gap-6"><Link href="/login">{t("Sign in")}</Link><Link href="/register">{t("Create account")}</Link><Link href="/download/android">{t("Android app")}</Link><Link href="/analytics-privacy" className="text-[#efbd5d]/70 hover:text-[#efbd5d]">Visitor privacy</Link></div></div></footer>
     </main>
   );
 }
