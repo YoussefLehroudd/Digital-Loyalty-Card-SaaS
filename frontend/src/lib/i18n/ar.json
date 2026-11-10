@@ -1657,5 +1657,7 @@
   "The official signed APK has not been published yet. Once the Android release is signed, the download will appear here automatically.": "نسخة APK الرسمية الموقّعة لم تُنشر بعد. سيظهر زر التحميل هنا تلقائياً عند نشر الإصدار الموقّع.",
   "Install the current web app instead": "تثبيت تطبيق الويب الحالي بدلاً من ذلك",
   "The Android app needs a compatible browser and internet connection for live data. QR camera and notifications depend on device permissions.": "يحتاج تطبيق أندرويد لمتصفح متوافق واتصال بالإنترنت للبيانات المباشرة. الكاميرا والإشعارات تتطلبان أذونات الجهاز.",
-  "Back to Loyvance": "العودة إلى لويفانس"
+  "Back to Loyvance": "العودة إلى لويفانس",
+  "Download Loyvance for Android": "تحميل لويفانس للأندرويد",
+  "Android phone? Download the official APK directly from Loyvance.": "عندك هاتف أندرويد؟ حمّل تطبيق APK الرسمي مباشرة من لويفانس."
 }
